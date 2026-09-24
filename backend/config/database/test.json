@@ -1,0 +1,3 @@
+{
+  "databaseUrl": "postgresql://postgres:postgres@localhost:5435/erp_bakery_test"
+}
