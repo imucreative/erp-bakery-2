@@ -75,6 +75,11 @@ async function bootstrap() {
       .addTag('Outlets', 'Physical bakery outlets per company')
       .addTag('Roles', 'Roles and their permissions per company')
       .addTag('Users', 'Invite users, assign roles and outlets')
+      .addTag('Product Groups', 'Product group master data per company')
+      .addTag('UOM', 'Unit of measure master data per company')
+      .addTag('Suppliers', 'Supplier master data per company')
+      .addTag('Categories', 'Product category master data per company')
+      .addTag('Products', 'Product master data per company')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);

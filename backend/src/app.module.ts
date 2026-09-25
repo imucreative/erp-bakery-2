@@ -6,6 +6,11 @@ import { CompanyModule } from './Interfaces/http/api/companies/company.module';
 import { OutletModule } from './Interfaces/http/api/outlets/outlet.module';
 import { RoleModule } from './Interfaces/http/api/roles/role.module';
 import { UserModule } from './Interfaces/http/api/users/user.module';
+import { ProductGroupModule } from './Interfaces/http/api/product-groups/product-group.module';
+import { UomModule } from './Interfaces/http/api/uoms/uom.module';
+import { SupplierModule } from './Interfaces/http/api/suppliers/supplier.module';
+import { CategoryModule } from './Interfaces/http/api/categories/category.module';
+import { ProductModule } from './Interfaces/http/api/products/product.module';
 import { AllExceptionsFilter } from './Commons/exceptions/AllExceptionsFilter';
 import { JwtAuthGuard } from './Interfaces/http/guards/jwt-auth.guard';
 import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
@@ -30,6 +35,11 @@ import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
     OutletModule,
     RoleModule,
     UserModule,
+    ProductGroupModule,
+    UomModule,
+    SupplierModule,
+    CategoryModule,
+    ProductModule,
   ],
   providers: [
     // Global exception filter — converts domain/HTTP errors to standard JSON

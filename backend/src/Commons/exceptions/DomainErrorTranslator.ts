@@ -67,6 +67,202 @@ const DomainErrorTranslator = {
       'Data outlet tidak lengkap',
     ),
 
+    // ── CreateProductGroup ───────────────────────────────────────
+    'CREATE_PRODUCT_GROUP.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal membuat product group: properti yang dibutuhkan tidak ada',
+    ),
+    'CREATE_PRODUCT_GROUP.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal membuat product group: tipe data tidak sesuai',
+    ),
+    'CREATE_PRODUCT_GROUP.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat product group: nama harus 1-100 karakter',
+    ),
+    'CREATE_PRODUCT_GROUP.DESCRIPTION_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat product group: deskripsi maksimal 500 karakter',
+    ),
+
+    // ── UpdateProductGroup ───────────────────────────────────────
+    'UPDATE_PRODUCT_GROUP.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal memperbarui product group: tidak ada field yang dikirimkan',
+    ),
+    'UPDATE_PRODUCT_GROUP.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal memperbarui product group: tipe data tidak sesuai',
+    ),
+    'UPDATE_PRODUCT_GROUP.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal memperbarui product group: nama harus 1-100 karakter',
+    ),
+    'UPDATE_PRODUCT_GROUP.DESCRIPTION_LIMIT_CHAR': new InvariantError(
+      'Gagal memperbarui product group: deskripsi maksimal 500 karakter',
+    ),
+
+    // ── ProductGroup ─────────────────────────────────────────────
+    'PRODUCT_GROUP.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data product group tidak lengkap',
+    ),
+
+    // ── CreateUom ────────────────────────────────────────────────
+    'CREATE_UOM.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal membuat UOM: properti yang dibutuhkan tidak ada',
+    ),
+    'CREATE_UOM.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal membuat UOM: tipe data tidak sesuai',
+    ),
+    'CREATE_UOM.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat UOM: nama harus 1-100 karakter',
+    ),
+
+    // ── UpdateUom ────────────────────────────────────────────────
+    'UPDATE_UOM.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal memperbarui UOM: tidak ada field yang dikirimkan',
+    ),
+    'UPDATE_UOM.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal memperbarui UOM: tipe data tidak sesuai',
+    ),
+    'UPDATE_UOM.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal memperbarui UOM: nama harus 1-100 karakter',
+    ),
+
+    // ── Uom ──────────────────────────────────────────────────────
+    'UOM.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError('Data UOM tidak lengkap'),
+
+    // ── CreateSupplier ───────────────────────────────────────────
+    'CREATE_SUPPLIER.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal membuat supplier: properti yang dibutuhkan tidak ada',
+    ),
+    'CREATE_SUPPLIER.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal membuat supplier: tipe data tidak sesuai',
+    ),
+    'CREATE_SUPPLIER.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat supplier: nama harus 1-100 karakter',
+    ),
+    'CREATE_SUPPLIER.PHONE_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat supplier: nomor telepon maksimal 30 karakter',
+    ),
+    'CREATE_SUPPLIER.PIC_NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat supplier: nama PIC maksimal 100 karakter',
+    ),
+
+    // ── UpdateSupplier ───────────────────────────────────────────
+    'UPDATE_SUPPLIER.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal memperbarui supplier: tidak ada field yang dikirimkan',
+    ),
+    'UPDATE_SUPPLIER.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal memperbarui supplier: tipe data tidak sesuai',
+    ),
+    'UPDATE_SUPPLIER.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal memperbarui supplier: nama harus 1-100 karakter',
+    ),
+    'UPDATE_SUPPLIER.PHONE_LIMIT_CHAR': new InvariantError(
+      'Gagal memperbarui supplier: nomor telepon maksimal 30 karakter',
+    ),
+    'UPDATE_SUPPLIER.PIC_NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal memperbarui supplier: nama PIC maksimal 100 karakter',
+    ),
+
+    // ── Supplier ─────────────────────────────────────────────────
+    'SUPPLIER.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError('Data supplier tidak lengkap'),
+
+    // ── CreateCategory ───────────────────────────────────────────
+    'CREATE_CATEGORY.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal membuat kategori: properti yang dibutuhkan tidak ada',
+    ),
+    'CREATE_CATEGORY.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal membuat kategori: tipe data tidak sesuai',
+    ),
+    'CREATE_CATEGORY.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat kategori: nama harus 1-100 karakter',
+    ),
+    'CREATE_CATEGORY.DESCRIPTION_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat kategori: deskripsi maksimal 500 karakter',
+    ),
+    'CREATE_CATEGORY.PRODUCT_GROUP_INACTIVE': new InvariantError(
+      'Gagal membuat kategori: product group tidak aktif',
+    ),
+
+    // ── UpdateCategory ───────────────────────────────────────────
+    'UPDATE_CATEGORY.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal memperbarui kategori: tidak ada field yang dikirimkan',
+    ),
+    'UPDATE_CATEGORY.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal memperbarui kategori: tipe data tidak sesuai',
+    ),
+    'UPDATE_CATEGORY.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal memperbarui kategori: nama harus 1-100 karakter',
+    ),
+    'UPDATE_CATEGORY.DESCRIPTION_LIMIT_CHAR': new InvariantError(
+      'Gagal memperbarui kategori: deskripsi maksimal 500 karakter',
+    ),
+
+    // ── ProductCategory ──────────────────────────────────────────
+    'CATEGORY.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError('Data kategori tidak lengkap'),
+
+    // ── CreateProduct ────────────────────────────────────────────
+    'CREATE_PRODUCT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal membuat produk: properti yang dibutuhkan tidak ada',
+    ),
+    'CREATE_PRODUCT.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal membuat produk: tipe data tidak sesuai',
+    ),
+    'CREATE_PRODUCT.SKU_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat produk: SKU harus 1-50 karakter',
+    ),
+    'CREATE_PRODUCT.BARCODE_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat produk: barcode maksimal 50 karakter',
+    ),
+    'CREATE_PRODUCT.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat produk: nama harus 1-150 karakter',
+    ),
+    'CREATE_PRODUCT.INVALID_PRODUCT_TYPE': new InvariantError(
+      'Gagal membuat produk: tipe produk tidak valid',
+    ),
+    'CREATE_PRODUCT.INVALID_PRICE': new InvariantError(
+      'Gagal membuat produk: harga dan stok harus angka tidak negatif',
+    ),
+    'CREATE_PRODUCT.INVALID_SHELF_LIFE': new InvariantError(
+      'Gagal membuat produk: masa simpan harus bilangan bulat tidak negatif',
+    ),
+    'CREATE_PRODUCT.PRODUCT_GROUP_INACTIVE': new InvariantError(
+      'Gagal membuat produk: product group tidak aktif',
+    ),
+    'CREATE_PRODUCT.CATEGORY_INACTIVE': new InvariantError(
+      'Gagal membuat produk: kategori tidak aktif',
+    ),
+    'CREATE_PRODUCT.CATEGORY_GROUP_MISMATCH': new InvariantError(
+      'Gagal membuat produk: kategori tidak termasuk dalam product group yang dipilih',
+    ),
+    'CREATE_PRODUCT.UOM_INACTIVE': new InvariantError(
+      'Gagal membuat produk: satuan (UOM) tidak aktif',
+    ),
+    'CREATE_PRODUCT.SUPPLIER_INACTIVE': new InvariantError(
+      'Gagal membuat produk: supplier tidak aktif',
+    ),
+
+    // ── UpdateProduct ────────────────────────────────────────────
+    'UPDATE_PRODUCT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal memperbarui produk: tidak ada field yang dikirimkan',
+    ),
+    'UPDATE_PRODUCT.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal memperbarui produk: tipe data tidak sesuai',
+    ),
+    'UPDATE_PRODUCT.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal memperbarui produk: nama harus 1-150 karakter',
+    ),
+    'UPDATE_PRODUCT.BARCODE_LIMIT_CHAR': new InvariantError(
+      'Gagal memperbarui produk: barcode maksimal 50 karakter',
+    ),
+    'UPDATE_PRODUCT.INVALID_PRODUCT_TYPE': new InvariantError(
+      'Gagal memperbarui produk: tipe produk tidak valid',
+    ),
+    'UPDATE_PRODUCT.INVALID_PRICE': new InvariantError(
+      'Gagal memperbarui produk: harga dan stok harus angka tidak negatif',
+    ),
+    'UPDATE_PRODUCT.INVALID_SHELF_LIFE': new InvariantError(
+      'Gagal memperbarui produk: masa simpan harus bilangan bulat tidak negatif',
+    ),
+
+    // ── Product ──────────────────────────────────────────────────
+    'PRODUCT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError('Data produk tidak lengkap'),
+
     // ── CreateUser / UpdateUser ──────────────────────────────────
     'CREATE_USER.ROLE_REQUIRED': new InvariantError(
       'Gagal membuat user: role wajib dipilih',
@@ -146,6 +342,11 @@ const DomainErrorTranslator = {
     'COMPANY.NOT_FOUND': new NotFoundError('Company tidak ditemukan'),
     'ROLE.NOT_FOUND': new NotFoundError('Role tidak ditemukan'),
     'OUTLET.NOT_FOUND': new NotFoundError('Outlet tidak ditemukan'),
+    'PRODUCT_GROUP.NOT_FOUND': new NotFoundError('Product group tidak ditemukan'),
+    'UOM.NOT_FOUND': new NotFoundError('UOM tidak ditemukan'),
+    'SUPPLIER.NOT_FOUND': new NotFoundError('Supplier tidak ditemukan'),
+    'CATEGORY.NOT_FOUND': new NotFoundError('Kategori tidak ditemukan'),
+    'PRODUCT.NOT_FOUND': new NotFoundError('Produk tidak ditemukan'),
 
     // ── Conflict ─────────────────────────────────────────────────
     'USER.EMAIL_ALREADY_USED': new ConflictError(
@@ -153,6 +354,22 @@ const DomainErrorTranslator = {
     ),
     'COMPANY.SLUG_ALREADY_USED': new ConflictError(
       'Slug company sudah digunakan',
+    ),
+    'PRODUCT_GROUP.IN_USE': new ConflictError(
+      'Product group tidak dapat dihapus atau dinonaktifkan karena masih digunakan oleh kategori atau produk aktif',
+    ),
+    'UOM.IN_USE': new ConflictError(
+      'UOM tidak dapat dihapus atau dinonaktifkan karena masih digunakan oleh produk aktif',
+    ),
+    'SUPPLIER.IN_USE': new ConflictError(
+      'Supplier tidak dapat dihapus atau dinonaktifkan karena masih digunakan oleh produk aktif',
+    ),
+    'CATEGORY.IN_USE': new ConflictError(
+      'Kategori tidak dapat dihapus atau dinonaktifkan karena masih digunakan oleh produk aktif',
+    ),
+    'PRODUCT.SKU_ALREADY_USED': new ConflictError('SKU sudah digunakan oleh produk lain'),
+    'PRODUCT.BARCODE_ALREADY_USED': new ConflictError(
+      'Barcode sudah digunakan oleh produk lain',
     ),
   } as ErrorMap,
 };

@@ -9,6 +9,11 @@ import { AuthenticationRepository } from '../Domains/authentications/Authenticat
 import { RoleRepository } from '../Domains/roles/RoleRepository';
 import { PermissionRepository } from '../Domains/permissions/PermissionRepository';
 import { OutletRepository } from '../Domains/outlets/OutletRepository';
+import { ProductGroupRepository } from '../Domains/product-groups/ProductGroupRepository';
+import { UomRepository } from '../Domains/uoms/UomRepository';
+import { SupplierRepository } from '../Domains/suppliers/SupplierRepository';
+import { CategoryRepository } from '../Domains/categories/CategoryRepository';
+import { ProductRepository } from '../Domains/products/ProductRepository';
 import { PasswordHash } from '../Applications/security/PasswordHash';
 import { TokenManager } from '../Applications/security/TokenManager';
 
@@ -19,6 +24,11 @@ import { AuthenticationRepositoryPostgres } from './repository/AuthenticationRep
 import { RoleRepositoryPostgres } from './repository/RoleRepositoryPostgres';
 import { PermissionRepositoryPostgres } from './repository/PermissionRepositoryPostgres';
 import { OutletRepositoryPostgres } from './repository/OutletRepositoryPostgres';
+import { ProductGroupRepositoryPostgres } from './repository/ProductGroupRepositoryPostgres';
+import { UomRepositoryPostgres } from './repository/UomRepositoryPostgres';
+import { SupplierRepositoryPostgres } from './repository/SupplierRepositoryPostgres';
+import { CategoryRepositoryPostgres } from './repository/CategoryRepositoryPostgres';
+import { ProductRepositoryPostgres } from './repository/ProductRepositoryPostgres';
 import { BcryptPasswordHash } from './security/BcryptPasswordHash';
 import { JwtTokenManager } from './security/JwtTokenManager';
 
@@ -31,6 +41,21 @@ import { CreateOutletUseCase } from '../Applications/use_case/outlets/CreateOutl
 import { UpdateOutletUseCase } from '../Applications/use_case/outlets/UpdateOutletUseCase';
 import { CreateUserUseCase } from '../Applications/use_case/users/CreateUserUseCase';
 import { UpdateUserUseCase } from '../Applications/use_case/users/UpdateUserUseCase';
+import { CreateProductGroupUseCase } from '../Applications/use_case/product-groups/CreateProductGroupUseCase';
+import { UpdateProductGroupUseCase } from '../Applications/use_case/product-groups/UpdateProductGroupUseCase';
+import { DeleteProductGroupUseCase } from '../Applications/use_case/product-groups/DeleteProductGroupUseCase';
+import { CreateUomUseCase } from '../Applications/use_case/uoms/CreateUomUseCase';
+import { UpdateUomUseCase } from '../Applications/use_case/uoms/UpdateUomUseCase';
+import { DeleteUomUseCase } from '../Applications/use_case/uoms/DeleteUomUseCase';
+import { CreateSupplierUseCase } from '../Applications/use_case/suppliers/CreateSupplierUseCase';
+import { UpdateSupplierUseCase } from '../Applications/use_case/suppliers/UpdateSupplierUseCase';
+import { DeleteSupplierUseCase } from '../Applications/use_case/suppliers/DeleteSupplierUseCase';
+import { CreateCategoryUseCase } from '../Applications/use_case/categories/CreateCategoryUseCase';
+import { UpdateCategoryUseCase } from '../Applications/use_case/categories/UpdateCategoryUseCase';
+import { DeleteCategoryUseCase } from '../Applications/use_case/categories/DeleteCategoryUseCase';
+import { CreateProductUseCase } from '../Applications/use_case/products/CreateProductUseCase';
+import { UpdateProductUseCase } from '../Applications/use_case/products/UpdateProductUseCase';
+import { DeleteProductUseCase } from '../Applications/use_case/products/DeleteProductUseCase';
 
 /**
  * InfrastructureModule — NestJS DI container.
@@ -84,6 +109,26 @@ import { UpdateUserUseCase } from '../Applications/use_case/users/UpdateUserUseC
     {
       provide: OutletRepository,
       useFactory: () => new OutletRepositoryPostgres(pool),
+    },
+    {
+      provide: ProductGroupRepository,
+      useFactory: () => new ProductGroupRepositoryPostgres(pool),
+    },
+    {
+      provide: UomRepository,
+      useFactory: () => new UomRepositoryPostgres(pool),
+    },
+    {
+      provide: SupplierRepository,
+      useFactory: () => new SupplierRepositoryPostgres(pool),
+    },
+    {
+      provide: CategoryRepository,
+      useFactory: () => new CategoryRepositoryPostgres(pool),
+    },
+    {
+      provide: ProductRepository,
+      useFactory: () => new ProductRepositoryPostgres(pool),
     },
 
     // ─── Use Cases ────────────────────────────────────────────────────────
@@ -153,6 +198,106 @@ import { UpdateUserUseCase } from '../Applications/use_case/users/UpdateUserUseC
       ) => new UpdateUserUseCase(userRepo, roleRepo, outletRepo),
       inject: [UserRepository, RoleRepository, OutletRepository],
     },
+    {
+      provide: CreateProductGroupUseCase,
+      useFactory: (productGroupRepo: ProductGroupRepository) =>
+        new CreateProductGroupUseCase(productGroupRepo),
+      inject: [ProductGroupRepository],
+    },
+    {
+      provide: UpdateProductGroupUseCase,
+      useFactory: (productGroupRepo: ProductGroupRepository) =>
+        new UpdateProductGroupUseCase(productGroupRepo),
+      inject: [ProductGroupRepository],
+    },
+    {
+      provide: DeleteProductGroupUseCase,
+      useFactory: (productGroupRepo: ProductGroupRepository) =>
+        new DeleteProductGroupUseCase(productGroupRepo),
+      inject: [ProductGroupRepository],
+    },
+    {
+      provide: CreateUomUseCase,
+      useFactory: (uomRepo: UomRepository) => new CreateUomUseCase(uomRepo),
+      inject: [UomRepository],
+    },
+    {
+      provide: UpdateUomUseCase,
+      useFactory: (uomRepo: UomRepository) => new UpdateUomUseCase(uomRepo),
+      inject: [UomRepository],
+    },
+    {
+      provide: DeleteUomUseCase,
+      useFactory: (uomRepo: UomRepository) => new DeleteUomUseCase(uomRepo),
+      inject: [UomRepository],
+    },
+    {
+      provide: CreateSupplierUseCase,
+      useFactory: (supplierRepo: SupplierRepository) => new CreateSupplierUseCase(supplierRepo),
+      inject: [SupplierRepository],
+    },
+    {
+      provide: UpdateSupplierUseCase,
+      useFactory: (supplierRepo: SupplierRepository) => new UpdateSupplierUseCase(supplierRepo),
+      inject: [SupplierRepository],
+    },
+    {
+      provide: DeleteSupplierUseCase,
+      useFactory: (supplierRepo: SupplierRepository) => new DeleteSupplierUseCase(supplierRepo),
+      inject: [SupplierRepository],
+    },
+    {
+      provide: CreateCategoryUseCase,
+      useFactory: (
+        categoryRepo: CategoryRepository,
+        productGroupRepo: ProductGroupRepository,
+      ) => new CreateCategoryUseCase(categoryRepo, productGroupRepo),
+      inject: [CategoryRepository, ProductGroupRepository],
+    },
+    {
+      provide: UpdateCategoryUseCase,
+      useFactory: (categoryRepo: CategoryRepository) => new UpdateCategoryUseCase(categoryRepo),
+      inject: [CategoryRepository],
+    },
+    {
+      provide: DeleteCategoryUseCase,
+      useFactory: (categoryRepo: CategoryRepository) => new DeleteCategoryUseCase(categoryRepo),
+      inject: [CategoryRepository],
+    },
+    {
+      provide: CreateProductUseCase,
+      useFactory: (
+        productRepo: ProductRepository,
+        productGroupRepo: ProductGroupRepository,
+        categoryRepo: CategoryRepository,
+        uomRepo: UomRepository,
+        supplierRepo: SupplierRepository,
+      ) =>
+        new CreateProductUseCase(
+          productRepo,
+          productGroupRepo,
+          categoryRepo,
+          uomRepo,
+          supplierRepo,
+        ),
+      inject: [
+        ProductRepository,
+        ProductGroupRepository,
+        CategoryRepository,
+        UomRepository,
+        SupplierRepository,
+      ],
+    },
+    {
+      provide: UpdateProductUseCase,
+      useFactory: (productRepo: ProductRepository) => new UpdateProductUseCase(productRepo),
+      inject: [ProductRepository],
+    },
+    {
+      provide: DeleteProductUseCase,
+      useFactory: (productRepo: ProductRepository) => new DeleteProductUseCase(productRepo),
+      inject: [ProductRepository],
+    },
   ],
   exports: [
     'PG_POOL',
@@ -164,6 +309,11 @@ import { UpdateUserUseCase } from '../Applications/use_case/users/UpdateUserUseC
     RoleRepository,
     PermissionRepository,
     OutletRepository,
+    ProductGroupRepository,
+    UomRepository,
+    SupplierRepository,
+    CategoryRepository,
+    ProductRepository,
     RegisterCompanyUseCase,
     LoginUseCase,
     RefreshTokenUseCase,
@@ -172,6 +322,21 @@ import { UpdateUserUseCase } from '../Applications/use_case/users/UpdateUserUseC
     UpdateOutletUseCase,
     CreateUserUseCase,
     UpdateUserUseCase,
+    CreateProductGroupUseCase,
+    UpdateProductGroupUseCase,
+    DeleteProductGroupUseCase,
+    CreateUomUseCase,
+    UpdateUomUseCase,
+    DeleteUomUseCase,
+    CreateSupplierUseCase,
+    UpdateSupplierUseCase,
+    DeleteSupplierUseCase,
+    CreateCategoryUseCase,
+    UpdateCategoryUseCase,
+    DeleteCategoryUseCase,
+    CreateProductUseCase,
+    UpdateProductUseCase,
+    DeleteProductUseCase,
   ],
 })
 export class InfrastructureModule {}
