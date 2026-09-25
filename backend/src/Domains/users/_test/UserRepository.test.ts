@@ -1,4 +1,11 @@
-import { UserRepository, UserRecord, UserWithPermissions } from '../UserRepository';
+import {
+  UserRepository,
+  UserRecord,
+  UserWithPermissions,
+  UserListFilter,
+  UserDetail,
+  UpdateUserFields,
+} from '../UserRepository';
 import { RegisterUser } from '../entities/RegisterUser';
 import { RegisteredUser } from '../entities/RegisteredUser';
 
@@ -20,6 +27,28 @@ describe('UserRepository (abstract contract)', () => {
       throw new Error('NOT_IMPLEMENTED');
     }
     async getUserById(_id: string): Promise<UserRecord> {
+      throw new Error('NOT_IMPLEMENTED');
+    }
+    async getUsersByCompany(
+      _companyId: string,
+      _filter: UserListFilter,
+    ): Promise<{ rows: UserRecord[]; total: number }> {
+      throw new Error('NOT_IMPLEMENTED');
+    }
+    async getUserDetail(_id: string, _companyId: string): Promise<UserDetail> {
+      throw new Error('NOT_IMPLEMENTED');
+    }
+    async updateUser(
+      _id: string,
+      _companyId: string,
+      _fields: UpdateUserFields,
+    ): Promise<UserRecord> {
+      throw new Error('NOT_IMPLEMENTED');
+    }
+    async softDeleteUser(_id: string, _companyId: string): Promise<void> {
+      throw new Error('NOT_IMPLEMENTED');
+    }
+    async setUserOutlets(_userId: string, _outletIds: string[]): Promise<void> {
       throw new Error('NOT_IMPLEMENTED');
     }
   }

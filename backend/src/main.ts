@@ -72,6 +72,9 @@ async function bootstrap() {
       )
       .addTag('Authentication', 'Login, refresh token, logout')
       .addTag('Companies', 'SaaS company registration and management')
+      .addTag('Outlets', 'Physical bakery outlets per company')
+      .addTag('Roles', 'Roles and their permissions per company')
+      .addTag('Users', 'Invite users, assign roles and outlets')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);

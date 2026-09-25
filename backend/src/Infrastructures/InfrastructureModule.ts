@@ -8,6 +8,7 @@ import { UserRepository } from '../Domains/users/UserRepository';
 import { AuthenticationRepository } from '../Domains/authentications/AuthenticationRepository';
 import { RoleRepository } from '../Domains/roles/RoleRepository';
 import { PermissionRepository } from '../Domains/permissions/PermissionRepository';
+import { OutletRepository } from '../Domains/outlets/OutletRepository';
 import { PasswordHash } from '../Applications/security/PasswordHash';
 import { TokenManager } from '../Applications/security/TokenManager';
 
@@ -17,6 +18,7 @@ import { UserRepositoryPostgres } from './repository/UserRepositoryPostgres';
 import { AuthenticationRepositoryPostgres } from './repository/AuthenticationRepositoryPostgres';
 import { RoleRepositoryPostgres } from './repository/RoleRepositoryPostgres';
 import { PermissionRepositoryPostgres } from './repository/PermissionRepositoryPostgres';
+import { OutletRepositoryPostgres } from './repository/OutletRepositoryPostgres';
 import { BcryptPasswordHash } from './security/BcryptPasswordHash';
 import { JwtTokenManager } from './security/JwtTokenManager';
 
@@ -25,6 +27,10 @@ import { RegisterCompanyUseCase } from '../Applications/use_case/companies/Regis
 import { LoginUseCase } from '../Applications/use_case/auth/LoginUseCase';
 import { RefreshTokenUseCase } from '../Applications/use_case/auth/RefreshTokenUseCase';
 import { LogoutUseCase } from '../Applications/use_case/auth/LogoutUseCase';
+import { CreateOutletUseCase } from '../Applications/use_case/outlets/CreateOutletUseCase';
+import { UpdateOutletUseCase } from '../Applications/use_case/outlets/UpdateOutletUseCase';
+import { CreateUserUseCase } from '../Applications/use_case/users/CreateUserUseCase';
+import { UpdateUserUseCase } from '../Applications/use_case/users/UpdateUserUseCase';
 
 /**
  * InfrastructureModule — NestJS DI container.
@@ -75,6 +81,10 @@ import { LogoutUseCase } from '../Applications/use_case/auth/LogoutUseCase';
       provide: PermissionRepository,
       useFactory: () => new PermissionRepositoryPostgres(pool),
     },
+    {
+      provide: OutletRepository,
+      useFactory: () => new OutletRepositoryPostgres(pool),
+    },
 
     // ─── Use Cases ────────────────────────────────────────────────────────
     {
@@ -112,6 +122,37 @@ import { LogoutUseCase } from '../Applications/use_case/auth/LogoutUseCase';
         new LogoutUseCase(authRepo),
       inject: [AuthenticationRepository],
     },
+    {
+      provide: CreateOutletUseCase,
+      useFactory: (outletRepo: OutletRepository) =>
+        new CreateOutletUseCase(outletRepo),
+      inject: [OutletRepository],
+    },
+    {
+      provide: UpdateOutletUseCase,
+      useFactory: (outletRepo: OutletRepository) =>
+        new UpdateOutletUseCase(outletRepo),
+      inject: [OutletRepository],
+    },
+    {
+      provide: CreateUserUseCase,
+      useFactory: (
+        userRepo: UserRepository,
+        roleRepo: RoleRepository,
+        outletRepo: OutletRepository,
+        pwHash: PasswordHash,
+      ) => new CreateUserUseCase(userRepo, roleRepo, outletRepo, pwHash),
+      inject: [UserRepository, RoleRepository, OutletRepository, PasswordHash],
+    },
+    {
+      provide: UpdateUserUseCase,
+      useFactory: (
+        userRepo: UserRepository,
+        roleRepo: RoleRepository,
+        outletRepo: OutletRepository,
+      ) => new UpdateUserUseCase(userRepo, roleRepo, outletRepo),
+      inject: [UserRepository, RoleRepository, OutletRepository],
+    },
   ],
   exports: [
     'PG_POOL',
@@ -122,10 +163,15 @@ import { LogoutUseCase } from '../Applications/use_case/auth/LogoutUseCase';
     AuthenticationRepository,
     RoleRepository,
     PermissionRepository,
+    OutletRepository,
     RegisterCompanyUseCase,
     LoginUseCase,
     RefreshTokenUseCase,
     LogoutUseCase,
+    CreateOutletUseCase,
+    UpdateOutletUseCase,
+    CreateUserUseCase,
+    UpdateUserUseCase,
   ],
 })
 export class InfrastructureModule {}

@@ -3,6 +3,9 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { InfrastructureModule } from './Infrastructures/InfrastructureModule';
 import { AuthModule } from './Interfaces/http/api/auth/auth.module';
 import { CompanyModule } from './Interfaces/http/api/companies/company.module';
+import { OutletModule } from './Interfaces/http/api/outlets/outlet.module';
+import { RoleModule } from './Interfaces/http/api/roles/role.module';
+import { UserModule } from './Interfaces/http/api/users/user.module';
 import { AllExceptionsFilter } from './Commons/exceptions/AllExceptionsFilter';
 import { JwtAuthGuard } from './Interfaces/http/guards/jwt-auth.guard';
 import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
@@ -24,6 +27,9 @@ import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
     InfrastructureModule,
     AuthModule,
     CompanyModule,
+    OutletModule,
+    RoleModule,
+    UserModule,
   ],
   providers: [
     // Global exception filter — converts domain/HTTP errors to standard JSON

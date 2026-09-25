@@ -52,8 +52,50 @@ export class RoleRepositoryPostgres extends RoleRepository {
     });
   }
 
-  async getRoleByCode(code: string, companyId: string | null): Promise<Role> {
+  async getRoleByIdAndCompany(id: string, companyId: string): Promise<Role> {
     const result = await this.pool.query<{
+      id: string;
+      company_id: string | null;
+      code: string;
+      name: string;
+      description: string | null;
+      is_active: boolean;
+    }>(
+      `SELECT id, company_id, code, name, description, is_active
+       FROM roles
+       WHERE id = $1 AND company_id = $2`,
+      [id, companyId],
+    );
+
+    if (!result.rowCount || result.rowCount === 0) {
+      throw new NotFoundError('ROLE.NOT_FOUND');
+    }
+
+    const row = result.rows[0];
+    return new Role({
+      id: row.id,
+      companyId: row.company_id,
+      code: row.code,
+      name: row.name,
+      description: row.description,
+      isActive: row.is_active,
+    });
+  }
+
+  async getRolePermissions(roleId: string): Promise<string[]> {
+    const result = await this.pool.query<{ code: string }>(
+      `SELECT p.code
+       FROM role_permissions rp
+       JOIN permissions p ON p.id = rp.permission_id
+       WHERE rp.role_id = $1
+       ORDER BY p.sort_order ASC, p.code ASC`,
+      [roleId],
+    );
+
+    return result.rows.map((r) => r.code);
+  }
+
+  async getRoleByCode(code: string, companyId: string | null): Promise<Role> {    const result = await this.pool.query<{
       id: string;
       company_id: string | null;
       code: string;

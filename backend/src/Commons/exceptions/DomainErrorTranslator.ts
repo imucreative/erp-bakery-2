@@ -34,6 +34,50 @@ const DomainErrorTranslator = {
       'Gagal membuat company: slug hanya boleh berisi huruf kecil, angka, dan tanda hubung',
     ),
 
+    // ── CreateOutlet ─────────────────────────────────────────────
+    'CREATE_OUTLET.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal membuat outlet: properti yang dibutuhkan tidak ada',
+    ),
+    'CREATE_OUTLET.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal membuat outlet: tipe data tidak sesuai',
+    ),
+    'CREATE_OUTLET.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat outlet: nama harus 1-100 karakter',
+    ),
+    'CREATE_OUTLET.PHONE_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat outlet: nomor telepon maksimal 30 karakter',
+    ),
+
+    // ── UpdateOutlet ─────────────────────────────────────────────
+    'UPDATE_OUTLET.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal memperbarui outlet: tidak ada field yang dikirimkan',
+    ),
+    'UPDATE_OUTLET.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal memperbarui outlet: tipe data tidak sesuai',
+    ),
+    'UPDATE_OUTLET.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal memperbarui outlet: nama harus 1-100 karakter',
+    ),
+    'UPDATE_OUTLET.PHONE_LIMIT_CHAR': new InvariantError(
+      'Gagal memperbarui outlet: nomor telepon maksimal 30 karakter',
+    ),
+
+    // ── Outlet ───────────────────────────────────────────────────
+    'OUTLET.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data outlet tidak lengkap',
+    ),
+
+    // ── CreateUser / UpdateUser ──────────────────────────────────
+    'CREATE_USER.ROLE_REQUIRED': new InvariantError(
+      'Gagal membuat user: role wajib dipilih',
+    ),
+    'UPDATE_USER.ROLE_INVALID': new InvariantError(
+      'Gagal memperbarui user: role tidak valid',
+    ),
+    'UPDATE_USER.OUTLETS_INVALID': new InvariantError(
+      'Gagal memperbarui user: daftar outlet tidak valid',
+    ),
+
     // ── RegisterUser ─────────────────────────────────────────────
     'REGISTER_USER.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
       'Gagal membuat user: properti yang dibutuhkan tidak ada',
@@ -92,6 +136,9 @@ const DomainErrorTranslator = {
     // ── Authorization ────────────────────────────────────────────
     'AUTHORIZATION.ACCESS_DENIED': new AuthorizationError(
       'Anda tidak memiliki akses untuk melakukan tindakan ini',
+    ),
+    'AUTHORIZATION.NO_COMPANY_CONTEXT': new AuthorizationError(
+      'Akun Anda tidak terhubung ke perusahaan manapun',
     ),
 
     // ── User not found ───────────────────────────────────────────

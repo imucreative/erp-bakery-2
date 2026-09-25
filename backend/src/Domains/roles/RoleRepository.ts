@@ -22,6 +22,17 @@ export abstract class RoleRepository {
   abstract getRoleById(id: string): Promise<Role>;
 
   /**
+   * Fetch role by id scoped to a company (tenant isolation).
+   * Throws ROLE.NOT_FOUND if missing or owned by another company.
+   */
+  abstract getRoleByIdAndCompany(id: string, companyId: string): Promise<Role>;
+
+  /**
+   * Fetch the permission codes assigned to a role.
+   */
+  abstract getRolePermissions(roleId: string): Promise<string[]>;
+
+  /**
    * Fetch role by code within a company scope.
    * Throws ROLE.NOT_FOUND if missing.
    */

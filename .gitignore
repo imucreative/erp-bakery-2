@@ -1,1 +1,27 @@
 /sample-be/
+
+# Dependencies
+/backend/node_modules/
+
+# Build output
+/backend/dist/
+
+# Environment
+/backend/.env
+/backend/.env.test
+/backend/.env.local
+
+# Logs
+/backend/*.log
+/backend/npm-debug.log*
+
+# Coverage
+/backend/coverage/
+
+# IDE
+/backend/.vscode/
+/backend/.idea/
+
+# OS
+/backend/.DS_Store
+/backend/Thumbs.db
