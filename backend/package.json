@@ -17,7 +17,10 @@
     "migrate:down": "node-pg-migrate down",
     "migrate:test": "node-pg-migrate up -f config/database/test.json",
     "migrate:test:down": "node-pg-migrate down -f config/database/test.json",
-    "seed": "ts-node -r tsconfig-paths/register src/Infrastructures/database/seeds/run-seed.ts"
+    "seed": "ts-node -r tsconfig-paths/register src/Infrastructures/database/seeds/run-seed.ts",
+    "smoke": "ts-node scripts/smoke-test.ts",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",

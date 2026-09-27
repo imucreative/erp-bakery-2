@@ -1,0 +1,29 @@
+# PostgreSQL untuk pengembangan ERP Bakery.
+# Menyalakan Postgres di port 5435 sesuai konfigurasi .env.
+#
+# Jalankan:  docker compose up -d
+# Matikan:   docker compose down
+# Reset DB:  docker compose down -v   (hapus volume, data hilang)
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: erp-bakery-postgres
+    restart: unless-stopped
+    ports:
+      - '5435:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: erp_bakery
+    volumes:
+      - erp_bakery_pgdata:/var/lib/postgresql/data
+      # Buat database test otomatis saat container pertama kali dibuat
+      - ./docker/init-test-db.sh:/docker-entrypoint-initdb.d/init-test-db.sh:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d erp_bakery']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  erp_bakery_pgdata:
