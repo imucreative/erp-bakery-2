@@ -84,6 +84,15 @@ export interface FefoAllocation {
   qty: number;
 }
 
+export interface InventoryDashboardSummary {
+  totalActiveBatches: number;
+  totalProductsInStock: number; // distinct products with active stock
+  lowStockCount: number; // product+outlet groups below minimum_stock
+  expiringSoonCount: number; // active batches expiring within threshold
+  expiredCount: number; // active batches already expired (still on hand)
+  inTransitTransfers: number; // stock_transfers currently IN_TRANSIT
+}
+
 /**
  * Abstract repository — Inventory domain (outlet-native, no warehouse layer).
  * All reads/writes are company-scoped for SaaS tenant isolation.
@@ -132,4 +141,15 @@ export abstract class InventoryRepository {
    * Duplicate source keys are rejected by the DB idempotency index (rule #5).
    */
   abstract postMovements(companyId: string, drafts: MovementDraft[]): Promise<InventoryMovement[]>;
+
+  // ── Dashboard (read-only aggregation) ────────────────────────────────────
+  /**
+   * Aggregate read-only inventory metrics for the dashboard (rule #26).
+   * Optionally scoped to a single outlet. `businessDate` drives expiry buckets.
+   */
+  abstract getDashboardSummary(
+    companyId: string,
+    businessDate: Date,
+    outletId?: string,
+  ): Promise<InventoryDashboardSummary>;
 }

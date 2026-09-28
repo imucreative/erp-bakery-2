@@ -17,6 +17,7 @@ import { ProductRepository } from '../Domains/products/ProductRepository';
 import { InventoryRepository } from '../Domains/inventory/InventoryRepository';
 import { StockAdjustmentRepository } from '../Domains/stock-adjustments/StockAdjustmentRepository';
 import { StockTransferRepository } from '../Domains/stock-transfers/StockTransferRepository';
+import { StockOpnameRepository } from '../Domains/stock-opnames/StockOpnameRepository';
 import { PasswordHash } from '../Applications/security/PasswordHash';
 import { TokenManager } from '../Applications/security/TokenManager';
 
@@ -35,6 +36,7 @@ import { ProductRepositoryPostgres } from './repository/ProductRepositoryPostgre
 import { InventoryRepositoryPostgres } from './repository/InventoryRepositoryPostgres';
 import { StockAdjustmentRepositoryPostgres } from './repository/StockAdjustmentRepositoryPostgres';
 import { StockTransferRepositoryPostgres } from './repository/StockTransferRepositoryPostgres';
+import { StockOpnameRepositoryPostgres } from './repository/StockOpnameRepositoryPostgres';
 import { BcryptPasswordHash } from './security/BcryptPasswordHash';
 import { JwtTokenManager } from './security/JwtTokenManager';
 
@@ -80,6 +82,15 @@ import { DispatchStockTransferUseCase } from '../Applications/use_case/stock-tra
 import { ReceiveStockTransferUseCase } from '../Applications/use_case/stock-transfers/ReceiveStockTransferUseCase';
 import { CancelStockTransferUseCase } from '../Applications/use_case/stock-transfers/CancelStockTransferUseCase';
 import { GetStockTransfersUseCase } from '../Applications/use_case/stock-transfers/GetStockTransfersUseCase';
+import { CreateStockOpnameUseCase } from '../Applications/use_case/stock-opnames/CreateStockOpnameUseCase';
+import { StartStockOpnameUseCase } from '../Applications/use_case/stock-opnames/StartStockOpnameUseCase';
+import { RecordCountUseCase } from '../Applications/use_case/stock-opnames/RecordCountUseCase';
+import { SubmitStockOpnameUseCase } from '../Applications/use_case/stock-opnames/SubmitStockOpnameUseCase';
+import { ApproveStockOpnameUseCase } from '../Applications/use_case/stock-opnames/ApproveStockOpnameUseCase';
+import { CompleteStockOpnameUseCase } from '../Applications/use_case/stock-opnames/CompleteStockOpnameUseCase';
+import { CancelStockOpnameUseCase } from '../Applications/use_case/stock-opnames/CancelStockOpnameUseCase';
+import { GetStockOpnamesUseCase } from '../Applications/use_case/stock-opnames/GetStockOpnamesUseCase';
+import { GetInventoryDashboardUseCase } from '../Applications/use_case/inventory/GetInventoryDashboardUseCase';
 
 /**
  * InfrastructureModule — NestJS DI container.
@@ -165,6 +176,10 @@ import { GetStockTransfersUseCase } from '../Applications/use_case/stock-transfe
     {
       provide: StockTransferRepository,
       useFactory: () => new StockTransferRepositoryPostgres(pool),
+    },
+    {
+      provide: StockOpnameRepository,
+      useFactory: () => new StockOpnameRepositoryPostgres(pool),
     },
 
     // ─── Use Cases ────────────────────────────────────────────────────────
@@ -436,6 +451,51 @@ import { GetStockTransfersUseCase } from '../Applications/use_case/stock-transfe
       useFactory: (trfRepo: StockTransferRepository) => new GetStockTransfersUseCase(trfRepo),
       inject: [StockTransferRepository],
     },
+    {
+      provide: CreateStockOpnameUseCase,
+      useFactory: (opnRepo: StockOpnameRepository) => new CreateStockOpnameUseCase(opnRepo),
+      inject: [StockOpnameRepository],
+    },
+    {
+      provide: StartStockOpnameUseCase,
+      useFactory: (opnRepo: StockOpnameRepository) => new StartStockOpnameUseCase(opnRepo),
+      inject: [StockOpnameRepository],
+    },
+    {
+      provide: RecordCountUseCase,
+      useFactory: (opnRepo: StockOpnameRepository) => new RecordCountUseCase(opnRepo),
+      inject: [StockOpnameRepository],
+    },
+    {
+      provide: SubmitStockOpnameUseCase,
+      useFactory: (opnRepo: StockOpnameRepository) => new SubmitStockOpnameUseCase(opnRepo),
+      inject: [StockOpnameRepository],
+    },
+    {
+      provide: ApproveStockOpnameUseCase,
+      useFactory: (opnRepo: StockOpnameRepository) => new ApproveStockOpnameUseCase(opnRepo),
+      inject: [StockOpnameRepository],
+    },
+    {
+      provide: CompleteStockOpnameUseCase,
+      useFactory: (opnRepo: StockOpnameRepository) => new CompleteStockOpnameUseCase(opnRepo),
+      inject: [StockOpnameRepository],
+    },
+    {
+      provide: CancelStockOpnameUseCase,
+      useFactory: (opnRepo: StockOpnameRepository) => new CancelStockOpnameUseCase(opnRepo),
+      inject: [StockOpnameRepository],
+    },
+    {
+      provide: GetStockOpnamesUseCase,
+      useFactory: (opnRepo: StockOpnameRepository) => new GetStockOpnamesUseCase(opnRepo),
+      inject: [StockOpnameRepository],
+    },
+    {
+      provide: GetInventoryDashboardUseCase,
+      useFactory: (invRepo: InventoryRepository) => new GetInventoryDashboardUseCase(invRepo),
+      inject: [InventoryRepository],
+    },
   ],
   exports: [
     'PG_POOL',
@@ -455,6 +515,7 @@ import { GetStockTransfersUseCase } from '../Applications/use_case/stock-transfe
     InventoryRepository,
     StockAdjustmentRepository,
     StockTransferRepository,
+    StockOpnameRepository,
     RegisterCompanyUseCase,
     LoginUseCase,
     RefreshTokenUseCase,
@@ -496,6 +557,15 @@ import { GetStockTransfersUseCase } from '../Applications/use_case/stock-transfe
     ReceiveStockTransferUseCase,
     CancelStockTransferUseCase,
     GetStockTransfersUseCase,
+    CreateStockOpnameUseCase,
+    StartStockOpnameUseCase,
+    RecordCountUseCase,
+    SubmitStockOpnameUseCase,
+    ApproveStockOpnameUseCase,
+    CompleteStockOpnameUseCase,
+    CancelStockOpnameUseCase,
+    GetStockOpnamesUseCase,
+    GetInventoryDashboardUseCase,
   ],
 })
 export class InfrastructureModule {}

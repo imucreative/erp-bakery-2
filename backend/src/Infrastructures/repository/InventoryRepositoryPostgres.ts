@@ -10,7 +10,9 @@ import {
   LedgerResult,
   MovementDraft,
   FefoAllocation,
+  InventoryDashboardSummary,
 } from '../../Domains/inventory/InventoryRepository';
+import { INVENTORY_EXPIRY_SOON_DAYS } from '../../Domains/inventory/batchStatus';
 import { InventoryBatch } from '../../Domains/inventory/entities/InventoryBatch';
 import { InventoryMovement } from '../../Domains/inventory/entities/InventoryMovement';
 import { BatchStatus } from '../../Domains/inventory/batchStatus';
@@ -430,5 +432,81 @@ export class InventoryRepositoryPostgres extends InventoryRepository {
     } finally {
       client.release();
     }
+  }
+
+  // ── Dashboard (read-only aggregation) ────────────────────────────────────
+
+  async getDashboardSummary(
+    companyId: string,
+    businessDate: Date,
+    outletId?: string,
+  ): Promise<InventoryDashboardSummary> {
+    const bizDate = businessDate.toISOString().slice(0, 10);
+    const soonBoundary = new Date(businessDate);
+    soonBoundary.setUTCDate(soonBoundary.getUTCDate() + INVENTORY_EXPIRY_SOON_DAYS);
+    const soonDate = soonBoundary.toISOString().slice(0, 10);
+
+    // Optional outlet scope applied to batch-based metrics
+    const outletFilter = outletId ? 'AND b.outlet_id = $2' : '';
+    const batchParams: unknown[] = outletId ? [companyId, outletId] : [companyId];
+
+    // Batch-based aggregates in a single pass
+    const batchAgg = await this.pool.query<{
+      total_active_batches: string;
+      total_products: string;
+      expiring_soon: string;
+      expired: string;
+    }>(
+      `SELECT
+         COUNT(*) FILTER (WHERE b.status = 'ACTIVE' AND b.qty_available > 0) AS total_active_batches,
+         COUNT(DISTINCT b.product_id) FILTER (WHERE b.status = 'ACTIVE' AND b.qty_available > 0) AS total_products,
+         COUNT(*) FILTER (
+           WHERE b.status = 'ACTIVE' AND b.qty_available > 0
+             AND b.expired_date IS NOT NULL
+             AND b.expired_date >= $${outletId ? 3 : 2}::date
+             AND b.expired_date <= $${outletId ? 4 : 3}::date
+         ) AS expiring_soon,
+         COUNT(*) FILTER (
+           WHERE b.status = 'ACTIVE' AND b.qty_available > 0
+             AND b.expired_date IS NOT NULL
+             AND b.expired_date < $${outletId ? 3 : 2}::date
+         ) AS expired
+       FROM inventory_batches b
+       WHERE b.company_id = $1 ${outletFilter}`,
+      [...batchParams, bizDate, soonDate],
+    );
+
+    // Low stock: product+outlet groups whose summed active balance < minimum_stock
+    const lowStock = await this.pool.query<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM (
+         SELECT b.product_id, b.outlet_id
+         FROM inventory_batches b
+         JOIN products p ON p.id = b.product_id
+         WHERE b.company_id = $1 AND b.status = 'ACTIVE' ${outletFilter}
+           AND p.minimum_stock > 0
+         GROUP BY b.product_id, b.outlet_id, p.minimum_stock
+         HAVING SUM(b.qty_available) < p.minimum_stock
+       ) AS low`,
+      batchParams,
+    );
+
+    // In-transit transfers (outlet scope matches source OR destination)
+    const transferParams: unknown[] = outletId ? [companyId, outletId] : [companyId];
+    const inTransit = await this.pool.query<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM stock_transfers
+       WHERE company_id = $1 AND status = 'IN_TRANSIT'
+       ${outletId ? 'AND (source_outlet_id = $2 OR destination_outlet_id = $2)' : ''}`,
+      transferParams,
+    );
+
+    const agg = batchAgg.rows[0];
+    return {
+      totalActiveBatches: parseInt(agg.total_active_batches, 10),
+      totalProductsInStock: parseInt(agg.total_products, 10),
+      lowStockCount: parseInt(lowStock.rows[0].count, 10),
+      expiringSoonCount: parseInt(agg.expiring_soon, 10),
+      expiredCount: parseInt(agg.expired, 10),
+      inTransitTransfers: parseInt(inTransit.rows[0].count, 10),
+    };
   }
 }

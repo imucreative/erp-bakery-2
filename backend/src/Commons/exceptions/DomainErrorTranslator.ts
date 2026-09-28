@@ -452,6 +452,32 @@ const DomainErrorTranslator = {
     ),
     'STOCK_TRANSFER.INVALID_STATUS': new InvariantError('Status stock transfer tidak valid'),
 
+    // ── Stock Opname ─────────────────────────────────────────────
+    'STOCK_OPNAME.NOT_FOUND': new NotFoundError('Stock opname tidak ditemukan'),
+    'STOCK_OPNAME.ITEM_NOT_FOUND': new NotFoundError('Item stock opname tidak ditemukan'),
+    'CREATE_STOCK_OPNAME.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data stock opname tidak lengkap',
+    ),
+    'RECORD_COUNT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data hitungan tidak lengkap',
+    ),
+    'RECORD_COUNT.QTY_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Jumlah hitungan harus berupa angka',
+    ),
+    'RECORD_COUNT.QTY_MUST_BE_NON_NEGATIVE': new InvariantError(
+      'Jumlah hitungan tidak boleh negatif',
+    ),
+    'STOCK_OPNAME.INVALID_STATUS_TRANSITION': new InvariantError(
+      'Transisi status stock opname tidak diperbolehkan',
+    ),
+    'STOCK_OPNAME.INVALID_STATUS': new InvariantError('Status stock opname tidak valid'),
+    'STOCK_OPNAME.NOT_COUNTING': new InvariantError(
+      'Hitungan hanya dapat direkam saat stock opname berstatus COUNTING',
+    ),
+    'STOCK_OPNAME.OUTLET_LOCKED': new ConflictError(
+      'Outlet sedang dikunci oleh stock opname lain yang masih berjalan',
+    ),
+
     // ── Conflict ─────────────────────────────────────────────────
     'USER.EMAIL_ALREADY_USED': new ConflictError(
       'Email sudah digunakan oleh akun lain',

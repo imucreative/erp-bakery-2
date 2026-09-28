@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@ne
 import { GetStockOnHandUseCase } from '../../../../Applications/use_case/inventory/GetStockOnHandUseCase';
 import { GetStockLedgerUseCase } from '../../../../Applications/use_case/inventory/GetStockLedgerUseCase';
 import { GetBatchesUseCase } from '../../../../Applications/use_case/inventory/GetBatchesUseCase';
+import { GetInventoryDashboardUseCase } from '../../../../Applications/use_case/inventory/GetInventoryDashboardUseCase';
 import { InventoryRepository } from '../../../../Domains/inventory/InventoryRepository';
 import { classifyExpiry } from '../../../../Domains/inventory/batchStatus';
 import { JwtAccessPayload } from '../../../../Applications/security/TokenManager';
@@ -32,6 +33,7 @@ export class InventoryController {
     private readonly getStockOnHandUseCase: GetStockOnHandUseCase,
     private readonly getStockLedgerUseCase: GetStockLedgerUseCase,
     private readonly getBatchesUseCase: GetBatchesUseCase,
+    private readonly getInventoryDashboardUseCase: GetInventoryDashboardUseCase,
     private readonly inventoryRepository: InventoryRepository,
   ) {}
 
@@ -40,6 +42,39 @@ export class InventoryController {
       throw new AuthorizationError('AUTHORIZATION.NO_COMPANY_CONTEXT');
     }
     return user.companyId;
+  }
+
+  @Get('dashboard')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('inventory.read')
+  @ApiOperation({ summary: 'Read-only inventory dashboard summary metrics' })
+  @ApiResponse({
+    status: 200,
+    description: 'Aggregated inventory metrics',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          totalActiveBatches: 42,
+          totalProductsInStock: 30,
+          lowStockCount: 3,
+          expiringSoonCount: 5,
+          expiredCount: 1,
+          inTransitTransfers: 2,
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden — missing inventory.read' })
+  async dashboard(
+    @Query('outletId') outletId: string | undefined,
+    @GetUser() user: JwtAccessPayload,
+  ) {
+    const summary = await this.getInventoryDashboardUseCase.execute(
+      this._companyId(user),
+      outletId,
+    );
+    return successResponse(summary);
   }
 
   @Get('stock-on-hand')

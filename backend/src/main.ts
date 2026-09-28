@@ -83,6 +83,7 @@ async function bootstrap() {
       .addTag('Inventory', 'Stock-on-hand, movement ledger, batch & expiry monitoring')
       .addTag('Stock Adjustments', 'Stock correction documents (draft → submit → approve → complete)')
       .addTag('Stock Transfers', 'Inter-outlet transfers (draft → submit → dispatch → receive)')
+      .addTag('Stock Opname', 'Physical stock count (count → submit → approve → complete → adjustment)')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);

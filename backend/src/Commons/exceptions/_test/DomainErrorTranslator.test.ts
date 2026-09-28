@@ -183,5 +183,34 @@ describe('DomainErrorTranslator', () => {
       const result = DomainErrorTranslator.translate(new Error('STOCK_TRANSFER.NOT_FOUND'));
       expect(result).toBeInstanceOf(NotFoundError);
     });
+
+    it('should translate stock opname validation errors to InvariantError', () => {
+      const cases = [
+        'CREATE_STOCK_OPNAME.NOT_CONTAIN_NEEDED_PROPERTY',
+        'RECORD_COUNT.QTY_NOT_MEET_DATA_TYPE_SPECIFICATION',
+        'RECORD_COUNT.QTY_MUST_BE_NON_NEGATIVE',
+        'STOCK_OPNAME.INVALID_STATUS_TRANSITION',
+        'STOCK_OPNAME.INVALID_STATUS',
+        'STOCK_OPNAME.NOT_COUNTING',
+      ];
+      cases.forEach((code) => {
+        const result = DomainErrorTranslator.translate(new Error(code));
+        expect(result).toBeInstanceOf(InvariantError);
+      });
+    });
+
+    it('should translate STOCK_OPNAME.NOT_FOUND / ITEM_NOT_FOUND to NotFoundError', () => {
+      expect(
+        DomainErrorTranslator.translate(new Error('STOCK_OPNAME.NOT_FOUND')),
+      ).toBeInstanceOf(NotFoundError);
+      expect(
+        DomainErrorTranslator.translate(new Error('STOCK_OPNAME.ITEM_NOT_FOUND')),
+      ).toBeInstanceOf(NotFoundError);
+    });
+
+    it('should translate STOCK_OPNAME.OUTLET_LOCKED to ConflictError', () => {
+      const result = DomainErrorTranslator.translate(new Error('STOCK_OPNAME.OUTLET_LOCKED'));
+      expect(result).toBeInstanceOf(ConflictError);
+    });
   });
 });
