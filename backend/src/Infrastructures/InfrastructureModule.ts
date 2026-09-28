@@ -16,6 +16,7 @@ import { CategoryRepository } from '../Domains/categories/CategoryRepository';
 import { ProductRepository } from '../Domains/products/ProductRepository';
 import { InventoryRepository } from '../Domains/inventory/InventoryRepository';
 import { StockAdjustmentRepository } from '../Domains/stock-adjustments/StockAdjustmentRepository';
+import { StockTransferRepository } from '../Domains/stock-transfers/StockTransferRepository';
 import { PasswordHash } from '../Applications/security/PasswordHash';
 import { TokenManager } from '../Applications/security/TokenManager';
 
@@ -33,6 +34,7 @@ import { CategoryRepositoryPostgres } from './repository/CategoryRepositoryPostg
 import { ProductRepositoryPostgres } from './repository/ProductRepositoryPostgres';
 import { InventoryRepositoryPostgres } from './repository/InventoryRepositoryPostgres';
 import { StockAdjustmentRepositoryPostgres } from './repository/StockAdjustmentRepositoryPostgres';
+import { StockTransferRepositoryPostgres } from './repository/StockTransferRepositoryPostgres';
 import { BcryptPasswordHash } from './security/BcryptPasswordHash';
 import { JwtTokenManager } from './security/JwtTokenManager';
 
@@ -71,6 +73,13 @@ import { ApproveStockAdjustmentUseCase } from '../Applications/use_case/stock-ad
 import { CancelStockAdjustmentUseCase } from '../Applications/use_case/stock-adjustments/CancelStockAdjustmentUseCase';
 import { CompleteStockAdjustmentUseCase } from '../Applications/use_case/stock-adjustments/CompleteStockAdjustmentUseCase';
 import { GetStockAdjustmentsUseCase } from '../Applications/use_case/stock-adjustments/GetStockAdjustmentsUseCase';
+import { CreateStockTransferUseCase } from '../Applications/use_case/stock-transfers/CreateStockTransferUseCase';
+import { UpdateStockTransferUseCase } from '../Applications/use_case/stock-transfers/UpdateStockTransferUseCase';
+import { SubmitStockTransferUseCase } from '../Applications/use_case/stock-transfers/SubmitStockTransferUseCase';
+import { DispatchStockTransferUseCase } from '../Applications/use_case/stock-transfers/DispatchStockTransferUseCase';
+import { ReceiveStockTransferUseCase } from '../Applications/use_case/stock-transfers/ReceiveStockTransferUseCase';
+import { CancelStockTransferUseCase } from '../Applications/use_case/stock-transfers/CancelStockTransferUseCase';
+import { GetStockTransfersUseCase } from '../Applications/use_case/stock-transfers/GetStockTransfersUseCase';
 
 /**
  * InfrastructureModule — NestJS DI container.
@@ -152,6 +161,10 @@ import { GetStockAdjustmentsUseCase } from '../Applications/use_case/stock-adjus
     {
       provide: StockAdjustmentRepository,
       useFactory: () => new StockAdjustmentRepositoryPostgres(pool),
+    },
+    {
+      provide: StockTransferRepository,
+      useFactory: () => new StockTransferRepositoryPostgres(pool),
     },
 
     // ─── Use Cases ────────────────────────────────────────────────────────
@@ -386,6 +399,43 @@ import { GetStockAdjustmentsUseCase } from '../Applications/use_case/stock-adjus
         new GetStockAdjustmentsUseCase(adjRepo),
       inject: [StockAdjustmentRepository],
     },
+    {
+      provide: CreateStockTransferUseCase,
+      useFactory: (trfRepo: StockTransferRepository, invRepo: InventoryRepository) =>
+        new CreateStockTransferUseCase(trfRepo, invRepo),
+      inject: [StockTransferRepository, InventoryRepository],
+    },
+    {
+      provide: UpdateStockTransferUseCase,
+      useFactory: (trfRepo: StockTransferRepository, invRepo: InventoryRepository) =>
+        new UpdateStockTransferUseCase(trfRepo, invRepo),
+      inject: [StockTransferRepository, InventoryRepository],
+    },
+    {
+      provide: SubmitStockTransferUseCase,
+      useFactory: (trfRepo: StockTransferRepository) => new SubmitStockTransferUseCase(trfRepo),
+      inject: [StockTransferRepository],
+    },
+    {
+      provide: DispatchStockTransferUseCase,
+      useFactory: (trfRepo: StockTransferRepository) => new DispatchStockTransferUseCase(trfRepo),
+      inject: [StockTransferRepository],
+    },
+    {
+      provide: ReceiveStockTransferUseCase,
+      useFactory: (trfRepo: StockTransferRepository) => new ReceiveStockTransferUseCase(trfRepo),
+      inject: [StockTransferRepository],
+    },
+    {
+      provide: CancelStockTransferUseCase,
+      useFactory: (trfRepo: StockTransferRepository) => new CancelStockTransferUseCase(trfRepo),
+      inject: [StockTransferRepository],
+    },
+    {
+      provide: GetStockTransfersUseCase,
+      useFactory: (trfRepo: StockTransferRepository) => new GetStockTransfersUseCase(trfRepo),
+      inject: [StockTransferRepository],
+    },
   ],
   exports: [
     'PG_POOL',
@@ -404,6 +454,7 @@ import { GetStockAdjustmentsUseCase } from '../Applications/use_case/stock-adjus
     ProductRepository,
     InventoryRepository,
     StockAdjustmentRepository,
+    StockTransferRepository,
     RegisterCompanyUseCase,
     LoginUseCase,
     RefreshTokenUseCase,
@@ -438,6 +489,13 @@ import { GetStockAdjustmentsUseCase } from '../Applications/use_case/stock-adjus
     CancelStockAdjustmentUseCase,
     CompleteStockAdjustmentUseCase,
     GetStockAdjustmentsUseCase,
+    CreateStockTransferUseCase,
+    UpdateStockTransferUseCase,
+    SubmitStockTransferUseCase,
+    DispatchStockTransferUseCase,
+    ReceiveStockTransferUseCase,
+    CancelStockTransferUseCase,
+    GetStockTransfersUseCase,
   ],
 })
 export class InfrastructureModule {}

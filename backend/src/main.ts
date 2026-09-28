@@ -82,6 +82,7 @@ async function bootstrap() {
       .addTag('Products', 'Product master data per company')
       .addTag('Inventory', 'Stock-on-hand, movement ledger, batch & expiry monitoring')
       .addTag('Stock Adjustments', 'Stock correction documents (draft → submit → approve → complete)')
+      .addTag('Stock Transfers', 'Inter-outlet transfers (draft → submit → dispatch → receive)')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);

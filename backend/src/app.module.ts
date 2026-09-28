@@ -13,6 +13,7 @@ import { CategoryModule } from './Interfaces/http/api/categories/category.module
 import { ProductModule } from './Interfaces/http/api/products/product.module';
 import { InventoryModule } from './Interfaces/http/api/inventory/inventory.module';
 import { StockAdjustmentModule } from './Interfaces/http/api/stock-adjustments/stock-adjustment.module';
+import { StockTransferModule } from './Interfaces/http/api/stock-transfers/stock-transfer.module';
 import { AllExceptionsFilter } from './Commons/exceptions/AllExceptionsFilter';
 import { JwtAuthGuard } from './Interfaces/http/guards/jwt-auth.guard';
 import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
@@ -44,6 +45,7 @@ import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
     ProductModule,
     InventoryModule,
     StockAdjustmentModule,
+    StockTransferModule,
   ],
   providers: [
     // Global exception filter — converts domain/HTTP errors to standard JSON

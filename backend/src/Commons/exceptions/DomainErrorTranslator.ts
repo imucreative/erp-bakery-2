@@ -412,6 +412,46 @@ const DomainErrorTranslator = {
     ),
     'STOCK_ADJUSTMENT.INVALID_STATUS': new InvariantError('Status stock adjustment tidak valid'),
 
+    // ── Stock Transfer ───────────────────────────────────────────
+    'STOCK_TRANSFER.NOT_FOUND': new NotFoundError('Stock transfer tidak ditemukan'),
+    'CREATE_STOCK_TRANSFER.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data stock transfer tidak lengkap',
+    ),
+    'CREATE_STOCK_TRANSFER.SAME_OUTLET': new InvariantError(
+      'Outlet asal dan tujuan tidak boleh sama',
+    ),
+    'CREATE_STOCK_TRANSFER.ITEMS_REQUIRED': new InvariantError(
+      'Stock transfer harus memiliki minimal satu item',
+    ),
+    'CREATE_STOCK_TRANSFER.ITEM_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Format item stock transfer tidak valid',
+    ),
+    'CREATE_STOCK_TRANSFER.ITEM_BATCH_REQUIRED': new InvariantError(
+      'Setiap item stock transfer harus menyertakan batch sumber',
+    ),
+    'CREATE_STOCK_TRANSFER.ITEM_PRODUCT_REQUIRED': new InvariantError(
+      'Setiap item stock transfer harus menyertakan produk',
+    ),
+    'CREATE_STOCK_TRANSFER.ITEM_QTY_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Jumlah item stock transfer harus berupa angka',
+    ),
+    'CREATE_STOCK_TRANSFER.ITEM_QTY_MUST_BE_POSITIVE': new InvariantError(
+      'Jumlah item stock transfer harus lebih dari nol',
+    ),
+    'CREATE_STOCK_TRANSFER.BATCH_OUTLET_MISMATCH': new InvariantError(
+      'Batch sumber tidak berada pada outlet asal',
+    ),
+    'CREATE_STOCK_TRANSFER.BATCH_PRODUCT_MISMATCH': new InvariantError(
+      'Batch sumber tidak sesuai dengan produk yang dipilih',
+    ),
+    'STOCK_TRANSFER.ONLY_DRAFT_EDITABLE': new InvariantError(
+      'Hanya stock transfer berstatus DRAFT yang dapat diubah',
+    ),
+    'STOCK_TRANSFER.INVALID_STATUS_TRANSITION': new InvariantError(
+      'Transisi status stock transfer tidak diperbolehkan',
+    ),
+    'STOCK_TRANSFER.INVALID_STATUS': new InvariantError('Status stock transfer tidak valid'),
+
     // ── Conflict ─────────────────────────────────────────────────
     'USER.EMAIL_ALREADY_USED': new ConflictError(
       'Email sudah digunakan oleh akun lain',
