@@ -1,0 +1,434 @@
+import { Pool, PoolClient } from 'pg';
+import {
+  InventoryRepository,
+  StockOnHandFilter,
+  StockOnHandResult,
+  StockOnHandRow,
+  BatchListFilter,
+  BatchListResult,
+  LedgerFilter,
+  LedgerResult,
+  MovementDraft,
+  FefoAllocation,
+} from '../../Domains/inventory/InventoryRepository';
+import { InventoryBatch } from '../../Domains/inventory/entities/InventoryBatch';
+import { InventoryMovement } from '../../Domains/inventory/entities/InventoryMovement';
+import { BatchStatus } from '../../Domains/inventory/batchStatus';
+import { MovementType, isInboundMovement } from '../../Domains/inventory/movementTypes';
+import { NotFoundError } from '../../Commons/exceptions/NotFoundError';
+import { InvariantError } from '../../Commons/exceptions/InvariantError';
+
+interface BatchRow {
+  id: string;
+  company_id: string;
+  outlet_id: string;
+  product_id: string;
+  batch_number: string;
+  lot_key: string;
+  lot_number: string | null;
+  expired_date: Date | null;
+  received_date: Date | null;
+  qty_available: string;
+  status: string;
+  is_non_batch: boolean;
+}
+
+interface MovementRow {
+  id: string;
+  company_id: string;
+  outlet_id: string;
+  batch_id: string;
+  product_id: string;
+  movement_type: string;
+  qty: string;
+  before_qty: string;
+  after_qty: string;
+  source_document_type: string | null;
+  source_document_id: string | null;
+  notes: string | null;
+  user_id: string | null;
+  created_at: Date;
+}
+
+const BATCH_COLUMNS = `id, company_id, outlet_id, product_id, batch_number, lot_key, lot_number, expired_date, received_date, qty_available, status, is_non_batch`;
+const MOVEMENT_COLUMNS = `id, company_id, outlet_id, batch_id, product_id, movement_type, qty, before_qty, after_qty, source_document_type, source_document_id, notes, user_id, created_at`;
+
+/**
+ * Concrete PostgreSQL implementation of InventoryRepository.
+ * Raw SQL via pg — no ORM. Outlet-native, company-scoped.
+ *
+ * Mutations use an explicit transaction (BEGIN/COMMIT) with SERIALIZABLE
+ * isolation and `SELECT ... FOR UPDATE` row locks so batch balance + ledger
+ * append commit atomically without lost updates (inventory-domain rule #6).
+ */
+export class InventoryRepositoryPostgres extends InventoryRepository {
+  constructor(private readonly pool: Pool) {
+    super();
+  }
+
+  private _toBatch(row: BatchRow): InventoryBatch {
+    return new InventoryBatch({
+      id: row.id,
+      companyId: row.company_id,
+      outletId: row.outlet_id,
+      productId: row.product_id,
+      batchNumber: row.batch_number,
+      lotKey: row.lot_key,
+      lotNumber: row.lot_number,
+      expiredDate: row.expired_date,
+      receivedDate: row.received_date,
+      qtyAvailable: Number(row.qty_available),
+      status: row.status as BatchStatus,
+      isNonBatch: row.is_non_batch,
+    });
+  }
+
+  private _toMovement(row: MovementRow): InventoryMovement {
+    return new InventoryMovement({
+      id: row.id,
+      companyId: row.company_id,
+      outletId: row.outlet_id,
+      batchId: row.batch_id,
+      productId: row.product_id,
+      movementType: row.movement_type as MovementType,
+      qty: Number(row.qty),
+      beforeQty: Number(row.before_qty),
+      afterQty: Number(row.after_qty),
+      sourceDocumentType: row.source_document_type,
+      sourceDocumentId: row.source_document_id,
+      notes: row.notes,
+      userId: row.user_id,
+      createdAt: row.created_at,
+    });
+  }
+
+  // ── Reads ──────────────────────────────────────────────────────────────
+
+  async getStockOnHand(
+    companyId: string,
+    filter: StockOnHandFilter,
+  ): Promise<StockOnHandResult> {
+    // Aggregate active batch balances per product+outlet from authoritative
+    // qty_available (rule #8). Join products + outlets for display + low-stock.
+    const conditions: string[] = ['b.company_id = $1', "b.status = 'ACTIVE'"];
+    const params: unknown[] = [companyId];
+
+    if (filter.outletId) {
+      params.push(filter.outletId);
+      conditions.push(`b.outlet_id = $${params.length}`);
+    }
+    if (filter.productId) {
+      params.push(filter.productId);
+      conditions.push(`b.product_id = $${params.length}`);
+    }
+    if (filter.search) {
+      params.push(`%${filter.search}%`);
+      conditions.push(`(p.name ILIKE $${params.length} OR p.sku ILIKE $${params.length})`);
+    }
+
+    const whereClause = conditions.join(' AND ');
+
+    // HAVING for low-stock filter is applied after aggregation
+    const havingClause = filter.lowOnly
+      ? 'HAVING p.minimum_stock > 0 AND SUM(b.qty_available) < p.minimum_stock'
+      : '';
+
+    const baseFrom = `
+      FROM inventory_batches b
+      JOIN products p ON p.id = b.product_id
+      JOIN outlets o  ON o.id = b.outlet_id
+      WHERE ${whereClause}
+      GROUP BY b.product_id, p.sku, p.name, p.minimum_stock, b.outlet_id, o.name
+      ${havingClause}
+    `;
+
+    // Total = number of product+outlet groups
+    const countResult = await this.pool.query<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM (SELECT 1 ${baseFrom}) AS grouped`,
+      params,
+    );
+    const total = parseInt(countResult.rows[0].count, 10);
+
+    params.push(filter.limit, filter.offset);
+    const rowsResult = await this.pool.query<{
+      product_id: string;
+      product_sku: string;
+      product_name: string;
+      outlet_id: string;
+      outlet_name: string;
+      qty_available: string;
+      minimum_stock: string;
+    }>(
+      `SELECT
+         b.product_id      AS product_id,
+         p.sku             AS product_sku,
+         p.name            AS product_name,
+         b.outlet_id       AS outlet_id,
+         o.name            AS outlet_name,
+         SUM(b.qty_available) AS qty_available,
+         p.minimum_stock   AS minimum_stock
+       ${baseFrom}
+       ORDER BY p.name ASC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params,
+    );
+
+    const rows: StockOnHandRow[] = rowsResult.rows.map((r) => {
+      const qty = Number(r.qty_available);
+      const min = Number(r.minimum_stock);
+      return {
+        productId: r.product_id,
+        productSku: r.product_sku,
+        productName: r.product_name,
+        outletId: r.outlet_id,
+        outletName: r.outlet_name,
+        qtyAvailable: qty,
+        minimumStock: min,
+        isLow: min > 0 && qty < min,
+      };
+    });
+
+    return { rows, total };
+  }
+
+  async getLedger(companyId: string, filter: LedgerFilter): Promise<LedgerResult> {
+    const conditions: string[] = ['company_id = $1'];
+    const params: unknown[] = [companyId];
+
+    if (filter.outletId) {
+      params.push(filter.outletId);
+      conditions.push(`outlet_id = $${params.length}`);
+    }
+    if (filter.productId) {
+      params.push(filter.productId);
+      conditions.push(`product_id = $${params.length}`);
+    }
+    if (filter.batchId) {
+      params.push(filter.batchId);
+      conditions.push(`batch_id = $${params.length}`);
+    }
+    if (filter.movementType) {
+      params.push(filter.movementType);
+      conditions.push(`movement_type = $${params.length}`);
+    }
+
+    const whereClause = conditions.join(' AND ');
+
+    const countResult = await this.pool.query<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM inventory_movements WHERE ${whereClause}`,
+      params,
+    );
+    const total = parseInt(countResult.rows[0].count, 10);
+
+    params.push(filter.limit, filter.offset);
+    const rowsResult = await this.pool.query<MovementRow>(
+      `SELECT ${MOVEMENT_COLUMNS}
+       FROM inventory_movements
+       WHERE ${whereClause}
+       ORDER BY created_at DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params,
+    );
+
+    return { rows: rowsResult.rows.map((r) => this._toMovement(r)), total };
+  }
+
+  async getBatches(companyId: string, filter: BatchListFilter): Promise<BatchListResult> {
+    const conditions: string[] = ['company_id = $1'];
+    const params: unknown[] = [companyId];
+
+    if (!filter.includeNonBatch) {
+      conditions.push('is_non_batch = FALSE');
+    }
+    if (filter.outletId) {
+      params.push(filter.outletId);
+      conditions.push(`outlet_id = $${params.length}`);
+    }
+    if (filter.productId) {
+      params.push(filter.productId);
+      conditions.push(`product_id = $${params.length}`);
+    }
+    if (filter.status) {
+      params.push(filter.status);
+      conditions.push(`status = $${params.length}`);
+    }
+
+    const whereClause = conditions.join(' AND ');
+
+    const countResult = await this.pool.query<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM inventory_batches WHERE ${whereClause}`,
+      params,
+    );
+    const total = parseInt(countResult.rows[0].count, 10);
+
+    params.push(filter.limit, filter.offset);
+    const rowsResult = await this.pool.query<BatchRow>(
+      `SELECT ${BATCH_COLUMNS}
+       FROM inventory_batches
+       WHERE ${whereClause}
+       ORDER BY expired_date ASC NULLS LAST, created_at DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params,
+    );
+
+    return { rows: rowsResult.rows.map((r) => this._toBatch(r)), total };
+  }
+
+  async getBatchById(id: string, companyId: string): Promise<InventoryBatch> {
+    const result = await this.pool.query<BatchRow>(
+      `SELECT ${BATCH_COLUMNS}
+       FROM inventory_batches
+       WHERE id = $1 AND company_id = $2`,
+      [id, companyId],
+    );
+
+    if (!result.rowCount || result.rowCount === 0) {
+      throw new NotFoundError('INVENTORY_BATCH.NOT_FOUND');
+    }
+
+    return this._toBatch(result.rows[0]);
+  }
+
+  // ── FEFO ───────────────────────────────────────────────────────────────
+
+  async planFefoAllocation(
+    companyId: string,
+    outletId: string,
+    productId: string,
+    qty: number,
+    businessDate: Date,
+  ): Promise<FefoAllocation[]> {
+    // ACTIVE, non-expired, qty > 0, nearest expiry first (rule #1 / FEFO).
+    // expired_date >= businessDate keeps same-day valid (rule #14).
+    const bizDate = businessDate.toISOString().slice(0, 10);
+    const result = await this.pool.query<BatchRow>(
+      `SELECT ${BATCH_COLUMNS}
+       FROM inventory_batches
+       WHERE company_id = $1
+         AND outlet_id = $2
+         AND product_id = $3
+         AND status = 'ACTIVE'
+         AND qty_available > 0
+         AND (expired_date IS NULL OR expired_date >= $4)
+       ORDER BY expired_date ASC NULLS LAST, received_date ASC, created_at ASC`,
+      [companyId, outletId, productId, bizDate],
+    );
+
+    const allocations: FefoAllocation[] = [];
+    let remaining = qty;
+
+    for (const row of result.rows) {
+      if (remaining <= 0) break;
+      const available = Number(row.qty_available);
+      const take = Math.min(available, remaining);
+      allocations.push({
+        batchId: row.id,
+        batchNumber: row.batch_number,
+        lotKey: row.lot_key,
+        expiredDate: row.expired_date,
+        qty: take,
+      });
+      remaining -= take;
+    }
+
+    if (remaining > 0) {
+      // Negative-stock ban (rule #2): cannot fulfil the requested quantity.
+      throw new InvariantError('INVENTORY.INSUFFICIENT_STOCK');
+    }
+
+    return allocations;
+  }
+
+  // ── Mutations (atomic) ───────────────────────────────────────────────────
+
+  async postMovements(companyId: string, drafts: MovementDraft[]): Promise<InventoryMovement[]> {
+    if (drafts.length === 0) return [];
+
+    const client: PoolClient = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
+
+      const created: InventoryMovement[] = [];
+
+      for (const draft of drafts) {
+        // Lock the target batch row for this company (rule #6 concurrency safety)
+        const batchResult = await client.query<BatchRow>(
+          `SELECT ${BATCH_COLUMNS}
+           FROM inventory_batches
+           WHERE id = $1 AND company_id = $2
+           FOR UPDATE`,
+          [draft.batchId, companyId],
+        );
+
+        if (!batchResult.rowCount || batchResult.rowCount === 0) {
+          throw new NotFoundError('INVENTORY_BATCH.NOT_FOUND');
+        }
+
+        const batch = batchResult.rows[0];
+        const beforeQty = Number(batch.qty_available);
+        const delta = isInboundMovement(draft.movementType) ? draft.qty : -draft.qty;
+        const afterQty = beforeQty + delta;
+
+        if (afterQty < 0) {
+          // Negative-stock ban (rule #2)
+          throw new InvariantError('INVENTORY.INSUFFICIENT_STOCK');
+        }
+
+        // Update authoritative balance
+        await client.query(
+          `UPDATE inventory_batches
+           SET qty_available = $1,
+               status = CASE WHEN $1 = 0 THEN 'CONSUMED' ELSE status END,
+               updated_at = NOW()
+           WHERE id = $2 AND company_id = $3`,
+          [afterQty, draft.batchId, companyId],
+        );
+
+        // Append immutable ledger row (rule #9). DB idempotency index guards
+        // duplicate source keys (rule #5) and will raise on conflict.
+        const movementResult = await client.query<MovementRow>(
+          `INSERT INTO inventory_movements (
+             company_id, outlet_id, batch_id, product_id, movement_type,
+             qty, before_qty, after_qty,
+             source_document_type, source_document_id,
+             source_document_item_id, source_document_allocation_id,
+             notes, user_id
+           )
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+           RETURNING ${MOVEMENT_COLUMNS}`,
+          [
+            companyId,
+            draft.outletId,
+            draft.batchId,
+            draft.productId,
+            draft.movementType,
+            draft.qty,
+            beforeQty,
+            afterQty,
+            draft.sourceDocumentType ?? null,
+            draft.sourceDocumentId ?? null,
+            draft.sourceDocumentItemId ?? null,
+            draft.sourceDocumentAllocationId ?? null,
+            draft.notes ?? null,
+            draft.userId ?? null,
+          ],
+        );
+
+        created.push(this._toMovement(movementResult.rows[0]));
+      }
+
+      await client.query('COMMIT');
+      return created;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      // Translate duplicate source-key violation into a domain error
+      if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === '23505') {
+        throw new InvariantError('INVENTORY.DUPLICATE_MOVEMENT_SOURCE');
+      }
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+}

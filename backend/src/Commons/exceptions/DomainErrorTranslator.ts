@@ -347,6 +347,27 @@ const DomainErrorTranslator = {
     'SUPPLIER.NOT_FOUND': new NotFoundError('Supplier tidak ditemukan'),
     'CATEGORY.NOT_FOUND': new NotFoundError('Kategori tidak ditemukan'),
     'PRODUCT.NOT_FOUND': new NotFoundError('Produk tidak ditemukan'),
+    'INVENTORY_BATCH.NOT_FOUND': new NotFoundError('Batch inventory tidak ditemukan'),
+
+    // ── Inventory (validation & business rules) ──────────────────
+    'INVENTORY.INVALID_MOVEMENT_TYPE': new InvariantError('Tipe pergerakan stok tidak valid'),
+    'INVENTORY.INVALID_BATCH_STATUS': new InvariantError('Status batch tidak valid'),
+    'INVENTORY.INSUFFICIENT_STOCK': new InvariantError(
+      'Stok tidak mencukupi untuk memenuhi jumlah yang diminta',
+    ),
+    'INVENTORY.DUPLICATE_MOVEMENT_SOURCE': new ConflictError(
+      'Pergerakan stok untuk dokumen sumber ini sudah pernah diposting',
+    ),
+    'INVENTORY_BATCH.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data batch inventory tidak lengkap',
+    ),
+    'FEFO.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Alokasi FEFO membutuhkan outletId dan productId',
+    ),
+    'FEFO.QTY_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Jumlah alokasi FEFO harus berupa angka',
+    ),
+    'FEFO.QTY_MUST_BE_POSITIVE': new InvariantError('Jumlah alokasi FEFO harus lebih dari nol'),
 
     // ── Conflict ─────────────────────────────────────────────────
     'USER.EMAIL_ALREADY_USED': new ConflictError(

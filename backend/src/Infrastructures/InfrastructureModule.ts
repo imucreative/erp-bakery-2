@@ -14,6 +14,7 @@ import { UomRepository } from '../Domains/uoms/UomRepository';
 import { SupplierRepository } from '../Domains/suppliers/SupplierRepository';
 import { CategoryRepository } from '../Domains/categories/CategoryRepository';
 import { ProductRepository } from '../Domains/products/ProductRepository';
+import { InventoryRepository } from '../Domains/inventory/InventoryRepository';
 import { PasswordHash } from '../Applications/security/PasswordHash';
 import { TokenManager } from '../Applications/security/TokenManager';
 
@@ -29,6 +30,7 @@ import { UomRepositoryPostgres } from './repository/UomRepositoryPostgres';
 import { SupplierRepositoryPostgres } from './repository/SupplierRepositoryPostgres';
 import { CategoryRepositoryPostgres } from './repository/CategoryRepositoryPostgres';
 import { ProductRepositoryPostgres } from './repository/ProductRepositoryPostgres';
+import { InventoryRepositoryPostgres } from './repository/InventoryRepositoryPostgres';
 import { BcryptPasswordHash } from './security/BcryptPasswordHash';
 import { JwtTokenManager } from './security/JwtTokenManager';
 
@@ -56,6 +58,10 @@ import { DeleteCategoryUseCase } from '../Applications/use_case/categories/Delet
 import { CreateProductUseCase } from '../Applications/use_case/products/CreateProductUseCase';
 import { UpdateProductUseCase } from '../Applications/use_case/products/UpdateProductUseCase';
 import { DeleteProductUseCase } from '../Applications/use_case/products/DeleteProductUseCase';
+import { GetStockOnHandUseCase } from '../Applications/use_case/inventory/GetStockOnHandUseCase';
+import { GetStockLedgerUseCase } from '../Applications/use_case/inventory/GetStockLedgerUseCase';
+import { GetBatchesUseCase } from '../Applications/use_case/inventory/GetBatchesUseCase';
+import { PlanFefoAllocationUseCase } from '../Applications/use_case/inventory/PlanFefoAllocationUseCase';
 
 /**
  * InfrastructureModule — NestJS DI container.
@@ -129,6 +135,10 @@ import { DeleteProductUseCase } from '../Applications/use_case/products/DeletePr
     {
       provide: ProductRepository,
       useFactory: () => new ProductRepositoryPostgres(pool),
+    },
+    {
+      provide: InventoryRepository,
+      useFactory: () => new InventoryRepositoryPostgres(pool),
     },
 
     // ─── Use Cases ────────────────────────────────────────────────────────
@@ -298,6 +308,29 @@ import { DeleteProductUseCase } from '../Applications/use_case/products/DeletePr
       useFactory: (productRepo: ProductRepository) => new DeleteProductUseCase(productRepo),
       inject: [ProductRepository],
     },
+    {
+      provide: GetStockOnHandUseCase,
+      useFactory: (inventoryRepo: InventoryRepository) =>
+        new GetStockOnHandUseCase(inventoryRepo),
+      inject: [InventoryRepository],
+    },
+    {
+      provide: GetStockLedgerUseCase,
+      useFactory: (inventoryRepo: InventoryRepository) =>
+        new GetStockLedgerUseCase(inventoryRepo),
+      inject: [InventoryRepository],
+    },
+    {
+      provide: GetBatchesUseCase,
+      useFactory: (inventoryRepo: InventoryRepository) => new GetBatchesUseCase(inventoryRepo),
+      inject: [InventoryRepository],
+    },
+    {
+      provide: PlanFefoAllocationUseCase,
+      useFactory: (inventoryRepo: InventoryRepository) =>
+        new PlanFefoAllocationUseCase(inventoryRepo),
+      inject: [InventoryRepository],
+    },
   ],
   exports: [
     'PG_POOL',
@@ -314,6 +347,7 @@ import { DeleteProductUseCase } from '../Applications/use_case/products/DeletePr
     SupplierRepository,
     CategoryRepository,
     ProductRepository,
+    InventoryRepository,
     RegisterCompanyUseCase,
     LoginUseCase,
     RefreshTokenUseCase,
@@ -337,6 +371,10 @@ import { DeleteProductUseCase } from '../Applications/use_case/products/DeletePr
     CreateProductUseCase,
     UpdateProductUseCase,
     DeleteProductUseCase,
+    GetStockOnHandUseCase,
+    GetStockLedgerUseCase,
+    GetBatchesUseCase,
+    PlanFefoAllocationUseCase,
   ],
 })
 export class InfrastructureModule {}

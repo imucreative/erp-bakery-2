@@ -105,5 +105,34 @@ describe('DomainErrorTranslator', () => {
         expect(result).toBeInstanceOf(ConflictError);
       });
     });
+
+    it('should translate inventory validation errors to InvariantError', () => {
+      const cases = [
+        'INVENTORY.INVALID_MOVEMENT_TYPE',
+        'INVENTORY.INVALID_BATCH_STATUS',
+        'INVENTORY.INSUFFICIENT_STOCK',
+        'INVENTORY_BATCH.NOT_CONTAIN_NEEDED_PROPERTY',
+        'FEFO.NOT_CONTAIN_NEEDED_PROPERTY',
+        'FEFO.QTY_NOT_MEET_DATA_TYPE_SPECIFICATION',
+        'FEFO.QTY_MUST_BE_POSITIVE',
+      ];
+
+      cases.forEach((code) => {
+        const result = DomainErrorTranslator.translate(new Error(code));
+        expect(result).toBeInstanceOf(InvariantError);
+      });
+    });
+
+    it('should translate INVENTORY_BATCH.NOT_FOUND to NotFoundError', () => {
+      const result = DomainErrorTranslator.translate(new Error('INVENTORY_BATCH.NOT_FOUND'));
+      expect(result).toBeInstanceOf(NotFoundError);
+    });
+
+    it('should translate INVENTORY.DUPLICATE_MOVEMENT_SOURCE to ConflictError', () => {
+      const result = DomainErrorTranslator.translate(
+        new Error('INVENTORY.DUPLICATE_MOVEMENT_SOURCE'),
+      );
+      expect(result).toBeInstanceOf(ConflictError);
+    });
   });
 });
