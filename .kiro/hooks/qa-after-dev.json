@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "QA After Development",
+      "trigger": "Stop",
+      "description": "Mengingatkan agent untuk menjalankan verifikasi QA (delegasi ke qa-engineer) setelah sesi yang menyentuh pengembangan backend/frontend selesai.",
+      "action": {
+        "type": "agent",
+        "prompt": "Sesi eksekusi baru saja selesai. JIKA pada sesi ini ada pengembangan atau perubahan kode backend (di backend/**) atau frontend (di frontend/**) — bukan sekadar analisa, obrolan, atau perubahan dokumen/knowledge-base — maka lakukan verifikasi QA sebelum menganggap tugas benar-benar selesai:\n\n1. Delegasikan verifikasi ke sub-agent `qa-engineer` dengan menyebutkan scope perubahan (modul/endpoint/halaman yang tersentuh) dan gate mana yang perlu dijalankan.\n2. Untuk perubahan backend: pastikan `npx tsc --noEmit` dan unit test lulus.\n3. Untuk perubahan frontend: pastikan type-check/build lulus sesuai stack yang disepakati.\n4. Tunggu Laporan QA (status tiap gate + verdict DONE/NOT DONE) sebelum menyatakan tugas selesai ke user.\n\nJika sesi ini TIDAK menyentuh kode backend/frontend (mis. hanya analisa, perencanaan, atau update dokumen), ABAIKAN pengingat ini dan jangan menjalankan QA."
+      }
+    }
+  ]
+}
