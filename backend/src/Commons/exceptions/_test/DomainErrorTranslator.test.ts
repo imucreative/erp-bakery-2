@@ -212,5 +212,37 @@ describe('DomainErrorTranslator', () => {
       const result = DomainErrorTranslator.translate(new Error('STOCK_OPNAME.OUTLET_LOCKED'));
       expect(result).toBeInstanceOf(ConflictError);
     });
+
+    it('should translate recipe validation errors to InvariantError', () => {
+      const cases = [
+        'CREATE_RECIPE.NOT_CONTAIN_NEEDED_PROPERTY',
+        'CREATE_RECIPE.YIELD_MUST_BE_POSITIVE',
+        'CREATE_RECIPE.ITEMS_REQUIRED',
+        'CREATE_RECIPE.ITEM_LOSS_OUT_OF_RANGE',
+        'CREATE_RECIPE.INGREDIENT_IS_FINISHED_PRODUCT',
+        'CREATE_RECIPE.DUPLICATE_INGREDIENT',
+        'RECIPE.ONLY_DRAFT_EDITABLE',
+        'RECIPE.INVALID_STATUS_TRANSITION',
+        'RECIPE.INVALID_STATUS',
+      ];
+      cases.forEach((code) => {
+        const result = DomainErrorTranslator.translate(new Error(code));
+        expect(result).toBeInstanceOf(InvariantError);
+      });
+    });
+
+    it('should translate RECIPE.NOT_FOUND / NO_ACTIVE_RECIPE to NotFoundError', () => {
+      expect(DomainErrorTranslator.translate(new Error('RECIPE.NOT_FOUND'))).toBeInstanceOf(
+        NotFoundError,
+      );
+      expect(
+        DomainErrorTranslator.translate(new Error('RECIPE.NO_ACTIVE_RECIPE')),
+      ).toBeInstanceOf(NotFoundError);
+    });
+
+    it('should translate RECIPE.ACTIVE_ALREADY_EXISTS to ConflictError', () => {
+      const result = DomainErrorTranslator.translate(new Error('RECIPE.ACTIVE_ALREADY_EXISTS'));
+      expect(result).toBeInstanceOf(ConflictError);
+    });
   });
 });

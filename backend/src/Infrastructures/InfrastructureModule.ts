@@ -18,6 +18,7 @@ import { InventoryRepository } from '../Domains/inventory/InventoryRepository';
 import { StockAdjustmentRepository } from '../Domains/stock-adjustments/StockAdjustmentRepository';
 import { StockTransferRepository } from '../Domains/stock-transfers/StockTransferRepository';
 import { StockOpnameRepository } from '../Domains/stock-opnames/StockOpnameRepository';
+import { RecipeRepository } from '../Domains/recipes/RecipeRepository';
 import { PasswordHash } from '../Applications/security/PasswordHash';
 import { TokenManager } from '../Applications/security/TokenManager';
 
@@ -37,6 +38,7 @@ import { InventoryRepositoryPostgres } from './repository/InventoryRepositoryPos
 import { StockAdjustmentRepositoryPostgres } from './repository/StockAdjustmentRepositoryPostgres';
 import { StockTransferRepositoryPostgres } from './repository/StockTransferRepositoryPostgres';
 import { StockOpnameRepositoryPostgres } from './repository/StockOpnameRepositoryPostgres';
+import { RecipeRepositoryPostgres } from './repository/RecipeRepositoryPostgres';
 import { BcryptPasswordHash } from './security/BcryptPasswordHash';
 import { JwtTokenManager } from './security/JwtTokenManager';
 
@@ -91,6 +93,11 @@ import { CompleteStockOpnameUseCase } from '../Applications/use_case/stock-opnam
 import { CancelStockOpnameUseCase } from '../Applications/use_case/stock-opnames/CancelStockOpnameUseCase';
 import { GetStockOpnamesUseCase } from '../Applications/use_case/stock-opnames/GetStockOpnamesUseCase';
 import { GetInventoryDashboardUseCase } from '../Applications/use_case/inventory/GetInventoryDashboardUseCase';
+import { CreateRecipeUseCase } from '../Applications/use_case/recipes/CreateRecipeUseCase';
+import { UpdateRecipeUseCase } from '../Applications/use_case/recipes/UpdateRecipeUseCase';
+import { ActivateRecipeUseCase } from '../Applications/use_case/recipes/ActivateRecipeUseCase';
+import { ArchiveRecipeUseCase } from '../Applications/use_case/recipes/ArchiveRecipeUseCase';
+import { GetRecipesUseCase } from '../Applications/use_case/recipes/GetRecipesUseCase';
 
 /**
  * InfrastructureModule — NestJS DI container.
@@ -180,6 +187,10 @@ import { GetInventoryDashboardUseCase } from '../Applications/use_case/inventory
     {
       provide: StockOpnameRepository,
       useFactory: () => new StockOpnameRepositoryPostgres(pool),
+    },
+    {
+      provide: RecipeRepository,
+      useFactory: () => new RecipeRepositoryPostgres(pool),
     },
 
     // ─── Use Cases ────────────────────────────────────────────────────────
@@ -496,6 +507,39 @@ import { GetInventoryDashboardUseCase } from '../Applications/use_case/inventory
       useFactory: (invRepo: InventoryRepository) => new GetInventoryDashboardUseCase(invRepo),
       inject: [InventoryRepository],
     },
+    {
+      provide: CreateRecipeUseCase,
+      useFactory: (
+        recipeRepo: RecipeRepository,
+        productRepo: ProductRepository,
+        uomRepo: UomRepository,
+      ) => new CreateRecipeUseCase(recipeRepo, productRepo, uomRepo),
+      inject: [RecipeRepository, ProductRepository, UomRepository],
+    },
+    {
+      provide: UpdateRecipeUseCase,
+      useFactory: (
+        recipeRepo: RecipeRepository,
+        productRepo: ProductRepository,
+        uomRepo: UomRepository,
+      ) => new UpdateRecipeUseCase(recipeRepo, productRepo, uomRepo),
+      inject: [RecipeRepository, ProductRepository, UomRepository],
+    },
+    {
+      provide: ActivateRecipeUseCase,
+      useFactory: (recipeRepo: RecipeRepository) => new ActivateRecipeUseCase(recipeRepo),
+      inject: [RecipeRepository],
+    },
+    {
+      provide: ArchiveRecipeUseCase,
+      useFactory: (recipeRepo: RecipeRepository) => new ArchiveRecipeUseCase(recipeRepo),
+      inject: [RecipeRepository],
+    },
+    {
+      provide: GetRecipesUseCase,
+      useFactory: (recipeRepo: RecipeRepository) => new GetRecipesUseCase(recipeRepo),
+      inject: [RecipeRepository],
+    },
   ],
   exports: [
     'PG_POOL',
@@ -516,6 +560,7 @@ import { GetInventoryDashboardUseCase } from '../Applications/use_case/inventory
     StockAdjustmentRepository,
     StockTransferRepository,
     StockOpnameRepository,
+    RecipeRepository,
     RegisterCompanyUseCase,
     LoginUseCase,
     RefreshTokenUseCase,
@@ -566,6 +611,11 @@ import { GetInventoryDashboardUseCase } from '../Applications/use_case/inventory
     CancelStockOpnameUseCase,
     GetStockOpnamesUseCase,
     GetInventoryDashboardUseCase,
+    CreateRecipeUseCase,
+    UpdateRecipeUseCase,
+    ActivateRecipeUseCase,
+    ArchiveRecipeUseCase,
+    GetRecipesUseCase,
   ],
 })
 export class InfrastructureModule {}

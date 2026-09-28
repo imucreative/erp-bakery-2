@@ -478,6 +478,56 @@ const DomainErrorTranslator = {
       'Outlet sedang dikunci oleh stock opname lain yang masih berjalan',
     ),
 
+    // ── Recipe (BOM) ─────────────────────────────────────────────
+    'RECIPE.NOT_FOUND': new NotFoundError('Recipe tidak ditemukan'),
+    'RECIPE.NO_ACTIVE_RECIPE': new NotFoundError('Tidak ada recipe aktif untuk produk ini'),
+    'CREATE_RECIPE.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data recipe tidak lengkap',
+    ),
+    'CREATE_RECIPE.YIELD_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Yield recipe harus berupa angka',
+    ),
+    'CREATE_RECIPE.YIELD_MUST_BE_POSITIVE': new InvariantError(
+      'Yield recipe harus lebih dari nol',
+    ),
+    'CREATE_RECIPE.ITEMS_REQUIRED': new InvariantError(
+      'Recipe harus memiliki minimal satu bahan',
+    ),
+    'CREATE_RECIPE.ITEM_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Format bahan recipe tidak valid',
+    ),
+    'CREATE_RECIPE.ITEM_INGREDIENT_REQUIRED': new InvariantError(
+      'Setiap bahan recipe harus menyertakan produk bahan',
+    ),
+    'CREATE_RECIPE.ITEM_UOM_REQUIRED': new InvariantError(
+      'Setiap bahan recipe harus menyertakan UOM',
+    ),
+    'CREATE_RECIPE.ITEM_QTY_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Jumlah bahan recipe harus berupa angka',
+    ),
+    'CREATE_RECIPE.ITEM_QTY_MUST_BE_POSITIVE': new InvariantError(
+      'Jumlah bahan recipe harus lebih dari nol',
+    ),
+    'CREATE_RECIPE.ITEM_LOSS_OUT_OF_RANGE': new InvariantError(
+      'Persentase loss bahan harus di antara 0 dan 100',
+    ),
+    'CREATE_RECIPE.INGREDIENT_IS_FINISHED_PRODUCT': new InvariantError(
+      'Bahan tidak boleh sama dengan produk jadi resep',
+    ),
+    'CREATE_RECIPE.DUPLICATE_INGREDIENT': new InvariantError(
+      'Bahan tidak boleh duplikat dalam satu recipe',
+    ),
+    'RECIPE.ONLY_DRAFT_EDITABLE': new InvariantError(
+      'Hanya recipe berstatus DRAFT yang dapat diubah',
+    ),
+    'RECIPE.INVALID_STATUS_TRANSITION': new InvariantError(
+      'Transisi status recipe tidak diperbolehkan',
+    ),
+    'RECIPE.INVALID_STATUS': new InvariantError('Status recipe tidak valid'),
+    'RECIPE.ACTIVE_ALREADY_EXISTS': new ConflictError(
+      'Sudah ada recipe aktif untuk produk ini; arsipkan dulu sebelum mengaktifkan yang baru',
+    ),
+
     // ── Conflict ─────────────────────────────────────────────────
     'USER.EMAIL_ALREADY_USED': new ConflictError(
       'Email sudah digunakan oleh akun lain',
