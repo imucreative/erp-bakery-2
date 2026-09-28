@@ -16,6 +16,7 @@ import { StockAdjustmentModule } from './Interfaces/http/api/stock-adjustments/s
 import { StockTransferModule } from './Interfaces/http/api/stock-transfers/stock-transfer.module';
 import { StockOpnameModule } from './Interfaces/http/api/stock-opnames/stock-opname.module';
 import { RecipeModule } from './Interfaces/http/api/recipes/recipe.module';
+import { ProductionOrderModule } from './Interfaces/http/api/production/production-order.module';
 import { AllExceptionsFilter } from './Commons/exceptions/AllExceptionsFilter';
 import { JwtAuthGuard } from './Interfaces/http/guards/jwt-auth.guard';
 import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
@@ -50,6 +51,7 @@ import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
     StockTransferModule,
     StockOpnameModule,
     RecipeModule,
+    ProductionOrderModule,
   ],
   providers: [
     // Global exception filter — converts domain/HTTP errors to standard JSON

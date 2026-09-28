@@ -19,6 +19,7 @@ import { StockAdjustmentRepository } from '../Domains/stock-adjustments/StockAdj
 import { StockTransferRepository } from '../Domains/stock-transfers/StockTransferRepository';
 import { StockOpnameRepository } from '../Domains/stock-opnames/StockOpnameRepository';
 import { RecipeRepository } from '../Domains/recipes/RecipeRepository';
+import { ProductionOrderRepository } from '../Domains/production/ProductionOrderRepository';
 import { PasswordHash } from '../Applications/security/PasswordHash';
 import { TokenManager } from '../Applications/security/TokenManager';
 
@@ -39,6 +40,7 @@ import { StockAdjustmentRepositoryPostgres } from './repository/StockAdjustmentR
 import { StockTransferRepositoryPostgres } from './repository/StockTransferRepositoryPostgres';
 import { StockOpnameRepositoryPostgres } from './repository/StockOpnameRepositoryPostgres';
 import { RecipeRepositoryPostgres } from './repository/RecipeRepositoryPostgres';
+import { ProductionOrderRepositoryPostgres } from './repository/ProductionOrderRepositoryPostgres';
 import { BcryptPasswordHash } from './security/BcryptPasswordHash';
 import { JwtTokenManager } from './security/JwtTokenManager';
 
@@ -98,6 +100,13 @@ import { UpdateRecipeUseCase } from '../Applications/use_case/recipes/UpdateReci
 import { ActivateRecipeUseCase } from '../Applications/use_case/recipes/ActivateRecipeUseCase';
 import { ArchiveRecipeUseCase } from '../Applications/use_case/recipes/ArchiveRecipeUseCase';
 import { GetRecipesUseCase } from '../Applications/use_case/recipes/GetRecipesUseCase';
+import { CreateProductionOrderUseCase } from '../Applications/use_case/production/CreateProductionOrderUseCase';
+import { StartProductionOrderUseCase } from '../Applications/use_case/production/StartProductionOrderUseCase';
+import { RecordYieldUseCase } from '../Applications/use_case/production/RecordYieldUseCase';
+import { QaCheckUseCase } from '../Applications/use_case/production/QaCheckUseCase';
+import { CompleteProductionOrderUseCase } from '../Applications/use_case/production/CompleteProductionOrderUseCase';
+import { CancelProductionOrderUseCase } from '../Applications/use_case/production/CancelProductionOrderUseCase';
+import { GetProductionOrdersUseCase } from '../Applications/use_case/production/GetProductionOrdersUseCase';
 
 /**
  * InfrastructureModule — NestJS DI container.
@@ -191,6 +200,10 @@ import { GetRecipesUseCase } from '../Applications/use_case/recipes/GetRecipesUs
     {
       provide: RecipeRepository,
       useFactory: () => new RecipeRepositoryPostgres(pool),
+    },
+    {
+      provide: ProductionOrderRepository,
+      useFactory: () => new ProductionOrderRepositoryPostgres(pool),
     },
 
     // ─── Use Cases ────────────────────────────────────────────────────────
@@ -540,6 +553,46 @@ import { GetRecipesUseCase } from '../Applications/use_case/recipes/GetRecipesUs
       useFactory: (recipeRepo: RecipeRepository) => new GetRecipesUseCase(recipeRepo),
       inject: [RecipeRepository],
     },
+    {
+      provide: CreateProductionOrderUseCase,
+      useFactory: (prodRepo: ProductionOrderRepository, outletRepo: OutletRepository) =>
+        new CreateProductionOrderUseCase(prodRepo, outletRepo),
+      inject: [ProductionOrderRepository, OutletRepository],
+    },
+    {
+      provide: StartProductionOrderUseCase,
+      useFactory: (prodRepo: ProductionOrderRepository) =>
+        new StartProductionOrderUseCase(prodRepo),
+      inject: [ProductionOrderRepository],
+    },
+    {
+      provide: RecordYieldUseCase,
+      useFactory: (prodRepo: ProductionOrderRepository) => new RecordYieldUseCase(prodRepo),
+      inject: [ProductionOrderRepository],
+    },
+    {
+      provide: QaCheckUseCase,
+      useFactory: (prodRepo: ProductionOrderRepository) => new QaCheckUseCase(prodRepo),
+      inject: [ProductionOrderRepository],
+    },
+    {
+      provide: CompleteProductionOrderUseCase,
+      useFactory: (prodRepo: ProductionOrderRepository) =>
+        new CompleteProductionOrderUseCase(prodRepo),
+      inject: [ProductionOrderRepository],
+    },
+    {
+      provide: CancelProductionOrderUseCase,
+      useFactory: (prodRepo: ProductionOrderRepository) =>
+        new CancelProductionOrderUseCase(prodRepo),
+      inject: [ProductionOrderRepository],
+    },
+    {
+      provide: GetProductionOrdersUseCase,
+      useFactory: (prodRepo: ProductionOrderRepository) =>
+        new GetProductionOrdersUseCase(prodRepo),
+      inject: [ProductionOrderRepository],
+    },
   ],
   exports: [
     'PG_POOL',
@@ -561,6 +614,7 @@ import { GetRecipesUseCase } from '../Applications/use_case/recipes/GetRecipesUs
     StockTransferRepository,
     StockOpnameRepository,
     RecipeRepository,
+    ProductionOrderRepository,
     RegisterCompanyUseCase,
     LoginUseCase,
     RefreshTokenUseCase,
@@ -616,6 +670,13 @@ import { GetRecipesUseCase } from '../Applications/use_case/recipes/GetRecipesUs
     ActivateRecipeUseCase,
     ArchiveRecipeUseCase,
     GetRecipesUseCase,
+    CreateProductionOrderUseCase,
+    StartProductionOrderUseCase,
+    RecordYieldUseCase,
+    QaCheckUseCase,
+    CompleteProductionOrderUseCase,
+    CancelProductionOrderUseCase,
+    GetProductionOrdersUseCase,
   ],
 })
 export class InfrastructureModule {}

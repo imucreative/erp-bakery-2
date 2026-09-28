@@ -85,6 +85,10 @@ async function bootstrap() {
       .addTag('Stock Transfers', 'Inter-outlet transfers (draft → submit → dispatch → receive)')
       .addTag('Stock Opname', 'Physical stock count (count → submit → approve → complete → adjustment)')
       .addTag('Recipes', 'Bill of Materials / recipes (draft → active → archived)')
+      .addTag(
+        'Production Orders',
+        'Production orders (scheduled → in progress → yield → QA → completed w/ backflushing)',
+      )
       .build();
 
     const document = SwaggerModule.createDocument(app, config);

@@ -528,6 +528,58 @@ const DomainErrorTranslator = {
       'Sudah ada recipe aktif untuk produk ini; arsipkan dulu sebelum mengaktifkan yang baru',
     ),
 
+    // ── Production Order ─────────────────────────────────────────
+    'PRODUCTION_ORDER.NOT_FOUND': new NotFoundError('Production order tidak ditemukan'),
+    'CREATE_PRODUCTION_ORDER.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data production order tidak lengkap',
+    ),
+    'CREATE_PRODUCTION_ORDER.RECIPE_OR_PRODUCT_REQUIRED': new InvariantError(
+      'Sertakan recipeId atau productId untuk menjadwalkan produksi',
+    ),
+    'CREATE_PRODUCTION_ORDER.QTY_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Jumlah produksi harus berupa angka',
+    ),
+    'CREATE_PRODUCTION_ORDER.QTY_MUST_BE_POSITIVE': new InvariantError(
+      'Jumlah produksi harus lebih dari nol',
+    ),
+    'RECORD_YIELD.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data yield produksi tidak lengkap',
+    ),
+    'RECORD_YIELD.QTY_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Jumlah hasil produksi harus berupa angka',
+    ),
+    'RECORD_YIELD.QTY_MUST_BE_POSITIVE': new InvariantError(
+      'Jumlah hasil produksi harus lebih dari nol',
+    ),
+    'RECORD_YIELD.WASTE_INVALID': new InvariantError(
+      'Jumlah waste tidak valid',
+    ),
+    'RECORD_YIELD.RESULT_EXPIRY_REQUIRED': new InvariantError(
+      'Tanggal kedaluwarsa hasil produksi wajib diisi',
+    ),
+    'RECORD_YIELD.RESULT_EXPIRY_INVALID': new InvariantError(
+      'Tanggal kedaluwarsa hasil produksi tidak valid',
+    ),
+    'PRODUCTION_ORDER.INVALID_STATUS': new InvariantError('Status production order tidak valid'),
+    'PRODUCTION_ORDER.INVALID_STATUS_TRANSITION': new InvariantError(
+      'Transisi status production order tidak diperbolehkan',
+    ),
+    'PRODUCTION_ORDER.RECIPE_NOT_ACTIVE': new InvariantError(
+      'Recipe harus berstatus ACTIVE untuk dapat diproduksi',
+    ),
+    'PRODUCTION_ORDER.RECIPE_YIELD_INVALID': new InvariantError(
+      'Yield recipe tidak valid untuk menghitung skala produksi',
+    ),
+    'PRODUCTION_ORDER.NO_YIELD_RECORDED': new InvariantError(
+      'Hasil produksi belum dicatat; catat yield terlebih dahulu',
+    ),
+    'PRODUCTION_ORDER.RESULT_EXPIRY_REQUIRED': new InvariantError(
+      'Tanggal kedaluwarsa hasil produksi wajib diisi sebelum penyelesaian',
+    ),
+    'PRODUCTION_ORDER.NUMBER_CONFLICT': new InvariantError(
+      'Nomor production order sudah digunakan; coba lagi',
+    ),
+
     // ── Conflict ─────────────────────────────────────────────────
     'USER.EMAIL_ALREADY_USED': new ConflictError(
       'Email sudah digunakan oleh akun lain',
