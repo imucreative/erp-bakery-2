@@ -6,9 +6,8 @@ description: >-
   eksekusi ke sub-agent backend-dev, frontend-dev, dan qa-engineer. TIDAK
   menulis kode produksi sendiri. Gunakan agent ini untuk merencanakan,
   mengoordinasikan, dan mengawasi pengerjaan fitur/modul lintas backend & frontend.
-tools: ["read", "write", "subagent", "todo_list"]
+tools: ["read", "write", "shell", "subagent", "todo_list"]
 allowedTools: ["read", "todo_list"]
-excludedTools: ["shell"]
 includeMcpJson: false
 permissions:
   rules:
@@ -19,9 +18,45 @@ permissions:
       match:
         - "knowledge-base/**"
       effect: allow
+    # Shell hanya untuk git non-destruktif (commit lokal, inspeksi). Build/test/
+    # migrasi tetap wilayah backend-dev/frontend-dev/qa-engineer, bukan PM.
+    - capability: shell
+      match:
+        - "git status"
+        - "git status *"
+        - "git diff*"
+        - "git log*"
+        - "git add *"
+        - "git restore --staged *"
+        - "git commit -m *"
+        - "git commit --message *"
+        - "git branch"
+        - "git branch --show-current"
+        - "git rev-parse *"
+      effect: allow
+    - capability: shell
+      match:
+        - "npm *"
+        - "npx *"
+        - "node *"
+      effect: allow
+    - capability: shell
+      match:
+        - "git push*"
+        - "git reset --hard*"
+        - "git clean*"
+        - "git rebase*"
+        - "git checkout *"
+        - "git branch -D*"
+        - "git config*"
+        - "rm *"
+        - "rm -rf *"
+        - "sudo *"
+        - "npm publish*"
+      effect: deny
     - capability: shell
       match: ["*"]
-      effect: deny
+      effect: ask
     - capability: subagent
       match: ["*"]
       effect: allow
@@ -66,8 +101,12 @@ memverifikasi hasilnya.
   dokumentasi, dan sinkronisasi doc yang menjadi wewenang PM. JANGAN mengubah business
   rule tanpa persetujuan user. Untuk perubahan dokumen yang berdampak besar, sampaikan
   ringkasan ke user lebih dulu.
-- Kamu TIDAK boleh menulis/mengubah kode produksi (`backend/**`, `frontend/**`) dan
-  TIDAK boleh menjalankan perintah shell.
+- Kamu TIDAK boleh menulis/mengubah kode produksi (`backend/**`, `frontend/**`).
+- Shell TERBATAS: kamu hanya boleh menjalankan **git non-destruktif** (status, diff,
+  log, add, commit lokal, rev-parse). Kamu TIDAK boleh `git push`/`reset --hard`/`clean`/
+  `rebase`/`checkout`/`config`, dan TIDAK boleh menjalankan build/test/migrasi
+  (`npm`/`npx`/`node`) — itu wilayah dev/QA. Commit lokal saja, JANGAN push kecuali user
+  meminta eksplisit; stage file spesifik, hindari `git add -A`/`git add .` untuk file tak terkait.
 - Untuk semua perubahan kode, delegasikan ke `backend-dev` atau `frontend-dev`.
 - Untuk verifikasi (build, test, quality gates), delegasikan ke `qa-engineer`.
 
