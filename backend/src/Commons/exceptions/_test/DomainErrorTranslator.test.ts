@@ -134,5 +134,30 @@ describe('DomainErrorTranslator', () => {
       );
       expect(result).toBeInstanceOf(ConflictError);
     });
+
+    it('should translate stock adjustment validation errors to InvariantError', () => {
+      const cases = [
+        'CREATE_STOCK_ADJUSTMENT.NOT_CONTAIN_NEEDED_PROPERTY',
+        'CREATE_STOCK_ADJUSTMENT.ITEMS_REQUIRED',
+        'CREATE_STOCK_ADJUSTMENT.ITEM_INVALID_DIRECTION',
+        'CREATE_STOCK_ADJUSTMENT.ITEM_QTY_MUST_BE_POSITIVE',
+        'CREATE_STOCK_ADJUSTMENT.ITEM_INVALID_REASON',
+        'CREATE_STOCK_ADJUSTMENT.BATCH_OUTLET_MISMATCH',
+        'CREATE_STOCK_ADJUSTMENT.BATCH_PRODUCT_MISMATCH',
+        'STOCK_ADJUSTMENT.ONLY_DRAFT_EDITABLE',
+        'STOCK_ADJUSTMENT.INVALID_STATUS_TRANSITION',
+        'STOCK_ADJUSTMENT.INVALID_STATUS',
+      ];
+
+      cases.forEach((code) => {
+        const result = DomainErrorTranslator.translate(new Error(code));
+        expect(result).toBeInstanceOf(InvariantError);
+      });
+    });
+
+    it('should translate STOCK_ADJUSTMENT.NOT_FOUND to NotFoundError', () => {
+      const result = DomainErrorTranslator.translate(new Error('STOCK_ADJUSTMENT.NOT_FOUND'));
+      expect(result).toBeInstanceOf(NotFoundError);
+    });
   });
 });

@@ -15,6 +15,7 @@ import { SupplierRepository } from '../Domains/suppliers/SupplierRepository';
 import { CategoryRepository } from '../Domains/categories/CategoryRepository';
 import { ProductRepository } from '../Domains/products/ProductRepository';
 import { InventoryRepository } from '../Domains/inventory/InventoryRepository';
+import { StockAdjustmentRepository } from '../Domains/stock-adjustments/StockAdjustmentRepository';
 import { PasswordHash } from '../Applications/security/PasswordHash';
 import { TokenManager } from '../Applications/security/TokenManager';
 
@@ -31,6 +32,7 @@ import { SupplierRepositoryPostgres } from './repository/SupplierRepositoryPostg
 import { CategoryRepositoryPostgres } from './repository/CategoryRepositoryPostgres';
 import { ProductRepositoryPostgres } from './repository/ProductRepositoryPostgres';
 import { InventoryRepositoryPostgres } from './repository/InventoryRepositoryPostgres';
+import { StockAdjustmentRepositoryPostgres } from './repository/StockAdjustmentRepositoryPostgres';
 import { BcryptPasswordHash } from './security/BcryptPasswordHash';
 import { JwtTokenManager } from './security/JwtTokenManager';
 
@@ -62,6 +64,13 @@ import { GetStockOnHandUseCase } from '../Applications/use_case/inventory/GetSto
 import { GetStockLedgerUseCase } from '../Applications/use_case/inventory/GetStockLedgerUseCase';
 import { GetBatchesUseCase } from '../Applications/use_case/inventory/GetBatchesUseCase';
 import { PlanFefoAllocationUseCase } from '../Applications/use_case/inventory/PlanFefoAllocationUseCase';
+import { CreateStockAdjustmentUseCase } from '../Applications/use_case/stock-adjustments/CreateStockAdjustmentUseCase';
+import { UpdateStockAdjustmentUseCase } from '../Applications/use_case/stock-adjustments/UpdateStockAdjustmentUseCase';
+import { SubmitStockAdjustmentUseCase } from '../Applications/use_case/stock-adjustments/SubmitStockAdjustmentUseCase';
+import { ApproveStockAdjustmentUseCase } from '../Applications/use_case/stock-adjustments/ApproveStockAdjustmentUseCase';
+import { CancelStockAdjustmentUseCase } from '../Applications/use_case/stock-adjustments/CancelStockAdjustmentUseCase';
+import { CompleteStockAdjustmentUseCase } from '../Applications/use_case/stock-adjustments/CompleteStockAdjustmentUseCase';
+import { GetStockAdjustmentsUseCase } from '../Applications/use_case/stock-adjustments/GetStockAdjustmentsUseCase';
 
 /**
  * InfrastructureModule — NestJS DI container.
@@ -139,6 +148,10 @@ import { PlanFefoAllocationUseCase } from '../Applications/use_case/inventory/Pl
     {
       provide: InventoryRepository,
       useFactory: () => new InventoryRepositoryPostgres(pool),
+    },
+    {
+      provide: StockAdjustmentRepository,
+      useFactory: () => new StockAdjustmentRepositoryPostgres(pool),
     },
 
     // ─── Use Cases ────────────────────────────────────────────────────────
@@ -331,6 +344,48 @@ import { PlanFefoAllocationUseCase } from '../Applications/use_case/inventory/Pl
         new PlanFefoAllocationUseCase(inventoryRepo),
       inject: [InventoryRepository],
     },
+    {
+      provide: CreateStockAdjustmentUseCase,
+      useFactory: (adjRepo: StockAdjustmentRepository, invRepo: InventoryRepository) =>
+        new CreateStockAdjustmentUseCase(adjRepo, invRepo),
+      inject: [StockAdjustmentRepository, InventoryRepository],
+    },
+    {
+      provide: UpdateStockAdjustmentUseCase,
+      useFactory: (adjRepo: StockAdjustmentRepository, invRepo: InventoryRepository) =>
+        new UpdateStockAdjustmentUseCase(adjRepo, invRepo),
+      inject: [StockAdjustmentRepository, InventoryRepository],
+    },
+    {
+      provide: SubmitStockAdjustmentUseCase,
+      useFactory: (adjRepo: StockAdjustmentRepository) =>
+        new SubmitStockAdjustmentUseCase(adjRepo),
+      inject: [StockAdjustmentRepository],
+    },
+    {
+      provide: ApproveStockAdjustmentUseCase,
+      useFactory: (adjRepo: StockAdjustmentRepository) =>
+        new ApproveStockAdjustmentUseCase(adjRepo),
+      inject: [StockAdjustmentRepository],
+    },
+    {
+      provide: CancelStockAdjustmentUseCase,
+      useFactory: (adjRepo: StockAdjustmentRepository) =>
+        new CancelStockAdjustmentUseCase(adjRepo),
+      inject: [StockAdjustmentRepository],
+    },
+    {
+      provide: CompleteStockAdjustmentUseCase,
+      useFactory: (adjRepo: StockAdjustmentRepository) =>
+        new CompleteStockAdjustmentUseCase(adjRepo),
+      inject: [StockAdjustmentRepository],
+    },
+    {
+      provide: GetStockAdjustmentsUseCase,
+      useFactory: (adjRepo: StockAdjustmentRepository) =>
+        new GetStockAdjustmentsUseCase(adjRepo),
+      inject: [StockAdjustmentRepository],
+    },
   ],
   exports: [
     'PG_POOL',
@@ -348,6 +403,7 @@ import { PlanFefoAllocationUseCase } from '../Applications/use_case/inventory/Pl
     CategoryRepository,
     ProductRepository,
     InventoryRepository,
+    StockAdjustmentRepository,
     RegisterCompanyUseCase,
     LoginUseCase,
     RefreshTokenUseCase,
@@ -375,6 +431,13 @@ import { PlanFefoAllocationUseCase } from '../Applications/use_case/inventory/Pl
     GetStockLedgerUseCase,
     GetBatchesUseCase,
     PlanFefoAllocationUseCase,
+    CreateStockAdjustmentUseCase,
+    UpdateStockAdjustmentUseCase,
+    SubmitStockAdjustmentUseCase,
+    ApproveStockAdjustmentUseCase,
+    CancelStockAdjustmentUseCase,
+    CompleteStockAdjustmentUseCase,
+    GetStockAdjustmentsUseCase,
   ],
 })
 export class InfrastructureModule {}

@@ -369,6 +369,49 @@ const DomainErrorTranslator = {
     ),
     'FEFO.QTY_MUST_BE_POSITIVE': new InvariantError('Jumlah alokasi FEFO harus lebih dari nol'),
 
+    // ── Stock Adjustment ─────────────────────────────────────────
+    'STOCK_ADJUSTMENT.NOT_FOUND': new NotFoundError('Stock adjustment tidak ditemukan'),
+    'CREATE_STOCK_ADJUSTMENT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data stock adjustment tidak lengkap',
+    ),
+    'CREATE_STOCK_ADJUSTMENT.ITEMS_REQUIRED': new InvariantError(
+      'Stock adjustment harus memiliki minimal satu item',
+    ),
+    'CREATE_STOCK_ADJUSTMENT.ITEM_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Format item stock adjustment tidak valid',
+    ),
+    'CREATE_STOCK_ADJUSTMENT.ITEM_BATCH_REQUIRED': new InvariantError(
+      'Setiap item stock adjustment harus menyertakan batch',
+    ),
+    'CREATE_STOCK_ADJUSTMENT.ITEM_PRODUCT_REQUIRED': new InvariantError(
+      'Setiap item stock adjustment harus menyertakan produk',
+    ),
+    'CREATE_STOCK_ADJUSTMENT.ITEM_INVALID_DIRECTION': new InvariantError(
+      'Arah adjustment harus IN atau OUT',
+    ),
+    'CREATE_STOCK_ADJUSTMENT.ITEM_QTY_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Jumlah item stock adjustment harus berupa angka',
+    ),
+    'CREATE_STOCK_ADJUSTMENT.ITEM_QTY_MUST_BE_POSITIVE': new InvariantError(
+      'Jumlah item stock adjustment harus lebih dari nol',
+    ),
+    'CREATE_STOCK_ADJUSTMENT.ITEM_INVALID_REASON': new InvariantError(
+      'Alasan adjustment tidak valid',
+    ),
+    'CREATE_STOCK_ADJUSTMENT.BATCH_OUTLET_MISMATCH': new InvariantError(
+      'Batch tidak berada pada outlet yang dipilih',
+    ),
+    'CREATE_STOCK_ADJUSTMENT.BATCH_PRODUCT_MISMATCH': new InvariantError(
+      'Batch tidak sesuai dengan produk yang dipilih',
+    ),
+    'STOCK_ADJUSTMENT.ONLY_DRAFT_EDITABLE': new InvariantError(
+      'Hanya stock adjustment berstatus DRAFT yang dapat diubah',
+    ),
+    'STOCK_ADJUSTMENT.INVALID_STATUS_TRANSITION': new InvariantError(
+      'Transisi status stock adjustment tidak diperbolehkan',
+    ),
+    'STOCK_ADJUSTMENT.INVALID_STATUS': new InvariantError('Status stock adjustment tidak valid'),
+
     // ── Conflict ─────────────────────────────────────────────────
     'USER.EMAIL_ALREADY_USED': new ConflictError(
       'Email sudah digunakan oleh akun lain',

@@ -81,6 +81,7 @@ async function bootstrap() {
       .addTag('Categories', 'Product category master data per company')
       .addTag('Products', 'Product master data per company')
       .addTag('Inventory', 'Stock-on-hand, movement ledger, batch & expiry monitoring')
+      .addTag('Stock Adjustments', 'Stock correction documents (draft → submit → approve → complete)')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
