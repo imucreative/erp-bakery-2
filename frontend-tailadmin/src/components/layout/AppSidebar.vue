@@ -275,6 +275,11 @@ const menuGroups: MenuGroup[] = [
         name: 'Product Groups',
         path: '/master/product-groups',
       },
+      {
+        icon: ListIcon,
+        name: 'Categories',
+        path: '/master/categories',
+      },
     ],
   },
   {

@@ -52,6 +52,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/master/categories',
+      name: 'Categories',
+      component: () => import('../views/MasterData/CategoryList.vue'),
+      meta: {
+        title: 'Categories',
+        permission: 'category.read',
+      },
+    },
+    {
       path: '/calendar',
       name: 'Calendar',
       component: () => import('../views/Others/Calendar.vue'),
