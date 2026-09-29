@@ -25,3 +25,36 @@
 # OS
 /backend/.DS_Store
 /backend/Thumbs.db
+
+
+# Logs
+/frontend-tailadmin/logs
+/frontend-tailadmin/*.log
+/frontend-tailadmin/npm-debug.log*
+/frontend-tailadmin/yarn-debug.log*
+/frontend-tailadmin/yarn-error.log*
+/frontend-tailadmin/pnpm-debug.log*
+/frontend-tailadmin/lerna-debug.log*
+
+/frontend-tailadmin/node_modules
+/frontend-tailadmin/.DS_Store
+/frontend-tailadmin/dist
+/frontend-tailadmin/dist-ssr
+/frontend-tailadmin/coverage
+/frontend-tailadmin/*.local
+
+/frontend-tailadmin/cypress/videos/
+/frontend-tailadmin/cypress/screenshots/
+
+# Editor directories and files
+/frontend-tailadmin/.vscode/*
+/frontend-tailadmin/!.vscode/extensions.json
+/frontend-tailadmin/.idea
+/frontend-tailadmin/*.suo
+/frontend-tailadmin/*.ntvs*
+/frontend-tailadmin/*.njsproj
+/frontend-tailadmin/*.sln
+/frontend-tailadmin/*.sw?
+
+/frontend-tailadmin/*.tsbuildinfo
+/frontend-tailadmin/.vercel

@@ -15,7 +15,7 @@ permissions:
       match: ["**"]
       effect: allow
     - capability: fs_write
-      match: ["frontend/**", "knowledge-base/project-context/**", "knowledge-base/45.adr-frontend-vue-migration.md"]
+      match: ["frontend/**", "frontend-tailadmin/**", "knowledge-base/project-context/**", "knowledge-base/45.adr-frontend-vue-migration.md"]
       effect: allow
     - capability: shell
       match:
