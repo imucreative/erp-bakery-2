@@ -51,9 +51,14 @@ interface RetriableConfig extends InternalAxiosRequestConfig {
   _retry?: boolean
 }
 
+// NOTE: we intentionally do NOT set a global `Content-Type: application/json`.
+// The backend runs on Fastify, which rejects a request that declares a JSON
+// content-type but sends an empty body (e.g. `DELETE /uoms/:id`) with
+// "Body cannot be empty when content-type is set to 'application/json'".
+// Axios sets the JSON content-type automatically when a request has a `data`
+// payload, so bodyless requests stay clean.
 export const httpClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  headers: { 'Content-Type': 'application/json' },
 })
 
 httpClient.interceptors.request.use((config) => {

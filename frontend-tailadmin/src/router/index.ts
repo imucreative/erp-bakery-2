@@ -1,10 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { hasPermission } from '@/composables/usePermission'
 
 declare module 'vue-router' {
   interface RouteMeta {
     title?: string
     public?: boolean
+    permission?: string
   }
 }
 
@@ -20,6 +22,15 @@ const router = createRouter({
       component: () => import('../views/Ecommerce.vue'),
       meta: {
         title: 'eCommerce Dashboard',
+      },
+    },
+    {
+      path: '/master/uoms',
+      name: 'Uoms',
+      component: () => import('../views/MasterData/UomList.vue'),
+      meta: {
+        title: 'Units of Measure',
+        permission: 'uom.read',
       },
     },
     {
@@ -169,6 +180,12 @@ router.beforeEach((to, from, next) => {
   // Protected routes require authentication.
   if (!isPublic && !auth.isAuthenticated) {
     return next({ name: 'Signin', query: { redirect: to.fullPath } })
+  }
+
+  // Permission-gated routes: redirect to dashboard when the user lacks it.
+  const required = to.meta.permission
+  if (required && !hasPermission(auth.permissions, auth.isSuperAdmin, required)) {
+    return next({ name: 'Ecommerce' })
   }
 
   return next()

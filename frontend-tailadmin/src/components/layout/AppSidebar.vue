@@ -258,6 +258,16 @@ interface MenuGroup {
 
 const menuGroups: MenuGroup[] = [
   {
+    title: 'Master Data',
+    items: [
+      {
+        icon: ListIcon,
+        name: 'Units of Measure',
+        path: '/master/uoms',
+      },
+    ],
+  },
+  {
     title: 'Menu',
     items: [
       {
