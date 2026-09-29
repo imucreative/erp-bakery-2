@@ -70,6 +70,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/system/users',
+      name: 'Users',
+      component: () => import('../views/System/UserList.vue'),
+      meta: {
+        title: 'Users',
+        permission: 'user.read',
+      },
+    },
+    {
       path: '/system/roles',
       name: 'Roles',
       component: () => import('../views/System/RoleList.vue'),

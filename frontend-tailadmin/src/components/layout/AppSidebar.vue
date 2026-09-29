@@ -292,6 +292,11 @@ const menuGroups: MenuGroup[] = [
     items: [
       {
         icon: UserCircleIcon,
+        name: 'Users',
+        path: '/system/users',
+      },
+      {
+        icon: UserCircleIcon,
         name: 'Roles',
         path: '/system/roles',
       },
