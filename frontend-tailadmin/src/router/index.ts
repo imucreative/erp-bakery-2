@@ -43,6 +43,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/master/product-groups',
+      name: 'ProductGroups',
+      component: () => import('../views/MasterData/ProductGroupList.vue'),
+      meta: {
+        title: 'Product Groups',
+        permission: 'product-group.read',
+      },
+    },
+    {
       path: '/calendar',
       name: 'Calendar',
       component: () => import('../views/Others/Calendar.vue'),
