@@ -1,12 +1,12 @@
 <script setup lang="ts">
 /**
  * UomTable — presentational table for the UOM list. Emits edit/delete intents
- * to the parent; renders loading / error / empty states. Action buttons use the
- * shared Button component (outline variant) rather than plain text links.
+ * to the parent; renders loading / error / empty states. Row actions are
+ * compact icon-only buttons (aria-label + title for accessibility/tooltip) to
+ * keep the table dense.
  */
 import { Pencil, Trash2 } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
-import Button from '@/components/ui/Button.vue'
 import type { Uom } from '@/services/uom.service'
 
 defineProps<{
@@ -80,23 +80,25 @@ defineEmits<{
             </td>
             <td class="px-5 py-4">
               <div class="flex items-center justify-end gap-2">
-                <Button
-                  v-if="canManage"
-                  size="sm"
-                  variant="outline"
-                  :start-icon="Pencil"
-                  :on-click="() => $emit('edit', uom)"
-                >
-                  Edit
-                </Button>
                 <button
                   v-if="canManage"
                   type="button"
-                  class="inline-flex items-center justify-center gap-2 rounded-lg bg-error-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-error-600"
+                  aria-label="Edit"
+                  title="Edit"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
+                  @click="$emit('edit', uom)"
+                >
+                  <Pencil class="h-4 w-4" aria-hidden="true" />
+                </button>
+                <button
+                  v-if="canManage"
+                  type="button"
+                  aria-label="Hapus"
+                  title="Hapus"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-error-500 ring-1 ring-inset ring-error-200 transition hover:bg-error-50 hover:text-error-600 dark:ring-error-500/30 dark:hover:bg-error-500/10"
                   @click="$emit('delete', uom)"
                 >
                   <Trash2 class="h-4 w-4" aria-hidden="true" />
-                  Hapus
                 </button>
                 <span v-if="!canManage" class="text-theme-xs text-gray-400 dark:text-gray-500">
                   —
