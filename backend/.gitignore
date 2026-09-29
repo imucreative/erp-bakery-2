@@ -16,6 +16,10 @@ npm-debug.log*
 # Coverage
 coverage/
 
+# Test output artifacts
+jest-out.json
+jest-result.log
+
 # IDE
 .vscode/
 .idea/
