@@ -58,3 +58,4 @@
 
 /frontend-tailadmin/*.tsbuildinfo
 /frontend-tailadmin/.vercel
+/frontend-tailadmin/.vite/*
