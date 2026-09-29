@@ -280,6 +280,11 @@ const menuGroups: MenuGroup[] = [
         name: 'Categories',
         path: '/master/categories',
       },
+      {
+        icon: BoxCubeIcon,
+        name: 'Products',
+        path: '/master/products',
+      },
     ],
   },
   {

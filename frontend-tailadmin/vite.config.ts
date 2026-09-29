@@ -21,7 +21,8 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        // Backend HTTP port (see backend/.env PORT). Update here if it changes.
+        target: 'http://localhost:5000',
         changeOrigin: true,
       },
     },
