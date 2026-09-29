@@ -70,6 +70,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/system/roles',
+      name: 'Roles',
+      component: () => import('../views/System/RoleList.vue'),
+      meta: {
+        title: 'Roles',
+        permission: 'role.read',
+      },
+    },
+    {
       path: '/calendar',
       name: 'Calendar',
       component: () => import('../views/Others/Calendar.vue'),

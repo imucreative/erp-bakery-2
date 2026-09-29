@@ -288,6 +288,16 @@ const menuGroups: MenuGroup[] = [
     ],
   },
   {
+    title: 'System Administration',
+    items: [
+      {
+        icon: UserCircleIcon,
+        name: 'Roles',
+        path: '/system/roles',
+      },
+    ],
+  },
+  {
     title: 'Menu',
     items: [
       {
