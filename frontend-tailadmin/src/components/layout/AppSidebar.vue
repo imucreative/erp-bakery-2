@@ -265,6 +265,11 @@ const menuGroups: MenuGroup[] = [
         name: 'Units of Measure',
         path: '/master/uoms',
       },
+      {
+        icon: BoxCubeIcon,
+        name: 'Suppliers',
+        path: '/master/suppliers',
+      },
     ],
   },
   {
