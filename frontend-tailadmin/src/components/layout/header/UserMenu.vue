@@ -10,7 +10,7 @@
         <img src="/images/user/owner.png" alt="User" class="h-full w-full object-cover" />
       </span>
 
-      <span class="block font-medium text-theme-sm ltr:mr-1 rtl:ml-1">Musharof</span>
+      <span class="block font-medium text-theme-sm ltr:mr-1 rtl:ml-1">{{ displayName }}</span>
 
       <!-- Chevron Icon -->
       <ChevronDownIcon
@@ -27,10 +27,10 @@
       <!-- User Info -->
       <div>
         <span class="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-          Musharof Chowdhury
+          {{ auth.companyName || 'Bakery ERP' }}
         </span>
         <span class="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-          randomuser@pimjo.com
+          {{ auth.userEmail || '—' }}
         </span>
       </div>
 
@@ -166,13 +166,13 @@
       </ul>
 
       <!-- Sign Out -->
-      <router-link
-        to="/signin"
+      <button
+        type="button"
         @click="signOut"
-        class="group mt-3 flex w-full items-center justify-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-theme-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-800 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+        class="group mt-3 flex w-full items-center justify-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-theme-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-800 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 cursor-pointer"
       >
         Sign out
-      </router-link>
+      </button>
     </div>
     <!-- Dropdown End -->
   </div>
@@ -180,9 +180,21 @@
 
 <script setup lang="ts">
 import { UserCircleIcon, ChevronDownIcon, SettingsIcon, InfoCircleIcon } from '@/icons'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRTL } from '@/composables/useRTL'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
+const router = useRouter()
+
+const displayName = computed<string>(() => {
+  const email = auth.userEmail
+  if (!email) {
+    return 'Account'
+  }
+  return email.split('@')[0]
+})
 
 interface Language {
   id: string
@@ -263,9 +275,10 @@ const selectLanguage = (localeId: string) => {
   closeDropdown()
 }
 
-const signOut = () => {
-  console.log('Signing out...')
+const signOut = async () => {
   closeDropdown()
+  await auth.logout()
+  await router.push({ name: 'Signin' })
 }
 
 const handleClickOutside = (event: MouseEvent) => {

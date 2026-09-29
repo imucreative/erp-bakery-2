@@ -1,0 +1,39 @@
+/**
+ * Persists auth tokens + active company id in localStorage so the Axios
+ * interceptor and the auth store can share them across reloads.
+ */
+
+const ACCESS_KEY = 'erp_access_token'
+const REFRESH_KEY = 'erp_refresh_token'
+const COMPANY_KEY = 'erp_company_id'
+
+export function getAccessToken(): string | null {
+  return localStorage.getItem(ACCESS_KEY)
+}
+
+export function getRefreshToken(): string | null {
+  return localStorage.getItem(REFRESH_KEY)
+}
+
+export function getCompanyId(): string | null {
+  return localStorage.getItem(COMPANY_KEY)
+}
+
+export function setTokens(accessToken: string, refreshToken: string): void {
+  localStorage.setItem(ACCESS_KEY, accessToken)
+  localStorage.setItem(REFRESH_KEY, refreshToken)
+}
+
+export function setAccessToken(accessToken: string): void {
+  localStorage.setItem(ACCESS_KEY, accessToken)
+}
+
+export function setCompanyId(companyId: string): void {
+  localStorage.setItem(COMPANY_KEY, companyId)
+}
+
+export function clearTokens(): void {
+  localStorage.removeItem(ACCESS_KEY)
+  localStorage.removeItem(REFRESH_KEY)
+  localStorage.removeItem(COMPANY_KEY)
+}

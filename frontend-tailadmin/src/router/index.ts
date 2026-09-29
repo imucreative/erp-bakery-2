@@ -1,4 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    title?: string
+    public?: boolean
+  }
+}
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -130,6 +138,7 @@ const router = createRouter({
       component: () => import('../views/Auth/Signin.vue'),
       meta: {
         title: 'Signin',
+        public: true,
       },
     },
     {
@@ -138,6 +147,7 @@ const router = createRouter({
       component: () => import('../views/Auth/Signup.vue'),
       meta: {
         title: 'Signup',
+        public: true,
       },
     },
   ],
@@ -146,6 +156,20 @@ const router = createRouter({
 export default router
 
 router.beforeEach((to, from, next) => {
-  document.title = `Vue.js ${to.meta.title} | TailAdmin - Vue.js Tailwind CSS Dashboard Template`
-  next()
+  document.title = `${to.meta.title ?? 'Bakery ERP'} | Bakery ERP`
+
+  const auth = useAuthStore()
+  const isPublic = to.meta.public === true
+
+  // Authenticated users should not see the auth pages.
+  if (isPublic && auth.isAuthenticated && (to.name === 'Signin' || to.name === 'Signup')) {
+    return next({ name: 'Ecommerce' })
+  }
+
+  // Protected routes require authentication.
+  if (!isPublic && !auth.isAuthenticated) {
+    return next({ name: 'Signin', query: { redirect: to.fullPath } })
+  }
+
+  return next()
 })
