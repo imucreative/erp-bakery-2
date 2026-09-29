@@ -46,11 +46,27 @@ const emit = defineEmits<{
   (event: 'blur'): void;
 }>();
 
+/**
+ * Reka UI 2.0 rejects a `SelectItem` whose `value` is an empty string. Filter
+ * dropdowns model "no selection" / "all" as an empty-string option, so we map
+ * empty-string option values to a non-empty internal sentinel for Reka UI and
+ * translate it back on emit. The public contract is unchanged: `modelValue` and
+ * the emitted value still use `''` to mean "no selection".
+ */
+const EMPTY_SENTINEL = '__erp_empty__';
+
+const internalOptions = computed<PrimitiveSelectOption[]>(() =>
+  props.options.map((option) =>
+    option.value === '' ? { ...option, value: EMPTY_SENTINEL } : option,
+  ),
+);
+
 // Reka UI's SelectRoot treats an empty string oddly for controlled state; use a
 // nullable bridge so "no selection" maps cleanly to the placeholder.
 const model = computed<string | null>({
   get: () => (props.modelValue ? props.modelValue : null),
-  set: (next) => emit('update:modelValue', next ?? ''),
+  set: (next) =>
+    emit('update:modelValue', next === null || next === EMPTY_SENTINEL ? '' : next),
 });
 
 const triggerClasses = computed<string>(() =>
@@ -85,7 +101,7 @@ const triggerClasses = computed<string>(() =>
       >
         <SelectViewport class="p-1">
           <SelectItem
-            v-for="option in options"
+            v-for="option in internalOptions"
             :key="option.value"
             :value="option.value"
             :disabled="option.disabled"

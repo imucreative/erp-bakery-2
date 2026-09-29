@@ -9,6 +9,7 @@ import {
   createWebHistory,
   type RouteRecordRaw,
 } from 'vue-router';
+import type { RouteLocationRaw } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { hasPermission } from '@/composables/usePermission';
 
@@ -31,7 +32,16 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     component: () => import('@/layouts/DashboardLayout.vue'),
     children: [
-      { path: '', name: 'home', redirect: { name: 'dashboard-owner' } },
+      { path: '', name: 'home', redirect: () => resolveSafeLanding() },
+      {
+        // Virtual landing route: never rendered directly, always resolves to
+        // the first destination the current user is permitted to see. Declares
+        // no permission so it can never itself be denied by the guard.
+        path: 'landing',
+        name: 'landing',
+        meta: { title: 'Home' },
+        redirect: () => resolveSafeLanding(),
+      },
       {
         path: 'dashboard/owner',
         name: 'dashboard-owner',
@@ -74,6 +84,35 @@ const routes: RouteRecordRaw[] = [
   },
 ];
 
+/**
+ * Ordered list of candidate landing destinations for an authenticated user.
+ * The first whose permission (if any) the user holds becomes the landing page.
+ * `company` sits at the end as the universal fallback: it declares no
+ * permission, so every authenticated user can reach it — preventing the
+ * redirect loop where a permission-denied route bounces to another gated route.
+ */
+const LANDING_CANDIDATES: ReadonlyArray<{ name: string; permission?: string }> = [
+  { name: 'dashboard-owner', permission: 'dashboard.read' },
+  { name: 'users', permission: 'user.read' },
+  { name: 'roles', permission: 'role.read' },
+  { name: 'company' },
+];
+
+/**
+ * Resolves the first landing route the current user is allowed to open.
+ * Guaranteed to return a route that passes the permission guard (falls back to
+ * `company`, which is ungated), so it can never trigger a redirect loop.
+ */
+function resolveSafeLanding(): RouteLocationRaw {
+  const auth = useAuthStore();
+  const target = LANDING_CANDIDATES.find(
+    (candidate) =>
+      !candidate.permission ||
+      hasPermission(auth.permissions, auth.isSuperAdmin, candidate.permission),
+  );
+  return { name: target?.name ?? 'company' };
+}
+
 export const router = createRouter({
   history: createWebHistory(),
   routes,
@@ -85,7 +124,7 @@ router.beforeEach((to) => {
   if (to.meta.public) {
     // Signed-in users should not see the login page.
     if (to.name === 'login' && auth.isAuthenticated) {
-      return { name: 'dashboard-owner' };
+      return resolveSafeLanding();
     }
     return true;
   }
@@ -96,8 +135,23 @@ router.beforeEach((to) => {
 
   const required = to.meta.permission;
   if (required && !hasPermission(auth.permissions, auth.isSuperAdmin, required)) {
-    return { name: 'dashboard-owner' };
+    // Redirect denied navigations to a route the user can actually reach,
+    // never to another gated route (which could loop).
+    return resolveSafeLanding();
   }
 
   return true;
+});
+
+/**
+ * BUG #1 safety net: Reka UI's DismissableLayer sets
+ * `document.body.style.pointerEvents = 'none'` while a modal dialog/drawer is
+ * open and restores it on cleanup. When a route change unmounts an open dialog,
+ * that cleanup can be skipped, leaving the whole page unclickable. After every
+ * navigation we defensively clear the inline style so the app never gets stuck.
+ */
+router.afterEach(() => {
+  if (typeof document !== 'undefined') {
+    document.body.style.pointerEvents = '';
+  }
 });

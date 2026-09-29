@@ -6,6 +6,7 @@
  * UI Foundation (ERPFormDialog / ERPDeleteDialog) wraps this; feature
  * components must use the foundation component, never this directly.
  */
+import { onBeforeUnmount } from 'vue';
 import {
   DialogRoot,
   DialogPortal,
@@ -16,7 +17,7 @@ import {
   DialogClose,
 } from 'reka-ui';
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     open: boolean;
     title: string;
@@ -30,6 +31,20 @@ const emit = defineEmits<{ (event: 'update:open', value: boolean): void }>();
 function onOpenChange(value: boolean): void {
   emit('update:open', value);
 }
+
+// BUG #1 cleanup: when this modal is unmounted while still open (e.g. a route
+// change navigates away mid-dialog), Reka UI's DismissableLayer cleanup can be
+// skipped, leaving `document.body.style.pointerEvents = 'none'` and a stray
+// overlay. Restore the body interactivity and notify the parent to reset its
+// open state so the app never becomes unclickable.
+onBeforeUnmount(() => {
+  if (props.open) {
+    emit('update:open', false);
+  }
+  if (typeof document !== 'undefined') {
+    document.body.style.pointerEvents = '';
+  }
+});
 </script>
 
 <template>

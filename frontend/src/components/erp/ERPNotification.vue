@@ -24,7 +24,7 @@ const iconColor: Record<NotificationVariant, string> = {
 </script>
 
 <template>
-  <div class="pointer-events-none fixed inset-x-0 top-4 z-50 flex flex-col items-center gap-2 px-4 sm:items-end sm:pr-6">
+  <div class="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col items-center gap-2 px-4 sm:inset-x-auto sm:right-6 sm:items-end">
     <TransitionGroup name="toast">
       <div
         v-for="item in items"
@@ -63,6 +63,6 @@ const iconColor: Record<NotificationVariant, string> = {
 .toast-enter-from,
 .toast-leave-to {
   opacity: 0;
-  transform: translateY(-6px);
+  transform: translateY(6px);
 }
 </style>
