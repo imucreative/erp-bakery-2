@@ -73,6 +73,26 @@ export function toISODate(date: Date): string {
   return `${year}-${month}-${day}`
 }
 
+/**
+ * Format a byte count as a human-readable size (e.g. `512 B`, `4,3 KB`,
+ * `2,1 MB`). Uses 1024-based units and the Indonesian decimal comma.
+ */
+export function formatFileSize(bytes: number | null | undefined): string {
+  const value = typeof bytes === 'number' && Number.isFinite(bytes) && bytes >= 0 ? bytes : 0
+  if (value < 1024) {
+    return `${value} B`
+  }
+  const units = ['KB', 'MB', 'GB']
+  let size = value / 1024
+  let unitIndex = 0
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024
+    unitIndex += 1
+  }
+  const rounded = Math.round(size * 10) / 10
+  return `${rounded.toLocaleString('id-ID', { maximumFractionDigits: 1 })} ${units[unitIndex]}`
+}
+
 /** `YYYY-MM-DD` for tomorrow — used as the PR expectedDate min & default. */
 export function tomorrowISO(): string {
   const tomorrow = new Date()

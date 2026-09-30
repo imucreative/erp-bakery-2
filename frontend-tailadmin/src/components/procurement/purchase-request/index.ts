@@ -5,5 +5,6 @@ export { default as PurchaseRequestItemsEditor } from './PurchaseRequestItemsEdi
 export { default as PurchaseRequestTimeline } from './PurchaseRequestTimeline.vue'
 export { default as PurchaseRequestActionModals } from './PurchaseRequestActionModals.vue'
 export { default as PurchaseRequestComments } from './PurchaseRequestComments.vue'
+export { default as PurchaseRequestAttachments } from './PurchaseRequestAttachments.vue'
 export type { EditorItemRow } from './PurchaseRequestItemsEditor.vue'
 export type { PurchaseRequestAction } from './PurchaseRequestActionModals.vue'

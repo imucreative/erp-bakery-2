@@ -25,6 +25,7 @@ import {
   PurchaseRequestTimeline,
   PurchaseRequestActionModals,
   PurchaseRequestComments,
+  PurchaseRequestAttachments,
   type PurchaseRequestAction,
 } from '@/components/procurement/purchase-request'
 import { usePermission } from '@/composables/usePermission'
@@ -370,6 +371,9 @@ async function onConfirmAction(note: string): Promise<void> {
         </ComponentCard>
         <ComponentCard title="Komentar">
           <PurchaseRequestComments :purchase-request-id="pr.id" />
+        </ComponentCard>
+        <ComponentCard title="Lampiran">
+          <PurchaseRequestAttachments :purchase-request-id="pr.id" :can-manage="canUpdate" />
         </ComponentCard>
       </div>
     </div>
