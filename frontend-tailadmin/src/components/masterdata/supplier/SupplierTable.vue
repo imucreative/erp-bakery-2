@@ -56,6 +56,9 @@ defineEmits<{
               Telepon
             </th>
             <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+              Payment Term
+            </th>
+            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
               Status
             </th>
             <th class="px-5 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
@@ -77,6 +80,15 @@ defineEmits<{
             </td>
             <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
               {{ supplier.phone || '—' }}
+            </td>
+            <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
+              <span v-if="supplier.defaultPaymentTermCode">
+                {{ supplier.defaultPaymentTermCode }}
+                <span v-if="supplier.defaultPaymentTermName" class="text-gray-400 dark:text-gray-500">
+                  — {{ supplier.defaultPaymentTermName }}
+                </span>
+              </span>
+              <span v-else>—</span>
             </td>
             <td class="px-5 py-4">
               <Badge :color="supplier.isActive ? 'success' : 'error'">
