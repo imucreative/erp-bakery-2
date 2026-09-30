@@ -92,20 +92,20 @@ const DOMAIN_ACCENTS: Record<string, DomainAccent> = {
   finance: {
     card: 'border-brand-200 bg-brand-50/40 dark:border-brand-500/30 dark:bg-brand-500/10',
     header: 'bg-brand-50 dark:bg-brand-500/15',
-    dot: 'bg-brand-400',
+    dot: 'bg-brand-600',
     title: 'text-brand-600 dark:text-brand-300',
   },
   reports: {
     card: 'border-blue-light-200 bg-blue-light-50/40 dark:border-blue-light-500/30 dark:bg-blue-light-500/10',
-    header: 'bg-blue-light-50 dark:bg-blue-light-500/15',
-    dot: 'bg-blue-light-400',
+    header: 'bg-blue-light-100 dark:bg-blue-light-500/15',
+    dot: 'bg-blue-light-600',
     title: 'text-blue-light-600 dark:text-blue-light-300',
   },
   settings: {
-    card: 'border-orange-200 bg-orange-50/40 dark:border-orange-500/30 dark:bg-orange-500/10',
-    header: 'bg-orange-50 dark:bg-orange-500/15',
-    dot: 'bg-orange-400',
-    title: 'text-orange-600 dark:text-orange-300',
+    card: 'border-purple-200 bg-purple-50/40 dark:border-purple-500/30 dark:bg-purple-500/10',
+    header: 'bg-purple-50 dark:bg-purple-500/15',
+    dot: 'bg-purple-400',
+    title: 'text-purple-600 dark:text-purple-300',
   },
 }
 
@@ -290,7 +290,7 @@ const totalSelected = computed<number>(() => props.modelValue.length)
       >
         <div class="flex items-center justify-between gap-3 px-4 py-3" :class="domain.accent.header">
           <div class="flex items-center gap-2.5">
-            <span class="inline-block h-2.5 w-2.5 rounded-full" :class="domain.accent.dot"></span>
+            <span class="inline-block h-3 w-3 rounded-full" :class="domain.accent.dot"/>
             <h5 class="text-sm font-semibold capitalize" :class="domain.accent.title">
               {{ domain.label }}
             </h5>

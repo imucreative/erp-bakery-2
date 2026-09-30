@@ -125,7 +125,7 @@ function onSubmit(): void {
     ></div>
 
     <div
-      class="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
+      class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
     >
       <h4 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
         {{ isEdit ? 'Edit Role' : 'Tambah Role' }}
