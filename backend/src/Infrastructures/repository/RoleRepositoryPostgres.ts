@@ -1,5 +1,9 @@
 import { Pool } from 'pg';
-import { RoleRepository, CreateRoleData } from '../../Domains/roles/RoleRepository';
+import {
+  RoleRepository,
+  CreateRoleData,
+  UpdateRoleData,
+} from '../../Domains/roles/RoleRepository';
 import { Role } from '../../Domains/roles/entities/Role';
 import { NotFoundError } from '../../Commons/exceptions/NotFoundError';
 
@@ -188,5 +192,123 @@ export class RoleRepositoryPostgres extends RoleRepository {
           isActive: row.is_active,
         }),
     );
+  }
+
+  async updateRole(id: string, companyId: string, data: UpdateRoleData): Promise<Role> {
+    // Build a dynamic SET clause from the provided fields. `code` is never updated.
+    const sets: string[] = [];
+    const params: (string | null)[] = [];
+    let idx = 1;
+
+    if (data.name !== undefined) {
+      sets.push(`name = $${idx++}`);
+      params.push(data.name);
+    }
+    if (data.description !== undefined) {
+      sets.push(`description = $${idx++}`);
+      params.push(data.description);
+    }
+
+    // Always refresh updated_at.
+    sets.push(`updated_at = NOW()`);
+
+    // WHERE params: id + companyId. Only company-owned roles are updatable —
+    // platform roles (company_id IS NULL) are excluded by the equality check.
+    const idParam = `$${idx++}`;
+    const companyParam = `$${idx++}`;
+    params.push(id, companyId);
+
+    const result = await this.pool.query<{
+      id: string;
+      company_id: string | null;
+      code: string;
+      name: string;
+      description: string | null;
+      is_active: boolean;
+    }>(
+      `UPDATE roles
+       SET ${sets.join(', ')}
+       WHERE id = ${idParam} AND company_id = ${companyParam}
+       RETURNING id, company_id, code, name, description, is_active`,
+      params,
+    );
+
+    if (!result.rowCount || result.rowCount === 0) {
+      throw new NotFoundError('ROLE.NOT_FOUND');
+    }
+
+    const row = result.rows[0];
+    return new Role({
+      id: row.id,
+      companyId: row.company_id,
+      code: row.code,
+      name: row.name,
+      description: row.description,
+      isActive: row.is_active,
+    });
+  }
+
+  async setRolePermissions(roleId: string, permissionCodes: string[]): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Remove all existing assignments for a clean full-sync.
+      await client.query(`DELETE FROM role_permissions WHERE role_id = $1`, [roleId]);
+
+      if (permissionCodes.length > 0) {
+        // Resolve codes → IDs; unknown codes are silently skipped here
+        // (use-case validates the catalog before calling).
+        const placeholders = permissionCodes.map((_, i) => `$${i + 1}`).join(', ');
+        const permResult = await client.query<{ id: string }>(
+          `SELECT id FROM permissions WHERE code IN (${placeholders})`,
+          permissionCodes,
+        );
+
+        if (permResult.rows.length > 0) {
+          const values = permResult.rows.map((_, i) => `($1, $${i + 2})`).join(', ');
+          const params: string[] = [roleId, ...permResult.rows.map((r) => r.id)];
+          await client.query(
+            `INSERT INTO role_permissions (role_id, permission_id)
+             VALUES ${values}
+             ON CONFLICT DO NOTHING`,
+            params,
+          );
+        }
+      }
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  async deleteRole(id: string, companyId: string): Promise<void> {
+    // Only company-owned roles can be deleted; platform roles (company_id NULL)
+    // are excluded by the equality check. role_permissions rows cascade.
+    const result = await this.pool.query(
+      `DELETE FROM roles WHERE id = $1 AND company_id = $2`,
+      [id, companyId],
+    );
+
+    if (!result.rowCount || result.rowCount === 0) {
+      throw new NotFoundError('ROLE.NOT_FOUND');
+    }
+  }
+
+  async countUsersUsingRole(roleId: string, companyId: string): Promise<number> {
+    const result = await this.pool.query<{ count: string }>(
+      `SELECT COUNT(*)::int AS count
+       FROM users
+       WHERE role_id = $1
+         AND company_id = $2
+         AND deleted_at IS NULL`,
+      [roleId, companyId],
+    );
+
+    return Number(result.rows[0]?.count ?? 0);
   }
 }

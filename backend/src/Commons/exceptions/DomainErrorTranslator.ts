@@ -318,6 +318,45 @@ const DomainErrorTranslator = {
       'Gagal memperbarui user: daftar outlet tidak valid',
     ),
 
+    // ── CreateRole ───────────────────────────────────────────────
+    'CREATE_ROLE.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal membuat role: properti yang dibutuhkan tidak ada',
+    ),
+    'CREATE_ROLE.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal membuat role: tipe data tidak sesuai',
+    ),
+    'CREATE_ROLE.CODE_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat role: kode harus 1-50 karakter',
+    ),
+    'CREATE_ROLE.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat role: nama harus 1-100 karakter',
+    ),
+
+    // ── UpdateRole ───────────────────────────────────────────────
+    'UPDATE_ROLE.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal memperbarui role: tidak ada field yang dikirimkan',
+    ),
+    'UPDATE_ROLE.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal memperbarui role: tipe data tidak sesuai',
+    ),
+    'UPDATE_ROLE.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal memperbarui role: nama harus 1-100 karakter',
+    ),
+
+    // ── Role (business rules & guardrails — ADR 49) ──────────────
+    'ROLE.PERMISSION_UNKNOWN': new InvariantError(
+      'Gagal menyimpan role: terdapat permission yang tidak dikenal',
+    ),
+    'ROLE.OWNER_CANNOT_BE_DELETED': new ConflictError(
+      'Role Owner tidak dapat dihapus',
+    ),
+    'ROLE.IN_USE': new ConflictError(
+      'Role tidak dapat dihapus karena masih digunakan oleh user aktif',
+    ),
+    'ROLE.CODE_ALREADY_USED': new ConflictError(
+      'Kode role sudah digunakan pada perusahaan ini',
+    ),
+
     // ── RegisterUser ─────────────────────────────────────────────
     'REGISTER_USER.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
       'Gagal membuat user: properti yang dibutuhkan tidak ada',

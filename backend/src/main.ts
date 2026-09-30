@@ -74,6 +74,7 @@ async function bootstrap() {
       .addTag('Companies', 'SaaS company registration and management')
       .addTag('Outlets', 'Physical bakery outlets per company')
       .addTag('Roles', 'Roles and their permissions per company')
+      .addTag('Permissions', 'Global permission catalog with Domain → Module → Action metadata')
       .addTag('Users', 'Invite users, assign roles and outlets')
       .addTag('Product Groups', 'Product group master data per company')
       .addTag('UOM', 'Unit of measure master data per company')

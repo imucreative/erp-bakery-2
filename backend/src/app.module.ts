@@ -5,6 +5,7 @@ import { AuthModule } from './Interfaces/http/api/auth/auth.module';
 import { CompanyModule } from './Interfaces/http/api/companies/company.module';
 import { OutletModule } from './Interfaces/http/api/outlets/outlet.module';
 import { RoleModule } from './Interfaces/http/api/roles/role.module';
+import { PermissionModule } from './Interfaces/http/api/permissions/permission.module';
 import { UserModule } from './Interfaces/http/api/users/user.module';
 import { ProductGroupModule } from './Interfaces/http/api/product-groups/product-group.module';
 import { UomModule } from './Interfaces/http/api/uoms/uom.module';
@@ -41,6 +42,7 @@ import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
     CompanyModule,
     OutletModule,
     RoleModule,
+    PermissionModule,
     UserModule,
     ProductGroupModule,
     UomModule,

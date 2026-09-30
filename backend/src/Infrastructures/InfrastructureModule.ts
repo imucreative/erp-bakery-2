@@ -105,6 +105,9 @@ import { UpdateRecipeUseCase } from '../Applications/use_case/recipes/UpdateReci
 import { ActivateRecipeUseCase } from '../Applications/use_case/recipes/ActivateRecipeUseCase';
 import { ArchiveRecipeUseCase } from '../Applications/use_case/recipes/ArchiveRecipeUseCase';
 import { GetRecipesUseCase } from '../Applications/use_case/recipes/GetRecipesUseCase';
+import { CreateRoleUseCase } from '../Applications/use_case/roles/CreateRoleUseCase';
+import { UpdateRoleUseCase } from '../Applications/use_case/roles/UpdateRoleUseCase';
+import { DeleteRoleUseCase } from '../Applications/use_case/roles/DeleteRoleUseCase';
 import { CreateProductionOrderUseCase } from '../Applications/use_case/production/CreateProductionOrderUseCase';
 import { StartProductionOrderUseCase } from '../Applications/use_case/production/StartProductionOrderUseCase';
 import { RecordYieldUseCase } from '../Applications/use_case/production/RecordYieldUseCase';
@@ -281,6 +284,23 @@ import { GetProductionOrdersUseCase } from '../Applications/use_case/production/
         outletRepo: OutletRepository,
       ) => new UpdateUserUseCase(userRepo, roleRepo, outletRepo),
       inject: [UserRepository, RoleRepository, OutletRepository],
+    },
+    {
+      provide: CreateRoleUseCase,
+      useFactory: (roleRepo: RoleRepository, permissionRepo: PermissionRepository) =>
+        new CreateRoleUseCase(roleRepo, permissionRepo),
+      inject: [RoleRepository, PermissionRepository],
+    },
+    {
+      provide: UpdateRoleUseCase,
+      useFactory: (roleRepo: RoleRepository, permissionRepo: PermissionRepository) =>
+        new UpdateRoleUseCase(roleRepo, permissionRepo),
+      inject: [RoleRepository, PermissionRepository],
+    },
+    {
+      provide: DeleteRoleUseCase,
+      useFactory: (roleRepo: RoleRepository) => new DeleteRoleUseCase(roleRepo),
+      inject: [RoleRepository],
     },
     {
       provide: CreateProductGroupUseCase,
@@ -653,6 +673,9 @@ import { GetProductionOrdersUseCase } from '../Applications/use_case/production/
     UpdateOutletUseCase,
     CreateUserUseCase,
     UpdateUserUseCase,
+    CreateRoleUseCase,
+    UpdateRoleUseCase,
+    DeleteRoleUseCase,
     CreateProductGroupUseCase,
     UpdateProductGroupUseCase,
     DeleteProductGroupUseCase,
