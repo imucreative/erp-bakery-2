@@ -2,9 +2,10 @@
 /**
  * PurchaseRequestTimeline — vertical approval timeline rendered from the PR's
  * `statusLogs` (chronological). Each entry shows the transition (fromStatus →
- * toStatus as colored badges), the actor, an optional note, and the timestamp
- * (Asia/Jakarta). The create entry has `fromStatus = null`, rendered as the
- * document's creation.
+ * toStatus as colored badges), the actor name, an optional note, and the
+ * timestamp (Asia/Jakarta). The create entry has `fromStatus = null`, rendered
+ * as the document's creation. Actor is shown by `actorName` (never a UUID),
+ * falling back to an em dash when null.
  */
 import Badge from '@/components/ui/Badge.vue'
 import { formatDateTime } from '@/lib/format'
@@ -16,8 +17,15 @@ import {
 
 defineProps<{
   logs: PurchaseRequestStatusLog[]
-  actorName: (id: string) => string
 }>()
+
+/**
+ * Resolve the actor label from the backend-provided `actorName`. Never render a
+ * raw UUID: a null/blank name falls back to an em dash.
+ */
+function actorLabel(log: PurchaseRequestStatusLog): string {
+  return log.actorName?.trim() || '—'
+}
 </script>
 
 <template>
@@ -45,7 +53,7 @@ defineProps<{
             </Badge>
           </div>
           <p class="text-theme-sm text-gray-700 dark:text-gray-300">
-            oleh <span class="font-medium">{{ actorName(log.actorId) }}</span>
+            oleh <span class="font-medium">{{ actorLabel(log) }}</span>
           </p>
           <p v-if="log.note" class="text-theme-sm text-gray-500 dark:text-gray-400">
             "{{ log.note }}"

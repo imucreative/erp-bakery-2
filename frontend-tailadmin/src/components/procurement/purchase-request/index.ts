@@ -4,5 +4,6 @@ export { default as PurchaseRequestFilterBar } from './PurchaseRequestFilterBar.
 export { default as PurchaseRequestItemsEditor } from './PurchaseRequestItemsEditor.vue'
 export { default as PurchaseRequestTimeline } from './PurchaseRequestTimeline.vue'
 export { default as PurchaseRequestActionModals } from './PurchaseRequestActionModals.vue'
+export { default as PurchaseRequestComments } from './PurchaseRequestComments.vue'
 export type { EditorItemRow } from './PurchaseRequestItemsEditor.vue'
 export type { PurchaseRequestAction } from './PurchaseRequestActionModals.vue'

@@ -24,6 +24,7 @@ import Button from '@/components/ui/Button.vue'
 import {
   PurchaseRequestTimeline,
   PurchaseRequestActionModals,
+  PurchaseRequestComments,
   type PurchaseRequestAction,
 } from '@/components/procurement/purchase-request'
 import { usePermission } from '@/composables/usePermission'
@@ -63,10 +64,6 @@ function productName(id: string): string {
 }
 function uomName(id: string): string {
   return uomNames.value.get(id) ?? id
-}
-// Actor names aren't exposed by a user lookup here; show a short id fallback.
-function actorName(id: string): string {
-  return id
 }
 
 // ── Permission + status → available actions ──────────────────────────
@@ -366,10 +363,13 @@ async function onConfirmAction(note: string): Promise<void> {
         </ComponentCard>
       </div>
 
-      <!-- Side column: approval timeline -->
-      <div class="lg:col-span-1">
+      <!-- Side column: approval timeline + comments -->
+      <div class="space-y-5 lg:col-span-1">
         <ComponentCard title="Riwayat Persetujuan">
-          <PurchaseRequestTimeline :logs="pr.statusLogs" :actor-name="actorName" />
+          <PurchaseRequestTimeline :logs="pr.statusLogs" />
+        </ComponentCard>
+        <ComponentCard title="Komentar">
+          <PurchaseRequestComments :purchase-request-id="pr.id" />
         </ComponentCard>
       </div>
     </div>

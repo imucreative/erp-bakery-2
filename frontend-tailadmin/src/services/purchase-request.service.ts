@@ -68,8 +68,50 @@ export interface PurchaseRequestStatusLog {
   fromStatus: PurchaseRequestStatus | null
   toStatus: PurchaseRequestStatus
   actorId: string
+  actorName: string | null
   note: string | null
   createdAt: string
+}
+
+/**
+ * Comment categories. INTERNAL/APPROVAL/EXTERNAL are user-selectable and sent to
+ * the backend; SYSTEM is display-only (backend-authored) and never submitted.
+ */
+export const PURCHASE_REQUEST_COMMENT_CATEGORIES = [
+  'INTERNAL',
+  'APPROVAL',
+  'EXTERNAL',
+] as const
+export type PurchaseRequestCommentCategory =
+  (typeof PURCHASE_REQUEST_COMMENT_CATEGORIES)[number]
+
+/** Full set including SYSTEM, used only for rendering existing comments. */
+export type PurchaseRequestCommentCategoryDisplay =
+  | PurchaseRequestCommentCategory
+  | 'SYSTEM'
+
+export const PURCHASE_REQUEST_COMMENT_CATEGORY_LABELS: Record<
+  PurchaseRequestCommentCategoryDisplay,
+  string
+> = {
+  INTERNAL: 'Internal',
+  APPROVAL: 'Persetujuan',
+  EXTERNAL: 'Eksternal',
+  SYSTEM: 'Sistem',
+}
+
+export interface PurchaseRequestComment {
+  id: string
+  category: PurchaseRequestCommentCategoryDisplay
+  body: string
+  authorId: string
+  authorName: string | null
+  createdAt: string
+}
+
+export interface AddPurchaseRequestCommentPayload {
+  body: string
+  category?: PurchaseRequestCommentCategory
 }
 
 export interface PurchaseRequest {
@@ -204,6 +246,45 @@ export const purchaseRequestService = {
     )
     return response.data.data
   },
+
+  async listComments(id: string): Promise<PurchaseRequestComment[]> {
+    const response = await httpClient.get<ApiSuccess<PurchaseRequestComment[]>>(
+      `/purchase-requests/${id}/comments`,
+    )
+    return response.data.data
+  },
+
+  async addComment(
+    id: string,
+    payload: AddPurchaseRequestCommentPayload,
+  ): Promise<PurchaseRequestComment> {
+    const response = await httpClient.post<ApiSuccess<PurchaseRequestComment>>(
+      `/purchase-requests/${id}/comments`,
+      payload,
+    )
+    return response.data.data
+  },
+}
+
+/**
+ * Badge color mapping per comment category (aligns with the ui/Badge `color`
+ * palette): INTERNAL neutral/gray, APPROVAL brand/success, EXTERNAL warning,
+ * SYSTEM blue-light (`info`).
+ */
+export function commentCategoryBadgeColor(
+  category: PurchaseRequestCommentCategoryDisplay,
+): 'light' | 'success' | 'warning' | 'info' {
+  switch (category) {
+    case 'APPROVAL':
+      return 'success'
+    case 'EXTERNAL':
+      return 'warning'
+    case 'SYSTEM':
+      return 'info'
+    case 'INTERNAL':
+    default:
+      return 'light'
+  }
 }
 
 /** Badge color mapping per status (aligns with the ui/Badge `color` palette). */
