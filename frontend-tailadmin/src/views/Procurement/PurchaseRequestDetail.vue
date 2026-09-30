@@ -96,8 +96,8 @@ const hasAnyAction = computed<boolean>(
 async function loadLookups(): Promise<void> {
   const [outletResult, productResult, uomResult] = await Promise.all([
     outletService.list({ page: 1, limit: 100, isActive: 'true' }),
-    productService.list({ page: 1, limit: 200 }),
-    uomService.list({ page: 1, limit: 200 }),
+    productService.list({ page: 1, limit: 100 }),
+    uomService.list({ page: 1, limit: 100 }),
   ])
   outletNames.value = new Map(outletResult.items.map((o) => [o.id, o.name]))
   productNames.value = new Map(productResult.items.map((p) => [p.id, `${p.name} (${p.sku})`]))

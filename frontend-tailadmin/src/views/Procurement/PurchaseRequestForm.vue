@@ -71,8 +71,8 @@ const isReadOnly = computed<boolean>(
 async function loadSupportingData(): Promise<void> {
   const [outletResult, productResult, uomResult] = await Promise.all([
     outletService.list({ page: 1, limit: 100, isActive: 'true' }),
-    productService.list({ page: 1, limit: 200, isActive: 'true' }),
-    uomService.list({ page: 1, limit: 200, isActive: 'true' }),
+    productService.list({ page: 1, limit: 100, isActive: 'true' }),
+    uomService.list({ page: 1, limit: 100, isActive: 'true' }),
   ])
   outlets.value = outletResult.items
   products.value = productResult.items
