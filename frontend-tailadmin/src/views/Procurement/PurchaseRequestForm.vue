@@ -130,8 +130,12 @@ function validate(): string | null {
     if (!item.productId) {
       return `Item ${row}: produk wajib dipilih.`
     }
+    // uomId must be a non-empty UUID. It is auto-filled when a product is
+    // selected; an empty value here means the product had no UOM or the row is
+    // incomplete — block submit with a clear message rather than letting the
+    // backend reject "items.N.uomId must be a UUID".
     if (!item.uomId) {
-      return `Item ${row}: UOM wajib dipilih.`
+      return `Item ${row}: UOM wajib dipilih (pilih ulang produk agar UOM terisi).`
     }
     if (!(Number(item.quantity) > 0)) {
       return `Item ${row}: kuantitas harus lebih dari 0.`

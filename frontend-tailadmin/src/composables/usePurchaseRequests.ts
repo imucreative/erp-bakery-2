@@ -29,8 +29,27 @@ export interface PurchaseRequestListMeta {
 
 export type StatusFilter = 'all' | PurchaseRequestStatus
 
+/**
+ * Normalize an unknown error into a user-facing message.
+ *
+ * For `ApiClientError` we surface the backend `fieldErrors` when present, so a
+ * validation envelope like
+ *   { message: "Validasi request gagal", errors: [{ message: "items.0.uomId must be a UUID" }] }
+ * becomes "Validasi request gagal: items.0.uomId must be a UUID" instead of the
+ * opaque top-level message alone. Empty `fieldErrors` falls back to
+ * `error.message`; non-ApiClientError stays generic and safe.
+ */
 export function toMessage(error: unknown): string {
-  if (error instanceof ApiClientError || error instanceof Error) {
+  if (error instanceof ApiClientError) {
+    const details = error.fieldErrors
+      .map((item) => item.message)
+      .filter((message): message is string => Boolean(message))
+    if (details.length > 0) {
+      return `${error.message}: ${details.join('; ')}`
+    }
+    return error.message
+  }
+  if (error instanceof Error) {
     return error.message
   }
   return 'Terjadi kesalahan. Coba lagi.'

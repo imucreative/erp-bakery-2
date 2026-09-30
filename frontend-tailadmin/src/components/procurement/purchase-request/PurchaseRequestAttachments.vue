@@ -52,7 +52,16 @@ const confirmDeleteId = ref<string | null>(null)
 const deletingId = ref<string | null>(null)
 
 function toMessage(error: unknown): string {
-  if (error instanceof ApiClientError || error instanceof Error) {
+  if (error instanceof ApiClientError) {
+    const details = error.fieldErrors
+      .map((item) => item.message)
+      .filter((message): message is string => Boolean(message))
+    if (details.length > 0) {
+      return `${error.message}: ${details.join('; ')}`
+    }
+    return error.message
+  }
+  if (error instanceof Error) {
     return error.message
   }
   return 'Terjadi kesalahan. Coba lagi.'

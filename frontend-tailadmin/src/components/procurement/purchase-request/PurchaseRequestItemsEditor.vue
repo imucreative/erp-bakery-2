@@ -47,8 +47,23 @@ const productMap = computed<Map<string, Product>>(
 )
 const uomMap = computed<Map<string, Uom>>(() => new Map(props.uoms.map((u) => [u.id, u])))
 
-function uomName(id: string): string {
-  return uomMap.value.get(id)?.name ?? '-'
+/**
+ * The UOM options to render for a given row. Starts from the loaded (active)
+ * UOM list, then — if the row already holds a `uomId` that is NOT in that list
+ * (e.g. the product's UOM was deactivated and dropped from the active lookup) —
+ * appends a synthetic "(nonaktif)" option so the select shows the current,
+ * valid selection instead of rendering blank. A blank-looking select would
+ * otherwise mislead the user into thinking `uomId` is empty when it is set.
+ * Mirrors the payment-term pattern in SupplierFormModal.
+ */
+function uomOptionsForRow(row: EditorItemRow): Array<{ id: string; label: string }> {
+  const options = props.uoms.map((u) => ({ id: u.id, label: u.name }))
+  if (row.uomId && !uomMap.value.has(row.uomId)) {
+    const product = productMap.value.get(row.productId)
+    const base = product ? `UOM ${product.name}` : 'UOM saat ini'
+    options.push({ id: row.uomId, label: `${base} (nonaktif)` })
+  }
+  return options
 }
 
 function subtotal(row: EditorItemRow): number {
@@ -73,10 +88,15 @@ function updateRow(index: number, patch: Partial<EditorItemRow>): void {
 function onProductChange(index: number, productId: string): void {
   const product = productMap.value.get(productId)
   const current = props.modelValue[index]
-  const patch: Partial<EditorItemRow> = { productId }
-  // Auto-fill UOM from the product when available.
-  if (product?.uomId) {
-    patch.uomId = product.uomId
+  // Always derive uomId from the selected product. A product always carries a
+  // uomId in the contract, so we set it unconditionally (even when it points to
+  // a now-inactive UOM absent from the loaded list — the value is still a valid
+  // UUID and stays visible via the synthetic option). If the product can't be
+  // resolved, blank the uomId so validation blocks submit rather than sending a
+  // stale value from a previously-selected product.
+  const patch: Partial<EditorItemRow> = {
+    productId,
+    uomId: product?.uomId ?? '',
   }
   // Pre-fill estimated price from the product's purchase price only when the
   // row's price hasn't been set yet (don't clobber a user-entered value).
@@ -168,7 +188,9 @@ function removeRow(index: number): void {
                   @change="updateRow(index, { uomId: ($event.target as HTMLSelectElement).value })"
                 >
                   <option value="" disabled>Pilih UOM</option>
-                  <option v-for="u in uoms" :key="u.id" :value="u.id">{{ u.name }}</option>
+                  <option v-for="u in uomOptionsForRow(row)" :key="u.id" :value="u.id">
+                    {{ u.label }}
+                  </option>
                 </select>
                 <ChevronDownIcon
                   class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
