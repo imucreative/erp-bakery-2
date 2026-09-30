@@ -1,12 +1,19 @@
 /**
- * useRoles — read-only role list + lazy detail loading. Roles change rarely
- * (seed-controlled), and the list is small & not paginated, so this keeps a
- * simple client-side search filter.
+ * useRoles — role list + lazy detail loading + CRUD (Dynamic Role Management,
+ * ADR 49). Roles are a small, non-paginated, company-scoped set, so this keeps
+ * a simple client-side search filter. Create/update/delete surface backend
+ * errors (409 OWNER/in-use, 400 validation) via normalized messages.
  */
 
 import { computed, ref } from 'vue'
 import { ApiClientError } from '@/services/http'
-import { roleService, type Role, type RoleDetail } from '@/services/role.service'
+import {
+  roleService,
+  type Role,
+  type RoleDetail,
+  type CreateRolePayload,
+  type UpdateRolePayload,
+} from '@/services/role.service'
 
 function toMessage(error: unknown): string {
   if (error instanceof ApiClientError || error instanceof Error) {
@@ -70,6 +77,22 @@ export function useRoles() {
     detailError.value = null
   }
 
+  // ── Mutations ────────────────────────────────────────────────────────
+  async function createRole(payload: CreateRolePayload): Promise<void> {
+    await roleService.create(payload)
+    await fetchList()
+  }
+
+  async function updateRole(id: string, payload: UpdateRolePayload): Promise<void> {
+    await roleService.update(id, payload)
+    await fetchList()
+  }
+
+  async function deleteRole(id: string): Promise<void> {
+    await roleService.remove(id)
+    await fetchList()
+  }
+
   return {
     roles,
     filtered,
@@ -82,5 +105,9 @@ export function useRoles() {
     detailError,
     loadDetail,
     clearDetail,
+    createRole,
+    updateRole,
+    deleteRole,
+    toMessage,
   }
 }

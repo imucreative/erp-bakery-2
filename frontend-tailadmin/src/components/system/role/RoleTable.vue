@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
- * RoleTable — read-only table for roles. A single compact icon-only action
- * ("view permissions", Eye). Roles are seed-controlled so there is no
- * create/edit/delete. Renders loading / error / empty states.
+ * RoleTable — roles table with icon-only row actions (view / edit / delete),
+ * per the master-module UI standard. Edit/Delete are hidden when the user
+ * lacks `role.manage`; Delete is also hidden for OWNER (backend rejects it —
+ * ADR 49). Renders loading / error / empty states.
  */
-import { Eye } from 'lucide-vue-next'
+import { Eye, Pencil, Trash2 } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
 import type { Role } from '@/services/role.service'
 
@@ -12,11 +13,18 @@ defineProps<{
   items: Role[]
   loading: boolean
   errorMessage: string | null
+  canManage: boolean
 }>()
 
 defineEmits<{
   (event: 'view', role: Role): void
+  (event: 'edit', role: Role): void
+  (event: 'delete', role: Role): void
 }>()
+
+function isOwner(role: Role): boolean {
+  return role.code === 'OWNER'
+}
 </script>
 
 <template>
@@ -82,7 +90,7 @@ defineEmits<{
               </Badge>
             </td>
             <td class="px-5 py-4">
-              <div class="flex items-center justify-end">
+              <div class="flex items-center justify-end gap-2">
                 <button
                   type="button"
                   aria-label="Lihat permission"
@@ -91,6 +99,26 @@ defineEmits<{
                   @click="$emit('view', role)"
                 >
                   <Eye class="h-4 w-4" aria-hidden="true" />
+                </button>
+                <button
+                  v-if="canManage"
+                  type="button"
+                  aria-label="Edit"
+                  title="Edit"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
+                  @click="$emit('edit', role)"
+                >
+                  <Pencil class="h-4 w-4" aria-hidden="true" />
+                </button>
+                <button
+                  v-if="canManage && !isOwner(role)"
+                  type="button"
+                  aria-label="Hapus"
+                  title="Hapus"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-error-500 ring-1 ring-inset ring-error-200 transition hover:bg-error-50 hover:text-error-600 dark:ring-error-500/30 dark:hover:bg-error-500/10"
+                  @click="$emit('delete', role)"
+                >
+                  <Trash2 class="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
             </td>
