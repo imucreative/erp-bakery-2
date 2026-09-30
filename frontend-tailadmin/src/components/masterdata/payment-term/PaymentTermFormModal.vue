@@ -73,7 +73,7 @@ function onSubmit(): void {
     return
   }
 
-  const raw = dueDays.value.trim()
+  const raw = String(dueDays.value ?? '').trim()
   if (raw.length === 0) {
     localError.value = 'Jatuh tempo wajib diisi.'
     return
