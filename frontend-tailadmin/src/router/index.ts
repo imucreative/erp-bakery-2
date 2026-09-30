@@ -25,6 +25,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/master/outlets',
+      name: 'Outlets',
+      component: () => import('../views/MasterData/OutletList.vue'),
+      meta: {
+        title: 'Outlets',
+        permission: 'outlet.read',
+      },
+    },
+    {
       path: '/master/uoms',
       name: 'Uoms',
       component: () => import('../views/MasterData/UomList.vue'),

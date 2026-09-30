@@ -261,6 +261,11 @@ const menuGroups: MenuGroup[] = [
     title: 'Master Data',
     items: [
       {
+        icon: BoxCubeIcon,
+        name: 'Outlets',
+        path: '/master/outlets',
+      },
+      {
         icon: ListIcon,
         name: 'Units of Measure',
         path: '/master/uoms',
