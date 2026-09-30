@@ -52,6 +52,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/master/payment-terms',
+      name: 'PaymentTerms',
+      component: () => import('../views/MasterData/PaymentTermList.vue'),
+      meta: {
+        title: 'Payment Terms',
+        permission: 'payment-term.read',
+      },
+    },
+    {
       path: '/master/product-groups',
       name: 'ProductGroups',
       component: () => import('../views/MasterData/ProductGroupList.vue'),

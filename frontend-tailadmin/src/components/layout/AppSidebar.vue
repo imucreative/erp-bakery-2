@@ -277,6 +277,11 @@ const menuGroups: MenuGroup[] = [
       },
       {
         icon: ListIcon,
+        name: 'Payment Terms',
+        path: '/master/payment-terms',
+      },
+      {
+        icon: ListIcon,
         name: 'Product Groups',
         path: '/master/product-groups',
       },
