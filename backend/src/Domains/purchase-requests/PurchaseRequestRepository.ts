@@ -1,5 +1,12 @@
 import { PurchaseRequest } from './entities/PurchaseRequest';
 import { CreatePurchaseRequestItemInput } from './entities/CreatePurchaseRequest';
+import { PurchaseRequestComment } from './entities/PurchaseRequestComment';
+import { PurchaseRequestCommentCategory } from './purchaseRequestCommentCategory';
+
+export interface NewPurchaseRequestCommentData {
+  category: PurchaseRequestCommentCategory;
+  body: string;
+}
 
 export interface NewPurchaseRequestData {
   destinationOutletId: string;
@@ -83,4 +90,28 @@ export abstract class PurchaseRequestRepository {
     userId: string | null,
     note: string | null,
   ): Promise<PurchaseRequest>;
+
+  /**
+   * Verify the PR exists in the company (throws PURCHASE_REQUEST.NOT_FOUND
+   * otherwise). Used by the comment use cases to enforce tenant scope before
+   * touching the thread.
+   */
+  abstract ensureExists(id: string, companyId: string): Promise<void>;
+
+  /**
+   * Append a comment to the PR thread and return it with the resolved author
+   * name (JOIN to users).
+   */
+  abstract addComment(
+    purchaseRequestId: string,
+    companyId: string,
+    authorId: string | null,
+    data: NewPurchaseRequestCommentData,
+  ): Promise<PurchaseRequestComment>;
+
+  /** List the PR thread chronologically (each item carries authorName). */
+  abstract listComments(
+    purchaseRequestId: string,
+    companyId: string,
+  ): Promise<PurchaseRequestComment[]>;
 }

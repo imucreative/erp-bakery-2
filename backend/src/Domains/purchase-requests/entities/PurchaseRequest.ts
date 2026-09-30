@@ -14,6 +14,8 @@ export interface PurchaseRequestStatusLog {
   fromStatus: PurchaseRequestStatus | null;
   toStatus: PurchaseRequestStatus;
   actorId: string | null;
+  /** Resolved via LEFT JOIN to users (actor_id -> users.name); null if missing. */
+  actorName: string | null;
   note: string | null;
   createdAt: Date;
 }

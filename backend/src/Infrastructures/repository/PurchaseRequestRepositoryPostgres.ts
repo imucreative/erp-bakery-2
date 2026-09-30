@@ -2,6 +2,7 @@ import { Pool, PoolClient } from 'pg';
 import {
   PurchaseRequestRepository,
   NewPurchaseRequestData,
+  NewPurchaseRequestCommentData,
   PurchaseRequestListFilter,
   PurchaseRequestListResult,
 } from '../../Domains/purchase-requests/PurchaseRequestRepository';
@@ -10,6 +11,8 @@ import {
   PurchaseRequestItem,
   PurchaseRequestStatusLog,
 } from '../../Domains/purchase-requests/entities/PurchaseRequest';
+import { PurchaseRequestComment } from '../../Domains/purchase-requests/entities/PurchaseRequestComment';
+import { PurchaseRequestCommentCategory } from '../../Domains/purchase-requests/purchaseRequestCommentCategory';
 import {
   PurchaseRequestStatus,
   canTransition,
@@ -50,7 +53,17 @@ interface LogRow {
   from_status: string | null;
   to_status: string;
   actor_id: string | null;
+  actor_name: string | null;
   note: string | null;
+  created_at: Date;
+}
+
+interface CommentRow {
+  id: string;
+  category: string;
+  body: string;
+  author_id: string | null;
+  author_name: string | null;
   created_at: Date;
 }
 
@@ -58,7 +71,22 @@ const HEADER_COLUMNS = `id, company_id, pr_number, requestor_id, destination_out
   expected_date, total_estimated_amount, status, notes, approved_by, approved_at,
   created_by, updated_by, created_at, updated_at`;
 const ITEM_COLUMNS = `id, product_id, quantity, uom_id, estimated_price, subtotal`;
-const LOG_COLUMNS = `id, from_status, to_status, actor_id, note, created_at`;
+
+/**
+ * Status-log columns with the actor name resolved via LEFT JOIN to users.
+ * Aliased on the `l` table; the join uses `actor_users` to avoid clashing with
+ * any other join. `actor_name` is null when the actor user was removed.
+ */
+const LOG_SELECT = `SELECT l.id, l.from_status, l.to_status, l.actor_id,
+    actor_users.name AS actor_name, l.note, l.created_at
+  FROM purchase_request_status_logs l
+  LEFT JOIN users actor_users ON actor_users.id = l.actor_id`;
+
+/** Comment columns with author name resolved via LEFT JOIN to users. */
+const COMMENT_SELECT = `SELECT c.id, c.category, c.body, c.author_id,
+    author_users.name AS author_name, c.created_at
+  FROM purchase_request_comments c
+  LEFT JOIN users author_users ON author_users.id = c.author_id`;
 
 /**
  * Concrete PostgreSQL implementation of PurchaseRequestRepository.
@@ -89,7 +117,19 @@ export class PurchaseRequestRepositoryPostgres extends PurchaseRequestRepository
       fromStatus: (row.from_status as PurchaseRequestStatus) ?? null,
       toStatus: row.to_status as PurchaseRequestStatus,
       actorId: row.actor_id,
+      actorName: row.actor_name,
       note: row.note,
+      createdAt: row.created_at,
+    };
+  }
+
+  private _toComment(row: CommentRow): PurchaseRequestComment {
+    return {
+      id: row.id,
+      category: row.category as PurchaseRequestCommentCategory,
+      body: row.body,
+      authorId: row.author_id,
+      authorName: row.author_name,
       createdAt: row.created_at,
     };
   }
@@ -156,8 +196,8 @@ export class PurchaseRequestRepositoryPostgres extends PurchaseRequestRepository
 
   private async _loadLogs(client: PoolClient, prId: string): Promise<LogRow[]> {
     const result = await client.query<LogRow>(
-      `SELECT ${LOG_COLUMNS} FROM purchase_request_status_logs
-       WHERE purchase_request_id = $1 ORDER BY created_at ASC, id ASC`,
+      `${LOG_SELECT}
+       WHERE l.purchase_request_id = $1 ORDER BY l.created_at ASC, l.id ASC`,
       [prId],
     );
     return result.rows;
@@ -327,8 +367,8 @@ export class PurchaseRequestRepositoryPostgres extends PurchaseRequestRepository
       [id],
     );
     const logsResult = await this.pool.query<LogRow>(
-      `SELECT ${LOG_COLUMNS} FROM purchase_request_status_logs
-       WHERE purchase_request_id = $1 ORDER BY created_at ASC, id ASC`,
+      `${LOG_SELECT}
+       WHERE l.purchase_request_id = $1 ORDER BY l.created_at ASC, l.id ASC`,
       [id],
     );
     return this._toPurchaseRequest(headerResult.rows[0], itemsResult.rows, logsResult.rows);
@@ -379,8 +419,8 @@ export class PurchaseRequestRepositoryPostgres extends PurchaseRequestRepository
         [header.id],
       );
       const logsResult = await this.pool.query<LogRow>(
-        `SELECT ${LOG_COLUMNS} FROM purchase_request_status_logs
-         WHERE purchase_request_id = $1 ORDER BY created_at ASC, id ASC`,
+        `${LOG_SELECT}
+         WHERE l.purchase_request_id = $1 ORDER BY l.created_at ASC, l.id ASC`,
         [header.id],
       );
       rows.push(this._toPurchaseRequest(header, itemsResult.rows, logsResult.rows));
@@ -478,6 +518,50 @@ export class PurchaseRequestRepositoryPostgres extends PurchaseRequestRepository
     note: string | null,
   ): Promise<PurchaseRequest> {
     return this._transition(id, companyId, userId, 'CANCELLED', note, [], true);
+  }
+
+  async ensureExists(id: string, companyId: string): Promise<void> {
+    const result = await this.pool.query(
+      `SELECT 1 FROM purchase_requests
+       WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL`,
+      [id, companyId],
+    );
+    if (!result.rowCount) {
+      throw new NotFoundError('PURCHASE_REQUEST.NOT_FOUND');
+    }
+  }
+
+  async addComment(
+    purchaseRequestId: string,
+    companyId: string,
+    authorId: string | null,
+    data: NewPurchaseRequestCommentData,
+  ): Promise<PurchaseRequestComment> {
+    const inserted = await this.pool.query<{ id: string }>(
+      `INSERT INTO purchase_request_comments
+         (purchase_request_id, company_id, author_id, category, body)
+       VALUES ($1,$2,$3,$4,$5)
+       RETURNING id`,
+      [purchaseRequestId, companyId, authorId, data.category, data.body],
+    );
+    const result = await this.pool.query<CommentRow>(
+      `${COMMENT_SELECT} WHERE c.id = $1`,
+      [inserted.rows[0].id],
+    );
+    return this._toComment(result.rows[0]);
+  }
+
+  async listComments(
+    purchaseRequestId: string,
+    companyId: string,
+  ): Promise<PurchaseRequestComment[]> {
+    const result = await this.pool.query<CommentRow>(
+      `${COMMENT_SELECT}
+       WHERE c.purchase_request_id = $1 AND c.company_id = $2
+       ORDER BY c.created_at ASC, c.id ASC`,
+      [purchaseRequestId, companyId],
+    );
+    return result.rows.map((row) => this._toComment(row));
   }
 
   /** Map a unique-violation on pr_number to a friendly conflict. */

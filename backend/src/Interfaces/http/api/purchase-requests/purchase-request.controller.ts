@@ -17,6 +17,8 @@ import { ApprovePurchaseRequestUseCase } from '../../../../Applications/use_case
 import { RejectPurchaseRequestUseCase } from '../../../../Applications/use_case/purchase-requests/RejectPurchaseRequestUseCase';
 import { CancelPurchaseRequestUseCase } from '../../../../Applications/use_case/purchase-requests/CancelPurchaseRequestUseCase';
 import { GetPurchaseRequestsUseCase } from '../../../../Applications/use_case/purchase-requests/GetPurchaseRequestsUseCase';
+import { AddPurchaseRequestCommentUseCase } from '../../../../Applications/use_case/purchase-requests/AddPurchaseRequestCommentUseCase';
+import { GetPurchaseRequestCommentsUseCase } from '../../../../Applications/use_case/purchase-requests/GetPurchaseRequestCommentsUseCase';
 import { JwtAccessPayload } from '../../../../Applications/security/TokenManager';
 import { AuthorizationError } from '../../../../Commons/exceptions/AuthorizationError';
 import { successResponse, listResponse } from '../../../../Commons/helpers/response.helper';
@@ -27,6 +29,7 @@ import { CreatePurchaseRequestDto } from './dto/create-purchase-request.dto';
 import { UpdatePurchaseRequestDto } from './dto/update-purchase-request.dto';
 import { PurchaseRequestQueryDto } from './dto/purchase-request-query.dto';
 import { PurchaseRequestActionDto } from './dto/purchase-request-action.dto';
+import { AddPurchaseRequestCommentDto } from './dto/add-purchase-request-comment.dto';
 
 /**
  * PurchaseRequestController — first procurement document module (doc 34).
@@ -40,6 +43,13 @@ import { PurchaseRequestActionDto } from './dto/purchase-request-action.dto';
  *   approve → procurement.pr.approve
  *   reject  → procurement.pr.approve  (reject is an approver decision)
  *   cancel  → procurement.pr.update   (creator voiding their own editable document)
+ *   comments (list + add) → procurement.pr.read
+ *
+ * Commenting is guarded by `procurement.pr.read` (not create/update): a comment
+ * is a collaboration note on the discussion thread, not a mutation of the
+ * document itself. Anyone who may read a PR — creators, approvers — may take
+ * part in its thread. Manual comments accept INTERNAL/APPROVAL/EXTERNAL only
+ * (default INTERNAL); SYSTEM is backend-only and rejected (400).
  *
  * DocumentAuthorizationService (doc 43) does not yet exist in the codebase, so
  * authorization here uses the granular permission guard only. Ownership/outlet
@@ -57,6 +67,8 @@ export class PurchaseRequestController {
     private readonly rejectUseCase: RejectPurchaseRequestUseCase,
     private readonly cancelUseCase: CancelPurchaseRequestUseCase,
     private readonly getUseCase: GetPurchaseRequestsUseCase,
+    private readonly addCommentUseCase: AddPurchaseRequestCommentUseCase,
+    private readonly getCommentsUseCase: GetPurchaseRequestCommentsUseCase,
   ) {}
 
   private _companyId(user: JwtAccessPayload): string {
@@ -199,5 +211,41 @@ export class PurchaseRequestController {
       dto.note ?? null,
     );
     return successResponse(pr);
+  }
+
+  @Get(':id/comments')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('procurement.pr.read')
+  @ApiOperation({ summary: 'List the discussion thread of a purchase request' })
+  @ApiParam({ name: 'id', description: 'Purchase request UUID' })
+  @ApiResponse({ status: 200, description: 'Chronological comment thread' })
+  @ApiResponse({ status: 404, description: 'Purchase request not found' })
+  async listComments(@Param('id') id: string, @GetUser() user: JwtAccessPayload) {
+    const comments = await this.getCommentsUseCase.execute(id, this._companyId(user));
+    return successResponse(comments);
+  }
+
+  @Post(':id/comments')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('procurement.pr.read')
+  @ApiOperation({
+    summary: 'Add a comment to a purchase request thread (default category INTERNAL)',
+  })
+  @ApiParam({ name: 'id', description: 'Purchase request UUID' })
+  @ApiResponse({ status: 201, description: 'Comment created' })
+  @ApiResponse({ status: 400, description: 'Empty body or disallowed category (e.g. SYSTEM)' })
+  @ApiResponse({ status: 404, description: 'Purchase request not found' })
+  async addComment(
+    @Param('id') id: string,
+    @Body() dto: AddPurchaseRequestCommentDto,
+    @GetUser() user: JwtAccessPayload,
+  ) {
+    const comment = await this.addCommentUseCase.execute(
+      id,
+      dto,
+      this._companyId(user),
+      user.sub,
+    );
+    return successResponse(comment);
   }
 }

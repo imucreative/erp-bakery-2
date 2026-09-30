@@ -44,7 +44,20 @@ function logRow(over: Record<string, unknown> = {}) {
     from_status: null,
     to_status: 'DRAFT',
     actor_id: 'u1',
+    actor_name: 'Budi Owner',
     note: null,
+    created_at: new Date(),
+    ...over,
+  };
+}
+
+function commentRow(over: Record<string, unknown> = {}) {
+  return {
+    id: 'cmt-1',
+    category: 'INTERNAL',
+    body: 'Please review the quantities.',
+    author_id: 'u1',
+    author_name: 'Budi Owner',
     created_at: new Date(),
     ...over,
   };
@@ -251,6 +264,68 @@ describe('PurchaseRequestRepositoryPostgres', () => {
       expect(result.items).toHaveLength(1);
       expect(result.statusLogs).toHaveLength(1);
       expect(result.statusLogs[0].toStatus).toBe('DRAFT');
+      // actorName is resolved via LEFT JOIN to users
+      expect(result.statusLogs[0].actorName).toBe('Budi Owner');
+    });
+
+    it('should LEFT JOIN users to resolve the status-log actor name', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [header()], rowCount: 1 }) // header
+        .mockResolvedValueOnce({ rows: [itemRow()], rowCount: 1 }) // items
+        .mockResolvedValueOnce({ rows: [logRow()], rowCount: 1 }); // logs
+
+      await repo.getById('pr1', 'c1');
+      const logQuery = (mockPool.query as jest.Mock).mock.calls[2][0] as string;
+      expect(logQuery).toContain('LEFT JOIN users');
+      expect(logQuery).toContain('AS actor_name');
+    });
+  });
+
+  describe('comments', () => {
+    it('ensureExists throws NotFoundError when the PR is missing/soft-deleted', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await expect(repo.ensureExists('pr1', 'c1')).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    it('addComment inserts then returns the comment with resolved authorName', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ id: 'cmt-1' }], rowCount: 1 }) // insert
+        .mockResolvedValueOnce({ rows: [commentRow()], rowCount: 1 }); // reload with join
+
+      const result = await repo.addComment('pr1', 'c1', 'u1', {
+        category: 'INTERNAL',
+        body: 'Please review the quantities.',
+      });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'cmt-1',
+          category: 'INTERNAL',
+          body: 'Please review the quantities.',
+          authorId: 'u1',
+          authorName: 'Budi Owner',
+        }),
+      );
+      const insertCall = (mockPool.query as jest.Mock).mock.calls[0];
+      expect(insertCall[0]).toContain('INSERT INTO purchase_request_comments');
+      expect(insertCall[1]).toEqual(['pr1', 'c1', 'u1', 'INTERNAL', 'Please review the quantities.']);
+      const reloadCall = (mockPool.query as jest.Mock).mock.calls[1];
+      expect(reloadCall[0]).toContain('LEFT JOIN users');
+    });
+
+    it('listComments returns the thread chronologically, company-scoped', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({
+        rows: [commentRow(), commentRow({ id: 'cmt-2', author_name: null, author_id: null })],
+        rowCount: 2,
+      });
+
+      const result = await repo.listComments('pr1', 'c1');
+      expect(result).toHaveLength(2);
+      expect(result[1].authorName).toBeNull();
+      const listCall = (mockPool.query as jest.Mock).mock.calls[0];
+      expect(listCall[0]).toContain('c.purchase_request_id = $1 AND c.company_id = $2');
+      expect(listCall[0]).toContain('ORDER BY c.created_at ASC');
+      expect(listCall[1]).toEqual(['pr1', 'c1']);
     });
   });
 

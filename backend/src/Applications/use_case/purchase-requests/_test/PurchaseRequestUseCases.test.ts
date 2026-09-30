@@ -5,6 +5,8 @@ import { ApprovePurchaseRequestUseCase } from '../ApprovePurchaseRequestUseCase'
 import { RejectPurchaseRequestUseCase } from '../RejectPurchaseRequestUseCase';
 import { CancelPurchaseRequestUseCase } from '../CancelPurchaseRequestUseCase';
 import { GetPurchaseRequestsUseCase } from '../GetPurchaseRequestsUseCase';
+import { AddPurchaseRequestCommentUseCase } from '../AddPurchaseRequestCommentUseCase';
+import { GetPurchaseRequestCommentsUseCase } from '../GetPurchaseRequestCommentsUseCase';
 import { PurchaseRequestRepository } from '../../../../Domains/purchase-requests/PurchaseRequestRepository';
 import { OutletRepository } from '../../../../Domains/outlets/OutletRepository';
 import { ProductRepository } from '../../../../Domains/products/ProductRepository';
@@ -19,6 +21,9 @@ const prRepo: jest.Mocked<PurchaseRequestRepository> = {
   approve: jest.fn(),
   reject: jest.fn(),
   cancel: jest.fn(),
+  ensureExists: jest.fn(),
+  addComment: jest.fn(),
+  listComments: jest.fn(),
 } as unknown as jest.Mocked<PurchaseRequestRepository>;
 
 const outletRepo: jest.Mocked<OutletRepository> = {
@@ -179,5 +184,99 @@ describe('GetPurchaseRequestsUseCase', () => {
     prRepo.getById.mockResolvedValue({ id: 'pr' } as never);
     const result = await new GetPurchaseRequestsUseCase(prRepo).detail('pr', 'c1');
     expect(result).toEqual({ id: 'pr' });
+  });
+});
+
+describe('AddPurchaseRequestCommentUseCase', () => {
+  it('should default to INTERNAL, verify tenant scope, then persist and return the comment', async () => {
+    prRepo.ensureExists.mockResolvedValue(undefined);
+    prRepo.addComment.mockResolvedValue({
+      id: 'cmt-1',
+      category: 'INTERNAL',
+      body: 'Please review',
+      authorId: 'u1',
+      authorName: 'Budi Owner',
+      createdAt: new Date(),
+    });
+
+    const useCase = new AddPurchaseRequestCommentUseCase(prRepo);
+    const result = await useCase.execute('pr1', { body: 'Please review' }, 'c1', 'u1');
+
+    expect(prRepo.ensureExists).toHaveBeenCalledWith('pr1', 'c1');
+    expect(prRepo.addComment).toHaveBeenCalledWith('pr1', 'c1', 'u1', {
+      category: 'INTERNAL',
+      body: 'Please review',
+    });
+    // authorName is surfaced back to the caller
+    expect(result.authorName).toBe('Budi Owner');
+  });
+
+  it('should accept an APPROVAL category when explicitly provided', async () => {
+    prRepo.ensureExists.mockResolvedValue(undefined);
+    prRepo.addComment.mockResolvedValue({ id: 'cmt-1' } as never);
+
+    const useCase = new AddPurchaseRequestCommentUseCase(prRepo);
+    await useCase.execute('pr1', { body: 'Approved with note', category: 'APPROVAL' }, 'c1', 'u1');
+
+    expect(prRepo.addComment).toHaveBeenCalledWith(
+      'pr1',
+      'c1',
+      'u1',
+      expect.objectContaining({ category: 'APPROVAL', body: 'Approved with note' }),
+    );
+  });
+
+  it('should reject an empty body before touching the repository', async () => {
+    const useCase = new AddPurchaseRequestCommentUseCase(prRepo);
+    await expect(useCase.execute('pr1', { body: '   ' }, 'c1', 'u1')).rejects.toThrow(
+      'ADD_PURCHASE_REQUEST_COMMENT.BODY_REQUIRED',
+    );
+    expect(prRepo.ensureExists).not.toHaveBeenCalled();
+    expect(prRepo.addComment).not.toHaveBeenCalled();
+  });
+
+  it('should reject a SYSTEM category coming from user input (backend-only)', async () => {
+    const useCase = new AddPurchaseRequestCommentUseCase(prRepo);
+    await expect(
+      useCase.execute('pr1', { body: 'hi', category: 'SYSTEM' }, 'c1', 'u1'),
+    ).rejects.toThrow('ADD_PURCHASE_REQUEST_COMMENT.CATEGORY_NOT_ALLOWED');
+    expect(prRepo.addComment).not.toHaveBeenCalled();
+  });
+
+  it('should reject an unknown category', async () => {
+    const useCase = new AddPurchaseRequestCommentUseCase(prRepo);
+    await expect(
+      useCase.execute('pr1', { body: 'hi', category: 'NOPE' }, 'c1', 'u1'),
+    ).rejects.toThrow('ADD_PURCHASE_REQUEST_COMMENT.INVALID_CATEGORY');
+    expect(prRepo.addComment).not.toHaveBeenCalled();
+  });
+
+  it('should propagate PURCHASE_REQUEST.NOT_FOUND when the PR is in another company', async () => {
+    prRepo.ensureExists.mockRejectedValue(new Error('PURCHASE_REQUEST.NOT_FOUND'));
+    const useCase = new AddPurchaseRequestCommentUseCase(prRepo);
+    await expect(useCase.execute('pr1', { body: 'hi' }, 'c1', 'u1')).rejects.toThrow(
+      'PURCHASE_REQUEST.NOT_FOUND',
+    );
+    expect(prRepo.addComment).not.toHaveBeenCalled();
+  });
+});
+
+describe('GetPurchaseRequestCommentsUseCase', () => {
+  it('should verify tenant scope then list the thread', async () => {
+    prRepo.ensureExists.mockResolvedValue(undefined);
+    prRepo.listComments.mockResolvedValue([]);
+
+    const useCase = new GetPurchaseRequestCommentsUseCase(prRepo);
+    await useCase.execute('pr1', 'c1');
+
+    expect(prRepo.ensureExists).toHaveBeenCalledWith('pr1', 'c1');
+    expect(prRepo.listComments).toHaveBeenCalledWith('pr1', 'c1');
+  });
+
+  it('should propagate PURCHASE_REQUEST.NOT_FOUND for a foreign PR', async () => {
+    prRepo.ensureExists.mockRejectedValue(new Error('PURCHASE_REQUEST.NOT_FOUND'));
+    const useCase = new GetPurchaseRequestCommentsUseCase(prRepo);
+    await expect(useCase.execute('pr1', 'c1')).rejects.toThrow('PURCHASE_REQUEST.NOT_FOUND');
+    expect(prRepo.listComments).not.toHaveBeenCalled();
   });
 });
