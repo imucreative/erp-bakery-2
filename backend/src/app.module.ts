@@ -9,6 +9,7 @@ import { UserModule } from './Interfaces/http/api/users/user.module';
 import { ProductGroupModule } from './Interfaces/http/api/product-groups/product-group.module';
 import { UomModule } from './Interfaces/http/api/uoms/uom.module';
 import { SupplierModule } from './Interfaces/http/api/suppliers/supplier.module';
+import { PaymentTermModule } from './Interfaces/http/api/payment-terms/payment-term.module';
 import { CategoryModule } from './Interfaces/http/api/categories/category.module';
 import { ProductModule } from './Interfaces/http/api/products/product.module';
 import { InventoryModule } from './Interfaces/http/api/inventory/inventory.module';
@@ -44,6 +45,7 @@ import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
     ProductGroupModule,
     UomModule,
     SupplierModule,
+    PaymentTermModule,
     CategoryModule,
     ProductModule,
     InventoryModule,

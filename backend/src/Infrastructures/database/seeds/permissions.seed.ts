@@ -156,7 +156,7 @@ export const DEFAULT_ROLES = [
     description: 'Manages outlet sales and shifts; read-only on most master data',
     permissions: [
       'outlet.read', 'product-group.read', 'category.read', 'uom.read',
-      'supplier.read', 'product.read', 'procurement.return.read',
+      'supplier.read', 'payment-term.read', 'product.read', 'procurement.return.read',
       'sales.manage', 'shift.manage',
     ],
   },
@@ -166,7 +166,8 @@ export const DEFAULT_ROLES = [
     description: 'Manages warehouse operations, goods receipt, and stock adjustments',
     permissions: [
       'outlet.read', 'product-group.read', 'category.read', 'uom.read',
-      'supplier.read', 'product.read', 'inventory.manage',
+      'supplier.read', 'payment-term.read', 'payment-term.manage',
+      'product.read', 'inventory.manage',
       'procurement.gr.read', 'procurement.gr.create', 'procurement.gr.update',
       'procurement.gr.complete', 'procurement.gr.manage',
       'procurement.return.read', 'procurement.return.create',
@@ -186,7 +187,7 @@ export const DEFAULT_ROLES = [
     description: 'Manages recipes and production orders',
     permissions: [
       'product-group.read', 'category.read', 'uom.read',
-      'supplier.read', 'product.read', 'procurement.return.read',
+      'supplier.read', 'payment-term.read', 'product.read', 'procurement.return.read',
       'recipe.manage', 'production.manage',
     ],
   },
@@ -195,7 +196,7 @@ export const DEFAULT_ROLES = [
     name: 'Kasir',
     description: 'POS cashier — manages sales and shifts',
     permissions: [
-      'product.read', 'procurement.return.read',
+      'product.read', 'payment-term.read', 'procurement.return.read',
       'sales.manage', 'shift.manage',
     ],
   },

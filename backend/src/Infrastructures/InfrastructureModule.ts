@@ -12,6 +12,7 @@ import { OutletRepository } from '../Domains/outlets/OutletRepository';
 import { ProductGroupRepository } from '../Domains/product-groups/ProductGroupRepository';
 import { UomRepository } from '../Domains/uoms/UomRepository';
 import { SupplierRepository } from '../Domains/suppliers/SupplierRepository';
+import { PaymentTermRepository } from '../Domains/payment-terms/PaymentTermRepository';
 import { CategoryRepository } from '../Domains/categories/CategoryRepository';
 import { ProductRepository } from '../Domains/products/ProductRepository';
 import { InventoryRepository } from '../Domains/inventory/InventoryRepository';
@@ -33,6 +34,7 @@ import { OutletRepositoryPostgres } from './repository/OutletRepositoryPostgres'
 import { ProductGroupRepositoryPostgres } from './repository/ProductGroupRepositoryPostgres';
 import { UomRepositoryPostgres } from './repository/UomRepositoryPostgres';
 import { SupplierRepositoryPostgres } from './repository/SupplierRepositoryPostgres';
+import { PaymentTermRepositoryPostgres } from './repository/PaymentTermRepositoryPostgres';
 import { CategoryRepositoryPostgres } from './repository/CategoryRepositoryPostgres';
 import { ProductRepositoryPostgres } from './repository/ProductRepositoryPostgres';
 import { InventoryRepositoryPostgres } from './repository/InventoryRepositoryPostgres';
@@ -62,6 +64,9 @@ import { DeleteUomUseCase } from '../Applications/use_case/uoms/DeleteUomUseCase
 import { CreateSupplierUseCase } from '../Applications/use_case/suppliers/CreateSupplierUseCase';
 import { UpdateSupplierUseCase } from '../Applications/use_case/suppliers/UpdateSupplierUseCase';
 import { DeleteSupplierUseCase } from '../Applications/use_case/suppliers/DeleteSupplierUseCase';
+import { CreatePaymentTermUseCase } from '../Applications/use_case/payment-terms/CreatePaymentTermUseCase';
+import { UpdatePaymentTermUseCase } from '../Applications/use_case/payment-terms/UpdatePaymentTermUseCase';
+import { DeletePaymentTermUseCase } from '../Applications/use_case/payment-terms/DeletePaymentTermUseCase';
 import { CreateCategoryUseCase } from '../Applications/use_case/categories/CreateCategoryUseCase';
 import { UpdateCategoryUseCase } from '../Applications/use_case/categories/UpdateCategoryUseCase';
 import { DeleteCategoryUseCase } from '../Applications/use_case/categories/DeleteCategoryUseCase';
@@ -172,6 +177,10 @@ import { GetProductionOrdersUseCase } from '../Applications/use_case/production/
     {
       provide: SupplierRepository,
       useFactory: () => new SupplierRepositoryPostgres(pool),
+    },
+    {
+      provide: PaymentTermRepository,
+      useFactory: () => new PaymentTermRepositoryPostgres(pool),
     },
     {
       provide: CategoryRepository,
@@ -320,6 +329,24 @@ import { GetProductionOrdersUseCase } from '../Applications/use_case/production/
       provide: DeleteSupplierUseCase,
       useFactory: (supplierRepo: SupplierRepository) => new DeleteSupplierUseCase(supplierRepo),
       inject: [SupplierRepository],
+    },
+    {
+      provide: CreatePaymentTermUseCase,
+      useFactory: (paymentTermRepo: PaymentTermRepository) =>
+        new CreatePaymentTermUseCase(paymentTermRepo),
+      inject: [PaymentTermRepository],
+    },
+    {
+      provide: UpdatePaymentTermUseCase,
+      useFactory: (paymentTermRepo: PaymentTermRepository) =>
+        new UpdatePaymentTermUseCase(paymentTermRepo),
+      inject: [PaymentTermRepository],
+    },
+    {
+      provide: DeletePaymentTermUseCase,
+      useFactory: (paymentTermRepo: PaymentTermRepository) =>
+        new DeletePaymentTermUseCase(paymentTermRepo),
+      inject: [PaymentTermRepository],
     },
     {
       provide: CreateCategoryUseCase,
@@ -607,6 +634,7 @@ import { GetProductionOrdersUseCase } from '../Applications/use_case/production/
     ProductGroupRepository,
     UomRepository,
     SupplierRepository,
+    PaymentTermRepository,
     CategoryRepository,
     ProductRepository,
     InventoryRepository,
@@ -632,6 +660,9 @@ import { GetProductionOrdersUseCase } from '../Applications/use_case/production/
     CreateSupplierUseCase,
     UpdateSupplierUseCase,
     DeleteSupplierUseCase,
+    CreatePaymentTermUseCase,
+    UpdatePaymentTermUseCase,
+    DeletePaymentTermUseCase,
     CreateCategoryUseCase,
     UpdateCategoryUseCase,
     DeleteCategoryUseCase,

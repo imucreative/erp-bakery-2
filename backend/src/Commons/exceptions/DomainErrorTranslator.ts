@@ -159,6 +159,42 @@ const DomainErrorTranslator = {
       'Gagal memperbarui supplier: nama PIC maksimal 100 karakter',
     ),
 
+    // ── CreatePaymentTerm ────────────────────────────────────────
+    'CREATE_PAYMENT_TERM.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal membuat payment term: properti yang dibutuhkan tidak ada',
+    ),
+    'CREATE_PAYMENT_TERM.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal membuat payment term: tipe data tidak sesuai',
+    ),
+    'CREATE_PAYMENT_TERM.CODE_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat payment term: kode harus 1-20 karakter',
+    ),
+    'CREATE_PAYMENT_TERM.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat payment term: nama harus 1-100 karakter',
+    ),
+    'CREATE_PAYMENT_TERM.DUE_DAYS_INVALID': new InvariantError(
+      'Gagal membuat payment term: due days harus berupa bilangan bulat >= 0',
+    ),
+
+    // ── UpdatePaymentTerm ────────────────────────────────────────
+    'UPDATE_PAYMENT_TERM.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal memperbarui payment term: tidak ada field yang dikirimkan',
+    ),
+    'UPDATE_PAYMENT_TERM.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal memperbarui payment term: tipe data tidak sesuai',
+    ),
+    'UPDATE_PAYMENT_TERM.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal memperbarui payment term: nama harus 1-100 karakter',
+    ),
+    'UPDATE_PAYMENT_TERM.DUE_DAYS_INVALID': new InvariantError(
+      'Gagal memperbarui payment term: due days harus berupa bilangan bulat >= 0',
+    ),
+
+    // ── PaymentTerm ──────────────────────────────────────────────
+    'PAYMENT_TERM.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data payment term tidak lengkap',
+    ),
+
     // ── Supplier ─────────────────────────────────────────────────
     'SUPPLIER.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError('Data supplier tidak lengkap'),
 
@@ -345,6 +381,7 @@ const DomainErrorTranslator = {
     'PRODUCT_GROUP.NOT_FOUND': new NotFoundError('Product group tidak ditemukan'),
     'UOM.NOT_FOUND': new NotFoundError('UOM tidak ditemukan'),
     'SUPPLIER.NOT_FOUND': new NotFoundError('Supplier tidak ditemukan'),
+    'PAYMENT_TERM.NOT_FOUND': new NotFoundError('Payment term tidak ditemukan'),
     'CATEGORY.NOT_FOUND': new NotFoundError('Kategori tidak ditemukan'),
     'PRODUCT.NOT_FOUND': new NotFoundError('Produk tidak ditemukan'),
     'INVENTORY_BATCH.NOT_FOUND': new NotFoundError('Batch inventory tidak ditemukan'),
@@ -595,6 +632,12 @@ const DomainErrorTranslator = {
     ),
     'SUPPLIER.IN_USE': new ConflictError(
       'Supplier tidak dapat dihapus atau dinonaktifkan karena masih digunakan oleh produk aktif',
+    ),
+    'PAYMENT_TERM.CODE_ALREADY_USED': new ConflictError(
+      'Kode payment term sudah digunakan',
+    ),
+    'PAYMENT_TERM.IN_USE': new ConflictError(
+      'Payment term tidak dapat dihapus atau dinonaktifkan karena masih digunakan oleh dokumen aktif',
     ),
     'CATEGORY.IN_USE': new ConflictError(
       'Kategori tidak dapat dihapus atau dinonaktifkan karena masih digunakan oleh produk aktif',
