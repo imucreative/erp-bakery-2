@@ -88,6 +88,42 @@ const router = createRouter({
       },
     },
     {
+      path: '/procurement/purchase-requests',
+      name: 'PurchaseRequests',
+      component: () => import('../views/Procurement/PurchaseRequestList.vue'),
+      meta: {
+        title: 'Purchase Requests',
+        permission: 'procurement.pr.read',
+      },
+    },
+    {
+      path: '/procurement/purchase-requests/new',
+      name: 'PurchaseRequestCreate',
+      component: () => import('../views/Procurement/PurchaseRequestForm.vue'),
+      meta: {
+        title: 'Buat Purchase Request',
+        permission: 'procurement.pr.create',
+      },
+    },
+    {
+      path: '/procurement/purchase-requests/:id',
+      name: 'PurchaseRequestDetail',
+      component: () => import('../views/Procurement/PurchaseRequestDetail.vue'),
+      meta: {
+        title: 'Detail Purchase Request',
+        permission: 'procurement.pr.read',
+      },
+    },
+    {
+      path: '/procurement/purchase-requests/:id/edit',
+      name: 'PurchaseRequestEdit',
+      component: () => import('../views/Procurement/PurchaseRequestForm.vue'),
+      meta: {
+        title: 'Edit Purchase Request',
+        permission: 'procurement.pr.update',
+      },
+    },
+    {
       path: '/system/users',
       name: 'Users',
       component: () => import('../views/System/UserList.vue'),

@@ -219,6 +219,7 @@ import { useSidebar } from '@/composables/useSidebar'
 import {
   CalenderIcon,
   ChevronDownIcon,
+  DocsIcon,
   GridIcon,
   HorizontalDots,
   ListIcon,
@@ -294,6 +295,16 @@ const menuGroups: MenuGroup[] = [
         icon: BoxCubeIcon,
         name: 'Products',
         path: '/master/products',
+      },
+    ],
+  },
+  {
+    title: 'Procurement',
+    items: [
+      {
+        icon: DocsIcon,
+        name: 'Purchase Requests',
+        path: '/procurement/purchase-requests',
       },
     ],
   },
