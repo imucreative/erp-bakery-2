@@ -7,6 +7,8 @@
  */
 import { computed, ref, watch } from 'vue'
 import Button from '@/components/ui/Button.vue'
+import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
+import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
 import type { Category } from '@/services/category.service'
 import type { ProductGroup } from '@/services/product-group.service'
 
@@ -104,14 +106,15 @@ function onSubmit(): void {
           <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
             Grup Produk<span v-if="!isEdit" class="text-error-500">*</span>
           </label>
-          <select
-            v-if="!isEdit"
-            v-model="productGroupId"
-            :class="[inputClass, 'appearance-none']"
-          >
-            <option value="" disabled>Pilih grup produk</option>
-            <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
-          </select>
+          <div v-if="!isEdit" class="relative">
+            <select v-model="productGroupId" :class="[inputClass, 'appearance-none pe-10']">
+              <option value="" disabled>Pilih grup produk</option>
+              <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+            </select>
+            <ChevronDownIcon
+              class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
+            />
+          </div>
           <p
             v-else
             class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300"
@@ -139,13 +142,7 @@ function onSubmit(): void {
           ></textarea>
         </div>
 
-        <label
-          v-if="isEdit"
-          class="flex cursor-pointer items-center gap-2 text-sm text-gray-700 dark:text-gray-400"
-        >
-          <input v-model="isActive" type="checkbox" class="h-4 w-4 rounded" />
-          Aktif
-        </label>
+        <ToggleSwitch v-if="isEdit" v-model="isActive" label="Aktif" />
 
         <p
           v-if="localError || errorMessage"

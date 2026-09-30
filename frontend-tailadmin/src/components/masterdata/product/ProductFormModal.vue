@@ -13,6 +13,8 @@
  */
 import { computed, ref, watch } from 'vue'
 import Button from '@/components/ui/Button.vue'
+import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
+import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
 import {
   PRODUCT_TYPES,
   PRODUCT_TYPE_LABELS,
@@ -231,39 +233,58 @@ function onSubmit(): void {
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label :class="labelClass">Grup Produk<span v-if="!isEdit" class="text-error-500">*</span></label>
-            <select v-if="!isEdit" v-model="productGroupId" :class="[inputClass, 'appearance-none']">
-              <option value="" disabled>Pilih grup</option>
-              <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
-            </select>
+            <div v-if="!isEdit" class="relative">
+              <select v-model="productGroupId" :class="[inputClass, 'appearance-none pe-10']">
+                <option value="" disabled>Pilih grup</option>
+                <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+              </select>
+              <ChevronDownIcon
+                class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
+              />
+            </div>
             <p v-else :class="readonlyClass">{{ relationName(groups, productGroupId) }}</p>
           </div>
           <div>
             <label :class="labelClass">Kategori<span v-if="!isEdit" class="text-error-500">*</span></label>
-            <select
-              v-if="!isEdit"
-              v-model="categoryId"
-              :disabled="!productGroupId"
-              :class="[inputClass, 'appearance-none', !productGroupId ? 'cursor-not-allowed opacity-60' : '']"
-            >
-              <option value="" disabled>{{ productGroupId ? 'Pilih kategori' : 'Pilih grup dulu' }}</option>
-              <option v-for="c in categoryOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
-            </select>
+            <div v-if="!isEdit" class="relative">
+              <select
+                v-model="categoryId"
+                :disabled="!productGroupId"
+                :class="[inputClass, 'appearance-none pe-10', !productGroupId ? 'cursor-not-allowed opacity-60' : '']"
+              >
+                <option value="" disabled>{{ productGroupId ? 'Pilih kategori' : 'Pilih grup dulu' }}</option>
+                <option v-for="c in categoryOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
+              <ChevronDownIcon
+                class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
+              />
+            </div>
             <p v-else :class="readonlyClass">{{ relationName(categories, categoryId) }}</p>
           </div>
           <div>
             <label :class="labelClass">UOM<span v-if="!isEdit" class="text-error-500">*</span></label>
-            <select v-if="!isEdit" v-model="uomId" :class="[inputClass, 'appearance-none']">
-              <option value="" disabled>Pilih UOM</option>
-              <option v-for="u in uoms" :key="u.id" :value="u.id">{{ u.name }}</option>
-            </select>
+            <div v-if="!isEdit" class="relative">
+              <select v-model="uomId" :class="[inputClass, 'appearance-none pe-10']">
+                <option value="" disabled>Pilih UOM</option>
+                <option v-for="u in uoms" :key="u.id" :value="u.id">{{ u.name }}</option>
+              </select>
+              <ChevronDownIcon
+                class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
+              />
+            </div>
             <p v-else :class="readonlyClass">{{ relationName(uoms, uomId) }}</p>
           </div>
           <div>
             <label :class="labelClass">Supplier<span v-if="!isEdit" class="text-error-500">*</span></label>
-            <select v-if="!isEdit" v-model="supplierId" :class="[inputClass, 'appearance-none']">
-              <option value="" disabled>Pilih supplier</option>
-              <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
-            </select>
+            <div v-if="!isEdit" class="relative">
+              <select v-model="supplierId" :class="[inputClass, 'appearance-none pe-10']">
+                <option value="" disabled>Pilih supplier</option>
+                <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
+              </select>
+              <ChevronDownIcon
+                class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
+              />
+            </div>
             <p v-else :class="readonlyClass">{{ relationName(suppliers, supplierId) }}</p>
           </div>
         </div>
@@ -272,9 +293,14 @@ function onSubmit(): void {
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label :class="labelClass">Tipe Produk</label>
-            <select v-model="productType" :class="[inputClass, 'appearance-none']">
-              <option v-for="t in PRODUCT_TYPES" :key="t" :value="t">{{ PRODUCT_TYPE_LABELS[t] }}</option>
-            </select>
+            <div class="relative">
+              <select v-model="productType" :class="[inputClass, 'appearance-none pe-10']">
+                <option v-for="t in PRODUCT_TYPES" :key="t" :value="t">{{ PRODUCT_TYPE_LABELS[t] }}</option>
+              </select>
+              <ChevronDownIcon
+                class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
+              />
+            </div>
           </div>
           <div>
             <label :class="labelClass">Stok Minimum</label>
@@ -292,18 +318,9 @@ function onSubmit(): void {
             <label :class="labelClass">Masa Simpan (hari)</label>
             <input v-model.number="shelfLifeDays" type="number" min="0" :class="inputClass" />
           </div>
-          <div class="flex items-end gap-4">
-            <label class="flex cursor-pointer items-center gap-2 text-sm text-gray-700 dark:text-gray-400">
-              <input v-model="isBatchTracked" type="checkbox" class="h-4 w-4 rounded" />
-              Lacak batch
-            </label>
-            <label
-              v-if="isEdit"
-              class="flex cursor-pointer items-center gap-2 text-sm text-gray-700 dark:text-gray-400"
-            >
-              <input v-model="isActive" type="checkbox" class="h-4 w-4 rounded" />
-              Aktif
-            </label>
+          <div class="flex items-end gap-6">
+            <ToggleSwitch v-model="isBatchTracked" label="Lacak batch" />
+            <ToggleSwitch v-if="isEdit" v-model="isActive" label="Aktif" />
           </div>
         </div>
 

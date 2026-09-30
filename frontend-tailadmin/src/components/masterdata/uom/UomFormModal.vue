@@ -6,6 +6,7 @@
  */
 import { ref, watch } from 'vue'
 import Button from '@/components/ui/Button.vue'
+import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
 import type { Uom } from '@/services/uom.service'
 
 const props = withDefaults(
@@ -82,13 +83,7 @@ function onSubmit(): void {
           />
         </div>
 
-        <label
-          v-if="mode === 'edit'"
-          class="flex cursor-pointer items-center gap-2 text-sm text-gray-700 dark:text-gray-400"
-        >
-          <input v-model="isActive" type="checkbox" class="h-4 w-4 rounded" />
-          Aktif
-        </label>
+        <ToggleSwitch v-if="mode === 'edit'" v-model="isActive" label="Aktif" />
 
         <p
           v-if="localError || errorMessage"

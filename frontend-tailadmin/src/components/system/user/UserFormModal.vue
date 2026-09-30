@@ -3,11 +3,13 @@
  * UserFormModal — create/edit user.
  *   CREATE: name + email + password(min 8) + phone? + role (required) + outlets.
  *   EDIT: email read-only, no password; editable name/phone/role/active + outlets
- *     (full-sync). Outlet assignment via a checkbox list.
+ *     (full-sync). Outlet assignment via a toggle-switch list.
  * Transparent backdrop per UI standard.
  */
 import { computed, ref, watch } from 'vue'
 import Button from '@/components/ui/Button.vue'
+import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
+import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
 import type { UserDetail } from '@/services/user.service'
 import type { Role } from '@/services/role.service'
 import type { Outlet } from '@/services/outlet.service'
@@ -178,10 +180,15 @@ function onSubmit(): void {
 
         <div>
           <label :class="labelClass">Role<span class="text-error-500">*</span></label>
-          <select v-model="roleId" :class="[inputClass, 'appearance-none']">
-            <option value="" disabled>Pilih role</option>
-            <option v-for="r in roles" :key="r.id" :value="r.id">{{ r.name }}</option>
-          </select>
+          <div class="relative">
+            <select v-model="roleId" :class="[inputClass, 'appearance-none pe-10']">
+              <option value="" disabled>Pilih role</option>
+              <option v-for="r in roles" :key="r.id" :value="r.id">{{ r.name }}</option>
+            </select>
+            <ChevronDownIcon
+              class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
+            />
+          </div>
         </div>
 
         <div>
@@ -190,29 +197,23 @@ function onSubmit(): void {
             <p v-if="outlets.length === 0" class="text-theme-xs text-gray-400 dark:text-gray-500">
               Tidak ada outlet tersedia.
             </p>
-            <label
+            <div
               v-for="o in outlets"
               :key="o.id"
-              class="flex cursor-pointer items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
+              class="flex items-center justify-between gap-3 py-1 text-sm text-gray-700 dark:text-gray-300"
             >
-              <input
-                type="checkbox"
-                class="h-4 w-4 rounded"
-                :checked="outletIds.includes(o.id)"
-                @change="toggleOutlet(o.id)"
+              <span>
+                {{ o.name }} <span class="font-mono text-theme-xs text-gray-400">({{ o.code }})</span>
+              </span>
+              <ToggleSwitch
+                :model-value="outletIds.includes(o.id)"
+                @update:model-value="toggleOutlet(o.id)"
               />
-              {{ o.name }} <span class="font-mono text-theme-xs text-gray-400">({{ o.code }})</span>
-            </label>
+            </div>
           </div>
         </div>
 
-        <label
-          v-if="isEdit"
-          class="flex cursor-pointer items-center gap-2 text-sm text-gray-700 dark:text-gray-400"
-        >
-          <input v-model="isActive" type="checkbox" class="h-4 w-4 rounded" />
-          Aktif
-        </label>
+        <ToggleSwitch v-if="isEdit" v-model="isActive" label="Aktif" />
 
         <p
           v-if="localError || errorMessage"
