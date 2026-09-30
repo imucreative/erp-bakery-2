@@ -43,7 +43,17 @@ describe('SupplierRepository (abstract contract)', () => {
 
   it('addSupplier should throw when not implemented', async () => {
     await expect(
-      repo.addSupplier({ code: 'SUP-001', name: 'A', address: null, phone: null, picName: null }, 'c'),
+      repo.addSupplier(
+        {
+          code: 'SUP-001',
+          name: 'A',
+          address: null,
+          phone: null,
+          picName: null,
+          defaultPaymentTermId: null,
+        },
+        'c',
+      ),
     ).rejects.toThrow('NOT_IMPLEMENTED');
   });
 

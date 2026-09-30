@@ -66,24 +66,29 @@ async function onSubmitForm(payload: {
   phone: string
   picName: string
   isActive: boolean
+  defaultPaymentTermId: string | null
 }): Promise<void> {
   submitting.value = true
   formError.value = null
   try {
     if (formMode.value === 'edit' && editing.value) {
+      // EDIT: send the selected id, or null to clear the payment term.
       await updateSupplier(editing.value.id, {
         name: payload.name,
         address: payload.address || undefined,
         phone: payload.phone || undefined,
         picName: payload.picName || undefined,
         isActive: payload.isActive,
+        defaultPaymentTermId: payload.defaultPaymentTermId,
       })
     } else {
+      // CREATE: include the id only when chosen; omit when blank.
       await createSupplier({
         name: payload.name,
         address: payload.address || undefined,
         phone: payload.phone || undefined,
         picName: payload.picName || undefined,
+        defaultPaymentTermId: payload.defaultPaymentTermId ?? undefined,
       })
     }
     formOpen.value = false

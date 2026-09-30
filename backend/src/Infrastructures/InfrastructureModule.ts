@@ -317,13 +317,15 @@ import { GetProductionOrdersUseCase } from '../Applications/use_case/production/
     },
     {
       provide: CreateSupplierUseCase,
-      useFactory: (supplierRepo: SupplierRepository) => new CreateSupplierUseCase(supplierRepo),
-      inject: [SupplierRepository],
+      useFactory: (supplierRepo: SupplierRepository, paymentTermRepo: PaymentTermRepository) =>
+        new CreateSupplierUseCase(supplierRepo, paymentTermRepo),
+      inject: [SupplierRepository, PaymentTermRepository],
     },
     {
       provide: UpdateSupplierUseCase,
-      useFactory: (supplierRepo: SupplierRepository) => new UpdateSupplierUseCase(supplierRepo),
-      inject: [SupplierRepository],
+      useFactory: (supplierRepo: SupplierRepository, paymentTermRepo: PaymentTermRepository) =>
+        new UpdateSupplierUseCase(supplierRepo, paymentTermRepo),
+      inject: [SupplierRepository, PaymentTermRepository],
     },
     {
       provide: DeleteSupplierUseCase,

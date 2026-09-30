@@ -17,12 +17,30 @@ interface SupplierRow {
   address: string | null;
   phone: string | null;
   pic_name: string | null;
+  default_payment_term_id: string | null;
+  default_payment_term_code: string | null;
+  default_payment_term_name: string | null;
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
 }
 
-const SELECT_COLUMNS = `id, company_id, code, name, address, phone, pic_name, is_active, created_at, updated_at`;
+/**
+ * Read projection: supplier columns (aliased `s`) plus the default payment term
+ * code/name via LEFT JOIN so the frontend can render a label without an extra
+ * fetch. The JOIN is nullable — suppliers without a default payment term simply
+ * return null code/name.
+ */
+const SELECT_COLUMNS = `
+  s.id, s.company_id, s.code, s.name, s.address, s.phone, s.pic_name,
+  s.default_payment_term_id,
+  pt.code AS default_payment_term_code,
+  pt.name AS default_payment_term_name,
+  s.is_active, s.created_at, s.updated_at`;
+
+const FROM_WITH_JOIN = `
+  FROM suppliers s
+  LEFT JOIN payment_terms pt ON pt.id = s.default_payment_term_id`;
 
 /**
  * Concrete PostgreSQL implementation of SupplierRepository.
@@ -42,6 +60,9 @@ export class SupplierRepositoryPostgres extends SupplierRepository {
       address: row.address,
       phone: row.phone,
       picName: row.pic_name,
+      defaultPaymentTermId: row.default_payment_term_id,
+      defaultPaymentTermCode: row.default_payment_term_code,
+      defaultPaymentTermName: row.default_payment_term_name,
       isActive: row.is_active,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
@@ -49,14 +70,22 @@ export class SupplierRepositoryPostgres extends SupplierRepository {
   }
 
   async addSupplier(data: NewSupplierData, companyId: string): Promise<Supplier> {
-    const result = await this.pool.query<SupplierRow>(
-      `INSERT INTO suppliers (company_id, code, name, address, phone, pic_name)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING ${SELECT_COLUMNS}`,
-      [companyId, data.code, data.name, data.address, data.phone, data.picName],
+    const inserted = await this.pool.query<{ id: string }>(
+      `INSERT INTO suppliers (company_id, code, name, address, phone, pic_name, default_payment_term_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id`,
+      [
+        companyId,
+        data.code,
+        data.name,
+        data.address,
+        data.phone,
+        data.picName,
+        data.defaultPaymentTermId,
+      ],
     );
 
-    return this._toSupplier(result.rows[0]);
+    return this.getSupplierById(inserted.rows[0].id, companyId);
   }
 
   async generateSupplierCode(companyId: string): Promise<string> {
@@ -72,23 +101,23 @@ export class SupplierRepositoryPostgres extends SupplierRepository {
     companyId: string,
     filter: SupplierListFilter,
   ): Promise<SupplierListResult> {
-    const conditions: string[] = ['company_id = $1', 'deleted_at IS NULL'];
+    const conditions: string[] = ['s.company_id = $1', 's.deleted_at IS NULL'];
     const params: unknown[] = [companyId];
 
     if (filter.search) {
       params.push(`%${filter.search}%`);
-      conditions.push(`(name ILIKE $${params.length} OR code ILIKE $${params.length})`);
+      conditions.push(`(s.name ILIKE $${params.length} OR s.code ILIKE $${params.length})`);
     }
 
     if (filter.isActive !== undefined) {
       params.push(filter.isActive);
-      conditions.push(`is_active = $${params.length}`);
+      conditions.push(`s.is_active = $${params.length}`);
     }
 
     const whereClause = conditions.join(' AND ');
 
     const countResult = await this.pool.query<{ count: string }>(
-      `SELECT COUNT(*) AS count FROM suppliers WHERE ${whereClause}`,
+      `SELECT COUNT(*) AS count FROM suppliers s WHERE ${whereClause}`,
       params,
     );
     const total = parseInt(countResult.rows[0].count, 10);
@@ -96,9 +125,9 @@ export class SupplierRepositoryPostgres extends SupplierRepository {
     params.push(filter.limit, filter.offset);
     const rowsResult = await this.pool.query<SupplierRow>(
       `SELECT ${SELECT_COLUMNS}
-       FROM suppliers
+       ${FROM_WITH_JOIN}
        WHERE ${whereClause}
-       ORDER BY created_at DESC
+       ORDER BY s.created_at DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params,
     );
@@ -109,8 +138,8 @@ export class SupplierRepositoryPostgres extends SupplierRepository {
   async getSupplierById(id: string, companyId: string): Promise<Supplier> {
     const result = await this.pool.query<SupplierRow>(
       `SELECT ${SELECT_COLUMNS}
-       FROM suppliers
-       WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL`,
+       ${FROM_WITH_JOIN}
+       WHERE s.id = $1 AND s.company_id = $2 AND s.deleted_at IS NULL`,
       [id, companyId],
     );
 
@@ -147,6 +176,10 @@ export class SupplierRepositoryPostgres extends SupplierRepository {
       params.push(fields.picName);
       setClauses.push(`pic_name = $${params.length}`);
     }
+    if (fields.defaultPaymentTermId !== undefined) {
+      params.push(fields.defaultPaymentTermId);
+      setClauses.push(`default_payment_term_id = $${params.length}`);
+    }
     if (fields.isActive !== undefined) {
       params.push(fields.isActive);
       setClauses.push(`is_active = $${params.length}`);
@@ -159,15 +192,14 @@ export class SupplierRepositoryPostgres extends SupplierRepository {
     setClauses.push('updated_at = NOW()');
     params.push(id, companyId);
 
-    const result = await this.pool.query<SupplierRow>(
+    await this.pool.query(
       `UPDATE suppliers
        SET ${setClauses.join(', ')}
-       WHERE id = $${params.length - 1} AND company_id = $${params.length} AND deleted_at IS NULL
-       RETURNING ${SELECT_COLUMNS}`,
+       WHERE id = $${params.length - 1} AND company_id = $${params.length} AND deleted_at IS NULL`,
       params,
     );
 
-    return this._toSupplier(result.rows[0]);
+    return this.getSupplierById(id, companyId);
   }
 
   async softDeleteSupplier(id: string, companyId: string): Promise<void> {

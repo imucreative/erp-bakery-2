@@ -19,6 +19,7 @@ export interface NewSupplierData {
   address: string | null;
   phone: string | null;
   picName: string | null;
+  defaultPaymentTermId: string | null;
 }
 
 /**

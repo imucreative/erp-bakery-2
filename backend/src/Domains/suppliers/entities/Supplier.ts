@@ -10,6 +10,9 @@ export class Supplier {
   public readonly address: string | null;
   public readonly phone: string | null;
   public readonly picName: string | null;
+  public readonly defaultPaymentTermId: string | null;
+  public readonly defaultPaymentTermCode: string | null;
+  public readonly defaultPaymentTermName: string | null;
   public readonly isActive: boolean;
   public readonly createdAt: Date;
   public readonly updatedAt: Date;
@@ -22,12 +25,28 @@ export class Supplier {
     address?: string | null;
     phone?: string | null;
     picName?: string | null;
+    defaultPaymentTermId?: string | null;
+    defaultPaymentTermCode?: string | null;
+    defaultPaymentTermName?: string | null;
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
   }) {
-    const { id, companyId, code, name, address, phone, picName, isActive, createdAt, updatedAt } =
-      payload;
+    const {
+      id,
+      companyId,
+      code,
+      name,
+      address,
+      phone,
+      picName,
+      defaultPaymentTermId,
+      defaultPaymentTermCode,
+      defaultPaymentTermName,
+      isActive,
+      createdAt,
+      updatedAt,
+    } = payload;
 
     if (!id || !companyId || !code || !name) {
       throw new Error('SUPPLIER.NOT_CONTAIN_NEEDED_PROPERTY');
@@ -40,6 +59,9 @@ export class Supplier {
     this.address = address ?? null;
     this.phone = phone ?? null;
     this.picName = picName ?? null;
+    this.defaultPaymentTermId = defaultPaymentTermId ?? null;
+    this.defaultPaymentTermCode = defaultPaymentTermCode ?? null;
+    this.defaultPaymentTermName = defaultPaymentTermName ?? null;
     this.isActive = isActive;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;

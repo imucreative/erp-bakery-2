@@ -38,6 +38,9 @@ export interface Supplier {
   phone: string | null
   picName: string | null
   isActive: boolean
+  defaultPaymentTermId: string | null
+  defaultPaymentTermCode: string | null
+  defaultPaymentTermName: string | null
   createdAt?: string
   updatedAt?: string
 }
@@ -59,6 +62,7 @@ export interface CreateSupplierPayload {
   address?: string
   phone?: string
   picName?: string
+  defaultPaymentTermId?: string | null
 }
 
 export interface UpdateSupplierPayload {
@@ -67,6 +71,7 @@ export interface UpdateSupplierPayload {
   phone?: string
   picName?: string
   isActive?: boolean
+  defaultPaymentTermId?: string | null
 }
 
 function toQuery(params: SupplierListParams): Record<string, string | number> {

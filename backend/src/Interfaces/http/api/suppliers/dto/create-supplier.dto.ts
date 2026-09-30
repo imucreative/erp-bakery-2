@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class CreateSupplierDto {
   @ApiProperty({ example: 'PT Tepung Sejahtera', description: 'Supplier name (max 100 chars)' })
@@ -24,4 +24,14 @@ export class CreateSupplierDto {
   @IsOptional()
   @MaxLength(100)
   picName?: string;
+
+  @ApiProperty({
+    example: 'a3f1c2d4-0000-4000-8000-000000000000',
+    required: false,
+    nullable: true,
+    description: 'Default payment term UUID (optional). Must be an active payment term of the same company.',
+  })
+  @IsUUID('4')
+  @IsOptional()
+  defaultPaymentTermId?: string;
 }

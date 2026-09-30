@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsUUID, MaxLength, ValidateIf } from 'class-validator';
 
 export class UpdateSupplierDto {
   @ApiProperty({ example: 'PT Tepung Sejahtera', required: false, maxLength: 100 })
@@ -24,6 +24,17 @@ export class UpdateSupplierDto {
   @IsOptional()
   @MaxLength(100)
   picName?: string;
+
+  @ApiProperty({
+    example: 'a3f1c2d4-0000-4000-8000-000000000000',
+    required: false,
+    nullable: true,
+    description: 'Default payment term UUID (optional). Send null to clear. Must be an active payment term of the same company.',
+  })
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsUUID('4')
+  defaultPaymentTermId?: string | null;
 
   @ApiProperty({ example: false, required: false, description: 'Activate / deactivate the supplier' })
   @IsBoolean()

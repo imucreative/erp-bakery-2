@@ -159,6 +159,14 @@ const DomainErrorTranslator = {
       'Gagal memperbarui supplier: nama PIC maksimal 100 karakter',
     ),
 
+    // ── Supplier default payment term ────────────────────────────
+    'SUPPLIER.PAYMENT_TERM_NOT_FOUND': new NotFoundError(
+      'Payment term default tidak ditemukan pada perusahaan ini',
+    ),
+    'SUPPLIER.PAYMENT_TERM_INACTIVE': new InvariantError(
+      'Gagal menyimpan supplier: payment term default tidak aktif',
+    ),
+
     // ── CreatePaymentTerm ────────────────────────────────────────
     'CREATE_PAYMENT_TERM.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
       'Gagal membuat payment term: properti yang dibutuhkan tidak ada',

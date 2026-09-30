@@ -13,6 +13,9 @@ const supplierRow = {
   address: null,
   phone: null,
   pic_name: null,
+  default_payment_term_id: null,
+  default_payment_term_code: null,
+  default_payment_term_name: null,
   is_active: true,
   created_at: new Date(),
   updated_at: new Date(),
@@ -27,14 +30,61 @@ describe('SupplierRepositoryPostgres', () => {
   });
 
   describe('addSupplier', () => {
-    it('should return a Supplier on success', async () => {
-      (mockPool.query as jest.Mock).mockResolvedValue({ rows: [supplierRow], rowCount: 1 });
+    it('should return a Supplier on success (insert id then select joined row)', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ id: 'sup-uuid' }], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [supplierRow], rowCount: 1 });
+
       const result = await repo.addSupplier(
-        { code: 'SUP-001', name: 'PT Tepung', address: null, phone: null, picName: null },
+        {
+          code: 'SUP-001',
+          name: 'PT Tepung',
+          address: null,
+          phone: null,
+          picName: null,
+          defaultPaymentTermId: null,
+        },
         'company-uuid',
       );
       expect(result).toBeInstanceOf(Supplier);
       expect(result.code).toBe('SUP-001');
+
+      const insertSql = (mockPool.query as jest.Mock).mock.calls[0][0] as string;
+      expect(insertSql).toContain('default_payment_term_id');
+    });
+
+    it('should persist a supplied default payment term id', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ id: 'sup-uuid' }], rowCount: 1 })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              ...supplierRow,
+              default_payment_term_id: 'pt-uuid',
+              default_payment_term_code: 'NET30',
+              default_payment_term_name: 'Net 30',
+            },
+          ],
+          rowCount: 1,
+        });
+
+      const result = await repo.addSupplier(
+        {
+          code: 'SUP-001',
+          name: 'PT Tepung',
+          address: null,
+          phone: null,
+          picName: null,
+          defaultPaymentTermId: 'pt-uuid',
+        },
+        'company-uuid',
+      );
+      expect(result.defaultPaymentTermId).toBe('pt-uuid');
+      expect(result.defaultPaymentTermCode).toBe('NET30');
+      expect(result.defaultPaymentTermName).toBe('Net 30');
+
+      const insertParams = (mockPool.query as jest.Mock).mock.calls[0][1] as unknown[];
+      expect(insertParams).toContain('pt-uuid');
     });
   });
 
@@ -59,6 +109,10 @@ describe('SupplierRepositoryPostgres', () => {
       const result = await repo.getSuppliersByCompany('company-uuid', { limit: 10, offset: 0 });
       expect(result.total).toBe(1);
       expect(result.rows).toHaveLength(1);
+
+      const rowsSql = (mockPool.query as jest.Mock).mock.calls[1][0] as string;
+      expect(rowsSql).toContain('LEFT JOIN payment_terms');
+      expect(rowsSql).toContain('default_payment_term_code');
     });
 
     it('should apply search and isActive filters', async () => {
@@ -95,7 +149,11 @@ describe('SupplierRepositoryPostgres', () => {
   describe('updateSupplier', () => {
     it('should return the updated Supplier when fields are provided', async () => {
       (mockPool.query as jest.Mock)
+        // getSupplierById (existing)
         .mockResolvedValueOnce({ rows: [supplierRow], rowCount: 1 })
+        // UPDATE
+        .mockResolvedValueOnce({ rowCount: 1 })
+        // getSupplierById (re-select joined)
         .mockResolvedValueOnce({ rows: [{ ...supplierRow, name: 'PT Baru' }], rowCount: 1 });
 
       const result = await repo.updateSupplier('sup-uuid', 'company-uuid', { name: 'PT Baru' });
@@ -105,11 +163,43 @@ describe('SupplierRepositoryPostgres', () => {
     it('should map picName to pic_name column', async () => {
       (mockPool.query as jest.Mock)
         .mockResolvedValueOnce({ rows: [supplierRow], rowCount: 1 })
+        .mockResolvedValueOnce({ rowCount: 1 })
         .mockResolvedValueOnce({ rows: [{ ...supplierRow, pic_name: 'Budi' }], rowCount: 1 });
 
       await repo.updateSupplier('sup-uuid', 'company-uuid', { picName: 'Budi' });
       const updateSql = (mockPool.query as jest.Mock).mock.calls[1][0] as string;
       expect(updateSql).toContain('pic_name');
+    });
+
+    it('should set default_payment_term_id when provided', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [supplierRow], rowCount: 1 })
+        .mockResolvedValueOnce({ rowCount: 1 })
+        .mockResolvedValueOnce({
+          rows: [{ ...supplierRow, default_payment_term_id: 'pt-uuid' }],
+          rowCount: 1,
+        });
+
+      const result = await repo.updateSupplier('sup-uuid', 'company-uuid', {
+        defaultPaymentTermId: 'pt-uuid',
+      });
+      const updateSql = (mockPool.query as jest.Mock).mock.calls[1][0] as string;
+      expect(updateSql).toContain('default_payment_term_id');
+      expect(result.defaultPaymentTermId).toBe('pt-uuid');
+    });
+
+    it('should clear default_payment_term_id when null is provided', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ ...supplierRow, default_payment_term_id: 'pt-uuid' }], rowCount: 1 })
+        .mockResolvedValueOnce({ rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [supplierRow], rowCount: 1 });
+
+      const result = await repo.updateSupplier('sup-uuid', 'company-uuid', {
+        defaultPaymentTermId: null,
+      });
+      const updateParams = (mockPool.query as jest.Mock).mock.calls[1][1] as unknown[];
+      expect(updateParams).toContain(null);
+      expect(result.defaultPaymentTermId).toBeNull();
     });
 
     it('should return current state when no fields are provided', async () => {
