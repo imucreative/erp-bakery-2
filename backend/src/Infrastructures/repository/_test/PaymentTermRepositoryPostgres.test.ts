@@ -54,6 +54,19 @@ describe('PaymentTermRepositoryPostgres', () => {
       const sql = (mockPool.query as jest.Mock).mock.calls[0][0] as string;
       expect(sql).toContain('id <>');
     });
+
+    // Regression guard: the code-uniqueness check must ignore soft-deleted rows
+    // so a code can be reused after its owner is soft-deleted. This mirrors the
+    // partial unique index (WHERE deleted_at IS NULL) added in migration
+    // 1700000000028; a plain constraint that counted deleted rows produced a
+    // 500 duplicate-key error on reuse.
+    it('should exclude soft-deleted rows from the uniqueness check', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValue({ rows: [], rowCount: 0 });
+      const reusable = await repo.isCodeTaken('NET30', 'company-uuid');
+      const sql = (mockPool.query as jest.Mock).mock.calls[0][0] as string;
+      expect(sql).toContain('deleted_at IS NULL');
+      expect(reusable).toBe(false);
+    });
   });
 
   describe('getPaymentTermsByCompany', () => {
