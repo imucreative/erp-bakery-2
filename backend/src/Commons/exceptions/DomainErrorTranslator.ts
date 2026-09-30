@@ -664,6 +664,49 @@ const DomainErrorTranslator = {
       'Nomor production order sudah digunakan; coba lagi',
     ),
 
+    // ── Purchase Request ─────────────────────────────────────────
+    'PURCHASE_REQUEST.NOT_FOUND': new NotFoundError('Purchase request tidak ditemukan'),
+    'CREATE_PURCHASE_REQUEST.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data purchase request tidak lengkap',
+    ),
+    'CREATE_PURCHASE_REQUEST.EXPECTED_DATE_TOO_EARLY': new InvariantError(
+      'Tanggal pengiriman yang diharapkan minimal besok atau setelahnya',
+    ),
+    'CREATE_PURCHASE_REQUEST.ITEMS_REQUIRED': new InvariantError(
+      'Purchase request harus memiliki minimal satu item',
+    ),
+    'CREATE_PURCHASE_REQUEST.ITEM_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Format item purchase request tidak valid',
+    ),
+    'CREATE_PURCHASE_REQUEST.ITEM_PRODUCT_REQUIRED': new InvariantError(
+      'Setiap item purchase request harus menyertakan produk',
+    ),
+    'CREATE_PURCHASE_REQUEST.ITEM_UOM_REQUIRED': new InvariantError(
+      'Setiap item purchase request harus menyertakan satuan (UOM)',
+    ),
+    'CREATE_PURCHASE_REQUEST.ITEM_QTY_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Jumlah item purchase request harus berupa angka',
+    ),
+    'CREATE_PURCHASE_REQUEST.ITEM_QTY_MUST_BE_POSITIVE': new InvariantError(
+      'Jumlah item purchase request harus lebih dari nol',
+    ),
+    'CREATE_PURCHASE_REQUEST.ITEM_PRICE_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Harga estimasi item purchase request harus berupa angka',
+    ),
+    'CREATE_PURCHASE_REQUEST.ITEM_PRICE_MUST_BE_NON_NEGATIVE': new InvariantError(
+      'Harga estimasi item purchase request tidak boleh negatif',
+    ),
+    'REJECT_PURCHASE_REQUEST.NOTE_REQUIRED': new InvariantError(
+      'Alasan penolakan wajib diisi',
+    ),
+    'PURCHASE_REQUEST.ONLY_EDITABLE_STATUS': new InvariantError(
+      'Hanya purchase request berstatus DRAFT atau REJECTED yang dapat diubah',
+    ),
+    'PURCHASE_REQUEST.INVALID_STATUS_TRANSITION': new InvariantError(
+      'Transisi status purchase request tidak diperbolehkan',
+    ),
+    'PURCHASE_REQUEST.INVALID_STATUS': new InvariantError('Status purchase request tidak valid'),
+
     // ── Conflict ─────────────────────────────────────────────────
     'USER.EMAIL_ALREADY_USED': new ConflictError(
       'Email sudah digunakan oleh akun lain',
@@ -692,6 +735,9 @@ const DomainErrorTranslator = {
     'PRODUCT.SKU_ALREADY_USED': new ConflictError('SKU sudah digunakan oleh produk lain'),
     'PRODUCT.BARCODE_ALREADY_USED': new ConflictError(
       'Barcode sudah digunakan oleh produk lain',
+    ),
+    'PURCHASE_REQUEST.NUMBER_ALREADY_USED': new ConflictError(
+      'Nomor purchase request sudah digunakan; coba lagi',
     ),
   } as ErrorMap,
 };

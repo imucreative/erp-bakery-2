@@ -21,6 +21,7 @@ import { StockTransferRepository } from '../Domains/stock-transfers/StockTransfe
 import { StockOpnameRepository } from '../Domains/stock-opnames/StockOpnameRepository';
 import { RecipeRepository } from '../Domains/recipes/RecipeRepository';
 import { ProductionOrderRepository } from '../Domains/production/ProductionOrderRepository';
+import { PurchaseRequestRepository } from '../Domains/purchase-requests/PurchaseRequestRepository';
 import { PasswordHash } from '../Applications/security/PasswordHash';
 import { TokenManager } from '../Applications/security/TokenManager';
 
@@ -43,6 +44,7 @@ import { StockTransferRepositoryPostgres } from './repository/StockTransferRepos
 import { StockOpnameRepositoryPostgres } from './repository/StockOpnameRepositoryPostgres';
 import { RecipeRepositoryPostgres } from './repository/RecipeRepositoryPostgres';
 import { ProductionOrderRepositoryPostgres } from './repository/ProductionOrderRepositoryPostgres';
+import { PurchaseRequestRepositoryPostgres } from './repository/PurchaseRequestRepositoryPostgres';
 import { BcryptPasswordHash } from './security/BcryptPasswordHash';
 import { JwtTokenManager } from './security/JwtTokenManager';
 
@@ -115,6 +117,13 @@ import { QaCheckUseCase } from '../Applications/use_case/production/QaCheckUseCa
 import { CompleteProductionOrderUseCase } from '../Applications/use_case/production/CompleteProductionOrderUseCase';
 import { CancelProductionOrderUseCase } from '../Applications/use_case/production/CancelProductionOrderUseCase';
 import { GetProductionOrdersUseCase } from '../Applications/use_case/production/GetProductionOrdersUseCase';
+import { CreatePurchaseRequestUseCase } from '../Applications/use_case/purchase-requests/CreatePurchaseRequestUseCase';
+import { UpdatePurchaseRequestUseCase } from '../Applications/use_case/purchase-requests/UpdatePurchaseRequestUseCase';
+import { SubmitPurchaseRequestUseCase } from '../Applications/use_case/purchase-requests/SubmitPurchaseRequestUseCase';
+import { ApprovePurchaseRequestUseCase } from '../Applications/use_case/purchase-requests/ApprovePurchaseRequestUseCase';
+import { RejectPurchaseRequestUseCase } from '../Applications/use_case/purchase-requests/RejectPurchaseRequestUseCase';
+import { CancelPurchaseRequestUseCase } from '../Applications/use_case/purchase-requests/CancelPurchaseRequestUseCase';
+import { GetPurchaseRequestsUseCase } from '../Applications/use_case/purchase-requests/GetPurchaseRequestsUseCase';
 
 /**
  * InfrastructureModule — NestJS DI container.
@@ -216,6 +225,10 @@ import { GetProductionOrdersUseCase } from '../Applications/use_case/production/
     {
       provide: ProductionOrderRepository,
       useFactory: () => new ProductionOrderRepositoryPostgres(pool),
+    },
+    {
+      provide: PurchaseRequestRepository,
+      useFactory: () => new PurchaseRequestRepositoryPostgres(pool),
     },
 
     // ─── Use Cases ────────────────────────────────────────────────────────
@@ -642,6 +655,51 @@ import { GetProductionOrdersUseCase } from '../Applications/use_case/production/
         new GetProductionOrdersUseCase(prodRepo),
       inject: [ProductionOrderRepository],
     },
+    {
+      provide: CreatePurchaseRequestUseCase,
+      useFactory: (
+        prRepo: PurchaseRequestRepository,
+        outletRepo: OutletRepository,
+        productRepo: ProductRepository,
+        uomRepo: UomRepository,
+      ) => new CreatePurchaseRequestUseCase(prRepo, outletRepo, productRepo, uomRepo),
+      inject: [PurchaseRequestRepository, OutletRepository, ProductRepository, UomRepository],
+    },
+    {
+      provide: UpdatePurchaseRequestUseCase,
+      useFactory: (
+        prRepo: PurchaseRequestRepository,
+        outletRepo: OutletRepository,
+        productRepo: ProductRepository,
+        uomRepo: UomRepository,
+      ) => new UpdatePurchaseRequestUseCase(prRepo, outletRepo, productRepo, uomRepo),
+      inject: [PurchaseRequestRepository, OutletRepository, ProductRepository, UomRepository],
+    },
+    {
+      provide: SubmitPurchaseRequestUseCase,
+      useFactory: (prRepo: PurchaseRequestRepository) => new SubmitPurchaseRequestUseCase(prRepo),
+      inject: [PurchaseRequestRepository],
+    },
+    {
+      provide: ApprovePurchaseRequestUseCase,
+      useFactory: (prRepo: PurchaseRequestRepository) => new ApprovePurchaseRequestUseCase(prRepo),
+      inject: [PurchaseRequestRepository],
+    },
+    {
+      provide: RejectPurchaseRequestUseCase,
+      useFactory: (prRepo: PurchaseRequestRepository) => new RejectPurchaseRequestUseCase(prRepo),
+      inject: [PurchaseRequestRepository],
+    },
+    {
+      provide: CancelPurchaseRequestUseCase,
+      useFactory: (prRepo: PurchaseRequestRepository) => new CancelPurchaseRequestUseCase(prRepo),
+      inject: [PurchaseRequestRepository],
+    },
+    {
+      provide: GetPurchaseRequestsUseCase,
+      useFactory: (prRepo: PurchaseRequestRepository) => new GetPurchaseRequestsUseCase(prRepo),
+      inject: [PurchaseRequestRepository],
+    },
   ],
   exports: [
     'PG_POOL',
@@ -665,6 +723,7 @@ import { GetProductionOrdersUseCase } from '../Applications/use_case/production/
     StockOpnameRepository,
     RecipeRepository,
     ProductionOrderRepository,
+    PurchaseRequestRepository,
     RegisterCompanyUseCase,
     LoginUseCase,
     RefreshTokenUseCase,
@@ -733,6 +792,13 @@ import { GetProductionOrdersUseCase } from '../Applications/use_case/production/
     CompleteProductionOrderUseCase,
     CancelProductionOrderUseCase,
     GetProductionOrdersUseCase,
+    CreatePurchaseRequestUseCase,
+    UpdatePurchaseRequestUseCase,
+    SubmitPurchaseRequestUseCase,
+    ApprovePurchaseRequestUseCase,
+    RejectPurchaseRequestUseCase,
+    CancelPurchaseRequestUseCase,
+    GetPurchaseRequestsUseCase,
   ],
 })
 export class InfrastructureModule {}

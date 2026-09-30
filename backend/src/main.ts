@@ -91,6 +91,10 @@ async function bootstrap() {
         'Production Orders',
         'Production orders (scheduled → in progress → yield → QA → completed w/ backflushing)',
       )
+      .addTag(
+        'Purchase Requests',
+        'Procurement purchase requests (draft → submit → approve/reject, cancel) with approval timeline',
+      )
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
