@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -8,8 +9,19 @@ import {
   Post,
   Put,
   Query,
+  Req,
+  Res,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CreatePurchaseRequestUseCase } from '../../../../Applications/use_case/purchase-requests/CreatePurchaseRequestUseCase';
 import { UpdatePurchaseRequestUseCase } from '../../../../Applications/use_case/purchase-requests/UpdatePurchaseRequestUseCase';
 import { SubmitPurchaseRequestUseCase } from '../../../../Applications/use_case/purchase-requests/SubmitPurchaseRequestUseCase';
@@ -19,8 +31,13 @@ import { CancelPurchaseRequestUseCase } from '../../../../Applications/use_case/
 import { GetPurchaseRequestsUseCase } from '../../../../Applications/use_case/purchase-requests/GetPurchaseRequestsUseCase';
 import { AddPurchaseRequestCommentUseCase } from '../../../../Applications/use_case/purchase-requests/AddPurchaseRequestCommentUseCase';
 import { GetPurchaseRequestCommentsUseCase } from '../../../../Applications/use_case/purchase-requests/GetPurchaseRequestCommentsUseCase';
+import { UploadPurchaseRequestAttachmentUseCase } from '../../../../Applications/use_case/purchase-requests/UploadPurchaseRequestAttachmentUseCase';
+import { ListPurchaseRequestAttachmentsUseCase } from '../../../../Applications/use_case/purchase-requests/ListPurchaseRequestAttachmentsUseCase';
+import { GetPurchaseRequestAttachmentUseCase } from '../../../../Applications/use_case/purchase-requests/GetPurchaseRequestAttachmentUseCase';
+import { DeletePurchaseRequestAttachmentUseCase } from '../../../../Applications/use_case/purchase-requests/DeletePurchaseRequestAttachmentUseCase';
 import { JwtAccessPayload } from '../../../../Applications/security/TokenManager';
 import { AuthorizationError } from '../../../../Commons/exceptions/AuthorizationError';
+import { InvariantError } from '../../../../Commons/exceptions/InvariantError';
 import { successResponse, listResponse } from '../../../../Commons/helpers/response.helper';
 import { parsePagination } from '../../../../Commons/helpers/pagination.helper';
 import { GetUser } from '../../decorators/get-user.decorator';
@@ -44,12 +61,22 @@ import { AddPurchaseRequestCommentDto } from './dto/add-purchase-request-comment
  *   reject  → procurement.pr.approve  (reject is an approver decision)
  *   cancel  → procurement.pr.update   (creator voiding their own editable document)
  *   comments (list + add) → procurement.pr.read
+ *   attachments list/download → procurement.pr.read
+ *   attachments upload/delete → procurement.pr.update
  *
  * Commenting is guarded by `procurement.pr.read` (not create/update): a comment
  * is a collaboration note on the discussion thread, not a mutation of the
  * document itself. Anyone who may read a PR — creators, approvers — may take
  * part in its thread. Manual comments accept INTERNAL/APPROVAL/EXTERNAL only
  * (default INTERNAL); SYSTEM is backend-only and rejected (400).
+ *
+ * Attachments (doc 35 §5): listing/downloading is `procurement.pr.read` (reading
+ * the document's evidence). Uploading and deleting are `procurement.pr.update`
+ * because attaching or removing a file materially changes the document's
+ * supporting evidence — it is a mutation of the PR, unlike a discussion note.
+ * Only PDF/JPEG/PNG up to 5 MB are accepted; stored file names are derived
+ * server-side (never from the client name) and downloads are scoped to the PR +
+ * company (IDOR/traversal guard).
  *
  * DocumentAuthorizationService (doc 43) does not yet exist in the codebase, so
  * authorization here uses the granular permission guard only. Ownership/outlet
@@ -69,6 +96,10 @@ export class PurchaseRequestController {
     private readonly getUseCase: GetPurchaseRequestsUseCase,
     private readonly addCommentUseCase: AddPurchaseRequestCommentUseCase,
     private readonly getCommentsUseCase: GetPurchaseRequestCommentsUseCase,
+    private readonly uploadAttachmentUseCase: UploadPurchaseRequestAttachmentUseCase,
+    private readonly listAttachmentsUseCase: ListPurchaseRequestAttachmentsUseCase,
+    private readonly getAttachmentUseCase: GetPurchaseRequestAttachmentUseCase,
+    private readonly deleteAttachmentUseCase: DeletePurchaseRequestAttachmentUseCase,
   ) {}
 
   private _companyId(user: JwtAccessPayload): string {
@@ -247,5 +278,122 @@ export class PurchaseRequestController {
       user.sub,
     );
     return successResponse(comment);
+  }
+
+  @Get(':id/attachments')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('procurement.pr.read')
+  @ApiOperation({ summary: 'List attachments of a purchase request' })
+  @ApiParam({ name: 'id', description: 'Purchase request UUID' })
+  @ApiResponse({ status: 200, description: 'Attachment metadata list' })
+  @ApiResponse({ status: 404, description: 'Purchase request not found' })
+  async listAttachments(@Param('id') id: string, @GetUser() user: JwtAccessPayload) {
+    const attachments = await this.listAttachmentsUseCase.execute(id, this._companyId(user));
+    return successResponse(attachments);
+  }
+
+  @Post(':id/attachments')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('procurement.pr.update')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Upload an attachment (PDF/JPG/PNG, max 5 MB) to a purchase request',
+  })
+  @ApiParam({ name: 'id', description: 'Purchase request UUID' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary', description: 'PDF/JPG/PNG, max 5 MB' },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Attachment stored (metadata returned)' })
+  @ApiResponse({ status: 400, description: 'Missing/invalid file, disallowed type, or too large' })
+  @ApiResponse({ status: 404, description: 'Purchase request not found' })
+  async uploadAttachment(
+    @Param('id') id: string,
+    @Req() request: FastifyRequest,
+    @GetUser() user: JwtAccessPayload,
+  ) {
+    if (typeof request.file !== 'function') {
+      throw new InvariantError('UPLOAD_PURCHASE_REQUEST_ATTACHMENT.FILE_REQUIRED');
+    }
+
+    let part;
+    try {
+      part = await request.file();
+    } catch (err) {
+      // @fastify/multipart throws when the file exceeds the configured limit.
+      if (err && typeof err === 'object' && (err as { code?: string }).code === 'FST_REQ_FILE_TOO_LARGE') {
+        throw new InvariantError('UPLOAD_PURCHASE_REQUEST_ATTACHMENT.FILE_TOO_LARGE');
+      }
+      throw err;
+    }
+
+    if (!part) {
+      throw new InvariantError('UPLOAD_PURCHASE_REQUEST_ATTACHMENT.FILE_REQUIRED');
+    }
+
+    const buffer = await part.toBuffer();
+    // toBuffer() truncates at the limit and flags truncation; reject explicitly.
+    if (part.file.truncated) {
+      throw new InvariantError('UPLOAD_PURCHASE_REQUEST_ATTACHMENT.FILE_TOO_LARGE');
+    }
+
+    const attachment = await this.uploadAttachmentUseCase.execute(
+      id,
+      { originalName: part.filename, mimeType: part.mimetype, buffer },
+      this._companyId(user),
+      user.sub,
+    );
+    return successResponse(attachment);
+  }
+
+  @Get(':id/attachments/:attId/download')
+  @RequirePermission('procurement.pr.read')
+  @ApiOperation({ summary: 'Download a purchase request attachment' })
+  @ApiParam({ name: 'id', description: 'Purchase request UUID' })
+  @ApiParam({ name: 'attId', description: 'Attachment UUID' })
+  @ApiResponse({ status: 200, description: 'File stream' })
+  @ApiResponse({ status: 404, description: 'Attachment not found' })
+  async downloadAttachment(
+    @Param('id') id: string,
+    @Param('attId') attId: string,
+    @GetUser() user: JwtAccessPayload,
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
+    const { attachment, stream } = await this.getAttachmentUseCase.execute(
+      id,
+      attId,
+      this._companyId(user),
+    );
+
+    // Content-Disposition filename is quoted and stripped of quotes/newlines to
+    // avoid header injection; the original name is preserved for the user.
+    const safeName = attachment.originalName.replace(/["\r\n]/g, '');
+    reply
+      .header('Content-Type', attachment.mimeType)
+      .header('Content-Disposition', `attachment; filename="${safeName}"`)
+      .header('Content-Length', String(attachment.sizeBytes));
+    await reply.send(stream);
+  }
+
+  @Delete(':id/attachments/:attId')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('procurement.pr.update')
+  @ApiOperation({ summary: 'Delete a purchase request attachment (row + file)' })
+  @ApiParam({ name: 'id', description: 'Purchase request UUID' })
+  @ApiParam({ name: 'attId', description: 'Attachment UUID' })
+  @ApiResponse({ status: 200, description: 'Attachment deleted' })
+  @ApiResponse({ status: 404, description: 'Attachment not found' })
+  async deleteAttachment(
+    @Param('id') id: string,
+    @Param('attId') attId: string,
+    @GetUser() user: JwtAccessPayload,
+  ) {
+    await this.deleteAttachmentUseCase.execute(id, attId, this._companyId(user));
+    return successResponse({ id: attId, deleted: true });
   }
 }

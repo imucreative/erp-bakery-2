@@ -18,6 +18,9 @@
 # Coverage
 /backend/coverage/
 
+# Uploaded attachment files (do not commit user uploads)
+/backend/uploads/
+
 # IDE
 /backend/.vscode/
 /backend/.idea/

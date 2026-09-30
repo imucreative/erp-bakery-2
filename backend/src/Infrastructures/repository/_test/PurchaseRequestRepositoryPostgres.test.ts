@@ -329,6 +329,116 @@ describe('PurchaseRequestRepositoryPostgres', () => {
     });
   });
 
+  describe('attachments', () => {
+    function attachmentRow(over: Record<string, unknown> = {}) {
+      return {
+        id: 'att-1',
+        original_name: 'quote.pdf',
+        stored_path: 'uploads/purchase-request/2026/x.pdf',
+        mime_type: 'application/pdf',
+        size_bytes: '2048',
+        uploaded_by: 'u1',
+        uploaded_by_name: 'Budi Owner',
+        created_at: new Date(),
+        ...over,
+      };
+    }
+
+    it('addAttachment inserts then returns metadata WITHOUT the storedPath', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ id: 'att-1' }], rowCount: 1 }) // insert
+        .mockResolvedValueOnce({ rows: [attachmentRow()], rowCount: 1 }); // reload with join
+
+      const result = await repo.addAttachment('pr1', 'c1', 'u1', {
+        originalName: 'quote.pdf',
+        storedPath: 'uploads/purchase-request/2026/x.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 2048,
+      });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'att-1',
+          originalName: 'quote.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 2048,
+          uploadedBy: 'u1',
+          uploadedByName: 'Budi Owner',
+        }),
+      );
+      // storedPath must NOT leak to callers of the list/create metadata path
+      expect((result as unknown as Record<string, unknown>).storedPath).toBeUndefined();
+      const insertCall = (mockPool.query as jest.Mock).mock.calls[0];
+      expect(insertCall[0]).toContain('INSERT INTO purchase_request_attachments');
+      expect(insertCall[1]).toEqual([
+        'pr1',
+        'c1',
+        'quote.pdf',
+        'uploads/purchase-request/2026/x.pdf',
+        'application/pdf',
+        2048,
+        'u1',
+      ]);
+    });
+
+    it('listAttachments returns metadata (no storedPath), company + PR scoped, chronological', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({
+        rows: [attachmentRow(), attachmentRow({ id: 'att-2', uploaded_by: null, uploaded_by_name: null })],
+        rowCount: 2,
+      });
+
+      const result = await repo.listAttachments('pr1', 'c1');
+      expect(result).toHaveLength(2);
+      expect((result[0] as unknown as Record<string, unknown>).storedPath).toBeUndefined();
+      expect(result[1].uploadedByName).toBeNull();
+      const listCall = (mockPool.query as jest.Mock).mock.calls[0];
+      expect(listCall[0]).toContain('a.purchase_request_id = $1 AND a.company_id = $2');
+      expect(listCall[0]).toContain('ORDER BY a.created_at ASC');
+      expect(listCall[1]).toEqual(['pr1', 'c1']);
+    });
+
+    it('getAttachmentById returns metadata WITH storedPath, scoped to PR + company', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({
+        rows: [attachmentRow()],
+        rowCount: 1,
+      });
+
+      const result = await repo.getAttachmentById('pr1', 'att-1', 'c1');
+      expect(result.storedPath).toBe('uploads/purchase-request/2026/x.pdf');
+      const call = (mockPool.query as jest.Mock).mock.calls[0];
+      expect(call[0]).toContain('a.id = $1 AND a.purchase_request_id = $2 AND a.company_id = $3');
+      expect(call[1]).toEqual(['att-1', 'pr1', 'c1']);
+    });
+
+    it('getAttachmentById throws NotFoundError for a foreign attachment (IDOR guard)', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await expect(repo.getAttachmentById('pr1', 'att-1', 'c1')).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+    });
+
+    it('deleteAttachment deletes scoped and returns the row with storedPath', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({
+        rows: [attachmentRow({ uploaded_by_name: null })],
+        rowCount: 1,
+      });
+
+      const result = await repo.deleteAttachment('pr1', 'att-1', 'c1');
+      expect(result.storedPath).toBe('uploads/purchase-request/2026/x.pdf');
+      const call = (mockPool.query as jest.Mock).mock.calls[0];
+      expect(call[0]).toContain('DELETE FROM purchase_request_attachments');
+      expect(call[0]).toContain('a.id = $1 AND a.purchase_request_id = $2 AND a.company_id = $3');
+      expect(call[1]).toEqual(['att-1', 'pr1', 'c1']);
+    });
+
+    it('deleteAttachment throws NotFoundError when nothing was deleted', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await expect(repo.deleteAttachment('pr1', 'att-1', 'c1')).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+    });
+  });
+
   describe('list', () => {
     it('should filter out soft-deleted rows and paginate', async () => {
       (mockPool.query as jest.Mock)

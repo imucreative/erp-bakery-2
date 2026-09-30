@@ -16,6 +16,9 @@ npm-debug.log*
 # Coverage
 coverage/
 
+# Uploaded attachment files (do not commit user uploads)
+uploads/
+
 # Test output artifacts
 jest-out.json
 jest-result.log

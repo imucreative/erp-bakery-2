@@ -24,6 +24,10 @@ const prRepo: jest.Mocked<PurchaseRequestRepository> = {
   ensureExists: jest.fn(),
   addComment: jest.fn(),
   listComments: jest.fn(),
+  addAttachment: jest.fn(),
+  listAttachments: jest.fn(),
+  getAttachmentById: jest.fn(),
+  deleteAttachment: jest.fn(),
 } as unknown as jest.Mocked<PurchaseRequestRepository>;
 
 const outletRepo: jest.Mocked<OutletRepository> = {

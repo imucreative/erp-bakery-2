@@ -4,15 +4,28 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
+import fastifyMultipart from '@fastify/multipart';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { MAX_ATTACHMENT_SIZE_BYTES } from './Domains/purchase-requests/purchaseRequestAttachmentPolicy';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({ logger: process.env.NODE_ENV === 'development' }),
   );
+
+  // ─── Multipart (file uploads) ──────────────────────────────────────────────
+  // Registered for attachment uploads (doc 35 §5). The 5 MB fileSize limit is
+  // the transport-layer gate; use cases re-validate size/MIME defensively.
+  // attachFieldsToBody is left off so handlers stream parts via request.file().
+  await app.register(fastifyMultipart as never, {
+    limits: {
+      fileSize: MAX_ATTACHMENT_SIZE_BYTES,
+      files: 1,
+    },
+  });
 
   // ─── Global prefix ───────────────────────────────────────────────────────
   const apiPrefix = process.env.API_PREFIX ?? 'api/v1';

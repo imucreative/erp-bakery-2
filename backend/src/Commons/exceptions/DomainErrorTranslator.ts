@@ -707,6 +707,20 @@ const DomainErrorTranslator = {
     ),
     'PURCHASE_REQUEST.INVALID_STATUS': new InvariantError('Status purchase request tidak valid'),
 
+    // ── Purchase Request Attachments (doc 35 §5) ─────────────────
+    'PURCHASE_REQUEST_ATTACHMENT.NOT_FOUND': new NotFoundError(
+      'Lampiran purchase request tidak ditemukan',
+    ),
+    'UPLOAD_PURCHASE_REQUEST_ATTACHMENT.FILE_REQUIRED': new InvariantError(
+      'File lampiran wajib disertakan',
+    ),
+    'UPLOAD_PURCHASE_REQUEST_ATTACHMENT.MIME_NOT_ALLOWED': new InvariantError(
+      'Tipe file tidak diizinkan; hanya PDF, JPG, atau PNG',
+    ),
+    'UPLOAD_PURCHASE_REQUEST_ATTACHMENT.FILE_TOO_LARGE': new InvariantError(
+      'Ukuran file melebihi batas maksimum 5 MB',
+    ),
+
     // ── Conflict ─────────────────────────────────────────────────
     'USER.EMAIL_ALREADY_USED': new ConflictError(
       'Email sudah digunakan oleh akun lain',

@@ -3,6 +3,7 @@ import {
   PurchaseRequestRepository,
   NewPurchaseRequestData,
   NewPurchaseRequestCommentData,
+  NewPurchaseRequestAttachmentData,
   PurchaseRequestListFilter,
   PurchaseRequestListResult,
 } from '../../Domains/purchase-requests/PurchaseRequestRepository';
@@ -12,6 +13,10 @@ import {
   PurchaseRequestStatusLog,
 } from '../../Domains/purchase-requests/entities/PurchaseRequest';
 import { PurchaseRequestComment } from '../../Domains/purchase-requests/entities/PurchaseRequestComment';
+import {
+  PurchaseRequestAttachment,
+  PurchaseRequestAttachmentWithPath,
+} from '../../Domains/purchase-requests/entities/PurchaseRequestAttachment';
 import { PurchaseRequestCommentCategory } from '../../Domains/purchase-requests/purchaseRequestCommentCategory';
 import {
   PurchaseRequestStatus,
@@ -67,6 +72,17 @@ interface CommentRow {
   created_at: Date;
 }
 
+interface AttachmentRow {
+  id: string;
+  original_name: string;
+  stored_path: string;
+  mime_type: string;
+  size_bytes: string;
+  uploaded_by: string | null;
+  uploaded_by_name: string | null;
+  created_at: Date;
+}
+
 const HEADER_COLUMNS = `id, company_id, pr_number, requestor_id, destination_outlet_id,
   expected_date, total_estimated_amount, status, notes, approved_by, approved_at,
   created_by, updated_by, created_at, updated_at`;
@@ -87,6 +103,12 @@ const COMMENT_SELECT = `SELECT c.id, c.category, c.body, c.author_id,
     author_users.name AS author_name, c.created_at
   FROM purchase_request_comments c
   LEFT JOIN users author_users ON author_users.id = c.author_id`;
+
+/** Attachment columns with uploader name resolved via LEFT JOIN to users. */
+const ATTACHMENT_SELECT = `SELECT a.id, a.original_name, a.stored_path, a.mime_type,
+    a.size_bytes, a.uploaded_by, uploader_users.name AS uploaded_by_name, a.created_at
+  FROM purchase_request_attachments a
+  LEFT JOIN users uploader_users ON uploader_users.id = a.uploaded_by`;
 
 /**
  * Concrete PostgreSQL implementation of PurchaseRequestRepository.
@@ -119,6 +141,19 @@ export class PurchaseRequestRepositoryPostgres extends PurchaseRequestRepository
       actorId: row.actor_id,
       actorName: row.actor_name,
       note: row.note,
+      createdAt: row.created_at,
+    };
+  }
+
+  private _toAttachment(row: AttachmentRow): PurchaseRequestAttachmentWithPath {
+    return {
+      id: row.id,
+      originalName: row.original_name,
+      storedPath: row.stored_path,
+      mimeType: row.mime_type,
+      sizeBytes: Number(row.size_bytes),
+      uploadedBy: row.uploaded_by,
+      uploadedByName: row.uploaded_by_name,
       createdAt: row.created_at,
     };
   }
@@ -562,6 +597,90 @@ export class PurchaseRequestRepositoryPostgres extends PurchaseRequestRepository
       [purchaseRequestId, companyId],
     );
     return result.rows.map((row) => this._toComment(row));
+  }
+
+  async addAttachment(
+    purchaseRequestId: string,
+    companyId: string,
+    uploadedBy: string | null,
+    data: NewPurchaseRequestAttachmentData,
+  ): Promise<PurchaseRequestAttachment> {
+    const inserted = await this.pool.query<{ id: string }>(
+      `INSERT INTO purchase_request_attachments
+         (purchase_request_id, company_id, original_name, stored_path, mime_type, size_bytes, uploaded_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)
+       RETURNING id`,
+      [
+        purchaseRequestId,
+        companyId,
+        data.originalName,
+        data.storedPath,
+        data.mimeType,
+        data.sizeBytes,
+        uploadedBy,
+      ],
+    );
+    const result = await this.pool.query<AttachmentRow>(
+      `${ATTACHMENT_SELECT} WHERE a.id = $1`,
+      [inserted.rows[0].id],
+    );
+    return this._stripPath(this._toAttachment(result.rows[0]));
+  }
+
+  async listAttachments(
+    purchaseRequestId: string,
+    companyId: string,
+  ): Promise<PurchaseRequestAttachment[]> {
+    const result = await this.pool.query<AttachmentRow>(
+      `${ATTACHMENT_SELECT}
+       WHERE a.purchase_request_id = $1 AND a.company_id = $2
+       ORDER BY a.created_at ASC, a.id ASC`,
+      [purchaseRequestId, companyId],
+    );
+    return result.rows.map((row) => this._stripPath(this._toAttachment(row)));
+  }
+
+  async getAttachmentById(
+    purchaseRequestId: string,
+    attachmentId: string,
+    companyId: string,
+  ): Promise<PurchaseRequestAttachmentWithPath> {
+    const result = await this.pool.query<AttachmentRow>(
+      `${ATTACHMENT_SELECT}
+       WHERE a.id = $1 AND a.purchase_request_id = $2 AND a.company_id = $3`,
+      [attachmentId, purchaseRequestId, companyId],
+    );
+    if (!result.rowCount) {
+      throw new NotFoundError('PURCHASE_REQUEST_ATTACHMENT.NOT_FOUND');
+    }
+    return this._toAttachment(result.rows[0]);
+  }
+
+  async deleteAttachment(
+    purchaseRequestId: string,
+    attachmentId: string,
+    companyId: string,
+  ): Promise<PurchaseRequestAttachmentWithPath> {
+    const result = await this.pool.query<AttachmentRow>(
+      `DELETE FROM purchase_request_attachments a
+       WHERE a.id = $1 AND a.purchase_request_id = $2 AND a.company_id = $3
+       RETURNING a.id, a.original_name, a.stored_path, a.mime_type,
+         a.size_bytes, a.uploaded_by, NULL AS uploaded_by_name, a.created_at`,
+      [attachmentId, purchaseRequestId, companyId],
+    );
+    if (!result.rowCount) {
+      throw new NotFoundError('PURCHASE_REQUEST_ATTACHMENT.NOT_FOUND');
+    }
+    return this._toAttachment(result.rows[0]);
+  }
+
+  /** Drop the internal storedPath before returning metadata to callers. */
+  private _stripPath(
+    attachment: PurchaseRequestAttachmentWithPath,
+  ): PurchaseRequestAttachment {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { storedPath, ...metadata } = attachment;
+    return metadata;
   }
 
   /** Map a unique-violation on pr_number to a friendly conflict. */

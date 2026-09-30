@@ -1,11 +1,22 @@
 import { PurchaseRequest } from './entities/PurchaseRequest';
 import { CreatePurchaseRequestItemInput } from './entities/CreatePurchaseRequest';
 import { PurchaseRequestComment } from './entities/PurchaseRequestComment';
+import {
+  PurchaseRequestAttachment,
+  PurchaseRequestAttachmentWithPath,
+} from './entities/PurchaseRequestAttachment';
 import { PurchaseRequestCommentCategory } from './purchaseRequestCommentCategory';
 
 export interface NewPurchaseRequestCommentData {
   category: PurchaseRequestCommentCategory;
   body: string;
+}
+
+export interface NewPurchaseRequestAttachmentData {
+  originalName: string;
+  storedPath: string;
+  mimeType: string;
+  sizeBytes: number;
 }
 
 export interface NewPurchaseRequestData {
@@ -114,4 +125,44 @@ export abstract class PurchaseRequestRepository {
     purchaseRequestId: string,
     companyId: string,
   ): Promise<PurchaseRequestComment[]>;
+
+  /**
+   * Persist an attachment metadata row (the physical file is written by the
+   * use case before this call) and return the stored metadata with the
+   * uploader name resolved (JOIN to users).
+   */
+  abstract addAttachment(
+    purchaseRequestId: string,
+    companyId: string,
+    uploadedBy: string | null,
+    data: NewPurchaseRequestAttachmentData,
+  ): Promise<PurchaseRequestAttachment>;
+
+  /** List a PR's attachments chronologically (each carries uploadedByName). */
+  abstract listAttachments(
+    purchaseRequestId: string,
+    companyId: string,
+  ): Promise<PurchaseRequestAttachment[]>;
+
+  /**
+   * Fetch a single attachment (including the internal storedPath) scoped to
+   * both the PR and the company. Throws PURCHASE_REQUEST_ATTACHMENT.NOT_FOUND
+   * when the attachment does not belong to that PR/company (IDOR guard).
+   */
+  abstract getAttachmentById(
+    purchaseRequestId: string,
+    attachmentId: string,
+    companyId: string,
+  ): Promise<PurchaseRequestAttachmentWithPath>;
+
+  /**
+   * Delete an attachment row scoped to the PR and company, returning the
+   * deleted metadata (including storedPath) so the use case can remove the
+   * physical file. Throws PURCHASE_REQUEST_ATTACHMENT.NOT_FOUND when missing.
+   */
+  abstract deleteAttachment(
+    purchaseRequestId: string,
+    attachmentId: string,
+    companyId: string,
+  ): Promise<PurchaseRequestAttachmentWithPath>;
 }
