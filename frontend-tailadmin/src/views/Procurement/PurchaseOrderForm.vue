@@ -5,17 +5,21 @@
  *
  * CREATE (route `PurchaseOrderCreate`): empty header. The user picks an
  *   APPROVED source PR and a supplier. On PR selection the destination outlet
- *   is shown read-only (inherited on the backend) and the PR's items are
- *   prefilled into the editor (product/qty/uom from the PR, unitPrice defaulted
- *   from the PR estimatedPrice, taxPercent 0). On supplier selection the
- *   supplier's default payment term is applied when the user hasn't overridden.
+ *   is shown read-only (inherited on the backend), the PR items are captured as
+ *   the editor's constraint set (`prItems`), and the rows are prefilled from
+ *   the PR (product/qty/uom from the PR, unitPrice defaulted from the PR
+ *   estimatedPrice, taxPercent 0). On supplier selection the supplier's default
+ *   payment term is applied when the user hasn't overridden.
  * EDIT (route `PurchaseOrderEdit`, :id): loads the PO. Editing is only allowed
  *   for DRAFT/REJECTED; any other status renders read-only with save hidden.
- *   The source PR is locked on edit.
+ *   The source PR is locked on edit; we also fetch the source PR to rebuild the
+ *   editor's constraint set (allowed products + per-row max quantity).
  *
- * Decision — item prefill: we prefill client-side from the chosen PR so the
- * user can review/adjust prices and tax before submitting. If the user clears
- * all rows we send `items: undefined` and let the backend prefill from the PR.
+ * PR-locked items (backend-authoritative, mirrored here): a PO's items may ONLY
+ * come from the source PR items. The product per row is read-only, quantity is
+ * capped at the matching PR quantity, a SUBSET is allowed, and UOM/price/tax
+ * stay editable. The editor exposes "Tambah dari item PR" to re-add dropped PR
+ * items (never a product catalog). The payload sends only the included rows.
  *
  * Decision — payment-term preview: the estimated due date (orderDate + dueDays)
  * is shown read-only as a hint only; the backend is authoritative.
@@ -35,6 +39,7 @@ import {
   PurchaseOrderHeaderFields,
   PurchaseOrderItemsEditor,
   type EditorItemRow,
+  type SourcePrItem,
 } from '@/components/procurement/purchase-order'
 import { formatDate, toISODate } from '@/lib/format'
 import { toMessage } from '@/composables/usePurchaseRequests'
@@ -80,6 +85,9 @@ const orderDate = ref<string>(toISODate(new Date()))
 const paymentTermId = ref<string>('')
 const notes = ref<string>('')
 const items = ref<EditorItemRow[]>([])
+// Source PR items — the only products allowed in this PO, with per-row max qty.
+// Populated from the chosen PR (create) or the loaded PO's source PR (edit).
+const prItems = ref<SourcePrItem[]>([])
 // Destination outlet is inherited from the chosen PR; shown read-only.
 const destinationOutletId = ref<string>('')
 
@@ -104,6 +112,21 @@ let suppressSupplierDefault = false
 
 const prNumberMap = computed<Map<string, string>>(
   () => new Map(approvedRequests.value.map((pr) => [pr.id, pr.prNumber])),
+)
+
+// Product label lookup (name + SKU) for clear validation messages.
+const productMap = computed<Map<string, Product>>(
+  () => new Map(products.value.map((p) => [p.id, p])),
+)
+
+function productLabel(productId: string): string {
+  const product = productMap.value.get(productId)
+  return product ? `${product.name} (${product.sku})` : productId
+}
+
+// Per-product max quantity derived from the source PR items.
+const prQtyByProduct = computed<Map<string, number>>(
+  () => new Map(prItems.value.map((item) => [item.productId, item.quantity])),
 )
 
 function prNumber(id: string): string {
@@ -178,6 +201,26 @@ async function loadExisting(id: string): Promise<void> {
     unitPrice: item.unitPrice,
     taxPercent: item.taxPercent,
   }))
+  // Fetch the source PR to constrain the editor (allowed products + max qty).
+  // The PR is locked on edit, so this context stays valid for the whole session.
+  // If the PR can't be loaded we fall back to the PO items themselves so the
+  // product stays read-only and existing quantities remain the cap.
+  try {
+    const pr = await purchaseRequestService.getById(po.purchaseRequestId)
+    prItems.value = pr.items.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      uomId: item.uomId,
+      estimatedPrice: item.estimatedPrice,
+    }))
+  } catch {
+    prItems.value = po.items.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      uomId: item.uomId,
+      estimatedPrice: item.unitPrice,
+    }))
+  }
 }
 
 onMounted(async () => {
@@ -205,11 +248,20 @@ watch(purchaseRequestId, async (prId) => {
   }
   if (!prId) {
     destinationOutletId.value = ''
+    prItems.value = []
+    items.value = []
     return
   }
   try {
     const pr = await purchaseRequestService.getById(prId)
     destinationOutletId.value = pr.destinationOutletId
+    // Capture the PR items as the editor's constraint set, then prefill rows.
+    prItems.value = pr.items.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      uomId: item.uomId,
+      estimatedPrice: item.estimatedPrice,
+    }))
     items.value = pr.items.map((item) => ({
       productId: item.productId,
       quantity: item.quantity,
@@ -249,22 +301,36 @@ function validate(): string | null {
   if (!orderDate.value) {
     return 'Tanggal order wajib diisi.'
   }
-  for (const [index, item] of items.value.entries()) {
-    const row = index + 1
-    if (!item.productId) {
-      return `Item ${row}: produk wajib dipilih.`
+  if (items.value.length === 0) {
+    return 'Minimal satu item harus disertakan dari item PR sumber.'
+  }
+  const seen = new Set<string>()
+  for (const item of items.value) {
+    const label = productLabel(item.productId)
+    // Product must come from a source PR item (editor already enforces this).
+    if (!prQtyByProduct.value.has(item.productId)) {
+      return `Item ${label}: produk tidak termasuk dalam item PR sumber.`
     }
+    // No duplicate products (one row per PR item).
+    if (seen.has(item.productId)) {
+      return `Item ${label}: produk tidak boleh muncul lebih dari satu kali.`
+    }
+    seen.add(item.productId)
     if (!item.uomId) {
-      return `Item ${row}: UOM wajib dipilih (pilih ulang produk agar UOM terisi).`
+      return `Item ${label}: UOM wajib dipilih.`
     }
     if (!(Number(item.quantity) > 0)) {
-      return `Item ${row}: kuantitas harus lebih dari 0.`
+      return `Item ${label}: kuantitas harus lebih dari 0.`
+    }
+    const maxQty = prQtyByProduct.value.get(item.productId) ?? 0
+    if (maxQty > 0 && Number(item.quantity) > maxQty) {
+      return `Item ${label}: kuantitas tidak boleh melebihi PR (maks ${maxQty}).`
     }
     if (Number(item.unitPrice) < 0) {
-      return `Item ${row}: harga satuan tidak boleh negatif.`
+      return `Item ${label}: harga satuan tidak boleh negatif.`
     }
     if (Number(item.taxPercent) < 0) {
-      return `Item ${row}: pajak tidak boleh negatif.`
+      return `Item ${label}: pajak tidak boleh negatif.`
     }
   }
   return null
@@ -282,17 +348,15 @@ async function onSubmit(): Promise<void> {
   formError.value = null
   submitting.value = true
   try {
-    // Empty editor → omit items and let the backend prefill from the PR.
-    const mappedItems =
-      items.value.length > 0
-        ? items.value.map((item) => ({
-            productId: item.productId,
-            quantity: Number(item.quantity),
-            uomId: item.uomId,
-            unitPrice: Number(item.unitPrice),
-            taxPercent: Number(item.taxPercent),
-          }))
-        : undefined
+    // Items are locked to the source PR; send only the included rows (subset
+    // allowed). Validation already guarantees at least one row.
+    const mappedItems = items.value.map((item) => ({
+      productId: item.productId,
+      quantity: Number(item.quantity),
+      uomId: item.uomId,
+      unitPrice: Number(item.unitPrice),
+      taxPercent: Number(item.taxPercent),
+    }))
     const payload: SavePurchaseOrderPayload = {
       purchaseRequestId: purchaseRequestId.value,
       supplierId: supplierId.value,
@@ -380,6 +444,7 @@ function onCancel(): void {
           <h5 class="mb-3 text-sm font-semibold text-gray-800 dark:text-white/90">Item</h5>
           <PurchaseOrderItemsEditor
             v-model="items"
+            :pr-items="prItems"
             :products="products"
             :uoms="uoms"
             :disabled="isReadOnly"

@@ -1,15 +1,26 @@
 <script setup lang="ts">
 /**
- * PurchaseOrderItemsEditor — editable line-items grid for the PO form.
+ * PurchaseOrderItemsEditor — PR-locked line-items grid for the PO form.
  *
- * Each row: Product (select, filtered to active products), Quantity (>0),
- * UOM (auto-filled from the product; falls back to a select if the product has
- * no UOM), Unit Price (>=0), Tax % (>=0), Subtotal/Tax/Total (UI preview,
- * read-only; the server is authoritative). Add/remove rows.
+ * Business rule (backend-authoritative, mirrored here for UX): a PO's items may
+ * ONLY come from the items of its source Purchase Request. Specifically:
+ *   1. Product is NOT free-choice — each row's product is dictated by a source
+ *      PR item. No foreign products, no duplicate products.
+ *   2. A SUBSET of the PR items is allowed (the user may drop some rows).
+ *   3. Quantity per row may be ≤ the matching PR item quantity; never more
+ *      (the `max` and local validation enforce this). Default from the PR.
+ *   4. UOM is free-choice (default from the PR item).
+ *   5. Unit price is free (default from the PR estimatedPrice); Tax % is free
+ *      (default 0).
  *
- * Two-way binds the rows array via v-model. Selecting a product auto-fills the
- * row's UOM and pre-fills the unit price from the product's purchasePrice when
- * the price is still zero (convenience only; the user may override). Preview:
+ * Because of (1), the Product column is READ-ONLY (a label, not a catalog
+ * select) and there is no free "Add Item" button. Rows start prefilled from the
+ * PR by the parent. Users exclude a row with the per-row remove button, and can
+ * re-add a previously removed PR item through the "Tambah dari item PR"
+ * dropdown — which only lists PR items not already present (so duplicates are
+ * impossible and it is empty once every PR item is in the table).
+ *
+ * Preview (UI only, server authoritative):
  *   subtotal = quantity * unitPrice
  *   tax      = subtotal * taxPercent / 100
  *   total    = subtotal + tax
@@ -31,8 +42,21 @@ export interface EditorItemRow {
   taxPercent: number
 }
 
+/**
+ * A source PR item used to constrain the editor. Supplies the allowed product,
+ * the maximum quantity, and the defaults applied when a dropped item is re-added.
+ */
+export interface SourcePrItem {
+  productId: string
+  quantity: number
+  uomId: string
+  estimatedPrice: number
+}
+
 const props = defineProps<{
   modelValue: EditorItemRow[]
+  /** Items of the source PR — the only products allowed in this PO. */
+  prItems: SourcePrItem[]
   products: Product[]
   uoms: Uom[]
   disabled?: boolean
@@ -49,6 +73,34 @@ const productMap = computed<Map<string, Product>>(
   () => new Map(props.products.map((p) => [p.id, p])),
 )
 const uomMap = computed<Map<string, Uom>>(() => new Map(props.uoms.map((u) => [u.id, u])))
+
+/** Fast lookup of the source PR item per product (allowed product + max qty). */
+const prItemMap = computed<Map<string, SourcePrItem>>(
+  () => new Map(props.prItems.map((item) => [item.productId, item])),
+)
+
+/** Human label for a row's product (name + SKU) with graceful fallbacks. */
+function productLabel(productId: string): string {
+  const product = productMap.value.get(productId)
+  if (!product) {
+    return productId || '—'
+  }
+  return `${product.name} (${product.sku})`
+}
+
+/** The matching PR item's quantity, used as the per-row max. 0 → no cap. */
+function maxQtyForRow(row: EditorItemRow): number {
+  return prItemMap.value.get(row.productId)?.quantity ?? 0
+}
+
+/**
+ * PR items not yet present in the editor — the only choices for the "add"
+ * dropdown. Prevents duplicate products and is empty once all PR items are in.
+ */
+const addableItems = computed<SourcePrItem[]>(() => {
+  const used = new Set(props.modelValue.map((row) => row.productId))
+  return props.prItems.filter((item) => !used.has(item.productId))
+})
 
 /**
  * The UOM options to render for a given row. Starts from the loaded (active)
@@ -98,25 +150,24 @@ function updateRow(index: number, patch: Partial<EditorItemRow>): void {
   emitRows(next)
 }
 
-function onProductChange(index: number, productId: string): void {
-  const product = productMap.value.get(productId)
-  const current = props.modelValue[index]
-  const patch: Partial<EditorItemRow> = {
-    productId,
-    uomId: product?.uomId ?? '',
+/** Add a dropped PR item back as a row, prefilled with its PR defaults. */
+function onAddFromPr(productId: string): void {
+  if (!productId) {
+    return
   }
-  // Pre-fill unit price from the product's purchase price only when the row's
-  // price hasn't been set yet (don't clobber a user-entered value).
-  if (product && (!current || Number(current.unitPrice) === 0)) {
-    patch.unitPrice = product.purchasePrice ?? 0
+  const prItem = prItemMap.value.get(productId)
+  if (!prItem) {
+    return
   }
-  updateRow(index, patch)
-}
-
-function addRow(): void {
   emitRows([
     ...props.modelValue,
-    { productId: '', quantity: 1, uomId: '', unitPrice: 0, taxPercent: 0 },
+    {
+      productId: prItem.productId,
+      quantity: prItem.quantity,
+      uomId: prItem.uomId,
+      unitPrice: prItem.estimatedPrice,
+      taxPercent: 0,
+    },
   ])
 }
 
@@ -134,7 +185,7 @@ function removeRow(index: number): void {
             <th class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
               Produk
             </th>
-            <th class="w-24 px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            <th class="w-28 px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
               Qty
             </th>
             <th class="w-32 px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
@@ -157,39 +208,38 @@ function removeRow(index: number): void {
         <tbody>
           <tr
             v-for="(row, index) in modelValue"
-            :key="index"
+            :key="row.productId || index"
             class="border-b border-gray-100 last:border-0 dark:border-gray-800"
           >
-            <!-- Product -->
+            <!-- Product (read-only — dictated by the source PR item) -->
             <td class="px-4 py-3 align-top">
-              <div class="relative">
-                <select
-                  :value="row.productId"
-                  :disabled="disabled"
-                  :class="[inputClass, 'appearance-none pe-10']"
-                  @change="onProductChange(index, ($event.target as HTMLSelectElement).value)"
-                >
-                  <option value="" disabled>Pilih produk</option>
-                  <option v-for="p in products" :key="p.id" :value="p.id">
-                    {{ p.name }} ({{ p.sku }})
-                  </option>
-                </select>
-                <ChevronDownIcon
-                  class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-                />
+              <div class="flex min-h-11 flex-col justify-center">
+                <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+                  {{ productLabel(row.productId) }}
+                </span>
+                <span class="text-theme-xs text-gray-400 dark:text-gray-500">
+                  Dari item PR
+                </span>
               </div>
             </td>
-            <!-- Quantity -->
+            <!-- Quantity (capped at the matching PR item quantity) -->
             <td class="px-4 py-3 align-top">
               <input
                 :value="row.quantity"
                 type="number"
                 min="0"
+                :max="maxQtyForRow(row) || undefined"
                 step="any"
                 :disabled="disabled"
                 :class="inputClass"
                 @input="updateRow(index, { quantity: Number(($event.target as HTMLInputElement).value) })"
               />
+              <span
+                v-if="maxQtyForRow(row) > 0"
+                class="mt-1 block text-theme-xs text-gray-400 dark:text-gray-500"
+              >
+                Maks {{ maxQtyForRow(row) }} (PR)
+              </span>
             </td>
             <!-- UOM -->
             <td class="px-4 py-3 align-top">
@@ -258,7 +308,12 @@ function removeRow(index: number): void {
               colspan="7"
               class="px-4 py-6 text-center text-theme-sm text-gray-500 dark:text-gray-400"
             >
-              Belum ada item. Tambahkan item, atau kosongkan agar diisi otomatis dari PR sumber.
+              <template v-if="prItems.length === 0">
+                Pilih PR sumber terlebih dahulu untuk memuat item.
+              </template>
+              <template v-else>
+                Belum ada item. Tambahkan dari item PR di bawah.
+              </template>
             </td>
           </tr>
         </tbody>
@@ -303,17 +358,29 @@ function removeRow(index: number): void {
       </table>
     </div>
 
-    <button
-      v-if="!disabled"
-      type="button"
-      class="inline-flex items-center gap-2 rounded-lg border border-dashed border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:border-brand-300 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300 dark:hover:border-brand-500/50"
-      @click="addRow"
-    >
-      <PlusIcon class="h-4 w-4" aria-hidden="true" />
-      Tambah Item
-    </button>
+    <!-- Add from PR items — only items not already in the table; never a product catalog -->
+    <div v-if="!disabled && addableItems.length > 0" class="flex items-center gap-2">
+      <div class="relative w-full max-w-xs">
+        <select
+          value=""
+          :class="[inputClass, 'appearance-none pe-10']"
+          aria-label="Tambah dari item PR"
+          @change="onAddFromPr(($event.target as HTMLSelectElement).value); ($event.target as HTMLSelectElement).value = ''"
+        >
+          <option value="" disabled>Tambah dari item PR...</option>
+          <option v-for="item in addableItems" :key="item.productId" :value="item.productId">
+            {{ productLabel(item.productId) }}
+          </option>
+        </select>
+        <ChevronDownIcon
+          class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
+        />
+      </div>
+      <PlusIcon class="h-4 w-4 text-gray-400 dark:text-gray-500" aria-hidden="true" />
+    </div>
 
     <p class="text-theme-xs text-gray-400 dark:text-gray-500">
+      Item hanya dapat dipilih dari item PR sumber. Kuantitas tidak boleh melebihi PR.
       Subtotal, pajak & total di atas hanya pratinjau; nilai final dihitung oleh server.
     </p>
   </div>

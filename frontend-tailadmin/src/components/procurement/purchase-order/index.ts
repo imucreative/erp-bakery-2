@@ -10,5 +10,5 @@ export { default as PurchaseOrderItemsTable } from './PurchaseOrderItemsTable.vu
 export { default as PurchaseOrderActionBar } from './PurchaseOrderActionBar.vue'
 export { default as PurchaseOrderComments } from './PurchaseOrderComments.vue'
 export { default as PurchaseOrderAttachments } from './PurchaseOrderAttachments.vue'
-export type { EditorItemRow } from './PurchaseOrderItemsEditor.vue'
+export type { EditorItemRow, SourcePrItem } from './PurchaseOrderItemsEditor.vue'
 export type { PurchaseOrderAction } from './PurchaseOrderActionModals.vue'
