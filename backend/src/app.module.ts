@@ -20,6 +20,7 @@ import { StockOpnameModule } from './Interfaces/http/api/stock-opnames/stock-opn
 import { RecipeModule } from './Interfaces/http/api/recipes/recipe.module';
 import { ProductionOrderModule } from './Interfaces/http/api/production/production-order.module';
 import { PurchaseRequestModule } from './Interfaces/http/api/purchase-requests/purchase-request.module';
+import { PurchaseOrderModule } from './Interfaces/http/api/purchase-orders/purchase-order.module';
 import { AllExceptionsFilter } from './Commons/exceptions/AllExceptionsFilter';
 import { JwtAuthGuard } from './Interfaces/http/guards/jwt-auth.guard';
 import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
@@ -58,6 +59,7 @@ import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
     RecipeModule,
     ProductionOrderModule,
     PurchaseRequestModule,
+    PurchaseOrderModule,
   ],
   providers: [
     // Global exception filter — converts domain/HTTP errors to standard JSON

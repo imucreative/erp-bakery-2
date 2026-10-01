@@ -108,6 +108,10 @@ async function bootstrap() {
         'Purchase Requests',
         'Procurement purchase requests (draft → submit → approve/reject, cancel) with approval timeline',
       )
+      .addTag(
+        'Purchase Orders',
+        'Procurement purchase orders raised from approved PRs (draft → submit → approve/reject, cancel) with payment-term snapshot, backend-computed due date, per-item percentage tax, and approval timeline',
+      )
       .build();
 
     const document = SwaggerModule.createDocument(app, config);

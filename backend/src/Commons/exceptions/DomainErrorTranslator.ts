@@ -721,6 +721,73 @@ const DomainErrorTranslator = {
       'Ukuran file melebihi batas maksimum 5 MB',
     ),
 
+    // ── Purchase Order ───────────────────────────────────────────
+    'PURCHASE_ORDER.NOT_FOUND': new NotFoundError('Purchase order tidak ditemukan'),
+    'CREATE_PURCHASE_ORDER.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data purchase order tidak lengkap',
+    ),
+    'CREATE_PURCHASE_ORDER.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Tipe data purchase order tidak sesuai',
+    ),
+    'CREATE_PURCHASE_ORDER.PURCHASE_REQUEST_REQUIRED': new InvariantError(
+      'Purchase order harus dibuat dari purchase request',
+    ),
+    'CREATE_PURCHASE_ORDER.SUPPLIER_REQUIRED': new InvariantError(
+      'Supplier wajib dipilih untuk purchase order',
+    ),
+    'CREATE_PURCHASE_ORDER.ORDER_DATE_INVALID': new InvariantError(
+      'Tanggal order purchase order tidak valid',
+    ),
+    'CREATE_PURCHASE_ORDER.ITEMS_REQUIRED': new InvariantError(
+      'Purchase order harus memiliki minimal satu item',
+    ),
+    'CREATE_PURCHASE_ORDER.ITEM_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Format item purchase order tidak valid',
+    ),
+    'CREATE_PURCHASE_ORDER.ITEM_PRODUCT_REQUIRED': new InvariantError(
+      'Setiap item purchase order harus menyertakan produk',
+    ),
+    'CREATE_PURCHASE_ORDER.ITEM_UOM_REQUIRED': new InvariantError(
+      'Setiap item purchase order harus menyertakan satuan (UOM)',
+    ),
+    'CREATE_PURCHASE_ORDER.ITEM_QTY_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Jumlah item purchase order harus berupa angka',
+    ),
+    'CREATE_PURCHASE_ORDER.ITEM_QTY_MUST_BE_POSITIVE': new InvariantError(
+      'Jumlah item purchase order harus lebih dari nol',
+    ),
+    'CREATE_PURCHASE_ORDER.ITEM_PRICE_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Harga satuan item purchase order harus berupa angka',
+    ),
+    'CREATE_PURCHASE_ORDER.ITEM_PRICE_MUST_BE_NON_NEGATIVE': new InvariantError(
+      'Harga satuan item purchase order tidak boleh negatif',
+    ),
+    'CREATE_PURCHASE_ORDER.ITEM_TAX_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Persentase pajak item purchase order harus berupa angka',
+    ),
+    'CREATE_PURCHASE_ORDER.ITEM_TAX_MUST_BE_NON_NEGATIVE': new InvariantError(
+      'Persentase pajak item purchase order tidak boleh negatif',
+    ),
+    'PURCHASE_ORDER.PR_NOT_APPROVED': new InvariantError(
+      'Purchase order hanya dapat dibuat dari purchase request berstatus APPROVED',
+    ),
+    'PURCHASE_ORDER.SUPPLIER_INACTIVE': new InvariantError(
+      'Supplier tidak aktif; tidak dapat digunakan untuk purchase order',
+    ),
+    'PURCHASE_ORDER.PAYMENT_TERM_INACTIVE': new InvariantError(
+      'Payment term tidak aktif; tidak dapat digunakan untuk purchase order',
+    ),
+    'REJECT_PURCHASE_ORDER.NOTE_REQUIRED': new InvariantError(
+      'Alasan penolakan purchase order wajib diisi',
+    ),
+    'PURCHASE_ORDER.ONLY_EDITABLE_STATUS': new InvariantError(
+      'Hanya purchase order berstatus DRAFT atau REJECTED yang dapat diubah',
+    ),
+    'PURCHASE_ORDER.INVALID_STATUS_TRANSITION': new InvariantError(
+      'Transisi status purchase order tidak diperbolehkan',
+    ),
+    'PURCHASE_ORDER.INVALID_STATUS': new InvariantError('Status purchase order tidak valid'),
+
     // ── Conflict ─────────────────────────────────────────────────
     'USER.EMAIL_ALREADY_USED': new ConflictError(
       'Email sudah digunakan oleh akun lain',
@@ -752,6 +819,9 @@ const DomainErrorTranslator = {
     ),
     'PURCHASE_REQUEST.NUMBER_ALREADY_USED': new ConflictError(
       'Nomor purchase request sudah digunakan; coba lagi',
+    ),
+    'PURCHASE_ORDER.NUMBER_ALREADY_USED': new ConflictError(
+      'Nomor purchase order sudah digunakan; coba lagi',
     ),
   } as ErrorMap,
 };

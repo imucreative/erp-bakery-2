@@ -1,0 +1,105 @@
+import { PurchaseOrder } from './entities/PurchaseOrder';
+import { CreatePurchaseOrderItemInput } from './entities/CreatePurchaseOrder';
+
+/**
+ * Fully resolved PO data passed from the service/use-case layer to the
+ * repository. All money fields and the payment-term snapshot are computed by
+ * the use case (anti-tamper); the repository only persists them.
+ */
+export interface NewPurchaseOrderData {
+  purchaseRequestId: string;
+  supplierId: string;
+  destinationOutletId: string;
+  orderDate: string;
+  paymentTermId: string | null;
+  paymentTermCode: string | null;
+  paymentTermName: string | null;
+  paymentTermDueDays: number | null;
+  estimatedPaymentDueDate: string | null;
+  items: CreatePurchaseOrderItemInput[];
+  totalAmount: number;
+  taxTotal: number;
+  grandTotal: number;
+  notes: string | null;
+}
+
+export interface PurchaseOrderListFilter {
+  limit: number;
+  offset: number;
+  status?: string;
+  supplierId?: string;
+  destinationOutletId?: string;
+  purchaseRequestId?: string;
+  search?: string;
+}
+
+export interface PurchaseOrderListResult {
+  rows: PurchaseOrder[];
+  total: number;
+}
+
+/**
+ * Abstract repository — Purchase Order domain. Company-scoped.
+ *
+ * Every status-changing method appends a purchase_order_status_logs row in the
+ * same transaction as the header update, so the approval timeline can never
+ * drift from the document state. Numbering is generated race-safely inside
+ * createDraft (PO-{outletCode}-YYYY-NNNNNN, per company, per year).
+ *
+ * The destination outlet code (for numbering) is derived from the source PR's
+ * destination outlet by the use case and passed via NewPurchaseOrderData.
+ */
+export abstract class PurchaseOrderRepository {
+  /** Create a DRAFT PO + items, generate po_number, log (null -> DRAFT). */
+  abstract createDraft(
+    companyId: string,
+    userId: string | null,
+    data: NewPurchaseOrderData,
+  ): Promise<PurchaseOrder>;
+
+  /**
+   * Replace an editable PO (DRAFT or REJECTED) header + items. If the PO was
+   * REJECTED, updating resets it to DRAFT and logs REJECTED -> DRAFT.
+   * Throws when the PO is not in an editable status.
+   */
+  abstract updateDraft(
+    id: string,
+    companyId: string,
+    userId: string | null,
+    data: NewPurchaseOrderData,
+  ): Promise<PurchaseOrder>;
+
+  abstract getById(id: string, companyId: string): Promise<PurchaseOrder>;
+
+  abstract list(
+    companyId: string,
+    filter: PurchaseOrderListFilter,
+  ): Promise<PurchaseOrderListResult>;
+
+  /** DRAFT -> SUBMITTED. */
+  abstract submit(id: string, companyId: string, userId: string | null): Promise<PurchaseOrder>;
+
+  /** SUBMITTED -> APPROVED (records approved_by/approved_at). */
+  abstract approve(
+    id: string,
+    companyId: string,
+    userId: string | null,
+    note: string | null,
+  ): Promise<PurchaseOrder>;
+
+  /** SUBMITTED -> REJECTED (note required by the use case). */
+  abstract reject(
+    id: string,
+    companyId: string,
+    userId: string | null,
+    note: string | null,
+  ): Promise<PurchaseOrder>;
+
+  /** DRAFT|REJECTED|APPROVED -> CANCELLED (soft-delete + terminal status). */
+  abstract cancel(
+    id: string,
+    companyId: string,
+    userId: string | null,
+    note: string | null,
+  ): Promise<PurchaseOrder>;
+}
