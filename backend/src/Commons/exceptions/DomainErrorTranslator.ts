@@ -800,6 +800,12 @@ const DomainErrorTranslator = {
     'PURCHASE_ORDER.QTY_EXCEEDS_PR': new InvariantError(
       'Jumlah item purchase order tidak boleh melebihi jumlah pada purchase request sumber',
     ),
+    'PURCHASE_ORDER.QTY_EXCEEDS_OUTSTANDING': new InvariantError(
+      'Jumlah item purchase order melebihi sisa (outstanding) kuota item purchase request; sebagian sudah dipesan di purchase order lain',
+    ),
+    'PURCHASE_ORDER.NO_OUTSTANDING_ITEMS': new InvariantError(
+      'Semua item purchase request sumber sudah habis dipesan; tidak ada sisa yang dapat dibuatkan purchase order',
+    ),
     'REJECT_PURCHASE_ORDER.NOTE_REQUIRED': new InvariantError(
       'Alasan penolakan purchase order wajib diisi',
     ),

@@ -5,6 +5,7 @@ import { ApprovePurchaseOrderUseCase } from '../ApprovePurchaseOrderUseCase';
 import { RejectPurchaseOrderUseCase } from '../RejectPurchaseOrderUseCase';
 import { CancelPurchaseOrderUseCase } from '../CancelPurchaseOrderUseCase';
 import { GetPurchaseOrdersUseCase } from '../GetPurchaseOrdersUseCase';
+import { GetPurchaseOrderOutstandingUseCase } from '../GetPurchaseOrderOutstandingUseCase';
 import { AddPurchaseOrderCommentUseCase } from '../AddPurchaseOrderCommentUseCase';
 import { GetPurchaseOrderCommentsUseCase } from '../GetPurchaseOrderCommentsUseCase';
 import { PurchaseOrderRepository } from '../../../../Domains/purchase-orders/PurchaseOrderRepository';
@@ -19,6 +20,7 @@ const poRepo: jest.Mocked<PurchaseOrderRepository> = {
   updateDraft: jest.fn(),
   getById: jest.fn(),
   list: jest.fn(),
+  getConsumedQtyByPrItem: jest.fn(),
   submit: jest.fn(),
   approve: jest.fn(),
   reject: jest.fn(),
@@ -83,7 +85,11 @@ const basePayload = {
   ],
 };
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  // Default: no sibling PO consumption → outstanding == full PR quantity.
+  poRepo.getConsumedQtyByPrItem.mockResolvedValue(new Map<string, number>());
+});
 
 function createUseCase() {
   return new CreatePurchaseOrderUseCase(
@@ -300,18 +306,19 @@ describe('CreatePurchaseOrderUseCase', () => {
     expect(poRepo.createDraft).not.toHaveBeenCalled();
   });
 
-  it('should reject a quantity that exceeds the matching PR line', async () => {
+  it('should reject a quantity that exceeds the outstanding (full PR line when no sibling consumption)', async () => {
     prRepo.getById.mockResolvedValue(approvedPr() as never);
     supplierRepo.getSupplierById.mockResolvedValue(activeSupplier() as never);
 
-    // PR line for prod-1 has quantity 3; asking for 4 must fail.
+    // PR line for prod-1 has quantity 3, nothing consumed → outstanding 3;
+    // asking for 4 must fail.
     const payload = {
       ...basePayload,
       items: [{ productId: 'prod-1', quantity: 4, uomId: 'uom-1', unitPrice: 5000, taxPercent: 0 }],
     };
 
     await expect(createUseCase().execute(payload, 'c1', 'u1')).rejects.toThrow(
-      'PURCHASE_ORDER.QTY_EXCEEDS_PR',
+      'PURCHASE_ORDER.QTY_EXCEEDS_OUTSTANDING',
     );
     expect(poRepo.createDraft).not.toHaveBeenCalled();
   });
@@ -421,7 +428,7 @@ describe('UpdatePurchaseOrderUseCase', () => {
     };
 
     await expect(useCase.execute('po1', payload, 'c1', 'u1')).rejects.toThrow(
-      'PURCHASE_ORDER.QTY_EXCEEDS_PR',
+      'PURCHASE_ORDER.QTY_EXCEEDS_OUTSTANDING',
     );
     expect(poRepo.updateDraft).not.toHaveBeenCalled();
   });
@@ -651,5 +658,213 @@ describe('GetPurchaseOrderCommentsUseCase', () => {
 
     await expect(useCase.execute('po1', 'c1')).rejects.toThrow('PURCHASE_ORDER.NOT_FOUND');
     expect(poRepo.listComments).not.toHaveBeenCalled();
+  });
+});
+
+// ── Outstanding (remaining orderable) quota across POs (2026-10-01 [15:40]) ──
+describe('CreatePurchaseOrderUseCase — outstanding quota', () => {
+  it('should reject a quantity that exceeds the remaining outstanding when a sibling PO already consumed part of the PR line', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    supplierRepo.getSupplierById.mockResolvedValue(activeSupplier() as never);
+    // prod-1 PR qty 3, a sibling active PO consumed 2 → outstanding 1.
+    poRepo.getConsumedQtyByPrItem.mockResolvedValue(new Map([['prod-1', 2]]));
+
+    const payload = {
+      ...basePayload,
+      items: [{ productId: 'prod-1', quantity: 2, uomId: 'uom-1', unitPrice: 5000, taxPercent: 0 }],
+    };
+
+    await expect(createUseCase().execute(payload, 'c1', 'u1')).rejects.toThrow(
+      'PURCHASE_ORDER.QTY_EXCEEDS_OUTSTANDING',
+    );
+    expect(poRepo.createDraft).not.toHaveBeenCalled();
+  });
+
+  it('should accept a quantity equal to the remaining outstanding', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    supplierRepo.getSupplierById.mockResolvedValue(activeSupplier() as never);
+    productRepo.getProductById.mockResolvedValue({ id: 'prod' } as never);
+    uomRepo.getUomById.mockResolvedValue({ id: 'uom' } as never);
+    poRepo.createDraft.mockResolvedValue({ id: 'po1' } as never);
+    // prod-1 PR qty 3, consumed 2 → outstanding 1; ordering exactly 1 succeeds.
+    poRepo.getConsumedQtyByPrItem.mockResolvedValue(new Map([['prod-1', 2]]));
+
+    const payload = {
+      ...basePayload,
+      items: [{ productId: 'prod-1', quantity: 1, uomId: 'uom-1', unitPrice: 5000, taxPercent: 0 }],
+    };
+
+    await createUseCase().execute(payload, 'c1', 'u1');
+
+    expect(poRepo.getConsumedQtyByPrItem).toHaveBeenCalledWith('pr-1', 'c1');
+    expect(poRepo.createDraft).toHaveBeenCalled();
+  });
+
+  it('should reject ordering a line whose outstanding is 0 (fully consumed)', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    supplierRepo.getSupplierById.mockResolvedValue(activeSupplier() as never);
+    // prod-1 PR qty 3 fully consumed → outstanding 0.
+    poRepo.getConsumedQtyByPrItem.mockResolvedValue(new Map([['prod-1', 3]]));
+
+    const payload = {
+      ...basePayload,
+      items: [{ productId: 'prod-1', quantity: 1, uomId: 'uom-1', unitPrice: 5000, taxPercent: 0 }],
+    };
+
+    await expect(createUseCase().execute(payload, 'c1', 'u1')).rejects.toThrow(
+      'PURCHASE_ORDER.QTY_EXCEEDS_OUTSTANDING',
+    );
+    expect(poRepo.createDraft).not.toHaveBeenCalled();
+  });
+
+  it('should prefill only outstanding>0 lines with quantity = outstanding when the body omits items', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    supplierRepo.getSupplierById.mockResolvedValue(activeSupplier() as never);
+    productRepo.getProductById.mockResolvedValue({ id: 'prod' } as never);
+    uomRepo.getUomById.mockResolvedValue({ id: 'uom' } as never);
+    poRepo.createDraft.mockResolvedValue({ id: 'po1' } as never);
+    // prod-1: PR 3, consumed 2 → outstanding 1 (prefilled);
+    // prod-2: PR 2, consumed 2 → outstanding 0 (dropped from prefill).
+    poRepo.getConsumedQtyByPrItem.mockResolvedValue(
+      new Map([['prod-1', 2], ['prod-2', 2]]),
+    );
+
+    const { items, ...noItems } = basePayload;
+    void items;
+    await createUseCase().execute(noItems, 'c1', 'u1');
+
+    const arg = poRepo.createDraft.mock.calls[0][2];
+    expect(arg.items).toHaveLength(1);
+    expect(arg.items[0]).toEqual(
+      expect.objectContaining({ productId: 'prod-1', quantity: 1, unitPrice: 5000 }),
+    );
+  });
+
+  it('should reject create (prefill mode) when every PR line is fully consumed', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    supplierRepo.getSupplierById.mockResolvedValue(activeSupplier() as never);
+    poRepo.getConsumedQtyByPrItem.mockResolvedValue(
+      new Map([['prod-1', 3], ['prod-2', 2]]),
+    );
+
+    const { items, ...noItems } = basePayload;
+    void items;
+    await expect(createUseCase().execute(noItems, 'c1', 'u1')).rejects.toThrow(
+      'PURCHASE_ORDER.NO_OUTSTANDING_ITEMS',
+    );
+    expect(poRepo.createDraft).not.toHaveBeenCalled();
+  });
+});
+
+describe('UpdatePurchaseOrderUseCase — outstanding quota excludes the edited PO', () => {
+  function updateUseCase() {
+    return new UpdatePurchaseOrderUseCase(
+      poRepo,
+      prRepo,
+      supplierRepo,
+      paymentTermRepo,
+      productRepo,
+      uomRepo,
+    );
+  }
+
+  it('should pass the edited PO id as excludePurchaseOrderId so its own consumption is not counted', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    supplierRepo.getSupplierById.mockResolvedValue(activeSupplier() as never);
+    productRepo.getProductById.mockResolvedValue({ id: 'prod' } as never);
+    uomRepo.getUomById.mockResolvedValue({ id: 'uom' } as never);
+    poRepo.updateDraft.mockResolvedValue({ id: 'po1' } as never);
+    // Only OTHER POs are counted here; this PO (po1) is excluded by the query.
+    poRepo.getConsumedQtyByPrItem.mockResolvedValue(new Map<string, number>());
+
+    const payload = {
+      ...basePayload,
+      items: [{ productId: 'prod-1', quantity: 3, uomId: 'uom-1', unitPrice: 5000, taxPercent: 0 }],
+    };
+
+    await updateUseCase().execute('po1', payload, 'c1', 'u1');
+
+    expect(poRepo.getConsumedQtyByPrItem).toHaveBeenCalledWith('pr-1', 'c1', 'po1');
+    expect(poRepo.updateDraft).toHaveBeenCalled();
+  });
+
+  it('should reject an update that exceeds the outstanding left by OTHER active POs', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    supplierRepo.getSupplierById.mockResolvedValue(activeSupplier() as never);
+    // Another PO consumed 2 of prod-1 (PR 3) → outstanding for this edit is 1.
+    poRepo.getConsumedQtyByPrItem.mockResolvedValue(new Map([['prod-1', 2]]));
+
+    const payload = {
+      ...basePayload,
+      items: [{ productId: 'prod-1', quantity: 2, uomId: 'uom-1', unitPrice: 5000, taxPercent: 0 }],
+    };
+
+    await expect(updateUseCase().execute('po1', payload, 'c1', 'u1')).rejects.toThrow(
+      'PURCHASE_ORDER.QTY_EXCEEDS_OUTSTANDING',
+    );
+    expect(poRepo.updateDraft).not.toHaveBeenCalled();
+  });
+});
+
+describe('GetPurchaseOrderOutstandingUseCase', () => {
+  function outstandingUseCase() {
+    return new GetPurchaseOrderOutstandingUseCase(poRepo, prRepo);
+  }
+
+  it('should return outstanding = PR qty minus active consumption, with uom/estimatedPrice per line', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    // prod-1 consumed 2 (outstanding 1); prod-2 nothing (outstanding 2).
+    poRepo.getConsumedQtyByPrItem.mockResolvedValue(new Map([['prod-1', 2]]));
+
+    const result = await outstandingUseCase().execute('pr-1', 'c1');
+
+    expect(prRepo.getById).toHaveBeenCalledWith('pr-1', 'c1');
+    expect(poRepo.getConsumedQtyByPrItem).toHaveBeenCalledWith('pr-1', 'c1', undefined);
+    expect(result.purchaseRequestId).toBe('pr-1');
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        productId: 'prod-1',
+        prQuantity: 3,
+        consumedQuantity: 2,
+        outstandingQuantity: 1,
+        uomId: 'uom-1',
+        estimatedPrice: 5000,
+      }),
+      expect.objectContaining({
+        productId: 'prod-2',
+        prQuantity: 2,
+        consumedQuantity: 0,
+        outstandingQuantity: 2,
+        uomId: 'uom-1',
+        estimatedPrice: 2500,
+      }),
+    ]);
+  });
+
+  it('should clamp outstanding at 0 when consumption meets or exceeds the PR qty', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    poRepo.getConsumedQtyByPrItem.mockResolvedValue(new Map([['prod-1', 3], ['prod-2', 2]]));
+
+    const result = await outstandingUseCase().execute('pr-1', 'c1');
+
+    expect(result.items.every((i) => i.outstandingQuantity === 0)).toBe(true);
+  });
+
+  it('should forward excludePurchaseOrderId for edit mode', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    poRepo.getConsumedQtyByPrItem.mockResolvedValue(new Map<string, number>());
+
+    await outstandingUseCase().execute('pr-1', 'c1', 'po-x');
+
+    expect(poRepo.getConsumedQtyByPrItem).toHaveBeenCalledWith('pr-1', 'c1', 'po-x');
+  });
+
+  it('should propagate PURCHASE_REQUEST.NOT_FOUND for a foreign/missing PR', async () => {
+    prRepo.getById.mockRejectedValue(new Error('PURCHASE_REQUEST.NOT_FOUND'));
+
+    await expect(outstandingUseCase().execute('pr-x', 'c1')).rejects.toThrow(
+      'PURCHASE_REQUEST.NOT_FOUND',
+    );
+    expect(poRepo.getConsumedQtyByPrItem).not.toHaveBeenCalled();
   });
 });

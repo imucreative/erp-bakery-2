@@ -143,6 +143,7 @@ import { ApprovePurchaseOrderUseCase } from '../Applications/use_case/purchase-o
 import { RejectPurchaseOrderUseCase } from '../Applications/use_case/purchase-orders/RejectPurchaseOrderUseCase';
 import { CancelPurchaseOrderUseCase } from '../Applications/use_case/purchase-orders/CancelPurchaseOrderUseCase';
 import { GetPurchaseOrdersUseCase } from '../Applications/use_case/purchase-orders/GetPurchaseOrdersUseCase';
+import { GetPurchaseOrderOutstandingUseCase } from '../Applications/use_case/purchase-orders/GetPurchaseOrderOutstandingUseCase';
 import { AddPurchaseOrderCommentUseCase } from '../Applications/use_case/purchase-orders/AddPurchaseOrderCommentUseCase';
 import { GetPurchaseOrderCommentsUseCase } from '../Applications/use_case/purchase-orders/GetPurchaseOrderCommentsUseCase';
 import { UploadPurchaseOrderAttachmentUseCase } from '../Applications/use_case/purchase-orders/UploadPurchaseOrderAttachmentUseCase';
@@ -861,6 +862,14 @@ import { DeletePurchaseOrderAttachmentUseCase } from '../Applications/use_case/p
       inject: [PurchaseOrderRepository],
     },
     {
+      provide: GetPurchaseOrderOutstandingUseCase,
+      useFactory: (
+        poRepo: PurchaseOrderRepository,
+        prRepo: PurchaseRequestRepository,
+      ) => new GetPurchaseOrderOutstandingUseCase(poRepo, prRepo),
+      inject: [PurchaseOrderRepository, PurchaseRequestRepository],
+    },
+    {
       provide: AddPurchaseOrderCommentUseCase,
       useFactory: (poRepo: PurchaseOrderRepository) =>
         new AddPurchaseOrderCommentUseCase(poRepo),
@@ -1015,6 +1024,7 @@ import { DeletePurchaseOrderAttachmentUseCase } from '../Applications/use_case/p
     RejectPurchaseOrderUseCase,
     CancelPurchaseOrderUseCase,
     GetPurchaseOrdersUseCase,
+    GetPurchaseOrderOutstandingUseCase,
     AddPurchaseOrderCommentUseCase,
     GetPurchaseOrderCommentsUseCase,
     UploadPurchaseOrderAttachmentUseCase,

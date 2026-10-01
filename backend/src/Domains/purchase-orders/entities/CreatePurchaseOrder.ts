@@ -158,26 +158,75 @@ export interface SourcePrItem {
 }
 
 /**
- * Enforce that PO items stay locked to the source Purchase Request (doc 26 §8,
- * business rule approved by the user):
+ * Outstanding (remaining orderable) quota of a single PR line for a given PR,
+ * computed by the use case as:
  *
- *   1. ITEM_NOT_IN_PR  — every PO productId must exist in the source PR items.
- *   2. DUPLICATE_ITEM  — the same productId must not appear more than once.
- *   3. QTY_EXCEEDS_PR  — per line, quantity must not exceed the matching PR
- *                        line's quantity (checked per-line, not accumulated
- *                        across other POs).
+ *   outstandingQuantity = prQuantity − consumedQuantity
+ *
+ * where consumedQuantity is the sum of this product's quantity across all
+ * ACTIVE POs raised from the same PR (status in DRAFT/SUBMITTED/APPROVED), and
+ * — in edit mode — excluding the PO currently being edited. CANCELLED and
+ * REJECTED POs release their quota and are not counted.
+ */
+export interface OutstandingPrItem {
+  productId: string;
+  prQuantity: number;
+  consumedQuantity: number;
+  outstandingQuantity: number;
+}
+
+/**
+ * Build the outstanding map for the source PR lines, given the per-product
+ * consumption already committed by other ACTIVE POs of the same PR. The
+ * consumption map is keyed by productId (see
+ * PurchaseOrderRepository.getConsumedQtyByPrItem).
+ *
+ * outstandingQuantity is clamped at 0 (never negative) so a line that is
+ * already fully consumed reads as 0 rather than a negative number.
+ */
+export function buildOutstandingMap(
+  prItems: SourcePrItem[],
+  consumedByProduct: Map<string, number>,
+): OutstandingPrItem[] {
+  return prItems.map((prItem) => {
+    const consumed = consumedByProduct.get(prItem.productId) ?? 0;
+    const outstanding = Math.max(0, prItem.quantity - consumed);
+    return {
+      productId: prItem.productId,
+      prQuantity: prItem.quantity,
+      consumedQuantity: consumed,
+      outstandingQuantity: outstanding,
+    };
+  });
+}
+
+/**
+ * Enforce that PO items stay locked to the source Purchase Request AND respect
+ * the cross-PO outstanding (remaining) quota of each PR line (doc 26 §8 and the
+ * [15:40] 2026-10-01 rule approved by the user):
+ *
+ *   1. ITEM_NOT_IN_PR           — every PO productId must exist in the PR items.
+ *   2. DUPLICATE_ITEM           — the same productId must not appear twice.
+ *   3. QTY_EXCEEDS_OUTSTANDING  — per line, quantity must not exceed the PR
+ *                                 line's OUTSTANDING quantity (prQuantity minus
+ *                                 what active sibling POs already consumed).
+ *                                 A line whose outstanding is 0 cannot be
+ *                                 ordered at all.
  *
  * A PO MAY contain a subset of the PR items (partial PO is allowed); it is not
  * required to include every PR line. UOM, unitPrice and taxPercent are free and
  * intentionally NOT validated against the PR.
+ *
+ * `quantity > 0` is already guaranteed by verifyItem; this helper only enforces
+ * the upper bound against the outstanding quota.
  */
-export function validateItemsAgainstPr(
+export function validateItemsAgainstOutstanding(
   items: CreatePurchaseOrderItemInput[],
-  prItems: SourcePrItem[],
+  outstanding: OutstandingPrItem[],
 ): void {
-  const prQtyByProduct = new Map<string, number>();
-  for (const prItem of prItems) {
-    prQtyByProduct.set(prItem.productId, prItem.quantity);
+  const outstandingByProduct = new Map<string, number>();
+  for (const line of outstanding) {
+    outstandingByProduct.set(line.productId, line.outstandingQuantity);
   }
 
   const seen = new Set<string>();
@@ -187,12 +236,12 @@ export function validateItemsAgainstPr(
     }
     seen.add(item.productId);
 
-    const prQuantity = prQtyByProduct.get(item.productId);
-    if (prQuantity === undefined) {
+    const remaining = outstandingByProduct.get(item.productId);
+    if (remaining === undefined) {
       throw new Error('PURCHASE_ORDER.ITEM_NOT_IN_PR');
     }
-    if (item.quantity > prQuantity) {
-      throw new Error('PURCHASE_ORDER.QTY_EXCEEDS_PR');
+    if (item.quantity > remaining) {
+      throw new Error('PURCHASE_ORDER.QTY_EXCEEDS_OUTSTANDING');
     }
   }
 }

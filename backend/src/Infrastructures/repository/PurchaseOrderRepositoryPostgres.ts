@@ -554,6 +554,41 @@ export class PurchaseOrderRepositoryPostgres extends PurchaseOrderRepository {
     return { rows, total };
   }
 
+  async getConsumedQtyByPrItem(
+    purchaseRequestId: string,
+    companyId: string,
+    excludePurchaseOrderId?: string,
+  ): Promise<Map<string, number>> {
+    // Sum item quantities from ACTIVE POs of this PR. Selecting status IN
+    // (DRAFT, SUBMITTED, APPROVED) automatically excludes CANCELLED (which is
+    // also soft-deleted) and REJECTED, so their quota returns to the PR. The
+    // deleted_at IS NULL guard keeps any soft-deleted header out of the sum.
+    const params: unknown[] = [purchaseRequestId, companyId];
+    let excludeClause = '';
+    if (excludePurchaseOrderId) {
+      params.push(excludePurchaseOrderId);
+      excludeClause = ` AND po.id <> $${params.length}`;
+    }
+
+    const result = await this.pool.query<{ product_id: string; consumed: string }>(
+      `SELECT poi.product_id AS product_id, SUM(poi.quantity) AS consumed
+       FROM purchase_order_items poi
+       JOIN purchase_orders po ON po.id = poi.purchase_order_id
+       WHERE po.purchase_request_id = $1
+         AND po.company_id = $2
+         AND po.deleted_at IS NULL
+         AND po.status IN ('DRAFT','SUBMITTED','APPROVED')${excludeClause}
+       GROUP BY poi.product_id`,
+      params,
+    );
+
+    const map = new Map<string, number>();
+    for (const row of result.rows) {
+      map.set(row.product_id, Number(row.consumed));
+    }
+    return map;
+  }
+
   /**
    * Generic guarded status transition + timeline log. Loads the header FOR
    * UPDATE, verifies canTransition, applies the extra column sets, writes a log

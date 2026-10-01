@@ -94,6 +94,22 @@ export abstract class PurchaseOrderRepository {
     filter: PurchaseOrderListFilter,
   ): Promise<PurchaseOrderListResult>;
 
+  /**
+   * Sum the quantity already consumed per product by ACTIVE POs raised from the
+   * given PR (status in DRAFT, SUBMITTED, APPROVED), company-scoped. CANCELLED
+   * and REJECTED POs are excluded (their quota returns to the PR). When
+   * `excludePurchaseOrderId` is provided (edit mode), that PO's own consumption
+   * is left out so it is not double-counted against itself.
+   *
+   * Returns a Map keyed by productId; products with no active consumption are
+   * absent (the caller treats a missing key as 0).
+   */
+  abstract getConsumedQtyByPrItem(
+    purchaseRequestId: string,
+    companyId: string,
+    excludePurchaseOrderId?: string,
+  ): Promise<Map<string, number>>;
+
   /** DRAFT -> SUBMITTED. */
   abstract submit(id: string, companyId: string, userId: string | null): Promise<PurchaseOrder>;
 

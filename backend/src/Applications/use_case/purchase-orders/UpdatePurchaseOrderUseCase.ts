@@ -6,7 +6,8 @@ import {
   computeItemMoney,
   computeEstimatedPaymentDueDate,
   roundMoney,
-  validateItemsAgainstPr,
+  buildOutstandingMap,
+  validateItemsAgainstOutstanding,
 } from '../../../Domains/purchase-orders/entities/CreatePurchaseOrder';
 import { PurchaseOrder } from '../../../Domains/purchase-orders/entities/PurchaseOrder';
 import { PurchaseOrderRepository } from '../../../Domains/purchase-orders/PurchaseOrderRepository';
@@ -26,10 +27,13 @@ import { UomRepository } from '../../../Domains/uoms/UomRepository';
  * resets it to DRAFT while logging the transition.
  *
  * As with create, items are optional: when omitted they are prefilled from the
- * source PR lines (unitPrice = PR estimatedPrice, taxPercent = 0). Items are
- * locked to the source PR the same way as create: every productId must belong
- * to the PR, no duplicate products, and quantity must not exceed the matching
- * PR line (a subset of PR items is allowed).
+ * PR lines whose OUTSTANDING quota is > 0, with quantity = outstanding. Items
+ * are locked to the source PR AND the cross-PO outstanding quota: every
+ * productId must belong to the PR, no duplicate products, and quantity must not
+ * exceed the PR line's outstanding. Because this very PO already consumes part
+ * of the quota, its OWN consumption is EXCLUDED from the outstanding
+ * computation (via getConsumedQtyByPrItem's excludePurchaseOrderId) so it is
+ * never counted against itself. A subset of PR items is allowed.
  */
 export class UpdatePurchaseOrderUseCase {
   constructor(
@@ -84,25 +88,42 @@ export class UpdatePurchaseOrderUseCase {
       paymentTermDueDays,
     );
 
+    // Compute outstanding per PR line from active sibling POs, EXCLUDING this
+    // PO's own consumption so it is not counted against itself when editing.
+    const consumedByProduct = await this.purchaseOrderRepository.getConsumedQtyByPrItem(
+      draft.purchaseRequestId,
+      companyId,
+      id,
+    );
+    const outstanding = buildOutstandingMap(pr.items, consumedByProduct);
+
     const items: CreatePurchaseOrderItemInput[] =
       draft.items ??
-      pr.items.map((prItem) =>
-        computeItemMoney({
-          productId: prItem.productId,
-          quantity: prItem.quantity,
-          uomId: prItem.uomId,
-          unitPrice: prItem.estimatedPrice,
-          taxPercent: 0,
-        }),
-      );
+      outstanding
+        .filter((line) => line.outstandingQuantity > 0)
+        .map((line) => {
+          const prItem = pr.items.find((i) => i.productId === line.productId)!;
+          return computeItemMoney({
+            productId: line.productId,
+            quantity: line.outstandingQuantity,
+            uomId: prItem.uomId,
+            unitPrice: prItem.estimatedPrice,
+            taxPercent: 0,
+          });
+        });
+
+    if (!draft.items && items.length === 0) {
+      throw new Error('PURCHASE_ORDER.NO_OUTSTANDING_ITEMS');
+    }
 
     if (items.length === 0) {
       throw new Error('CREATE_PURCHASE_ORDER.ITEMS_REQUIRED');
     }
 
-    // Items stay locked to the source PR (same PR, purchaseRequestId unchanged):
-    // every productId must come from the PR, no duplicates, qty <= PR line qty.
-    validateItemsAgainstPr(items, pr.items);
+    // Items stay locked to the source PR AND the outstanding quota (this PO's
+    // own consumption excluded above): every productId must come from the PR,
+    // no duplicates, qty <= the PR line's outstanding quantity.
+    validateItemsAgainstOutstanding(items, outstanding);
 
     const productIds = [...new Set(items.map((i) => i.productId))];
     const uomIds = [...new Set(items.map((i) => i.uomId))];

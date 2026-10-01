@@ -29,6 +29,7 @@ import { ApprovePurchaseOrderUseCase } from '../../../../Applications/use_case/p
 import { RejectPurchaseOrderUseCase } from '../../../../Applications/use_case/purchase-orders/RejectPurchaseOrderUseCase';
 import { CancelPurchaseOrderUseCase } from '../../../../Applications/use_case/purchase-orders/CancelPurchaseOrderUseCase';
 import { GetPurchaseOrdersUseCase } from '../../../../Applications/use_case/purchase-orders/GetPurchaseOrdersUseCase';
+import { GetPurchaseOrderOutstandingUseCase } from '../../../../Applications/use_case/purchase-orders/GetPurchaseOrderOutstandingUseCase';
 import { AddPurchaseOrderCommentUseCase } from '../../../../Applications/use_case/purchase-orders/AddPurchaseOrderCommentUseCase';
 import { GetPurchaseOrderCommentsUseCase } from '../../../../Applications/use_case/purchase-orders/GetPurchaseOrderCommentsUseCase';
 import { UploadPurchaseOrderAttachmentUseCase } from '../../../../Applications/use_case/purchase-orders/UploadPurchaseOrderAttachmentUseCase';
@@ -47,6 +48,7 @@ import { UpdatePurchaseOrderDto } from './dto/update-purchase-order.dto';
 import { PurchaseOrderQueryDto } from './dto/purchase-order-query.dto';
 import { PurchaseOrderActionDto } from './dto/purchase-order-action.dto';
 import { AddPurchaseOrderCommentDto } from './dto/add-purchase-order-comment.dto';
+import { PurchaseOrderOutstandingQueryDto } from './dto/purchase-order-outstanding-query.dto';
 
 /**
  * PurchaseOrderController — second procurement document module (doc 26).
@@ -98,6 +100,7 @@ export class PurchaseOrderController {
     private readonly rejectUseCase: RejectPurchaseOrderUseCase,
     private readonly cancelUseCase: CancelPurchaseOrderUseCase,
     private readonly getUseCase: GetPurchaseOrdersUseCase,
+    private readonly getOutstandingUseCase: GetPurchaseOrderOutstandingUseCase,
     private readonly addCommentUseCase: AddPurchaseOrderCommentUseCase,
     private readonly getCommentsUseCase: GetPurchaseOrderCommentsUseCase,
     private readonly uploadAttachmentUseCase: UploadPurchaseOrderAttachmentUseCase,
@@ -134,6 +137,31 @@ export class PurchaseOrderController {
       companyId,
     );
     return listResponse(rows, total, page, limit);
+  }
+
+  @Get('outstanding')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('procurement.po.create')
+  @ApiOperation({
+    summary:
+      'Outstanding (remaining orderable) quantity per source PR line for a new/edited PO',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Per-PR-line outstanding = PR qty minus qty consumed by active sibling POs',
+  })
+  @ApiResponse({ status: 404, description: 'Source purchase request not found' })
+  async outstanding(
+    @Query() query: PurchaseOrderOutstandingQueryDto,
+    @GetUser() user: JwtAccessPayload,
+  ) {
+    const result = await this.getOutstandingUseCase.execute(
+      query.purchaseRequestId,
+      this._companyId(user),
+      query.excludePurchaseOrderId,
+    );
+    return successResponse(result);
   }
 
   @Get(':id')

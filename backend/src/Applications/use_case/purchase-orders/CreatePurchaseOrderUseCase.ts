@@ -4,7 +4,8 @@ import {
   computeItemMoney,
   computeEstimatedPaymentDueDate,
   roundMoney,
-  validateItemsAgainstPr,
+  buildOutstandingMap,
+  validateItemsAgainstOutstanding,
 } from '../../../Domains/purchase-orders/entities/CreatePurchaseOrder';
 import { PurchaseOrder } from '../../../Domains/purchase-orders/entities/PurchaseOrder';
 import { PurchaseOrderRepository } from '../../../Domains/purchase-orders/PurchaseOrderRepository';
@@ -29,15 +30,21 @@ import { UomRepository } from '../../../Domains/uoms/UomRepository';
  *     snapshot its code/name/dueDays (§6.5). When neither is present, payment
  *     term is null and the due date is null.
  *  5. Compute estimatedPaymentDueDate = orderDate + dueDays (§6.4), backend-only.
- *  6. Resolve items:
+ *  6. Compute each PR line's OUTSTANDING (remaining orderable) quota across all
+ *     ACTIVE sibling POs (DRAFT/SUBMITTED/APPROVED) of the same PR, then resolve
+ *     items:
  *       - If the body sent items, use them (prices/tax already adjusted by user).
- *       - If the body omitted items, PREFILL from the PR lines: productId,
- *         quantity, uomId carry over; unitPrice defaults to the PR line's
- *         estimatedPrice; taxPercent defaults to 0. The user can edit later.
- *     Items are LOCKED to the source PR: every productId must belong to the PR,
- *     no duplicate products, and each line's quantity must not exceed the
- *     matching PR line (per-line, not accumulated across POs). A subset of PR
- *     items is allowed. UOM/unitPrice/taxPercent remain free.
+ *       - If the body omitted items, PREFILL ONLY the PR lines whose outstanding
+ *         is > 0, with quantity = outstanding (NOT the raw PR quantity, which may
+ *         no longer be fully available), uomId from the PR line, unitPrice from
+ *         the PR line's estimatedPrice, taxPercent 0. The user can edit later.
+ *     Items are LOCKED to the source PR AND the outstanding quota: every
+ *     productId must belong to the PR, no duplicate products, and each line's
+ *     quantity must not exceed the PR line's OUTSTANDING (prQuantity minus what
+ *     active sibling POs already consumed). A subset of PR items is allowed; a
+ *     line with outstanding 0 cannot be ordered. UOM/unitPrice/taxPercent remain
+ *     free. When every PR line is fully consumed, creation is rejected with
+ *     PURCHASE_ORDER.NO_OUTSTANDING_ITEMS.
  *  7. Validate every item product/uom belongs to the company.
  *  8. Compute header totals (Σsubtotal, Σtax, grand) server-side.
  *  9. Persist the DRAFT (repository generates po_number, logs null -> DRAFT).
@@ -105,27 +112,48 @@ export class CreatePurchaseOrderUseCase {
       paymentTermDueDays,
     );
 
-    // 6. Resolve items (provided vs prefilled from PR).
+    // 6. Compute outstanding (remaining) quota per PR line from active sibling
+    // POs of the same PR (DRAFT/SUBMITTED/APPROVED; CANCELLED/REJECTED release
+    // their quota). On create there is no PO to exclude.
+    const consumedByProduct = await this.purchaseOrderRepository.getConsumedQtyByPrItem(
+      draft.purchaseRequestId,
+      companyId,
+    );
+    const outstanding = buildOutstandingMap(pr.items, consumedByProduct);
+
+    // 6a. Resolve items (provided vs prefilled from outstanding). When the body
+    // omits items, prefill ONLY lines with outstanding > 0, using the remaining
+    // quantity as the default (the full PR quantity may no longer be available).
     const items: CreatePurchaseOrderItemInput[] =
       draft.items ??
-      pr.items.map((prItem) =>
-        computeItemMoney({
-          productId: prItem.productId,
-          quantity: prItem.quantity,
-          uomId: prItem.uomId,
-          unitPrice: prItem.estimatedPrice,
-          taxPercent: 0,
-        }),
-      );
+      outstanding
+        .filter((line) => line.outstandingQuantity > 0)
+        .map((line) => {
+          const prItem = pr.items.find((i) => i.productId === line.productId)!;
+          return computeItemMoney({
+            productId: line.productId,
+            quantity: line.outstandingQuantity,
+            uomId: prItem.uomId,
+            unitPrice: prItem.estimatedPrice,
+            taxPercent: 0,
+          });
+        });
+
+    // When the body omitted items and nothing remains, there is nothing to
+    // order — reject with a friendly code rather than a generic empty error.
+    if (!draft.items && items.length === 0) {
+      throw new Error('PURCHASE_ORDER.NO_OUTSTANDING_ITEMS');
+    }
 
     if (items.length === 0) {
       throw new Error('CREATE_PURCHASE_ORDER.ITEMS_REQUIRED');
     }
 
-    // 6b. Items are locked to the source PR: every productId must come from the
-    // PR, no duplicates, and quantity must not exceed the matching PR line.
-    // Prefilled items (copied from the PR) satisfy this by construction.
-    validateItemsAgainstPr(items, pr.items);
+    // 6b. Items are locked to the source PR AND the outstanding quota: every
+    // productId must come from the PR, no duplicates, and quantity must not
+    // exceed the PR line's remaining (outstanding) quantity. Prefilled items
+    // satisfy this by construction (quantity = outstanding).
+    validateItemsAgainstOutstanding(items, outstanding);
 
     // 7. Company-scope validation of item references.
     const productIds = [...new Set(items.map((i) => i.productId))];
