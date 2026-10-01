@@ -4,6 +4,8 @@ import { CancelGoodsReceiptUseCase } from '../CancelGoodsReceiptUseCase';
 import { CompleteGoodsReceiptUseCase } from '../CompleteGoodsReceiptUseCase';
 import { GetGoodsReceiptsUseCase } from '../GetGoodsReceiptsUseCase';
 import { GetGoodsReceiptOutstandingUseCase } from '../GetGoodsReceiptOutstandingUseCase';
+import { AddGoodsReceiptCommentUseCase } from '../AddGoodsReceiptCommentUseCase';
+import { GetGoodsReceiptCommentsUseCase } from '../GetGoodsReceiptCommentsUseCase';
 import { GoodsReceiptRepository } from '../../../../Domains/goods-receipts/GoodsReceiptRepository';
 import { PurchaseOrderRepository } from '../../../../Domains/purchase-orders/PurchaseOrderRepository';
 import { ProductRepository } from '../../../../Domains/products/ProductRepository';
@@ -17,6 +19,9 @@ const grRepo: jest.Mocked<GoodsReceiptRepository> = {
   getConsumedQtyByPoItem: jest.fn(),
   cancel: jest.fn(),
   complete: jest.fn(),
+  ensureExists: jest.fn(),
+  addComment: jest.fn(),
+  listComments: jest.fn(),
 } as unknown as jest.Mocked<GoodsReceiptRepository>;
 
 const poRepo: jest.Mocked<PurchaseOrderRepository> = {
@@ -462,5 +467,106 @@ describe('GetGoodsReceiptOutstandingUseCase', () => {
       'PURCHASE_ORDER.NOT_FOUND',
     );
     expect(grRepo.getConsumedQtyByPoItem).not.toHaveBeenCalled();
+  });
+});
+
+describe('AddGoodsReceiptCommentUseCase', () => {
+  it('should default to INTERNAL, verify tenant scope, then persist and return the comment', async () => {
+    grRepo.ensureExists.mockResolvedValue(undefined);
+    grRepo.addComment.mockResolvedValue({
+      id: 'cmt-1',
+      category: 'INTERNAL',
+      body: 'Please review',
+      authorId: 'u1',
+      authorName: 'Budi',
+      createdAt: new Date('2026-10-01T00:00:00Z'),
+    });
+
+    const useCase = new AddGoodsReceiptCommentUseCase(grRepo);
+
+    const result = await useCase.execute('gr1', { body: 'Please review' }, 'c1', 'u1');
+
+    expect(grRepo.ensureExists).toHaveBeenCalledWith('gr1', 'c1');
+    expect(grRepo.addComment).toHaveBeenCalledWith('gr1', 'c1', 'u1', {
+      category: 'INTERNAL',
+      body: 'Please review',
+    });
+    expect(result.authorName).toBe('Budi');
+  });
+
+  it('should accept an APPROVAL category when explicitly provided', async () => {
+    grRepo.ensureExists.mockResolvedValue(undefined);
+    grRepo.addComment.mockResolvedValue({ id: 'cmt-1' } as never);
+
+    const useCase = new AddGoodsReceiptCommentUseCase(grRepo);
+
+    await useCase.execute('gr1', { body: 'Approved with note', category: 'APPROVAL' }, 'c1', 'u1');
+
+    expect(grRepo.addComment).toHaveBeenCalledWith(
+      'gr1',
+      'c1',
+      'u1',
+      { category: 'APPROVAL', body: 'Approved with note' },
+    );
+  });
+
+  it('should reject an empty body before touching the repository', async () => {
+    const useCase = new AddGoodsReceiptCommentUseCase(grRepo);
+
+    await expect(useCase.execute('gr1', { body: '   ' }, 'c1', 'u1')).rejects.toThrow(
+      'ADD_GOODS_RECEIPT_COMMENT.BODY_REQUIRED',
+    );
+    expect(grRepo.ensureExists).not.toHaveBeenCalled();
+    expect(grRepo.addComment).not.toHaveBeenCalled();
+  });
+
+  it('should reject a SYSTEM category coming from user input (backend-only)', async () => {
+    const useCase = new AddGoodsReceiptCommentUseCase(grRepo);
+
+    await expect(
+      useCase.execute('gr1', { body: 'hi', category: 'SYSTEM' }, 'c1', 'u1'),
+    ).rejects.toThrow('ADD_GOODS_RECEIPT_COMMENT.CATEGORY_NOT_ALLOWED');
+    expect(grRepo.addComment).not.toHaveBeenCalled();
+  });
+
+  it('should reject an unknown category', async () => {
+    const useCase = new AddGoodsReceiptCommentUseCase(grRepo);
+
+    await expect(
+      useCase.execute('gr1', { body: 'hi', category: 'NOPE' }, 'c1', 'u1'),
+    ).rejects.toThrow('ADD_GOODS_RECEIPT_COMMENT.INVALID_CATEGORY');
+    expect(grRepo.addComment).not.toHaveBeenCalled();
+  });
+
+  it('should propagate GOODS_RECEIPT.NOT_FOUND when the GR is in another company', async () => {
+    grRepo.ensureExists.mockRejectedValue(new Error('GOODS_RECEIPT.NOT_FOUND'));
+    const useCase = new AddGoodsReceiptCommentUseCase(grRepo);
+
+    await expect(useCase.execute('gr1', { body: 'hi' }, 'c1', 'u1')).rejects.toThrow(
+      'GOODS_RECEIPT.NOT_FOUND',
+    );
+    expect(grRepo.addComment).not.toHaveBeenCalled();
+  });
+});
+
+describe('GetGoodsReceiptCommentsUseCase', () => {
+  it('should verify tenant scope then list the thread', async () => {
+    grRepo.ensureExists.mockResolvedValue(undefined);
+    grRepo.listComments.mockResolvedValue([]);
+
+    const useCase = new GetGoodsReceiptCommentsUseCase(grRepo);
+
+    await useCase.execute('gr1', 'c1');
+
+    expect(grRepo.ensureExists).toHaveBeenCalledWith('gr1', 'c1');
+    expect(grRepo.listComments).toHaveBeenCalledWith('gr1', 'c1');
+  });
+
+  it('should propagate GOODS_RECEIPT.NOT_FOUND for a foreign GR', async () => {
+    grRepo.ensureExists.mockRejectedValue(new Error('GOODS_RECEIPT.NOT_FOUND'));
+    const useCase = new GetGoodsReceiptCommentsUseCase(grRepo);
+
+    await expect(useCase.execute('gr1', 'c1')).rejects.toThrow('GOODS_RECEIPT.NOT_FOUND');
+    expect(grRepo.listComments).not.toHaveBeenCalled();
   });
 });

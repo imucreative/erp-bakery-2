@@ -2,6 +2,7 @@ import { Pool, PoolClient } from 'pg';
 import {
   GoodsReceiptRepository,
   NewGoodsReceiptData,
+  NewGoodsReceiptCommentData,
   GoodsReceiptListFilter,
   GoodsReceiptListResult,
 } from '../../Domains/goods-receipts/GoodsReceiptRepository';
@@ -10,6 +11,8 @@ import {
   GoodsReceiptItem,
   GoodsReceiptStatusLog,
 } from '../../Domains/goods-receipts/entities/GoodsReceipt';
+import { GoodsReceiptComment } from '../../Domains/goods-receipts/entities/GoodsReceiptComment';
+import { GoodsReceiptCommentCategory } from '../../Domains/goods-receipts/goodsReceiptCommentCategory';
 import {
   GoodsReceiptStatus,
   canTransition,
@@ -65,6 +68,15 @@ interface LogRow {
   created_at: Date;
 }
 
+interface CommentRow {
+  id: string;
+  category: string;
+  body: string;
+  author_id: string | null;
+  author_name: string | null;
+  created_at: Date;
+}
+
 const HEADER_COLUMNS = `id, company_id, gr_number, purchase_order_id, supplier_id,
   destination_outlet_id, receive_date, status, inventory_posted_at, notes,
   approved_by, approved_at, created_by, updated_by, created_at, updated_at`;
@@ -79,6 +91,12 @@ const LOG_SELECT = `SELECT l.id, l.from_status, l.to_status, l.actor_id,
     actor_users.name AS actor_name, l.note, l.created_at
   FROM goods_receipt_status_logs l
   LEFT JOIN users actor_users ON actor_users.id = l.actor_id`;
+
+/** Comment columns with author name resolved via LEFT JOIN to users. */
+const COMMENT_SELECT = `SELECT c.id, c.category, c.body, c.author_id,
+    author_users.name AS author_name, c.created_at
+  FROM goods_receipt_comments c
+  LEFT JOIN users author_users ON author_users.id = c.author_id`;
 
 /**
  * Concrete PostgreSQL implementation of GoodsReceiptRepository.
@@ -117,6 +135,17 @@ export class GoodsReceiptRepositoryPostgres extends GoodsReceiptRepository {
       actorId: row.actor_id,
       actorName: row.actor_name,
       note: row.note,
+      createdAt: row.created_at,
+    };
+  }
+
+  private _toComment(row: CommentRow): GoodsReceiptComment {
+    return {
+      id: row.id,
+      category: row.category as GoodsReceiptCommentCategory,
+      body: row.body,
+      authorId: row.author_id,
+      authorName: row.author_name,
       createdAt: row.created_at,
     };
   }
@@ -601,6 +630,50 @@ export class GoodsReceiptRepositoryPostgres extends GoodsReceiptRepository {
     } finally {
       client.release();
     }
+  }
+
+  async ensureExists(id: string, companyId: string): Promise<void> {
+    const result = await this.pool.query(
+      `SELECT 1 FROM goods_receipts
+       WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL`,
+      [id, companyId],
+    );
+    if (!result.rowCount) {
+      throw new NotFoundError('GOODS_RECEIPT.NOT_FOUND');
+    }
+  }
+
+  async addComment(
+    goodsReceiptId: string,
+    companyId: string,
+    authorId: string | null,
+    data: NewGoodsReceiptCommentData,
+  ): Promise<GoodsReceiptComment> {
+    const inserted = await this.pool.query<{ id: string }>(
+      `INSERT INTO goods_receipt_comments
+         (goods_receipt_id, company_id, author_id, category, body)
+       VALUES ($1,$2,$3,$4,$5)
+       RETURNING id`,
+      [goodsReceiptId, companyId, authorId, data.category, data.body],
+    );
+    const result = await this.pool.query<CommentRow>(
+      `${COMMENT_SELECT} WHERE c.id = $1`,
+      [inserted.rows[0].id],
+    );
+    return this._toComment(result.rows[0]);
+  }
+
+  async listComments(
+    goodsReceiptId: string,
+    companyId: string,
+  ): Promise<GoodsReceiptComment[]> {
+    const result = await this.pool.query<CommentRow>(
+      `${COMMENT_SELECT}
+       WHERE c.goods_receipt_id = $1 AND c.company_id = $2
+       ORDER BY c.created_at ASC, c.id ASC`,
+      [goodsReceiptId, companyId],
+    );
+    return result.rows.map((row) => this._toComment(row));
   }
 
   /** Map a unique-violation on gr_number to a friendly conflict. */

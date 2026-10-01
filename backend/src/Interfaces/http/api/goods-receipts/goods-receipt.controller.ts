@@ -16,6 +16,8 @@ import { CancelGoodsReceiptUseCase } from '../../../../Applications/use_case/goo
 import { CompleteGoodsReceiptUseCase } from '../../../../Applications/use_case/goods-receipts/CompleteGoodsReceiptUseCase';
 import { GetGoodsReceiptsUseCase } from '../../../../Applications/use_case/goods-receipts/GetGoodsReceiptsUseCase';
 import { GetGoodsReceiptOutstandingUseCase } from '../../../../Applications/use_case/goods-receipts/GetGoodsReceiptOutstandingUseCase';
+import { AddGoodsReceiptCommentUseCase } from '../../../../Applications/use_case/goods-receipts/AddGoodsReceiptCommentUseCase';
+import { GetGoodsReceiptCommentsUseCase } from '../../../../Applications/use_case/goods-receipts/GetGoodsReceiptCommentsUseCase';
 import { JwtAccessPayload } from '../../../../Applications/security/TokenManager';
 import { AuthorizationError } from '../../../../Commons/exceptions/AuthorizationError';
 import { successResponse, listResponse } from '../../../../Commons/helpers/response.helper';
@@ -27,6 +29,7 @@ import { UpdateGoodsReceiptDto } from './dto/update-goods-receipt.dto';
 import { GoodsReceiptQueryDto } from './dto/goods-receipt-query.dto';
 import { GoodsReceiptActionDto } from './dto/goods-receipt-action.dto';
 import { GoodsReceiptOutstandingQueryDto } from './dto/goods-receipt-outstanding-query.dto';
+import { AddGoodsReceiptCommentDto } from './dto/add-goods-receipt-comment.dto';
 
 /**
  * GoodsReceiptController — third procurement document module (doc 26).
@@ -43,6 +46,14 @@ import { GoodsReceiptOutstandingQueryDto } from './dto/goods-receipt-outstanding
  *   cancel             → procurement.gr.update    (voiding a draft)
  *   outstanding lookup → procurement.gr.create    (used while opening the receive form)
  *   complete           → procurement.gr.complete  (DRAFT -> COMPLETED, posts inventory)
+ *   comments (list + add) → procurement.gr.read
+ *
+ * Commenting is guarded by `procurement.gr.read` (not create/complete): a
+ * comment is a collaboration note on the discussion thread, not a mutation of
+ * the document itself. Anyone who may read a GR may take part in its thread.
+ * Manual comments accept INTERNAL/APPROVAL/EXTERNAL only (default INTERNAL);
+ * SYSTEM is backend-only and rejected (400). Mirrors the Purchase Order thread
+ * exactly.
  *
  * A GR is raised from an APPROVED PO; supplier and destination outlet are
  * inherited (snapshotted) from the PO, never taken from the client. Quantities
@@ -61,6 +72,8 @@ export class GoodsReceiptController {
     private readonly completeUseCase: CompleteGoodsReceiptUseCase,
     private readonly getUseCase: GetGoodsReceiptsUseCase,
     private readonly getOutstandingUseCase: GetGoodsReceiptOutstandingUseCase,
+    private readonly addCommentUseCase: AddGoodsReceiptCommentUseCase,
+    private readonly getCommentsUseCase: GetGoodsReceiptCommentsUseCase,
   ) {}
 
   private _companyId(user: JwtAccessPayload): string {
@@ -208,5 +221,41 @@ export class GoodsReceiptController {
       dto.note ?? null,
     );
     return successResponse(gr);
+  }
+
+  @Get(':id/comments')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('procurement.gr.read')
+  @ApiOperation({ summary: 'List the discussion thread of a goods receipt' })
+  @ApiParam({ name: 'id', description: 'Goods receipt UUID' })
+  @ApiResponse({ status: 200, description: 'Chronological comment thread' })
+  @ApiResponse({ status: 404, description: 'Goods receipt not found' })
+  async listComments(@Param('id') id: string, @GetUser() user: JwtAccessPayload) {
+    const comments = await this.getCommentsUseCase.execute(id, this._companyId(user));
+    return successResponse(comments);
+  }
+
+  @Post(':id/comments')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('procurement.gr.read')
+  @ApiOperation({
+    summary: 'Add a comment to a goods receipt thread (default category INTERNAL)',
+  })
+  @ApiParam({ name: 'id', description: 'Goods receipt UUID' })
+  @ApiResponse({ status: 201, description: 'Comment created' })
+  @ApiResponse({ status: 400, description: 'Empty body or disallowed category (e.g. SYSTEM)' })
+  @ApiResponse({ status: 404, description: 'Goods receipt not found' })
+  async addComment(
+    @Param('id') id: string,
+    @Body() dto: AddGoodsReceiptCommentDto,
+    @GetUser() user: JwtAccessPayload,
+  ) {
+    const comment = await this.addCommentUseCase.execute(
+      id,
+      dto,
+      this._companyId(user),
+      user.sub,
+    );
+    return successResponse(comment);
   }
 }

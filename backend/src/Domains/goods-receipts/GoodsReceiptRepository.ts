@@ -1,5 +1,12 @@
 import { GoodsReceipt } from './entities/GoodsReceipt';
 import { ResolvedGoodsReceiptItem } from './entities/CreateGoodsReceipt';
+import { GoodsReceiptComment } from './entities/GoodsReceiptComment';
+import { GoodsReceiptCommentCategory } from './goodsReceiptCommentCategory';
+
+export interface NewGoodsReceiptCommentData {
+  category: GoodsReceiptCommentCategory;
+  body: string;
+}
 
 /**
  * Fully resolved GR data passed from the use case to the repository. supplierId
@@ -122,4 +129,28 @@ export abstract class GoodsReceiptRepository {
     userId: string | null,
     note: string | null,
   ): Promise<GoodsReceipt>;
+
+  /**
+   * Verify the GR exists in the company (throws GOODS_RECEIPT.NOT_FOUND
+   * otherwise). Used by the comment use cases to enforce tenant scope before
+   * touching the thread.
+   */
+  abstract ensureExists(id: string, companyId: string): Promise<void>;
+
+  /**
+   * Append a comment to the GR thread and return it with the resolved author
+   * name (JOIN to users).
+   */
+  abstract addComment(
+    goodsReceiptId: string,
+    companyId: string,
+    authorId: string | null,
+    data: NewGoodsReceiptCommentData,
+  ): Promise<GoodsReceiptComment>;
+
+  /** List the GR thread chronologically (each item carries authorName). */
+  abstract listComments(
+    goodsReceiptId: string,
+    companyId: string,
+  ): Promise<GoodsReceiptComment[]>;
 }

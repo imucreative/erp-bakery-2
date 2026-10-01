@@ -158,6 +158,8 @@ import { CancelGoodsReceiptUseCase } from '../Applications/use_case/goods-receip
 import { CompleteGoodsReceiptUseCase } from '../Applications/use_case/goods-receipts/CompleteGoodsReceiptUseCase';
 import { GetGoodsReceiptsUseCase } from '../Applications/use_case/goods-receipts/GetGoodsReceiptsUseCase';
 import { GetGoodsReceiptOutstandingUseCase } from '../Applications/use_case/goods-receipts/GetGoodsReceiptOutstandingUseCase';
+import { AddGoodsReceiptCommentUseCase } from '../Applications/use_case/goods-receipts/AddGoodsReceiptCommentUseCase';
+import { GetGoodsReceiptCommentsUseCase } from '../Applications/use_case/goods-receipts/GetGoodsReceiptCommentsUseCase';
 
 /**
  * InfrastructureModule — NestJS DI container.
@@ -964,6 +966,18 @@ import { GetGoodsReceiptOutstandingUseCase } from '../Applications/use_case/good
         new GetGoodsReceiptOutstandingUseCase(grRepo, poRepo),
       inject: [GoodsReceiptRepository, PurchaseOrderRepository],
     },
+    {
+      provide: AddGoodsReceiptCommentUseCase,
+      useFactory: (grRepo: GoodsReceiptRepository) =>
+        new AddGoodsReceiptCommentUseCase(grRepo),
+      inject: [GoodsReceiptRepository],
+    },
+    {
+      provide: GetGoodsReceiptCommentsUseCase,
+      useFactory: (grRepo: GoodsReceiptRepository) =>
+        new GetGoodsReceiptCommentsUseCase(grRepo),
+      inject: [GoodsReceiptRepository],
+    },
   ],
   exports: [
     'PG_POOL',
@@ -1091,6 +1105,8 @@ import { GetGoodsReceiptOutstandingUseCase } from '../Applications/use_case/good
     CompleteGoodsReceiptUseCase,
     GetGoodsReceiptsUseCase,
     GetGoodsReceiptOutstandingUseCase,
+    AddGoodsReceiptCommentUseCase,
+    GetGoodsReceiptCommentsUseCase,
   ],
 })
 export class InfrastructureModule {}

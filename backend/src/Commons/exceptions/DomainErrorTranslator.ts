@@ -831,6 +831,20 @@ const DomainErrorTranslator = {
       'Kategori komentar SYSTEM hanya untuk sistem dan tidak dapat dipilih',
     ),
 
+    // ── Goods Receipt Comments (doc 35 §6) ───────────────────────
+    'ADD_GOODS_RECEIPT_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data komentar goods receipt tidak lengkap',
+    ),
+    'ADD_GOODS_RECEIPT_COMMENT.BODY_REQUIRED': new InvariantError(
+      'Isi komentar wajib diisi',
+    ),
+    'ADD_GOODS_RECEIPT_COMMENT.INVALID_CATEGORY': new InvariantError(
+      'Kategori komentar tidak valid',
+    ),
+    'ADD_GOODS_RECEIPT_COMMENT.CATEGORY_NOT_ALLOWED': new InvariantError(
+      'Kategori komentar SYSTEM hanya untuk sistem dan tidak dapat dipilih',
+    ),
+
     // ── Goods Receipt (doc 26 §3/§6, STAGE 1) ────────────────────
     'GOODS_RECEIPT.NOT_FOUND': new NotFoundError('Goods receipt tidak ditemukan'),
     'CREATE_GOODS_RECEIPT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
