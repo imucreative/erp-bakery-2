@@ -127,6 +127,21 @@ export interface AddGoodsReceiptCommentPayload {
   category?: GoodsReceiptCommentCategory
 }
 
+/**
+ * A stored attachment on a Goods Receipt. The backend never exposes the
+ * physical `storedPath`; the UI works purely with metadata + the download
+ * stream endpoint.
+ */
+export interface GoodsReceiptAttachment {
+  id: string
+  originalName: string
+  mimeType: string
+  sizeBytes: number
+  uploadedBy: string
+  uploadedByName: string | null
+  createdAt: string
+}
+
 export interface GoodsReceipt {
   id: string
   companyId: string | null
@@ -311,6 +326,91 @@ export const goodsReceiptService = {
     )
     return response.data.data
   },
+
+  async listAttachments(id: string): Promise<GoodsReceiptAttachment[]> {
+    const response = await httpClient.get<ApiSuccess<GoodsReceiptAttachment[]>>(
+      `/goods-receipts/${id}/attachments`,
+    )
+    return response.data.data
+  },
+
+  /**
+   * Upload a single attachment as `multipart/form-data` (field name `file`).
+   *
+   * We deliberately do NOT set a `Content-Type` header: when the request body
+   * is a `FormData`, axios/the browser sets `multipart/form-data` together with
+   * the correct `boundary` automatically. Setting it manually would omit the
+   * boundary and break the upload. The request interceptor still attaches the
+   * `Authorization: Bearer` and `X-Company-Id` headers.
+   */
+  async uploadAttachment(id: string, file: File): Promise<GoodsReceiptAttachment> {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await httpClient.post<ApiSuccess<GoodsReceiptAttachment>>(
+      `/goods-receipts/${id}/attachments`,
+      formData,
+    )
+    return response.data.data
+  },
+
+  async deleteAttachment(id: string, attId: string): Promise<void> {
+    await httpClient.delete(`/goods-receipts/${id}/attachments/${attId}`)
+  },
+
+  /**
+   * Download an attachment. The endpoint streams the file and requires an
+   * `Authorization: Bearer` header, so a plain `<a href>` cannot be used — we
+   * fetch it as a blob (interceptor adds auth), derive the filename from the
+   * `Content-Disposition` header (fallback `originalName`), then trigger a
+   * browser download via a temporary object URL.
+   */
+  async downloadAttachment(
+    id: string,
+    attId: string,
+    fallbackName: string,
+  ): Promise<void> {
+    const response = await httpClient.get<Blob>(
+      `/goods-receipts/${id}/attachments/${attId}/download`,
+      { responseType: 'blob' },
+    )
+    const disposition =
+      (response.headers['content-disposition'] as string | undefined) ?? null
+    const fileName = filenameFromContentDisposition(disposition) ?? fallbackName
+    triggerBlobDownload(response.data, fileName)
+  },
+}
+
+/** Parse a `filename="..."` (or RFC 5987 `filename*=`) from Content-Disposition. */
+function filenameFromContentDisposition(header: string | null): string | null {
+  if (!header) {
+    return null
+  }
+  // RFC 5987: filename*=UTF-8''<url-encoded>
+  const extendedMatch = /filename\*=(?:UTF-8'')?([^;]+)/i.exec(header)
+  if (extendedMatch?.[1]) {
+    try {
+      return decodeURIComponent(extendedMatch[1].trim().replace(/^"|"$/g, ''))
+    } catch {
+      // fall through to the quoted variant
+    }
+  }
+  const quotedMatch = /filename="?([^";]+)"?/i.exec(header)
+  if (quotedMatch?.[1]) {
+    return quotedMatch[1].trim()
+  }
+  return null
+}
+
+/** Trigger a browser download for a blob using a temporary object URL. */
+function triggerBlobDownload(blob: Blob, fileName: string): void {
+  const objectUrl = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = objectUrl
+  anchor.download = fileName
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  URL.revokeObjectURL(objectUrl)
 }
 
 /**

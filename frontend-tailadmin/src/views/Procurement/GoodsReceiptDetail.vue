@@ -29,6 +29,7 @@ import {
   GoodsReceiptTimeline,
   GoodsReceiptActionModals,
   GoodsReceiptComments,
+  GoodsReceiptAttachments,
   type GoodsReceiptAction,
 } from '@/components/procurement/goods-receipt'
 import { usePermission } from '@/composables/usePermission'
@@ -252,6 +253,9 @@ async function onConfirmAction(note: string): Promise<void> {
           </ComponentCard>
           <ComponentCard title="Komentar">
             <GoodsReceiptComments :goods-receipt-id="gr.id" />
+          </ComponentCard>
+          <ComponentCard title="Lampiran">
+            <GoodsReceiptAttachments :goods-receipt-id="gr.id" :can-manage="canUpdate" />
           </ComponentCard>
         </div>
       </div>
