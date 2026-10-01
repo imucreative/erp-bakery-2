@@ -113,6 +113,8 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
           type="date"
           :disabled="props.disabled"
           :class="inputClass"
+          @click="($event.target as HTMLInputElement).showPicker?.()"
+          @focus="($event.target as HTMLInputElement).showPicker?.()"
           @input="emit('update:orderDate', ($event.target as HTMLInputElement).value)"
         />
       </div>

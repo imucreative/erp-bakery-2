@@ -186,6 +186,24 @@ export interface PurchaseOrderItemPayload {
   taxPercent: number
 }
 
+/**
+ * A single source-PR item with its cross-PO outstanding (remaining) quota.
+ * Returned by `GET /purchase-orders/outstanding`. The backend enforces that a
+ * PO item quantity may not exceed `outstandingQuantity`, which is the PR item
+ * quantity minus the quantity already consumed by other ACTIVE POs:
+ *   outstandingQuantity = prQuantity − consumedQuantity   (clamped ≥ 0)
+ * In edit mode the backend excludes the PO being edited, so its own consumption
+ * is added back (available again for this PO).
+ */
+export interface PurchaseOrderOutstandingItem {
+  productId: string
+  prQuantity: number
+  consumedQuantity: number
+  outstandingQuantity: number
+  uomId: string
+  estimatedPrice: number
+}
+
 export interface SavePurchaseOrderPayload {
   purchaseRequestId: string
   supplierId: string
@@ -241,6 +259,32 @@ export const purchaseOrderService = {
   async getById(id: string): Promise<PurchaseOrder> {
     const response = await httpClient.get<ApiSuccess<PurchaseOrder>>(`/purchase-orders/${id}`)
     return response.data.data
+  },
+
+  /**
+   * Outstanding (remaining) PR-item quota across ACTIVE POs for a source PR.
+   * Used by the PO form editor to constrain items to what is still unordered.
+   *
+   *   GET /purchase-orders/outstanding?purchaseRequestId=<uuid>
+   *       [&excludePurchaseOrderId=<uuid>]
+   *
+   * `excludePurchaseOrderId` is sent in edit mode (the PO being edited) so its
+   * own consumption is not counted against the quota. Each item's
+   * `outstandingQuantity` is already clamped ≥ 0 by the backend. A 404 is
+   * returned when the PR does not exist.
+   */
+  async getOutstanding(
+    purchaseRequestId: string,
+    excludePurchaseOrderId?: string,
+  ): Promise<PurchaseOrderOutstandingItem[]> {
+    const params: Record<string, string> = { purchaseRequestId }
+    if (excludePurchaseOrderId) {
+      params.excludePurchaseOrderId = excludePurchaseOrderId
+    }
+    const response = await httpClient.get<
+      ApiSuccess<{ purchaseRequestId: string; items: PurchaseOrderOutstandingItem[] }>
+    >('/purchase-orders/outstanding', { params })
+    return response.data.data.items
   },
 
   async create(payload: SavePurchaseOrderPayload): Promise<PurchaseOrder> {

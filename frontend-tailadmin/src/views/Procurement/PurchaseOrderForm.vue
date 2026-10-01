@@ -5,21 +5,28 @@
  *
  * CREATE (route `PurchaseOrderCreate`): empty header. The user picks an
  *   APPROVED source PR and a supplier. On PR selection the destination outlet
- *   is shown read-only (inherited on the backend), the PR items are captured as
- *   the editor's constraint set (`prItems`), and the rows are prefilled from
- *   the PR (product/qty/uom from the PR, unitPrice defaulted from the PR
- *   estimatedPrice, taxPercent 0). On supplier selection the supplier's default
- *   payment term is applied when the user hasn't overridden.
+ *   is shown read-only (inherited on the backend), and the editor's constraint
+ *   set (`prItems`) is built from the PR's OUTSTANDING quota — the remaining PR
+ *   quantity after other active POs — via `getOutstanding(prId)`. Only items
+ *   with `outstandingQuantity > 0` are included; rows are prefilled from that
+ *   outstanding amount (product/uom from the item, quantity = outstanding,
+ *   unitPrice defaulted from estimatedPrice, taxPercent 0). On supplier
+ *   selection the supplier's default payment term is applied when not overridden.
  * EDIT (route `PurchaseOrderEdit`, :id): loads the PO. Editing is only allowed
  *   for DRAFT/REJECTED; any other status renders read-only with save hidden.
- *   The source PR is locked on edit; we also fetch the source PR to rebuild the
- *   editor's constraint set (allowed products + per-row max quantity).
+ *   The source PR is locked on edit; we fetch outstanding with
+ *   `excludePurchaseOrderId = this PO`, so the quota the PO already consumes is
+ *   added back (available again for this PO). Existing PO rows keep their own
+ *   qty/uom/price, but the per-row cap is the outstanding(exclude-self) amount.
  *
  * PR-locked items (backend-authoritative, mirrored here): a PO's items may ONLY
- * come from the source PR items. The product per row is read-only, quantity is
- * capped at the matching PR quantity, a SUBSET is allowed, and UOM/price/tax
- * stay editable. The editor exposes "Tambah dari item PR" to re-add dropped PR
- * items (never a product catalog). The payload sends only the included rows.
+ * come from the source PR items, and quantity is capped at the OUTSTANDING
+ * (remaining) PR quota — qtyPR minus the quantity consumed by other active POs.
+ * The product per row is read-only, a SUBSET is allowed, and UOM/price/tax stay
+ * editable. The editor exposes "Tambah dari item PR" to re-add dropped
+ * outstanding items (never a product catalog). The payload sends only the
+ * included rows. If every PR item is fully consumed (no outstanding), creation
+ * is blocked with a clear message.
  *
  * Decision — payment-term preview: the estimated due date (orderDate + dueDays)
  * is shown read-only as a hint only; the backend is authoritative.
@@ -55,6 +62,7 @@ import {
 import {
   purchaseOrderService,
   type PurchaseOrder,
+  type PurchaseOrderOutstandingItem,
   type SavePurchaseOrderPayload,
 } from '@/services/purchase-order.service'
 
@@ -86,8 +94,12 @@ const paymentTermId = ref<string>('')
 const notes = ref<string>('')
 const items = ref<EditorItemRow[]>([])
 // Source PR items — the only products allowed in this PO, with per-row max qty.
-// Populated from the chosen PR (create) or the loaded PO's source PR (edit).
+// `quantity` here is the OUTSTANDING (remaining) quota, not the raw PR quantity.
+// Built from `getOutstanding(prId[, excludeSelf])`, filtered to outstanding > 0.
 const prItems = ref<SourcePrItem[]>([])
+// True once a PR is chosen but every item is fully consumed by other active POs
+// (outstanding list is empty). Blocks submit so we never create an empty PO.
+const allConsumed = ref<boolean>(false)
 // Destination outlet is inherited from the chosen PR; shown read-only.
 const destinationOutletId = ref<string>('')
 
@@ -124,10 +136,26 @@ function productLabel(productId: string): string {
   return product ? `${product.name} (${product.sku})` : productId
 }
 
-// Per-product max quantity derived from the source PR items.
+// Per-product max quantity derived from the source PR items. This is the
+// OUTSTANDING (remaining) quota — `prItems` carries outstanding in `quantity`.
 const prQtyByProduct = computed<Map<string, number>>(
   () => new Map(prItems.value.map((item) => [item.productId, item.quantity])),
 )
+
+/**
+ * Map backend outstanding items (outstanding > 0 only) into the editor's
+ * `SourcePrItem` shape, carrying the outstanding amount as the per-row cap.
+ */
+function toSourcePrItems(outstanding: PurchaseOrderOutstandingItem[]): SourcePrItem[] {
+  return outstanding
+    .filter((item) => item.outstandingQuantity > 0)
+    .map((item) => ({
+      productId: item.productId,
+      quantity: item.outstandingQuantity,
+      uomId: item.uomId,
+      estimatedPrice: item.estimatedPrice,
+    }))
+}
 
 function prNumber(id: string): string {
   return prNumberMap.value.get(id) ?? id
@@ -194,6 +222,8 @@ async function loadExisting(id: string): Promise<void> {
   paymentTermId.value = po.paymentTermId ?? ''
   notes.value = po.notes ?? ''
   destinationOutletId.value = po.destinationOutletId
+  // Keep the existing PO rows (their own qty/uom/price); only the per-row cap
+  // comes from the outstanding endpoint below.
   items.value = po.items.map((item) => ({
     productId: item.productId,
     quantity: item.quantity,
@@ -201,18 +231,17 @@ async function loadExisting(id: string): Promise<void> {
     unitPrice: item.unitPrice,
     taxPercent: item.taxPercent,
   }))
-  // Fetch the source PR to constrain the editor (allowed products + max qty).
-  // The PR is locked on edit, so this context stays valid for the whole session.
-  // If the PR can't be loaded we fall back to the PO items themselves so the
-  // product stays read-only and existing quantities remain the cap.
+  // Constrain the editor to the PR's OUTSTANDING quota, EXCLUDING this PO so its
+  // own consumption is added back (available again for this PO). Thus existing
+  // rows with qty ≤ outstanding(exclude-self) stay valid. If the endpoint
+  // fails, fall back to the PO items themselves so the product stays read-only
+  // and existing quantities remain the cap.
   try {
-    const pr = await purchaseRequestService.getById(po.purchaseRequestId)
-    prItems.value = pr.items.map((item) => ({
-      productId: item.productId,
-      quantity: item.quantity,
-      uomId: item.uomId,
-      estimatedPrice: item.estimatedPrice,
-    }))
+    const outstanding = await purchaseOrderService.getOutstanding(
+      po.purchaseRequestId,
+      po.id,
+    )
+    prItems.value = toSourcePrItems(outstanding)
   } catch {
     prItems.value = po.items.map((item) => ({
       productId: item.productId,
@@ -250,19 +279,22 @@ watch(purchaseRequestId, async (prId) => {
     destinationOutletId.value = ''
     prItems.value = []
     items.value = []
+    allConsumed.value = false
     return
   }
   try {
+    // Destination outlet is still inherited from the PR header (read-only).
     const pr = await purchaseRequestService.getById(prId)
     destinationOutletId.value = pr.destinationOutletId
-    // Capture the PR items as the editor's constraint set, then prefill rows.
-    prItems.value = pr.items.map((item) => ({
-      productId: item.productId,
-      quantity: item.quantity,
-      uomId: item.uomId,
-      estimatedPrice: item.estimatedPrice,
-    }))
-    items.value = pr.items.map((item) => ({
+    // Constrain the editor to the PR's OUTSTANDING quota (remaining across
+    // active POs), not the raw PR quantity. Only outstanding > 0 items appear.
+    const outstanding = await purchaseOrderService.getOutstanding(prId)
+    const source = toSourcePrItems(outstanding)
+    prItems.value = source
+    allConsumed.value = source.length === 0
+    // Prefill one row per outstanding item: quantity = remaining, uom/price
+    // from the item, tax 0. If nothing is outstanding, start with no rows.
+    items.value = source.map((item) => ({
       productId: item.productId,
       quantity: item.quantity,
       uomId: item.uomId,
@@ -301,15 +333,18 @@ function validate(): string | null {
   if (!orderDate.value) {
     return 'Tanggal order wajib diisi.'
   }
+  if (allConsumed.value) {
+    return 'Semua item PR ini sudah habis dipesan pada PO lain. Tidak ada sisa untuk dipesan.'
+  }
   if (items.value.length === 0) {
     return 'Minimal satu item harus disertakan dari item PR sumber.'
   }
   const seen = new Set<string>()
   for (const item of items.value) {
     const label = productLabel(item.productId)
-    // Product must come from a source PR item (editor already enforces this).
+    // Product must come from an outstanding source PR item (editor enforces this).
     if (!prQtyByProduct.value.has(item.productId)) {
-      return `Item ${label}: produk tidak termasuk dalam item PR sumber.`
+      return `Item ${label}: produk tidak termasuk dalam sisa item PR sumber.`
     }
     // No duplicate products (one row per PR item).
     if (seen.has(item.productId)) {
@@ -324,7 +359,7 @@ function validate(): string | null {
     }
     const maxQty = prQtyByProduct.value.get(item.productId) ?? 0
     if (maxQty > 0 && Number(item.quantity) > maxQty) {
-      return `Item ${label}: kuantitas tidak boleh melebihi PR (maks ${maxQty}).`
+      return `Item ${label}: melebihi sisa PR (maks ${maxQty}).`
     }
     if (Number(item.unitPrice) < 0) {
       return `Item ${label}: harga satuan tidak boleh negatif.`
@@ -442,6 +477,14 @@ function onCancel(): void {
         <!-- Line items -->
         <div>
           <h5 class="mb-3 text-sm font-semibold text-gray-800 dark:text-white/90">Item</h5>
+          <p
+            v-if="allConsumed"
+            class="mb-3 rounded-lg border border-warning-500/40 bg-warning-50 px-4 py-3 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
+            role="alert"
+          >
+            Semua item PR ini sudah habis dipesan pada PO lain. Tidak ada sisa
+            (outstanding) yang bisa dipesan, sehingga PO tidak dapat dibuat.
+          </p>
           <PurchaseOrderItemsEditor
             v-model="items"
             :pr-items="prItems"
@@ -465,7 +508,7 @@ function onCancel(): void {
           <button
             v-if="!isReadOnly"
             type="submit"
-            :disabled="submitting"
+            :disabled="submitting || allConsumed"
             class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {{ submitting ? 'Menyimpan...' : 'Simpan sebagai Draft' }}

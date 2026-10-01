@@ -56,6 +56,8 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
           :min="props.minDate"
           :disabled="props.disabled"
           :class="inputClass"
+          @click="($event.target as HTMLInputElement).showPicker?.()"
+          @focus="($event.target as HTMLInputElement).showPicker?.()"
           @input="emit('update:expectedDate', ($event.target as HTMLInputElement).value)"
         />
         <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">

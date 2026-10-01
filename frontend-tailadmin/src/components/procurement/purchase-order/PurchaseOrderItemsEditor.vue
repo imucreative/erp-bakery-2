@@ -7,8 +7,9 @@
  *   1. Product is NOT free-choice — each row's product is dictated by a source
  *      PR item. No foreign products, no duplicate products.
  *   2. A SUBSET of the PR items is allowed (the user may drop some rows).
- *   3. Quantity per row may be ≤ the matching PR item quantity; never more
- *      (the `max` and local validation enforce this). Default from the PR.
+ *   3. Quantity per row may be ≤ the matching PR item's OUTSTANDING (remaining)
+ *      quota across active POs; never more (the `max` and local validation
+ *      enforce this). Default from the outstanding quota.
  *   4. UOM is free-choice (default from the PR item).
  *   5. Unit price is free (default from the PR estimatedPrice); Tax % is free
  *      (default 0).
@@ -17,8 +18,9 @@
  * select) and there is no free "Add Item" button. Rows start prefilled from the
  * PR by the parent. Users exclude a row with the per-row remove button, and can
  * re-add a previously removed PR item through the "Tambah dari item PR"
- * dropdown — which only lists PR items not already present (so duplicates are
- * impossible and it is empty once every PR item is in the table).
+ * dropdown — which only lists outstanding PR items not already present (so
+ * duplicates are impossible and it is empty once every outstanding item is in
+ * the table).
  *
  * Preview (UI only, server authoritative):
  *   subtotal = quantity * unitPrice
@@ -45,6 +47,11 @@ export interface EditorItemRow {
 /**
  * A source PR item used to constrain the editor. Supplies the allowed product,
  * the maximum quantity, and the defaults applied when a dropped item is re-added.
+ *
+ * `quantity` is the OUTSTANDING (remaining) PR quota across active POs — the
+ * authoritative per-row cap — not the raw PR quantity. The parent builds this
+ * list from `GET /purchase-orders/outstanding` and only includes items whose
+ * outstanding quota is > 0, so every entry here is orderable.
  */
 export interface SourcePrItem {
   productId: string
@@ -88,7 +95,10 @@ function productLabel(productId: string): string {
   return `${product.name} (${product.sku})`
 }
 
-/** The matching PR item's quantity, used as the per-row max. 0 → no cap. */
+/**
+ * The matching PR item's outstanding (remaining) quota, used as the per-row
+ * max. `prItems` carries the outstanding amount in `quantity`. 0 → no cap.
+ */
 function maxQtyForRow(row: EditorItemRow): number {
   return prItemMap.value.get(row.productId)?.quantity ?? 0
 }
@@ -238,7 +248,7 @@ function removeRow(index: number): void {
                 v-if="maxQtyForRow(row) > 0"
                 class="mt-1 block text-theme-xs text-gray-400 dark:text-gray-500"
               >
-                Maks {{ maxQtyForRow(row) }} (PR)
+                Maks {{ maxQtyForRow(row) }} (sisa PR)
               </span>
             </td>
             <!-- UOM -->
@@ -309,7 +319,7 @@ function removeRow(index: number): void {
               class="px-4 py-6 text-center text-theme-sm text-gray-500 dark:text-gray-400"
             >
               <template v-if="prItems.length === 0">
-                Pilih PR sumber terlebih dahulu untuk memuat item.
+                Pilih PR sumber untuk memuat item yang masih tersisa (outstanding).
               </template>
               <template v-else>
                 Belum ada item. Tambahkan dari item PR di bawah.
@@ -380,7 +390,8 @@ function removeRow(index: number): void {
     </div>
 
     <p class="text-theme-xs text-gray-400 dark:text-gray-500">
-      Item hanya dapat dipilih dari item PR sumber. Kuantitas tidak boleh melebihi PR.
+      Item hanya dapat dipilih dari item PR sumber. Kuantitas tidak boleh melebihi
+      sisa (outstanding) PR setelah dikurangi PO lain yang masih aktif.
       Subtotal, pajak & total di atas hanya pratinjau; nilai final dihitung oleh server.
     </p>
   </div>
