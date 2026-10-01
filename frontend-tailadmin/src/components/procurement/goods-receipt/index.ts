@@ -1,0 +1,12 @@
+/** Barrel exports for the Goods Receipt feature components. */
+export { default as GoodsReceiptTable } from './GoodsReceiptTable.vue'
+export { default as GoodsReceiptFilterBar } from './GoodsReceiptFilterBar.vue'
+export { default as GoodsReceiptHeaderFields } from './GoodsReceiptHeaderFields.vue'
+export { default as GoodsReceiptItemsEditor } from './GoodsReceiptItemsEditor.vue'
+export { default as GoodsReceiptSummary } from './GoodsReceiptSummary.vue'
+export { default as GoodsReceiptItemsTable } from './GoodsReceiptItemsTable.vue'
+export { default as GoodsReceiptActionBar } from './GoodsReceiptActionBar.vue'
+export { default as GoodsReceiptTimeline } from './GoodsReceiptTimeline.vue'
+export { default as GoodsReceiptActionModals } from './GoodsReceiptActionModals.vue'
+export type { EditorItemRow, SourcePoItem } from './GoodsReceiptItemsEditor.vue'
+export type { GoodsReceiptAction } from './GoodsReceiptActionModals.vue'

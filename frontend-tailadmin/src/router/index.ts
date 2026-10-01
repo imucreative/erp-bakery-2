@@ -160,6 +160,42 @@ const router = createRouter({
       },
     },
     {
+      path: '/procurement/goods-receipts',
+      name: 'GoodsReceipts',
+      component: () => import('../views/Procurement/GoodsReceiptList.vue'),
+      meta: {
+        title: 'Goods Receipts',
+        permission: 'procurement.gr.read',
+      },
+    },
+    {
+      path: '/procurement/goods-receipts/new',
+      name: 'GoodsReceiptCreate',
+      component: () => import('../views/Procurement/GoodsReceiptForm.vue'),
+      meta: {
+        title: 'Buat Goods Receipt',
+        permission: 'procurement.gr.create',
+      },
+    },
+    {
+      path: '/procurement/goods-receipts/:id',
+      name: 'GoodsReceiptDetail',
+      component: () => import('../views/Procurement/GoodsReceiptDetail.vue'),
+      meta: {
+        title: 'Detail Goods Receipt',
+        permission: 'procurement.gr.read',
+      },
+    },
+    {
+      path: '/procurement/goods-receipts/:id/edit',
+      name: 'GoodsReceiptEdit',
+      component: () => import('../views/Procurement/GoodsReceiptForm.vue'),
+      meta: {
+        title: 'Edit Goods Receipt',
+        permission: 'procurement.gr.update',
+      },
+    },
+    {
       path: '/system/users',
       name: 'Users',
       component: () => import('../views/System/UserList.vue'),
