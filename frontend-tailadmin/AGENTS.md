@@ -123,3 +123,25 @@ src/
 - Don't hardcode hex colors in `class=""` attributes — use `@theme` tokens.
 - Don't write inline `style="..."` attributes when Tailwind theme tokens and utility classes are available.
 - Don't initialize map, calendar, or other browser-only libraries outside `onMounted`.
+
+## Bakery ERP — Mandatory UI Standards (knowledge-base doc 48 §2)
+
+These project standards are MANDATORY for every Bakery ERP module built in this app.
+Full detail lives in `knowledge-base/48.tailadmin-frontend-backlog.md` §2 — read it before
+building a module. Summary:
+
+- **Row action buttons**: icon-only (`lucide-vue-next`), `h-9 w-9`, with `aria-label` + `title`.
+- **Every button MUST have a relevant icon**; text is optional. Icon-only for row actions and
+  the back button; icon + text for primary/descriptive buttons (Save/Cancel/Add/Submit).
+- **Native `<select>`**: `appearance-none` + a `ChevronDownIcon` overlay (relative container,
+  absolute `end-3`, `pointer-events-none`, select `pe-10`). Never a bare select.
+- **Boolean inputs**: use `components/ui/ToggleSwitch.vue`, never `<input type="checkbox">`
+  (exception: an explicit multi-select permission matrix, when the user asks for checkboxes).
+- **Modals**: transparent backdrop (`bg-gray-900/20 backdrop-blur-[2px]`, dark `bg-black/30`),
+  `rounded-3xl` panel.
+- **Document pages (Detail & Form)**: page header is `flex justify-between` — START = icon-only
+  Back button (`ChevronLeft`, `rtl:rotate-180`) beside the page title; END = the lifecycle
+  action bar. Split each UI section into its own stateless component (Summary, ItemsTable,
+  ActionBar, Timeline, Comments, Attachments for detail; HeaderFields, ItemsEditor for form)
+  under `components/<area>/<x>/` with a barrel `index.ts`; the View owns state + handlers only.
+- Dark mode + RTL logical properties (ps/pe/ms/me/start/end) + Tailwind theme tokens (no hex).
