@@ -28,6 +28,7 @@ import {
   GoodsReceiptActionBar,
   GoodsReceiptTimeline,
   GoodsReceiptActionModals,
+  GoodsReceiptComments,
   type GoodsReceiptAction,
 } from '@/components/procurement/goods-receipt'
 import { usePermission } from '@/composables/usePermission'
@@ -248,6 +249,9 @@ async function onConfirmAction(note: string): Promise<void> {
         <div class="space-y-5 lg:col-span-1">
           <ComponentCard title="Riwayat Status">
             <GoodsReceiptTimeline :logs="gr.statusLogs" />
+          </ComponentCard>
+          <ComponentCard title="Komentar">
+            <GoodsReceiptComments :goods-receipt-id="gr.id" />
           </ComponentCard>
         </div>
       </div>

@@ -86,6 +86,47 @@ export interface GoodsReceiptStatusLog {
   createdAt: string
 }
 
+/**
+ * Comment categories. INTERNAL/APPROVAL/EXTERNAL are user-selectable and sent to
+ * the backend; SYSTEM is display-only (backend-authored) and never submitted.
+ */
+export const GOODS_RECEIPT_COMMENT_CATEGORIES = [
+  'INTERNAL',
+  'APPROVAL',
+  'EXTERNAL',
+] as const
+export type GoodsReceiptCommentCategory =
+  (typeof GOODS_RECEIPT_COMMENT_CATEGORIES)[number]
+
+/** Full set including SYSTEM, used only for rendering existing comments. */
+export type GoodsReceiptCommentCategoryDisplay =
+  | GoodsReceiptCommentCategory
+  | 'SYSTEM'
+
+export const GOODS_RECEIPT_COMMENT_CATEGORY_LABELS: Record<
+  GoodsReceiptCommentCategoryDisplay,
+  string
+> = {
+  INTERNAL: 'Internal',
+  APPROVAL: 'Persetujuan',
+  EXTERNAL: 'Eksternal',
+  SYSTEM: 'Sistem',
+}
+
+export interface GoodsReceiptComment {
+  id: string
+  category: GoodsReceiptCommentCategoryDisplay
+  body: string
+  authorId: string
+  authorName: string | null
+  createdAt: string
+}
+
+export interface AddGoodsReceiptCommentPayload {
+  body: string
+  category?: GoodsReceiptCommentCategory
+}
+
 export interface GoodsReceipt {
   id: string
   companyId: string | null
@@ -252,6 +293,45 @@ export const goodsReceiptService = {
     )
     return response.data.data
   },
+
+  async listComments(id: string): Promise<GoodsReceiptComment[]> {
+    const response = await httpClient.get<ApiSuccess<GoodsReceiptComment[]>>(
+      `/goods-receipts/${id}/comments`,
+    )
+    return response.data.data
+  },
+
+  async addComment(
+    id: string,
+    payload: AddGoodsReceiptCommentPayload,
+  ): Promise<GoodsReceiptComment> {
+    const response = await httpClient.post<ApiSuccess<GoodsReceiptComment>>(
+      `/goods-receipts/${id}/comments`,
+      payload,
+    )
+    return response.data.data
+  },
+}
+
+/**
+ * Badge color mapping per comment category (aligns with the ui/Badge `color`
+ * palette): INTERNAL neutral/gray, APPROVAL success, EXTERNAL warning,
+ * SYSTEM blue-light (`info`).
+ */
+export function commentCategoryBadgeColor(
+  category: GoodsReceiptCommentCategoryDisplay,
+): 'light' | 'success' | 'warning' | 'info' {
+  switch (category) {
+    case 'APPROVAL':
+      return 'success'
+    case 'EXTERNAL':
+      return 'warning'
+    case 'SYSTEM':
+      return 'info'
+    case 'INTERNAL':
+    default:
+      return 'light'
+  }
 }
 
 /** Badge color mapping per status (aligns with the ui/Badge `color` palette). */
