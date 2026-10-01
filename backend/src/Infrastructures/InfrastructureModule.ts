@@ -24,6 +24,7 @@ import { ProductionOrderRepository } from '../Domains/production/ProductionOrder
 import { PurchaseRequestRepository } from '../Domains/purchase-requests/PurchaseRequestRepository';
 import { PurchaseRequestAttachmentStorage } from '../Domains/purchase-requests/PurchaseRequestAttachmentStorage';
 import { PurchaseOrderAttachmentStorage } from '../Domains/purchase-orders/PurchaseOrderAttachmentStorage';
+import { GoodsReceiptAttachmentStorage } from '../Domains/goods-receipts/GoodsReceiptAttachmentStorage';
 import { PurchaseOrderRepository } from '../Domains/purchase-orders/PurchaseOrderRepository';
 import { GoodsReceiptRepository } from '../Domains/goods-receipts/GoodsReceiptRepository';
 import { PasswordHash } from '../Applications/security/PasswordHash';
@@ -53,6 +54,7 @@ import { PurchaseOrderRepositoryPostgres } from './repository/PurchaseOrderRepos
 import { GoodsReceiptRepositoryPostgres } from './repository/GoodsReceiptRepositoryPostgres';
 import { LocalPurchaseRequestAttachmentStorage } from './storage/LocalPurchaseRequestAttachmentStorage';
 import { LocalPurchaseOrderAttachmentStorage } from './storage/LocalPurchaseOrderAttachmentStorage';
+import { LocalGoodsReceiptAttachmentStorage } from './storage/LocalGoodsReceiptAttachmentStorage';
 import { BcryptPasswordHash } from './security/BcryptPasswordHash';
 import { JwtTokenManager } from './security/JwtTokenManager';
 
@@ -160,6 +162,10 @@ import { GetGoodsReceiptsUseCase } from '../Applications/use_case/goods-receipts
 import { GetGoodsReceiptOutstandingUseCase } from '../Applications/use_case/goods-receipts/GetGoodsReceiptOutstandingUseCase';
 import { AddGoodsReceiptCommentUseCase } from '../Applications/use_case/goods-receipts/AddGoodsReceiptCommentUseCase';
 import { GetGoodsReceiptCommentsUseCase } from '../Applications/use_case/goods-receipts/GetGoodsReceiptCommentsUseCase';
+import { UploadGoodsReceiptAttachmentUseCase } from '../Applications/use_case/goods-receipts/UploadGoodsReceiptAttachmentUseCase';
+import { ListGoodsReceiptAttachmentsUseCase } from '../Applications/use_case/goods-receipts/ListGoodsReceiptAttachmentsUseCase';
+import { GetGoodsReceiptAttachmentUseCase } from '../Applications/use_case/goods-receipts/GetGoodsReceiptAttachmentUseCase';
+import { DeleteGoodsReceiptAttachmentUseCase } from '../Applications/use_case/goods-receipts/DeleteGoodsReceiptAttachmentUseCase';
 
 /**
  * InfrastructureModule — NestJS DI container.
@@ -283,6 +289,10 @@ import { GetGoodsReceiptCommentsUseCase } from '../Applications/use_case/goods-r
     {
       provide: PurchaseOrderAttachmentStorage,
       useFactory: () => new LocalPurchaseOrderAttachmentStorage(),
+    },
+    {
+      provide: GoodsReceiptAttachmentStorage,
+      useFactory: () => new LocalGoodsReceiptAttachmentStorage(),
     },
 
     // ─── Use Cases ────────────────────────────────────────────────────────
@@ -978,6 +988,36 @@ import { GetGoodsReceiptCommentsUseCase } from '../Applications/use_case/goods-r
         new GetGoodsReceiptCommentsUseCase(grRepo),
       inject: [GoodsReceiptRepository],
     },
+    {
+      provide: UploadGoodsReceiptAttachmentUseCase,
+      useFactory: (
+        grRepo: GoodsReceiptRepository,
+        storage: GoodsReceiptAttachmentStorage,
+      ) => new UploadGoodsReceiptAttachmentUseCase(grRepo, storage),
+      inject: [GoodsReceiptRepository, GoodsReceiptAttachmentStorage],
+    },
+    {
+      provide: ListGoodsReceiptAttachmentsUseCase,
+      useFactory: (grRepo: GoodsReceiptRepository) =>
+        new ListGoodsReceiptAttachmentsUseCase(grRepo),
+      inject: [GoodsReceiptRepository],
+    },
+    {
+      provide: GetGoodsReceiptAttachmentUseCase,
+      useFactory: (
+        grRepo: GoodsReceiptRepository,
+        storage: GoodsReceiptAttachmentStorage,
+      ) => new GetGoodsReceiptAttachmentUseCase(grRepo, storage),
+      inject: [GoodsReceiptRepository, GoodsReceiptAttachmentStorage],
+    },
+    {
+      provide: DeleteGoodsReceiptAttachmentUseCase,
+      useFactory: (
+        grRepo: GoodsReceiptRepository,
+        storage: GoodsReceiptAttachmentStorage,
+      ) => new DeleteGoodsReceiptAttachmentUseCase(grRepo, storage),
+      inject: [GoodsReceiptRepository, GoodsReceiptAttachmentStorage],
+    },
   ],
   exports: [
     'PG_POOL',
@@ -1107,6 +1147,10 @@ import { GetGoodsReceiptCommentsUseCase } from '../Applications/use_case/goods-r
     GetGoodsReceiptOutstandingUseCase,
     AddGoodsReceiptCommentUseCase,
     GetGoodsReceiptCommentsUseCase,
+    UploadGoodsReceiptAttachmentUseCase,
+    ListGoodsReceiptAttachmentsUseCase,
+    GetGoodsReceiptAttachmentUseCase,
+    DeleteGoodsReceiptAttachmentUseCase,
   ],
 })
 export class InfrastructureModule {}

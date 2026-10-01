@@ -735,6 +735,20 @@ const DomainErrorTranslator = {
       'Ukuran file melebihi batas maksimum 5 MB',
     ),
 
+    // ── Goods Receipt Attachments (doc 35 §5) ────────────────────
+    'GOODS_RECEIPT_ATTACHMENT.NOT_FOUND': new NotFoundError(
+      'Lampiran goods receipt tidak ditemukan',
+    ),
+    'UPLOAD_GOODS_RECEIPT_ATTACHMENT.FILE_REQUIRED': new InvariantError(
+      'File lampiran wajib disertakan',
+    ),
+    'UPLOAD_GOODS_RECEIPT_ATTACHMENT.MIME_NOT_ALLOWED': new InvariantError(
+      'Tipe file tidak diizinkan; hanya PDF, JPG, atau PNG',
+    ),
+    'UPLOAD_GOODS_RECEIPT_ATTACHMENT.FILE_TOO_LARGE': new InvariantError(
+      'Ukuran file melebihi batas maksimum 5 MB',
+    ),
+
     // ── Purchase Order ───────────────────────────────────────────
     'PURCHASE_ORDER.NOT_FOUND': new NotFoundError('Purchase order tidak ditemukan'),
     'CREATE_PURCHASE_ORDER.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(

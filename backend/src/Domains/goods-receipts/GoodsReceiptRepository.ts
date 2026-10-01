@@ -1,11 +1,22 @@
 import { GoodsReceipt } from './entities/GoodsReceipt';
 import { ResolvedGoodsReceiptItem } from './entities/CreateGoodsReceipt';
 import { GoodsReceiptComment } from './entities/GoodsReceiptComment';
+import {
+  GoodsReceiptAttachment,
+  GoodsReceiptAttachmentWithPath,
+} from './entities/GoodsReceiptAttachment';
 import { GoodsReceiptCommentCategory } from './goodsReceiptCommentCategory';
 
 export interface NewGoodsReceiptCommentData {
   category: GoodsReceiptCommentCategory;
   body: string;
+}
+
+export interface NewGoodsReceiptAttachmentData {
+  originalName: string;
+  storedPath: string;
+  mimeType: string;
+  sizeBytes: number;
 }
 
 /**
@@ -153,4 +164,44 @@ export abstract class GoodsReceiptRepository {
     goodsReceiptId: string,
     companyId: string,
   ): Promise<GoodsReceiptComment[]>;
+
+  /**
+   * Persist an attachment metadata row (the physical file is written by the
+   * use case before this call) and return the stored metadata with the
+   * uploader name resolved (JOIN to users).
+   */
+  abstract addAttachment(
+    goodsReceiptId: string,
+    companyId: string,
+    uploadedBy: string | null,
+    data: NewGoodsReceiptAttachmentData,
+  ): Promise<GoodsReceiptAttachment>;
+
+  /** List a GR's attachments chronologically (each carries uploadedByName). */
+  abstract listAttachments(
+    goodsReceiptId: string,
+    companyId: string,
+  ): Promise<GoodsReceiptAttachment[]>;
+
+  /**
+   * Fetch a single attachment (including the internal storedPath) scoped to
+   * both the GR and the company. Throws GOODS_RECEIPT_ATTACHMENT.NOT_FOUND
+   * when the attachment does not belong to that GR/company (IDOR guard).
+   */
+  abstract getAttachmentById(
+    goodsReceiptId: string,
+    attachmentId: string,
+    companyId: string,
+  ): Promise<GoodsReceiptAttachmentWithPath>;
+
+  /**
+   * Delete an attachment row scoped to the GR and company, returning the
+   * deleted metadata (including storedPath) so the use case can remove the
+   * physical file. Throws GOODS_RECEIPT_ATTACHMENT.NOT_FOUND when missing.
+   */
+  abstract deleteAttachment(
+    goodsReceiptId: string,
+    attachmentId: string,
+    companyId: string,
+  ): Promise<GoodsReceiptAttachmentWithPath>;
 }

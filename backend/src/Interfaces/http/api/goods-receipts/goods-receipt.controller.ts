@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -8,8 +9,19 @@ import {
   Post,
   Put,
   Query,
+  Req,
+  Res,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CreateGoodsReceiptUseCase } from '../../../../Applications/use_case/goods-receipts/CreateGoodsReceiptUseCase';
 import { UpdateGoodsReceiptUseCase } from '../../../../Applications/use_case/goods-receipts/UpdateGoodsReceiptUseCase';
 import { CancelGoodsReceiptUseCase } from '../../../../Applications/use_case/goods-receipts/CancelGoodsReceiptUseCase';
@@ -18,8 +30,13 @@ import { GetGoodsReceiptsUseCase } from '../../../../Applications/use_case/goods
 import { GetGoodsReceiptOutstandingUseCase } from '../../../../Applications/use_case/goods-receipts/GetGoodsReceiptOutstandingUseCase';
 import { AddGoodsReceiptCommentUseCase } from '../../../../Applications/use_case/goods-receipts/AddGoodsReceiptCommentUseCase';
 import { GetGoodsReceiptCommentsUseCase } from '../../../../Applications/use_case/goods-receipts/GetGoodsReceiptCommentsUseCase';
+import { UploadGoodsReceiptAttachmentUseCase } from '../../../../Applications/use_case/goods-receipts/UploadGoodsReceiptAttachmentUseCase';
+import { ListGoodsReceiptAttachmentsUseCase } from '../../../../Applications/use_case/goods-receipts/ListGoodsReceiptAttachmentsUseCase';
+import { GetGoodsReceiptAttachmentUseCase } from '../../../../Applications/use_case/goods-receipts/GetGoodsReceiptAttachmentUseCase';
+import { DeleteGoodsReceiptAttachmentUseCase } from '../../../../Applications/use_case/goods-receipts/DeleteGoodsReceiptAttachmentUseCase';
 import { JwtAccessPayload } from '../../../../Applications/security/TokenManager';
 import { AuthorizationError } from '../../../../Commons/exceptions/AuthorizationError';
+import { InvariantError } from '../../../../Commons/exceptions/InvariantError';
 import { successResponse, listResponse } from '../../../../Commons/helpers/response.helper';
 import { parsePagination } from '../../../../Commons/helpers/pagination.helper';
 import { GetUser } from '../../decorators/get-user.decorator';
@@ -47,6 +64,15 @@ import { AddGoodsReceiptCommentDto } from './dto/add-goods-receipt-comment.dto';
  *   outstanding lookup → procurement.gr.create    (used while opening the receive form)
  *   complete           → procurement.gr.complete  (DRAFT -> COMPLETED, posts inventory)
  *   comments (list + add) → procurement.gr.read
+ *   attachments list/download → procurement.gr.read
+ *   attachments upload/delete → procurement.gr.update
+ *
+ * Attachments (doc 35 §5): listing/downloading is `procurement.gr.read` (reading
+ * the document's evidence). Uploading and deleting are `procurement.gr.update`
+ * because attaching or removing a file materially changes the document.
+ * Only PDF/JPEG/PNG up to 5 MB are accepted; stored file names are derived
+ * server-side (never from the client name) and downloads are scoped to the GR +
+ * company (IDOR/traversal guard). Mirrors the Purchase Order attachments.
  *
  * Commenting is guarded by `procurement.gr.read` (not create/complete): a
  * comment is a collaboration note on the discussion thread, not a mutation of
@@ -74,6 +100,10 @@ export class GoodsReceiptController {
     private readonly getOutstandingUseCase: GetGoodsReceiptOutstandingUseCase,
     private readonly addCommentUseCase: AddGoodsReceiptCommentUseCase,
     private readonly getCommentsUseCase: GetGoodsReceiptCommentsUseCase,
+    private readonly uploadAttachmentUseCase: UploadGoodsReceiptAttachmentUseCase,
+    private readonly listAttachmentsUseCase: ListGoodsReceiptAttachmentsUseCase,
+    private readonly getAttachmentUseCase: GetGoodsReceiptAttachmentUseCase,
+    private readonly deleteAttachmentUseCase: DeleteGoodsReceiptAttachmentUseCase,
   ) {}
 
   private _companyId(user: JwtAccessPayload): string {
@@ -257,5 +287,122 @@ export class GoodsReceiptController {
       user.sub,
     );
     return successResponse(comment);
+  }
+
+  @Get(':id/attachments')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('procurement.gr.read')
+  @ApiOperation({ summary: 'List attachments of a goods receipt' })
+  @ApiParam({ name: 'id', description: 'Goods receipt UUID' })
+  @ApiResponse({ status: 200, description: 'Attachment metadata list' })
+  @ApiResponse({ status: 404, description: 'Goods receipt not found' })
+  async listAttachments(@Param('id') id: string, @GetUser() user: JwtAccessPayload) {
+    const attachments = await this.listAttachmentsUseCase.execute(id, this._companyId(user));
+    return successResponse(attachments);
+  }
+
+  @Post(':id/attachments')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('procurement.gr.update')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Upload an attachment (PDF/JPG/PNG, max 5 MB) to a goods receipt',
+  })
+  @ApiParam({ name: 'id', description: 'Goods receipt UUID' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary', description: 'PDF/JPG/PNG, max 5 MB' },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Attachment stored (metadata returned)' })
+  @ApiResponse({ status: 400, description: 'Missing/invalid file, disallowed type, or too large' })
+  @ApiResponse({ status: 404, description: 'Goods receipt not found' })
+  async uploadAttachment(
+    @Param('id') id: string,
+    @Req() request: FastifyRequest,
+    @GetUser() user: JwtAccessPayload,
+  ) {
+    if (typeof request.file !== 'function') {
+      throw new InvariantError('UPLOAD_GOODS_RECEIPT_ATTACHMENT.FILE_REQUIRED');
+    }
+
+    let part;
+    try {
+      part = await request.file();
+    } catch (err) {
+      // @fastify/multipart throws when the file exceeds the configured limit.
+      if (err && typeof err === 'object' && (err as { code?: string }).code === 'FST_REQ_FILE_TOO_LARGE') {
+        throw new InvariantError('UPLOAD_GOODS_RECEIPT_ATTACHMENT.FILE_TOO_LARGE');
+      }
+      throw err;
+    }
+
+    if (!part) {
+      throw new InvariantError('UPLOAD_GOODS_RECEIPT_ATTACHMENT.FILE_REQUIRED');
+    }
+
+    const buffer = await part.toBuffer();
+    // toBuffer() truncates at the limit and flags truncation; reject explicitly.
+    if (part.file.truncated) {
+      throw new InvariantError('UPLOAD_GOODS_RECEIPT_ATTACHMENT.FILE_TOO_LARGE');
+    }
+
+    const attachment = await this.uploadAttachmentUseCase.execute(
+      id,
+      { originalName: part.filename, mimeType: part.mimetype, buffer },
+      this._companyId(user),
+      user.sub,
+    );
+    return successResponse(attachment);
+  }
+
+  @Get(':id/attachments/:attId/download')
+  @RequirePermission('procurement.gr.read')
+  @ApiOperation({ summary: 'Download a goods receipt attachment' })
+  @ApiParam({ name: 'id', description: 'Goods receipt UUID' })
+  @ApiParam({ name: 'attId', description: 'Attachment UUID' })
+  @ApiResponse({ status: 200, description: 'File stream' })
+  @ApiResponse({ status: 404, description: 'Attachment not found' })
+  async downloadAttachment(
+    @Param('id') id: string,
+    @Param('attId') attId: string,
+    @GetUser() user: JwtAccessPayload,
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
+    const { attachment, stream } = await this.getAttachmentUseCase.execute(
+      id,
+      attId,
+      this._companyId(user),
+    );
+
+    // Content-Disposition filename is quoted and stripped of quotes/newlines to
+    // avoid header injection; the original name is preserved for the user.
+    const safeName = attachment.originalName.replace(/["\r\n]/g, '');
+    reply
+      .header('Content-Type', attachment.mimeType)
+      .header('Content-Disposition', `attachment; filename="${safeName}"`)
+      .header('Content-Length', String(attachment.sizeBytes));
+    await reply.send(stream);
+  }
+
+  @Delete(':id/attachments/:attId')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('procurement.gr.update')
+  @ApiOperation({ summary: 'Delete a goods receipt attachment (row + file)' })
+  @ApiParam({ name: 'id', description: 'Goods receipt UUID' })
+  @ApiParam({ name: 'attId', description: 'Attachment UUID' })
+  @ApiResponse({ status: 200, description: 'Attachment deleted' })
+  @ApiResponse({ status: 404, description: 'Attachment not found' })
+  async deleteAttachment(
+    @Param('id') id: string,
+    @Param('attId') attId: string,
+    @GetUser() user: JwtAccessPayload,
+  ) {
+    await this.deleteAttachmentUseCase.execute(id, attId, this._companyId(user));
+    return successResponse({ id: attId, deleted: true });
   }
 }
