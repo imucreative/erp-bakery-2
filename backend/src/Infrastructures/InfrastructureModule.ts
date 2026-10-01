@@ -25,6 +25,7 @@ import { PurchaseRequestRepository } from '../Domains/purchase-requests/Purchase
 import { PurchaseRequestAttachmentStorage } from '../Domains/purchase-requests/PurchaseRequestAttachmentStorage';
 import { PurchaseOrderAttachmentStorage } from '../Domains/purchase-orders/PurchaseOrderAttachmentStorage';
 import { PurchaseOrderRepository } from '../Domains/purchase-orders/PurchaseOrderRepository';
+import { GoodsReceiptRepository } from '../Domains/goods-receipts/GoodsReceiptRepository';
 import { PasswordHash } from '../Applications/security/PasswordHash';
 import { TokenManager } from '../Applications/security/TokenManager';
 
@@ -49,6 +50,7 @@ import { RecipeRepositoryPostgres } from './repository/RecipeRepositoryPostgres'
 import { ProductionOrderRepositoryPostgres } from './repository/ProductionOrderRepositoryPostgres';
 import { PurchaseRequestRepositoryPostgres } from './repository/PurchaseRequestRepositoryPostgres';
 import { PurchaseOrderRepositoryPostgres } from './repository/PurchaseOrderRepositoryPostgres';
+import { GoodsReceiptRepositoryPostgres } from './repository/GoodsReceiptRepositoryPostgres';
 import { LocalPurchaseRequestAttachmentStorage } from './storage/LocalPurchaseRequestAttachmentStorage';
 import { LocalPurchaseOrderAttachmentStorage } from './storage/LocalPurchaseOrderAttachmentStorage';
 import { BcryptPasswordHash } from './security/BcryptPasswordHash';
@@ -150,6 +152,11 @@ import { UploadPurchaseOrderAttachmentUseCase } from '../Applications/use_case/p
 import { ListPurchaseOrderAttachmentsUseCase } from '../Applications/use_case/purchase-orders/ListPurchaseOrderAttachmentsUseCase';
 import { GetPurchaseOrderAttachmentUseCase } from '../Applications/use_case/purchase-orders/GetPurchaseOrderAttachmentUseCase';
 import { DeletePurchaseOrderAttachmentUseCase } from '../Applications/use_case/purchase-orders/DeletePurchaseOrderAttachmentUseCase';
+import { CreateGoodsReceiptUseCase } from '../Applications/use_case/goods-receipts/CreateGoodsReceiptUseCase';
+import { UpdateGoodsReceiptUseCase } from '../Applications/use_case/goods-receipts/UpdateGoodsReceiptUseCase';
+import { CancelGoodsReceiptUseCase } from '../Applications/use_case/goods-receipts/CancelGoodsReceiptUseCase';
+import { GetGoodsReceiptsUseCase } from '../Applications/use_case/goods-receipts/GetGoodsReceiptsUseCase';
+import { GetGoodsReceiptOutstandingUseCase } from '../Applications/use_case/goods-receipts/GetGoodsReceiptOutstandingUseCase';
 
 /**
  * InfrastructureModule — NestJS DI container.
@@ -259,6 +266,10 @@ import { DeletePurchaseOrderAttachmentUseCase } from '../Applications/use_case/p
     {
       provide: PurchaseOrderRepository,
       useFactory: () => new PurchaseOrderRepositoryPostgres(pool),
+    },
+    {
+      provide: GoodsReceiptRepository,
+      useFactory: () => new GoodsReceiptRepositoryPostgres(pool),
     },
 
     // ─── Storage ──────────────────────────────────────────────────────────
@@ -911,6 +922,42 @@ import { DeletePurchaseOrderAttachmentUseCase } from '../Applications/use_case/p
       ) => new DeletePurchaseOrderAttachmentUseCase(poRepo, storage),
       inject: [PurchaseOrderRepository, PurchaseOrderAttachmentStorage],
     },
+    {
+      provide: CreateGoodsReceiptUseCase,
+      useFactory: (
+        grRepo: GoodsReceiptRepository,
+        poRepo: PurchaseOrderRepository,
+        productRepo: ProductRepository,
+        uomRepo: UomRepository,
+      ) => new CreateGoodsReceiptUseCase(grRepo, poRepo, productRepo, uomRepo),
+      inject: [GoodsReceiptRepository, PurchaseOrderRepository, ProductRepository, UomRepository],
+    },
+    {
+      provide: UpdateGoodsReceiptUseCase,
+      useFactory: (
+        grRepo: GoodsReceiptRepository,
+        poRepo: PurchaseOrderRepository,
+        productRepo: ProductRepository,
+        uomRepo: UomRepository,
+      ) => new UpdateGoodsReceiptUseCase(grRepo, poRepo, productRepo, uomRepo),
+      inject: [GoodsReceiptRepository, PurchaseOrderRepository, ProductRepository, UomRepository],
+    },
+    {
+      provide: CancelGoodsReceiptUseCase,
+      useFactory: (grRepo: GoodsReceiptRepository) => new CancelGoodsReceiptUseCase(grRepo),
+      inject: [GoodsReceiptRepository],
+    },
+    {
+      provide: GetGoodsReceiptsUseCase,
+      useFactory: (grRepo: GoodsReceiptRepository) => new GetGoodsReceiptsUseCase(grRepo),
+      inject: [GoodsReceiptRepository],
+    },
+    {
+      provide: GetGoodsReceiptOutstandingUseCase,
+      useFactory: (grRepo: GoodsReceiptRepository, poRepo: PurchaseOrderRepository) =>
+        new GetGoodsReceiptOutstandingUseCase(grRepo, poRepo),
+      inject: [GoodsReceiptRepository, PurchaseOrderRepository],
+    },
   ],
   exports: [
     'PG_POOL',
@@ -936,6 +983,7 @@ import { DeletePurchaseOrderAttachmentUseCase } from '../Applications/use_case/p
     ProductionOrderRepository,
     PurchaseRequestRepository,
     PurchaseOrderRepository,
+    GoodsReceiptRepository,
     RegisterCompanyUseCase,
     LoginUseCase,
     RefreshTokenUseCase,
@@ -1031,6 +1079,11 @@ import { DeletePurchaseOrderAttachmentUseCase } from '../Applications/use_case/p
     ListPurchaseOrderAttachmentsUseCase,
     GetPurchaseOrderAttachmentUseCase,
     DeletePurchaseOrderAttachmentUseCase,
+    CreateGoodsReceiptUseCase,
+    UpdateGoodsReceiptUseCase,
+    CancelGoodsReceiptUseCase,
+    GetGoodsReceiptsUseCase,
+    GetGoodsReceiptOutstandingUseCase,
   ],
 })
 export class InfrastructureModule {}

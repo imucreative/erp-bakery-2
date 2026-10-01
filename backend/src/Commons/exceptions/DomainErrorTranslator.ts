@@ -831,6 +831,79 @@ const DomainErrorTranslator = {
       'Kategori komentar SYSTEM hanya untuk sistem dan tidak dapat dipilih',
     ),
 
+    // ── Goods Receipt (doc 26 §3/§6, STAGE 1) ────────────────────
+    'GOODS_RECEIPT.NOT_FOUND': new NotFoundError('Goods receipt tidak ditemukan'),
+    'CREATE_GOODS_RECEIPT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data goods receipt tidak lengkap',
+    ),
+    'CREATE_GOODS_RECEIPT.PURCHASE_ORDER_REQUIRED': new InvariantError(
+      'Goods receipt harus dibuat dari purchase order',
+    ),
+    'CREATE_GOODS_RECEIPT.RECEIVE_DATE_INVALID': new InvariantError(
+      'Tanggal terima goods receipt tidak valid',
+    ),
+    'CREATE_GOODS_RECEIPT.ITEMS_REQUIRED': new InvariantError(
+      'Goods receipt harus memiliki minimal satu item',
+    ),
+    'CREATE_GOODS_RECEIPT.ITEM_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Format item goods receipt tidak valid',
+    ),
+    'CREATE_GOODS_RECEIPT.ITEM_PO_ITEM_REQUIRED': new InvariantError(
+      'Setiap item goods receipt harus menyertakan item purchase order sumber',
+    ),
+    'CREATE_GOODS_RECEIPT.ITEM_PRODUCT_REQUIRED': new InvariantError(
+      'Setiap item goods receipt harus menyertakan produk',
+    ),
+    'CREATE_GOODS_RECEIPT.ITEM_UOM_REQUIRED': new InvariantError(
+      'Setiap item goods receipt harus menyertakan satuan (UOM)',
+    ),
+    'CREATE_GOODS_RECEIPT.ITEM_ACCEPTED_QTY_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Jumlah accepted item goods receipt harus berupa angka',
+    ),
+    'CREATE_GOODS_RECEIPT.ITEM_ACCEPTED_QTY_MUST_BE_NON_NEGATIVE': new InvariantError(
+      'Jumlah accepted item goods receipt tidak boleh negatif',
+    ),
+    'CREATE_GOODS_RECEIPT.ITEM_REJECTED_QTY_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Jumlah rejected item goods receipt harus berupa angka',
+    ),
+    'CREATE_GOODS_RECEIPT.ITEM_REJECTED_QTY_MUST_BE_NON_NEGATIVE': new InvariantError(
+      'Jumlah rejected item goods receipt tidak boleh negatif',
+    ),
+    'GOODS_RECEIPT.PO_NOT_APPROVED': new InvariantError(
+      'Goods receipt hanya dapat dibuat dari purchase order berstatus APPROVED',
+    ),
+    'GOODS_RECEIPT.ITEM_NOT_IN_PO': new InvariantError(
+      'Item goods receipt harus berasal dari item purchase order sumber',
+    ),
+    'GOODS_RECEIPT.ITEM_PRODUCT_MISMATCH': new InvariantError(
+      'Produk item goods receipt tidak sesuai dengan item purchase order sumber',
+    ),
+    'GOODS_RECEIPT.DUPLICATE_ITEM': new InvariantError(
+      'Item purchase order yang sama tidak boleh diterima lebih dari sekali dalam satu goods receipt',
+    ),
+    'GOODS_RECEIPT.ITEM_NOTHING_RECEIVED': new InvariantError(
+      'Setiap item goods receipt harus memiliki jumlah accepted atau rejected lebih dari nol',
+    ),
+    'GOODS_RECEIPT.QTY_EXCEEDS_OUTSTANDING': new InvariantError(
+      'Jumlah terima (accepted + rejected) melebihi sisa (outstanding) kuota item purchase order; sebagian sudah diterima pada goods receipt lain',
+    ),
+    'GOODS_RECEIPT.NO_OUTSTANDING_ITEMS': new InvariantError(
+      'Semua item purchase order sumber sudah habis diterima; tidak ada sisa yang dapat dibuatkan goods receipt',
+    ),
+    'GOODS_RECEIPT.BATCH_REQUIRED': new InvariantError(
+      'Produk dengan pelacakan batch yang diterima (accepted) wajib menyertakan nomor batch',
+    ),
+    'GOODS_RECEIPT.EXPIRY_REQUIRED': new InvariantError(
+      'Produk dengan pelacakan batch yang diterima (accepted) wajib menyertakan tanggal kedaluwarsa',
+    ),
+    'GOODS_RECEIPT.ONLY_EDITABLE_STATUS': new InvariantError(
+      'Hanya goods receipt berstatus DRAFT yang dapat diubah',
+    ),
+    'GOODS_RECEIPT.INVALID_STATUS_TRANSITION': new InvariantError(
+      'Transisi status goods receipt tidak diperbolehkan',
+    ),
+    'GOODS_RECEIPT.INVALID_STATUS': new InvariantError('Status goods receipt tidak valid'),
+
     // ── Conflict ─────────────────────────────────────────────────
     'USER.EMAIL_ALREADY_USED': new ConflictError(
       'Email sudah digunakan oleh akun lain',
@@ -865,6 +938,9 @@ const DomainErrorTranslator = {
     ),
     'PURCHASE_ORDER.NUMBER_ALREADY_USED': new ConflictError(
       'Nomor purchase order sudah digunakan; coba lagi',
+    ),
+    'GOODS_RECEIPT.NUMBER_ALREADY_USED': new ConflictError(
+      'Nomor goods receipt sudah digunakan; coba lagi',
     ),
   } as ErrorMap,
 };
