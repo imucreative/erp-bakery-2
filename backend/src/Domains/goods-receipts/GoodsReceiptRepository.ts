@@ -93,4 +93,33 @@ export abstract class GoodsReceiptRepository {
     userId: string | null,
     note: string | null,
   ): Promise<GoodsReceipt>;
+
+  /**
+   * Complete a DRAFT GR (DRAFT -> COMPLETED) and post its ACCEPTED lines to
+   * inventory ATOMICALLY in a single concurrency-safe (SERIALIZABLE) transaction
+   * (Stage 2, Opsi A). Within that one transaction:
+   *   1. lock the GR header FOR UPDATE;
+   *   2. idempotency — if the GR is already COMPLETED (inventory_posted_at set),
+   *      return it unchanged (idempotent success), mirroring the inventory
+   *      complete pattern; a non-DRAFT, non-COMPLETED status is rejected;
+   *   3. for every item with acceptedQuantity > 0: resolve-or-create the target
+   *      InventoryBatch (batch-tracked lines carry batchNumber + expiry;
+   *      non-batch lines — batchNumber null — use the '' sentinel + is_non_batch
+   *      synthetic row + null expiry), lock it, add accepted qty, and append a
+   *      PURCHASE inventory_movements row with the deterministic source key
+   *      (GOODS_RECEIPT / grId / grItemId / resolved batchId);
+   *   4. flip status to COMPLETED, set inventory_posted_at = NOW(), and append a
+   *      DRAFT -> COMPLETED status log.
+   * Rejected quantities are NOT posted (doc 26 §6.12, doc 27 §6 #4). The DB
+   * source-key unique index blocks a double-post of the same GR line (rule #5).
+   * If any posting step fails the whole transaction rolls back and the GR is NOT
+   * marked COMPLETED. The ledger write path reuses the shared helpers so it is
+   * identical to postMovements.
+   */
+  abstract complete(
+    id: string,
+    companyId: string,
+    userId: string | null,
+    note: string | null,
+  ): Promise<GoodsReceipt>;
 }

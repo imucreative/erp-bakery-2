@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@ne
 import { CreateGoodsReceiptUseCase } from '../../../../Applications/use_case/goods-receipts/CreateGoodsReceiptUseCase';
 import { UpdateGoodsReceiptUseCase } from '../../../../Applications/use_case/goods-receipts/UpdateGoodsReceiptUseCase';
 import { CancelGoodsReceiptUseCase } from '../../../../Applications/use_case/goods-receipts/CancelGoodsReceiptUseCase';
+import { CompleteGoodsReceiptUseCase } from '../../../../Applications/use_case/goods-receipts/CompleteGoodsReceiptUseCase';
 import { GetGoodsReceiptsUseCase } from '../../../../Applications/use_case/goods-receipts/GetGoodsReceiptsUseCase';
 import { GetGoodsReceiptOutstandingUseCase } from '../../../../Applications/use_case/goods-receipts/GetGoodsReceiptOutstandingUseCase';
 import { JwtAccessPayload } from '../../../../Applications/security/TokenManager';
@@ -31,11 +32,9 @@ import { GoodsReceiptOutstandingQueryDto } from './dto/goods-receipt-outstanding
  * GoodsReceiptController — third procurement document module (doc 26).
  * Company-scoped; permission-guarded per doc 26 §11 / doc 16.
  *
- * STAGE 1 scope: core document + approval timeline (status logs). NO inventory
- * posting — the complete action (DRAFT -> COMPLETED, which posts accepted
- * quantities to inventory) arrives in a separate Stage 2. Comments & attachments
- * are later stages. The status VO already defines DRAFT -> COMPLETED so Stage 2
- * can add the action without touching the state machine.
+ * Scope: core document + approval timeline (status logs) + the complete action
+ * (DRAFT -> COMPLETED), which posts ACCEPTED quantities into inventory
+ * atomically (Stage 2). Comments & attachments are later stages.
  *
  * Permission mapping decisions (doc 26 §11):
  *   read               → procurement.gr.read
@@ -43,7 +42,7 @@ import { GoodsReceiptOutstandingQueryDto } from './dto/goods-receipt-outstanding
  *   update             → procurement.gr.update    (PUT, DRAFT only)
  *   cancel             → procurement.gr.update    (voiding a draft)
  *   outstanding lookup → procurement.gr.create    (used while opening the receive form)
- *   (complete          → procurement.gr.complete  — Stage 2)
+ *   complete           → procurement.gr.complete  (DRAFT -> COMPLETED, posts inventory)
  *
  * A GR is raised from an APPROVED PO; supplier and destination outlet are
  * inherited (snapshotted) from the PO, never taken from the client. Quantities
@@ -59,6 +58,7 @@ export class GoodsReceiptController {
     private readonly createUseCase: CreateGoodsReceiptUseCase,
     private readonly updateUseCase: UpdateGoodsReceiptUseCase,
     private readonly cancelUseCase: CancelGoodsReceiptUseCase,
+    private readonly completeUseCase: CompleteGoodsReceiptUseCase,
     private readonly getUseCase: GetGoodsReceiptsUseCase,
     private readonly getOutstandingUseCase: GetGoodsReceiptOutstandingUseCase,
   ) {}
@@ -173,6 +173,35 @@ export class GoodsReceiptController {
     @GetUser() user: JwtAccessPayload,
   ) {
     const gr = await this.cancelUseCase.execute(
+      id,
+      this._companyId(user),
+      user.sub,
+      dto.note ?? null,
+    );
+    return successResponse(gr);
+  }
+
+  @Post(':id/complete')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('procurement.gr.complete')
+  @ApiOperation({
+    summary:
+      'Complete a goods receipt (DRAFT -> COMPLETED); posts ACCEPTED quantities to inventory',
+  })
+  @ApiParam({ name: 'id', description: 'Goods receipt UUID' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Completed; accepted lines posted as PURCHASE inventory movements (idempotent if already completed)',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid status transition (only a DRAFT can complete)' })
+  @ApiResponse({ status: 404, description: 'Not found' })
+  async complete(
+    @Param('id') id: string,
+    @Body() dto: GoodsReceiptActionDto,
+    @GetUser() user: JwtAccessPayload,
+  ) {
+    const gr = await this.completeUseCase.execute(
       id,
       this._companyId(user),
       user.sub,

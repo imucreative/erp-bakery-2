@@ -142,6 +142,12 @@ export abstract class InventoryRepository {
    */
   abstract postMovements(companyId: string, drafts: MovementDraft[]): Promise<InventoryMovement[]>;
 
+  // Goods Receipt posting lives in GoodsReceiptRepository.complete so the GR
+  // status flip + status log + inventory posting commit in ONE transaction
+  // (atomic complete). It reuses the shared ledger helpers in
+  // Infrastructures/repository/helpers/inventoryPosting.ts, so the ledger write
+  // path is identical to postMovements.
+
   // ── Dashboard (read-only aggregation) ────────────────────────────────────
   /**
    * Aggregate read-only inventory metrics for the dashboard (rule #26).

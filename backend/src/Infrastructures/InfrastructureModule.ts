@@ -155,6 +155,7 @@ import { DeletePurchaseOrderAttachmentUseCase } from '../Applications/use_case/p
 import { CreateGoodsReceiptUseCase } from '../Applications/use_case/goods-receipts/CreateGoodsReceiptUseCase';
 import { UpdateGoodsReceiptUseCase } from '../Applications/use_case/goods-receipts/UpdateGoodsReceiptUseCase';
 import { CancelGoodsReceiptUseCase } from '../Applications/use_case/goods-receipts/CancelGoodsReceiptUseCase';
+import { CompleteGoodsReceiptUseCase } from '../Applications/use_case/goods-receipts/CompleteGoodsReceiptUseCase';
 import { GetGoodsReceiptsUseCase } from '../Applications/use_case/goods-receipts/GetGoodsReceiptsUseCase';
 import { GetGoodsReceiptOutstandingUseCase } from '../Applications/use_case/goods-receipts/GetGoodsReceiptOutstandingUseCase';
 
@@ -948,6 +949,11 @@ import { GetGoodsReceiptOutstandingUseCase } from '../Applications/use_case/good
       inject: [GoodsReceiptRepository],
     },
     {
+      provide: CompleteGoodsReceiptUseCase,
+      useFactory: (grRepo: GoodsReceiptRepository) => new CompleteGoodsReceiptUseCase(grRepo),
+      inject: [GoodsReceiptRepository],
+    },
+    {
       provide: GetGoodsReceiptsUseCase,
       useFactory: (grRepo: GoodsReceiptRepository) => new GetGoodsReceiptsUseCase(grRepo),
       inject: [GoodsReceiptRepository],
@@ -1082,6 +1088,7 @@ import { GetGoodsReceiptOutstandingUseCase } from '../Applications/use_case/good
     CreateGoodsReceiptUseCase,
     UpdateGoodsReceiptUseCase,
     CancelGoodsReceiptUseCase,
+    CompleteGoodsReceiptUseCase,
     GetGoodsReceiptsUseCase,
     GetGoodsReceiptOutstandingUseCase,
   ],

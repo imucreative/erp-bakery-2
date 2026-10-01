@@ -1,6 +1,7 @@
 import { CreateGoodsReceiptUseCase } from '../CreateGoodsReceiptUseCase';
 import { UpdateGoodsReceiptUseCase } from '../UpdateGoodsReceiptUseCase';
 import { CancelGoodsReceiptUseCase } from '../CancelGoodsReceiptUseCase';
+import { CompleteGoodsReceiptUseCase } from '../CompleteGoodsReceiptUseCase';
 import { GetGoodsReceiptsUseCase } from '../GetGoodsReceiptsUseCase';
 import { GetGoodsReceiptOutstandingUseCase } from '../GetGoodsReceiptOutstandingUseCase';
 import { GoodsReceiptRepository } from '../../../../Domains/goods-receipts/GoodsReceiptRepository';
@@ -15,6 +16,7 @@ const grRepo: jest.Mocked<GoodsReceiptRepository> = {
   list: jest.fn(),
   getConsumedQtyByPoItem: jest.fn(),
   cancel: jest.fn(),
+  complete: jest.fn(),
 } as unknown as jest.Mocked<GoodsReceiptRepository>;
 
 const poRepo: jest.Mocked<PurchaseOrderRepository> = {
@@ -339,6 +341,40 @@ describe('CancelGoodsReceiptUseCase', () => {
     await expect(
       new CancelGoodsReceiptUseCase(grRepo).execute('gr', 'c1', 'u1', null),
     ).rejects.toThrow('GOODS_RECEIPT.INVALID_STATUS_TRANSITION');
+  });
+});
+
+describe('CompleteGoodsReceiptUseCase', () => {
+  it('delegates to repo.complete with a trimmed note (atomic posting owned by repo)', async () => {
+    grRepo.complete.mockResolvedValue({ id: 'gr', status: 'COMPLETED' } as never);
+    const result = await new CompleteGoodsReceiptUseCase(grRepo).execute(
+      'gr',
+      'c1',
+      'u1',
+      '  all received  ',
+    );
+    expect(grRepo.complete).toHaveBeenCalledWith('gr', 'c1', 'u1', 'all received');
+    expect(result).toEqual({ id: 'gr', status: 'COMPLETED' });
+  });
+
+  it('allows a null note', async () => {
+    grRepo.complete.mockResolvedValue({ id: 'gr' } as never);
+    await new CompleteGoodsReceiptUseCase(grRepo).execute('gr', 'c1', 'u1', null);
+    expect(grRepo.complete).toHaveBeenCalledWith('gr', 'c1', 'u1', null);
+  });
+
+  it('propagates INVALID_STATUS_TRANSITION when the GR is not a DRAFT', async () => {
+    grRepo.complete.mockRejectedValue(new Error('GOODS_RECEIPT.INVALID_STATUS_TRANSITION'));
+    await expect(
+      new CompleteGoodsReceiptUseCase(grRepo).execute('gr', 'c1', 'u1', null),
+    ).rejects.toThrow('GOODS_RECEIPT.INVALID_STATUS_TRANSITION');
+  });
+
+  it('propagates DUPLICATE_MOVEMENT_SOURCE (double-post guard) from the repository', async () => {
+    grRepo.complete.mockRejectedValue(new Error('INVENTORY.DUPLICATE_MOVEMENT_SOURCE'));
+    await expect(
+      new CompleteGoodsReceiptUseCase(grRepo).execute('gr', 'c1', 'u1', null),
+    ).rejects.toThrow('INVENTORY.DUPLICATE_MOVEMENT_SOURCE');
   });
 });
 

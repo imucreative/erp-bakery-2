@@ -17,6 +17,11 @@ import {
 } from '../../Domains/goods-receipts/goodsReceiptStatus';
 import { NotFoundError } from '../../Commons/exceptions/NotFoundError';
 import { InvariantError } from '../../Commons/exceptions/InvariantError';
+import {
+  applyBalanceAndAppendMovement,
+  resolveOrCreateBatch,
+  translateDuplicateSourceKey,
+} from './helpers/inventoryPosting';
 
 interface HeaderRow {
   id: string;
@@ -487,6 +492,112 @@ export class GoodsReceiptRepositoryPostgres extends GoodsReceiptRepository {
     } catch (err) {
       await client.query('ROLLBACK');
       throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  async complete(
+    id: string,
+    companyId: string,
+    userId: string | null,
+    note: string | null,
+  ): Promise<GoodsReceipt> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
+
+      // 1. Lock the GR header (company-scoped, not soft-deleted).
+      const headerResult = await client.query<HeaderRow>(
+        `SELECT ${HEADER_COLUMNS} FROM goods_receipts
+         WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL FOR UPDATE`,
+        [id, companyId],
+      );
+      if (!headerResult.rowCount) {
+        throw new NotFoundError('GOODS_RECEIPT.NOT_FOUND');
+      }
+      const header = headerResult.rows[0];
+      const from = header.status as GoodsReceiptStatus;
+
+      // 2. Idempotency: an already-COMPLETED GR (inventory already posted) is
+      // returned unchanged — a repeat complete is a no-op success, consistent
+      // with the inventory complete pattern and protecting against double-post.
+      if (from === 'COMPLETED') {
+        const items = await this._loadItems(client, id);
+        const logs = await this._loadLogs(client, id);
+        await client.query('COMMIT');
+        return this._toGoodsReceipt(header, items, logs);
+      }
+      if (!canTransition(from, 'COMPLETED')) {
+        throw new InvariantError('GOODS_RECEIPT.INVALID_STATUS_TRANSITION');
+      }
+
+      // 3. Post ACCEPTED lines to inventory. Rejected quantities never post
+      // (doc 26 §6.12, doc 27 §6 #4). Each line resolves-or-creates its batch
+      // and appends a PURCHASE movement via the shared ledger helpers, so the
+      // write path is identical to postMovements.
+      const itemRows = await this._loadItems(client, id);
+      for (const item of itemRows) {
+        const accepted = Number(item.accepted_quantity);
+        if (accepted <= 0) {
+          continue;
+        }
+
+        // batchNumber present ⟺ batch-tracked line (enforced upstream by
+        // validateBatchRequirements). A null batchNumber is a non-batch product:
+        // store a synthetic row with the '' sentinel and null expiry.
+        const isNonBatch = !item.batch_number;
+        const resolved = await resolveOrCreateBatch(client, {
+          companyId,
+          outletId: header.destination_outlet_id,
+          productId: item.product_id,
+          batchNumber: isNonBatch ? '' : item.batch_number!,
+          lotNumber: item.lot_number,
+          expiryDate: isNonBatch ? null : item.expiry_date,
+          receivedDate: header.receive_date,
+          isNonBatch,
+        });
+
+        await applyBalanceAndAppendMovement(
+          client,
+          {
+            companyId,
+            outletId: header.destination_outlet_id,
+            batchId: resolved.batchId,
+            productId: item.product_id,
+            movementType: 'PURCHASE',
+            qty: accepted,
+            sourceDocumentType: 'GOODS_RECEIPT',
+            sourceDocumentId: id,
+            sourceDocumentItemId: item.id,
+            // allocationId = resolved batch → unique key per (GR, GR item, batch)
+            sourceDocumentAllocationId: resolved.batchId,
+            userId,
+          },
+          resolved.beforeQty,
+        );
+      }
+
+      // 4. Flip header to COMPLETED + mark inventory posted + log the transition.
+      const updated = await client.query<HeaderRow>(
+        `UPDATE goods_receipts
+         SET status = 'COMPLETED', inventory_posted_at = NOW(),
+             updated_by = $1, updated_at = NOW()
+         WHERE id = $2 AND company_id = $3
+         RETURNING ${HEADER_COLUMNS}`,
+        [userId, id, companyId],
+      );
+
+      await this._insertLog(client, id, from, 'COMPLETED', userId, note);
+
+      const items = await this._loadItems(client, id);
+      const logs = await this._loadLogs(client, id);
+      await client.query('COMMIT');
+      return this._toGoodsReceipt(updated.rows[0], items, logs);
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw translateDuplicateSourceKey(err);
     } finally {
       client.release();
     }

@@ -16,9 +16,14 @@ import { INVENTORY_EXPIRY_SOON_DAYS } from '../../Domains/inventory/batchStatus'
 import { InventoryBatch } from '../../Domains/inventory/entities/InventoryBatch';
 import { InventoryMovement } from '../../Domains/inventory/entities/InventoryMovement';
 import { BatchStatus } from '../../Domains/inventory/batchStatus';
-import { MovementType, isInboundMovement } from '../../Domains/inventory/movementTypes';
+import { MovementType } from '../../Domains/inventory/movementTypes';
 import { NotFoundError } from '../../Commons/exceptions/NotFoundError';
 import { InvariantError } from '../../Commons/exceptions/InvariantError';
+import {
+  applyBalanceAndAppendMovement,
+  resolveOrCreateBatch,
+  translateDuplicateSourceKey,
+} from './helpers/inventoryPosting';
 
 interface BatchRow {
   id: string;
@@ -354,7 +359,7 @@ export class InventoryRepositoryPostgres extends InventoryRepository {
       const created: InventoryMovement[] = [];
 
       for (const draft of drafts) {
-        // Lock the target batch row for this company (rule #6 concurrency safety)
+        // Lock the target (existing) batch row for this company (rule #6).
         const batchResult = await client.query<BatchRow>(
           `SELECT ${BATCH_COLUMNS}
            FROM inventory_batches
@@ -367,68 +372,38 @@ export class InventoryRepositoryPostgres extends InventoryRepository {
           throw new NotFoundError('INVENTORY_BATCH.NOT_FOUND');
         }
 
-        const batch = batchResult.rows[0];
-        const beforeQty = Number(batch.qty_available);
-        const delta = isInboundMovement(draft.movementType) ? draft.qty : -draft.qty;
-        const afterQty = beforeQty + delta;
+        const beforeQty = Number(batchResult.rows[0].qty_available);
 
-        if (afterQty < 0) {
-          // Negative-stock ban (rule #2)
-          throw new InvariantError('INVENTORY.INSUFFICIENT_STOCK');
-        }
-
-        // Update authoritative balance
-        await client.query(
-          `UPDATE inventory_batches
-           SET qty_available = $1,
-               status = CASE WHEN $1 = 0 THEN 'CONSUMED' ELSE status END,
-               updated_at = NOW()
-           WHERE id = $2 AND company_id = $3`,
-          [afterQty, draft.batchId, companyId],
-        );
-
-        // Append immutable ledger row (rule #9). DB idempotency index guards
-        // duplicate source keys (rule #5) and will raise on conflict.
-        const movementResult = await client.query<MovementRow>(
-          `INSERT INTO inventory_movements (
-             company_id, outlet_id, batch_id, product_id, movement_type,
-             qty, before_qty, after_qty,
-             source_document_type, source_document_id,
-             source_document_item_id, source_document_allocation_id,
-             notes, user_id
-           )
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-           RETURNING ${MOVEMENT_COLUMNS}`,
-          [
+        // Shared ledger primitive: negative-stock ban, balance update, immutable
+        // ledger append with the source key (rules #2/#5/#6/#9). Same code path
+        // as the Goods Receipt complete posting.
+        const movementRow = await applyBalanceAndAppendMovement(
+          client,
+          {
             companyId,
-            draft.outletId,
-            draft.batchId,
-            draft.productId,
-            draft.movementType,
-            draft.qty,
-            beforeQty,
-            afterQty,
-            draft.sourceDocumentType ?? null,
-            draft.sourceDocumentId ?? null,
-            draft.sourceDocumentItemId ?? null,
-            draft.sourceDocumentAllocationId ?? null,
-            draft.notes ?? null,
-            draft.userId ?? null,
-          ],
+            outletId: draft.outletId,
+            batchId: draft.batchId,
+            productId: draft.productId,
+            movementType: draft.movementType,
+            qty: draft.qty,
+            sourceDocumentType: draft.sourceDocumentType,
+            sourceDocumentId: draft.sourceDocumentId,
+            sourceDocumentItemId: draft.sourceDocumentItemId,
+            sourceDocumentAllocationId: draft.sourceDocumentAllocationId,
+            notes: draft.notes,
+            userId: draft.userId,
+          },
+          beforeQty,
         );
 
-        created.push(this._toMovement(movementResult.rows[0]));
+        created.push(this._toMovement(movementRow as MovementRow));
       }
 
       await client.query('COMMIT');
       return created;
     } catch (err) {
       await client.query('ROLLBACK');
-      // Translate duplicate source-key violation into a domain error
-      if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === '23505') {
-        throw new InvariantError('INVENTORY.DUPLICATE_MOVEMENT_SOURCE');
-      }
-      throw err;
+      throw translateDuplicateSourceKey(err);
     } finally {
       client.release();
     }
