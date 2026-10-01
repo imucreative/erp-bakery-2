@@ -1,5 +1,12 @@
 import { PurchaseOrder } from './entities/PurchaseOrder';
 import { CreatePurchaseOrderItemInput } from './entities/CreatePurchaseOrder';
+import { PurchaseOrderComment } from './entities/PurchaseOrderComment';
+import { PurchaseOrderCommentCategory } from './purchaseOrderCommentCategory';
+
+export interface NewPurchaseOrderCommentData {
+  category: PurchaseOrderCommentCategory;
+  body: string;
+}
 
 /**
  * Fully resolved PO data passed from the service/use-case layer to the
@@ -102,4 +109,28 @@ export abstract class PurchaseOrderRepository {
     userId: string | null,
     note: string | null,
   ): Promise<PurchaseOrder>;
+
+  /**
+   * Verify the PO exists in the company (throws PURCHASE_ORDER.NOT_FOUND
+   * otherwise). Used by the comment use cases to enforce tenant scope before
+   * touching the thread.
+   */
+  abstract ensureExists(id: string, companyId: string): Promise<void>;
+
+  /**
+   * Append a comment to the PO thread and return it with the resolved author
+   * name (JOIN to users).
+   */
+  abstract addComment(
+    purchaseOrderId: string,
+    companyId: string,
+    authorId: string | null,
+    data: NewPurchaseOrderCommentData,
+  ): Promise<PurchaseOrderComment>;
+
+  /** List the PO thread chronologically (each item carries authorName). */
+  abstract listComments(
+    purchaseOrderId: string,
+    companyId: string,
+  ): Promise<PurchaseOrderComment[]>;
 }

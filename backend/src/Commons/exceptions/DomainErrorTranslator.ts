@@ -788,6 +788,20 @@ const DomainErrorTranslator = {
     ),
     'PURCHASE_ORDER.INVALID_STATUS': new InvariantError('Status purchase order tidak valid'),
 
+    // ── Purchase Order Comments (doc 35 §6) ──────────────────────
+    'ADD_PURCHASE_ORDER_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data komentar purchase order tidak lengkap',
+    ),
+    'ADD_PURCHASE_ORDER_COMMENT.BODY_REQUIRED': new InvariantError(
+      'Isi komentar wajib diisi',
+    ),
+    'ADD_PURCHASE_ORDER_COMMENT.INVALID_CATEGORY': new InvariantError(
+      'Kategori komentar tidak valid',
+    ),
+    'ADD_PURCHASE_ORDER_COMMENT.CATEGORY_NOT_ALLOWED': new InvariantError(
+      'Kategori komentar SYSTEM hanya untuk sistem dan tidak dapat dipilih',
+    ),
+
     // ── Conflict ─────────────────────────────────────────────────
     'USER.EMAIL_ALREADY_USED': new ConflictError(
       'Email sudah digunakan oleh akun lain',

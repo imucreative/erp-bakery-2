@@ -5,6 +5,8 @@ import { ApprovePurchaseOrderUseCase } from '../ApprovePurchaseOrderUseCase';
 import { RejectPurchaseOrderUseCase } from '../RejectPurchaseOrderUseCase';
 import { CancelPurchaseOrderUseCase } from '../CancelPurchaseOrderUseCase';
 import { GetPurchaseOrdersUseCase } from '../GetPurchaseOrdersUseCase';
+import { AddPurchaseOrderCommentUseCase } from '../AddPurchaseOrderCommentUseCase';
+import { GetPurchaseOrderCommentsUseCase } from '../GetPurchaseOrderCommentsUseCase';
 import { PurchaseOrderRepository } from '../../../../Domains/purchase-orders/PurchaseOrderRepository';
 import { PurchaseRequestRepository } from '../../../../Domains/purchase-requests/PurchaseRequestRepository';
 import { SupplierRepository } from '../../../../Domains/suppliers/SupplierRepository';
@@ -21,6 +23,9 @@ const poRepo: jest.Mocked<PurchaseOrderRepository> = {
   approve: jest.fn(),
   reject: jest.fn(),
   cancel: jest.fn(),
+  ensureExists: jest.fn(),
+  addComment: jest.fn(),
+  listComments: jest.fn(),
 } as unknown as jest.Mocked<PurchaseOrderRepository>;
 
 const prRepo: jest.Mocked<PurchaseRequestRepository> = {
@@ -382,5 +387,106 @@ describe('GetPurchaseOrdersUseCase', () => {
     poRepo.getById.mockResolvedValue({ id: 'po' } as never);
     const result = await new GetPurchaseOrdersUseCase(poRepo).detail('po', 'c1');
     expect(result).toEqual({ id: 'po' });
+  });
+});
+
+describe('AddPurchaseOrderCommentUseCase', () => {
+  it('should default to INTERNAL, verify tenant scope, then persist and return the comment', async () => {
+    poRepo.ensureExists.mockResolvedValue(undefined);
+    poRepo.addComment.mockResolvedValue({
+      id: 'cmt-1',
+      category: 'INTERNAL',
+      body: 'Please review',
+      authorId: 'u1',
+      authorName: 'Budi',
+      createdAt: new Date('2026-10-01T08:00:00Z'),
+    });
+
+    const useCase = new AddPurchaseOrderCommentUseCase(poRepo);
+
+    const result = await useCase.execute('po1', { body: 'Please review' }, 'c1', 'u1');
+
+    expect(poRepo.ensureExists).toHaveBeenCalledWith('po1', 'c1');
+    expect(poRepo.addComment).toHaveBeenCalledWith('po1', 'c1', 'u1', {
+      category: 'INTERNAL',
+      body: 'Please review',
+    });
+    expect(result.authorName).toBe('Budi');
+  });
+
+  it('should accept an APPROVAL category when explicitly provided', async () => {
+    poRepo.ensureExists.mockResolvedValue(undefined);
+    poRepo.addComment.mockResolvedValue({ id: 'cmt-1' } as never);
+
+    const useCase = new AddPurchaseOrderCommentUseCase(poRepo);
+
+    await useCase.execute('po1', { body: 'Approved with note', category: 'APPROVAL' }, 'c1', 'u1');
+
+    expect(poRepo.addComment).toHaveBeenCalledWith(
+      'po1',
+      'c1',
+      'u1',
+      { category: 'APPROVAL', body: 'Approved with note' },
+    );
+  });
+
+  it('should reject an empty body before touching the repository', async () => {
+    const useCase = new AddPurchaseOrderCommentUseCase(poRepo);
+
+    await expect(useCase.execute('po1', { body: '   ' }, 'c1', 'u1')).rejects.toThrow(
+      'ADD_PURCHASE_ORDER_COMMENT.BODY_REQUIRED',
+    );
+    expect(poRepo.ensureExists).not.toHaveBeenCalled();
+    expect(poRepo.addComment).not.toHaveBeenCalled();
+  });
+
+  it('should reject a SYSTEM category coming from user input (backend-only)', async () => {
+    const useCase = new AddPurchaseOrderCommentUseCase(poRepo);
+
+    await expect(
+      useCase.execute('po1', { body: 'hi', category: 'SYSTEM' }, 'c1', 'u1'),
+    ).rejects.toThrow('ADD_PURCHASE_ORDER_COMMENT.CATEGORY_NOT_ALLOWED');
+    expect(poRepo.addComment).not.toHaveBeenCalled();
+  });
+
+  it('should reject an unknown category', async () => {
+    const useCase = new AddPurchaseOrderCommentUseCase(poRepo);
+
+    await expect(
+      useCase.execute('po1', { body: 'hi', category: 'NOPE' }, 'c1', 'u1'),
+    ).rejects.toThrow('ADD_PURCHASE_ORDER_COMMENT.INVALID_CATEGORY');
+    expect(poRepo.addComment).not.toHaveBeenCalled();
+  });
+
+  it('should propagate PURCHASE_ORDER.NOT_FOUND when the PO is in another company', async () => {
+    poRepo.ensureExists.mockRejectedValue(new Error('PURCHASE_ORDER.NOT_FOUND'));
+    const useCase = new AddPurchaseOrderCommentUseCase(poRepo);
+
+    await expect(useCase.execute('po1', { body: 'hi' }, 'c1', 'u1')).rejects.toThrow(
+      'PURCHASE_ORDER.NOT_FOUND',
+    );
+    expect(poRepo.addComment).not.toHaveBeenCalled();
+  });
+});
+
+describe('GetPurchaseOrderCommentsUseCase', () => {
+  it('should verify tenant scope then list the thread', async () => {
+    poRepo.ensureExists.mockResolvedValue(undefined);
+    poRepo.listComments.mockResolvedValue([]);
+
+    const useCase = new GetPurchaseOrderCommentsUseCase(poRepo);
+
+    await useCase.execute('po1', 'c1');
+
+    expect(poRepo.ensureExists).toHaveBeenCalledWith('po1', 'c1');
+    expect(poRepo.listComments).toHaveBeenCalledWith('po1', 'c1');
+  });
+
+  it('should propagate PURCHASE_ORDER.NOT_FOUND for a foreign PO', async () => {
+    poRepo.ensureExists.mockRejectedValue(new Error('PURCHASE_ORDER.NOT_FOUND'));
+    const useCase = new GetPurchaseOrderCommentsUseCase(poRepo);
+
+    await expect(useCase.execute('po1', 'c1')).rejects.toThrow('PURCHASE_ORDER.NOT_FOUND');
+    expect(poRepo.listComments).not.toHaveBeenCalled();
   });
 });

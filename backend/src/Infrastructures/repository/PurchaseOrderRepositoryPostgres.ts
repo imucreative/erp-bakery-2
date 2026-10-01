@@ -2,6 +2,7 @@ import { Pool, PoolClient } from 'pg';
 import {
   PurchaseOrderRepository,
   NewPurchaseOrderData,
+  NewPurchaseOrderCommentData,
   PurchaseOrderListFilter,
   PurchaseOrderListResult,
 } from '../../Domains/purchase-orders/PurchaseOrderRepository';
@@ -10,6 +11,8 @@ import {
   PurchaseOrderItem,
   PurchaseOrderStatusLog,
 } from '../../Domains/purchase-orders/entities/PurchaseOrder';
+import { PurchaseOrderComment } from '../../Domains/purchase-orders/entities/PurchaseOrderComment';
+import { PurchaseOrderCommentCategory } from '../../Domains/purchase-orders/purchaseOrderCommentCategory';
 import {
   PurchaseOrderStatus,
   canTransition,
@@ -66,6 +69,15 @@ interface LogRow {
   created_at: Date;
 }
 
+interface CommentRow {
+  id: string;
+  category: string;
+  body: string;
+  author_id: string | null;
+  author_name: string | null;
+  created_at: Date;
+}
+
 const HEADER_COLUMNS = `id, company_id, po_number, purchase_request_id, supplier_id,
   destination_outlet_id, order_date, payment_term_id, payment_term_code,
   payment_term_name, payment_term_due_days, estimated_payment_due_date,
@@ -82,6 +94,12 @@ const LOG_SELECT = `SELECT l.id, l.from_status, l.to_status, l.actor_id,
     actor_users.name AS actor_name, l.note, l.created_at
   FROM purchase_order_status_logs l
   LEFT JOIN users actor_users ON actor_users.id = l.actor_id`;
+
+/** Comment columns with author name resolved via LEFT JOIN to users. */
+const COMMENT_SELECT = `SELECT c.id, c.category, c.body, c.author_id,
+    author_users.name AS author_name, c.created_at
+  FROM purchase_order_comments c
+  LEFT JOIN users author_users ON author_users.id = c.author_id`;
 
 /**
  * Concrete PostgreSQL implementation of PurchaseOrderRepository.
@@ -117,6 +135,17 @@ export class PurchaseOrderRepositoryPostgres extends PurchaseOrderRepository {
       actorId: row.actor_id,
       actorName: row.actor_name,
       note: row.note,
+      createdAt: row.created_at,
+    };
+  }
+
+  private _toComment(row: CommentRow): PurchaseOrderComment {
+    return {
+      id: row.id,
+      category: row.category as PurchaseOrderCommentCategory,
+      body: row.body,
+      authorId: row.author_id,
+      authorName: row.author_name,
       createdAt: row.created_at,
     };
   }
@@ -570,6 +599,50 @@ export class PurchaseOrderRepositoryPostgres extends PurchaseOrderRepository {
     note: string | null,
   ): Promise<PurchaseOrder> {
     return this._transition(id, companyId, userId, 'CANCELLED', note, [], true);
+  }
+
+  async ensureExists(id: string, companyId: string): Promise<void> {
+    const result = await this.pool.query(
+      `SELECT 1 FROM purchase_orders
+       WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL`,
+      [id, companyId],
+    );
+    if (!result.rowCount) {
+      throw new NotFoundError('PURCHASE_ORDER.NOT_FOUND');
+    }
+  }
+
+  async addComment(
+    purchaseOrderId: string,
+    companyId: string,
+    authorId: string | null,
+    data: NewPurchaseOrderCommentData,
+  ): Promise<PurchaseOrderComment> {
+    const inserted = await this.pool.query<{ id: string }>(
+      `INSERT INTO purchase_order_comments
+         (purchase_order_id, company_id, author_id, category, body)
+       VALUES ($1,$2,$3,$4,$5)
+       RETURNING id`,
+      [purchaseOrderId, companyId, authorId, data.category, data.body],
+    );
+    const result = await this.pool.query<CommentRow>(
+      `${COMMENT_SELECT} WHERE c.id = $1`,
+      [inserted.rows[0].id],
+    );
+    return this._toComment(result.rows[0]);
+  }
+
+  async listComments(
+    purchaseOrderId: string,
+    companyId: string,
+  ): Promise<PurchaseOrderComment[]> {
+    const result = await this.pool.query<CommentRow>(
+      `${COMMENT_SELECT}
+       WHERE c.purchase_order_id = $1 AND c.company_id = $2
+       ORDER BY c.created_at ASC, c.id ASC`,
+      [purchaseOrderId, companyId],
+    );
+    return result.rows.map((row) => this._toComment(row));
   }
 
   /** Map a unique-violation on po_number to a friendly conflict. */

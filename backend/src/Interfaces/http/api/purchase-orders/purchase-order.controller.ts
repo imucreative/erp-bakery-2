@@ -23,6 +23,8 @@ import { ApprovePurchaseOrderUseCase } from '../../../../Applications/use_case/p
 import { RejectPurchaseOrderUseCase } from '../../../../Applications/use_case/purchase-orders/RejectPurchaseOrderUseCase';
 import { CancelPurchaseOrderUseCase } from '../../../../Applications/use_case/purchase-orders/CancelPurchaseOrderUseCase';
 import { GetPurchaseOrdersUseCase } from '../../../../Applications/use_case/purchase-orders/GetPurchaseOrdersUseCase';
+import { AddPurchaseOrderCommentUseCase } from '../../../../Applications/use_case/purchase-orders/AddPurchaseOrderCommentUseCase';
+import { GetPurchaseOrderCommentsUseCase } from '../../../../Applications/use_case/purchase-orders/GetPurchaseOrderCommentsUseCase';
 import { JwtAccessPayload } from '../../../../Applications/security/TokenManager';
 import { AuthorizationError } from '../../../../Commons/exceptions/AuthorizationError';
 import { successResponse, listResponse } from '../../../../Commons/helpers/response.helper';
@@ -33,6 +35,7 @@ import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 import { UpdatePurchaseOrderDto } from './dto/update-purchase-order.dto';
 import { PurchaseOrderQueryDto } from './dto/purchase-order-query.dto';
 import { PurchaseOrderActionDto } from './dto/purchase-order-action.dto';
+import { AddPurchaseOrderCommentDto } from './dto/add-purchase-order-comment.dto';
 
 /**
  * PurchaseOrderController — second procurement document module (doc 26).
@@ -46,9 +49,18 @@ import { PurchaseOrderActionDto } from './dto/purchase-order-action.dto';
  *   approve → procurement.po.approve
  *   reject  → procurement.po.approve  (reject is an approver decision)
  *   cancel  → procurement.po.update   (voiding an editable or approved order)
+ *   comments (list + add) → procurement.po.read
  *
- * Tahap 1 scope: core PO + approval timeline (status logs). Comments and
- * attachments are a separate later stage and intentionally not implemented here.
+ * Scope: core PO + approval timeline (status logs) + discussion thread
+ * (comments). Attachments are a separate later stage and intentionally not
+ * implemented here.
+ *
+ * Commenting is guarded by `procurement.po.read` (not create/update): a comment
+ * is a collaboration note on the discussion thread, not a mutation of the
+ * document itself. Anyone who may read a PO — creators, approvers — may take
+ * part in its thread. Manual comments accept INTERNAL/APPROVAL/EXTERNAL only
+ * (default INTERNAL); SYSTEM is backend-only and rejected (400). Mirrors the
+ * Purchase Request thread exactly.
  *
  * DocumentAuthorizationService (doc 43) does not yet exist in the codebase, so
  * authorization here uses the granular permission guard only; outlet-scope and
@@ -66,6 +78,8 @@ export class PurchaseOrderController {
     private readonly rejectUseCase: RejectPurchaseOrderUseCase,
     private readonly cancelUseCase: CancelPurchaseOrderUseCase,
     private readonly getUseCase: GetPurchaseOrdersUseCase,
+    private readonly addCommentUseCase: AddPurchaseOrderCommentUseCase,
+    private readonly getCommentsUseCase: GetPurchaseOrderCommentsUseCase,
   ) {}
 
   private _companyId(user: JwtAccessPayload): string {
@@ -210,5 +224,41 @@ export class PurchaseOrderController {
       dto.note ?? null,
     );
     return successResponse(po);
+  }
+
+  @Get(':id/comments')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('procurement.po.read')
+  @ApiOperation({ summary: 'List the discussion thread of a purchase order' })
+  @ApiParam({ name: 'id', description: 'Purchase order UUID' })
+  @ApiResponse({ status: 200, description: 'Chronological comment thread' })
+  @ApiResponse({ status: 404, description: 'Purchase order not found' })
+  async listComments(@Param('id') id: string, @GetUser() user: JwtAccessPayload) {
+    const comments = await this.getCommentsUseCase.execute(id, this._companyId(user));
+    return successResponse(comments);
+  }
+
+  @Post(':id/comments')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('procurement.po.read')
+  @ApiOperation({
+    summary: 'Add a comment to a purchase order thread (default category INTERNAL)',
+  })
+  @ApiParam({ name: 'id', description: 'Purchase order UUID' })
+  @ApiResponse({ status: 201, description: 'Comment created' })
+  @ApiResponse({ status: 400, description: 'Empty body or disallowed category (e.g. SYSTEM)' })
+  @ApiResponse({ status: 404, description: 'Purchase order not found' })
+  async addComment(
+    @Param('id') id: string,
+    @Body() dto: AddPurchaseOrderCommentDto,
+    @GetUser() user: JwtAccessPayload,
+  ) {
+    const comment = await this.addCommentUseCase.execute(
+      id,
+      dto,
+      this._companyId(user),
+      user.sub,
+    );
+    return successResponse(comment);
   }
 }

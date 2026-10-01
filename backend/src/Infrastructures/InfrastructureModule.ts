@@ -141,6 +141,8 @@ import { ApprovePurchaseOrderUseCase } from '../Applications/use_case/purchase-o
 import { RejectPurchaseOrderUseCase } from '../Applications/use_case/purchase-orders/RejectPurchaseOrderUseCase';
 import { CancelPurchaseOrderUseCase } from '../Applications/use_case/purchase-orders/CancelPurchaseOrderUseCase';
 import { GetPurchaseOrdersUseCase } from '../Applications/use_case/purchase-orders/GetPurchaseOrdersUseCase';
+import { AddPurchaseOrderCommentUseCase } from '../Applications/use_case/purchase-orders/AddPurchaseOrderCommentUseCase';
+import { GetPurchaseOrderCommentsUseCase } from '../Applications/use_case/purchase-orders/GetPurchaseOrderCommentsUseCase';
 
 /**
  * InfrastructureModule — NestJS DI container.
@@ -848,6 +850,18 @@ import { GetPurchaseOrdersUseCase } from '../Applications/use_case/purchase-orde
       useFactory: (poRepo: PurchaseOrderRepository) => new GetPurchaseOrdersUseCase(poRepo),
       inject: [PurchaseOrderRepository],
     },
+    {
+      provide: AddPurchaseOrderCommentUseCase,
+      useFactory: (poRepo: PurchaseOrderRepository) =>
+        new AddPurchaseOrderCommentUseCase(poRepo),
+      inject: [PurchaseOrderRepository],
+    },
+    {
+      provide: GetPurchaseOrderCommentsUseCase,
+      useFactory: (poRepo: PurchaseOrderRepository) =>
+        new GetPurchaseOrderCommentsUseCase(poRepo),
+      inject: [PurchaseOrderRepository],
+    },
   ],
   exports: [
     'PG_POOL',
@@ -961,6 +975,8 @@ import { GetPurchaseOrdersUseCase } from '../Applications/use_case/purchase-orde
     RejectPurchaseOrderUseCase,
     CancelPurchaseOrderUseCase,
     GetPurchaseOrdersUseCase,
+    AddPurchaseOrderCommentUseCase,
+    GetPurchaseOrderCommentsUseCase,
   ],
 })
 export class InfrastructureModule {}
