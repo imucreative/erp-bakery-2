@@ -1,0 +1,12 @@
+/** Barrel exports for the Purchase Order feature components. */
+export { default as PurchaseOrderTable } from './PurchaseOrderTable.vue'
+export { default as PurchaseOrderFilterBar } from './PurchaseOrderFilterBar.vue'
+export { default as PurchaseOrderItemsEditor } from './PurchaseOrderItemsEditor.vue'
+export { default as PurchaseOrderHeaderFields } from './PurchaseOrderHeaderFields.vue'
+export { default as PurchaseOrderTimeline } from './PurchaseOrderTimeline.vue'
+export { default as PurchaseOrderActionModals } from './PurchaseOrderActionModals.vue'
+export { default as PurchaseOrderSummary } from './PurchaseOrderSummary.vue'
+export { default as PurchaseOrderItemsTable } from './PurchaseOrderItemsTable.vue'
+export { default as PurchaseOrderActionBar } from './PurchaseOrderActionBar.vue'
+export type { EditorItemRow } from './PurchaseOrderItemsEditor.vue'
+export type { PurchaseOrderAction } from './PurchaseOrderActionModals.vue'

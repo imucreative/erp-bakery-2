@@ -306,6 +306,11 @@ const menuGroups: MenuGroup[] = [
         name: 'Purchase Requests',
         path: '/procurement/purchase-requests',
       },
+      {
+        icon: DocsIcon,
+        name: 'Purchase Orders',
+        path: '/procurement/purchase-orders',
+      },
     ],
   },
   {

@@ -124,6 +124,42 @@ const router = createRouter({
       },
     },
     {
+      path: '/procurement/purchase-orders',
+      name: 'PurchaseOrders',
+      component: () => import('../views/Procurement/PurchaseOrderList.vue'),
+      meta: {
+        title: 'Purchase Orders',
+        permission: 'procurement.po.read',
+      },
+    },
+    {
+      path: '/procurement/purchase-orders/new',
+      name: 'PurchaseOrderCreate',
+      component: () => import('../views/Procurement/PurchaseOrderForm.vue'),
+      meta: {
+        title: 'Buat Purchase Order',
+        permission: 'procurement.po.create',
+      },
+    },
+    {
+      path: '/procurement/purchase-orders/:id',
+      name: 'PurchaseOrderDetail',
+      component: () => import('../views/Procurement/PurchaseOrderDetail.vue'),
+      meta: {
+        title: 'Detail Purchase Order',
+        permission: 'procurement.po.read',
+      },
+    },
+    {
+      path: '/procurement/purchase-orders/:id/edit',
+      name: 'PurchaseOrderEdit',
+      component: () => import('../views/Procurement/PurchaseOrderForm.vue'),
+      meta: {
+        title: 'Edit Purchase Order',
+        permission: 'procurement.po.update',
+      },
+    },
+    {
       path: '/system/users',
       name: 'Users',
       component: () => import('../views/System/UserList.vue'),

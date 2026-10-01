@@ -1,0 +1,251 @@
+/**
+ * Purchase Order service — company-scoped document CRUD + lifecycle actions.
+ * Verified against the final PO backend contract (Tahap 1).
+ *
+ *  - GET    /purchase-orders            → { success, data: PurchaseOrder[], meta } (paginated)
+ *      filters: page, limit, status?, supplierId?, destinationOutletId?,
+ *               purchaseRequestId?, search? (poNumber)
+ *  - GET    /purchase-orders/:id        → { success, data: PurchaseOrder } (+ items + statusLogs)
+ *  - POST   /purchase-orders            → 201 DRAFT (subtotal/tax/total computed server-side)
+ *      body: { purchaseRequestId (PR must be APPROVED), supplierId (active),
+ *              orderDate "YYYY-MM-DD", paymentTermId?, notes?,
+ *              items?[{ productId, quantity>0, uomId, unitPrice>=0, taxPercent>=0 }] }
+ *      When items are omitted the backend prefills them from the source PR.
+ *  - PUT    /purchase-orders/:id        → update (only in DRAFT or REJECTED)
+ *  - POST   /purchase-orders/:id/submit → DRAFT → SUBMITTED
+ *  - POST   /purchase-orders/:id/approve → SUBMITTED → APPROVED  (body { note? })
+ *  - POST   /purchase-orders/:id/reject  → SUBMITTED → REJECTED  (body { note } required)
+ *  - POST   /purchase-orders/:id/cancel  → DRAFT|REJECTED|APPROVED → CANCELLED (body { note? })
+ *
+ * Anti-tamper: `subtotal`, `taxAmount`, `total`, `totalAmount`, `taxTotal`,
+ * `grandTotal` and `estimatedPaymentDueDate` are authoritative on the server;
+ * create/update payloads intentionally omit them.
+ */
+
+import { httpClient } from './http'
+
+interface ApiSuccess<T> {
+  success: true
+  message?: string
+  data: T
+}
+
+interface ListMeta {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+interface ApiListResponse<T> {
+  success: true
+  data: T[]
+  meta: ListMeta
+}
+
+export const PURCHASE_ORDER_STATUSES = [
+  'DRAFT',
+  'SUBMITTED',
+  'APPROVED',
+  'REJECTED',
+  'CANCELLED',
+] as const
+export type PurchaseOrderStatus = (typeof PURCHASE_ORDER_STATUSES)[number]
+
+export const PURCHASE_ORDER_STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
+  DRAFT: 'Draft',
+  SUBMITTED: 'Diajukan',
+  APPROVED: 'Disetujui',
+  REJECTED: 'Ditolak',
+  CANCELLED: 'Dibatalkan',
+}
+
+export interface PurchaseOrderItem {
+  id: string
+  productId: string
+  quantity: number
+  uomId: string
+  unitPrice: number
+  taxPercent: number
+  subtotal: number
+  taxAmount: number
+  total: number
+}
+
+export interface PurchaseOrderStatusLog {
+  id: string
+  fromStatus: PurchaseOrderStatus | null
+  toStatus: PurchaseOrderStatus
+  actorId: string | null
+  actorName: string | null
+  note: string | null
+  createdAt: string
+}
+
+export interface PurchaseOrder {
+  id: string
+  companyId: string | null
+  poNumber: string
+  purchaseRequestId: string
+  supplierId: string
+  destinationOutletId: string
+  orderDate: string
+  paymentTermId: string | null
+  paymentTermCode: string | null
+  paymentTermName: string | null
+  paymentTermDueDays: number | null
+  estimatedPaymentDueDate: string | null
+  totalAmount: number
+  taxTotal: number
+  grandTotal: number
+  status: PurchaseOrderStatus
+  notes: string | null
+  items: PurchaseOrderItem[]
+  statusLogs: PurchaseOrderStatusLog[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PurchaseOrderListParams {
+  page: number
+  limit: number
+  status?: PurchaseOrderStatus
+  supplierId?: string
+  destinationOutletId?: string
+  purchaseRequestId?: string
+  search?: string
+}
+
+export interface PurchaseOrderListResult {
+  items: PurchaseOrder[]
+  meta: ListMeta
+}
+
+/** A single line item in the create/update payload (server computes subtotal/tax/total). */
+export interface PurchaseOrderItemPayload {
+  productId: string
+  quantity: number
+  uomId: string
+  unitPrice: number
+  taxPercent: number
+}
+
+export interface SavePurchaseOrderPayload {
+  purchaseRequestId: string
+  supplierId: string
+  orderDate: string
+  paymentTermId?: string
+  notes?: string
+  items?: PurchaseOrderItemPayload[]
+}
+
+export interface ApprovePurchaseOrderPayload {
+  note?: string
+}
+
+export interface RejectPurchaseOrderPayload {
+  note: string
+}
+
+export interface CancelPurchaseOrderPayload {
+  note?: string
+}
+
+function toQuery(params: PurchaseOrderListParams): Record<string, string | number> {
+  const query: Record<string, string | number> = {
+    page: params.page,
+    limit: params.limit,
+  }
+  if (params.status) {
+    query.status = params.status
+  }
+  if (params.supplierId) {
+    query.supplierId = params.supplierId
+  }
+  if (params.destinationOutletId) {
+    query.destinationOutletId = params.destinationOutletId
+  }
+  if (params.purchaseRequestId) {
+    query.purchaseRequestId = params.purchaseRequestId
+  }
+  if (params.search) {
+    query.search = params.search
+  }
+  return query
+}
+
+export const purchaseOrderService = {
+  async list(params: PurchaseOrderListParams): Promise<PurchaseOrderListResult> {
+    const response = await httpClient.get<ApiListResponse<PurchaseOrder>>('/purchase-orders', {
+      params: toQuery(params),
+    })
+    return { items: response.data.data, meta: response.data.meta }
+  },
+
+  async getById(id: string): Promise<PurchaseOrder> {
+    const response = await httpClient.get<ApiSuccess<PurchaseOrder>>(`/purchase-orders/${id}`)
+    return response.data.data
+  },
+
+  async create(payload: SavePurchaseOrderPayload): Promise<PurchaseOrder> {
+    const response = await httpClient.post<ApiSuccess<PurchaseOrder>>('/purchase-orders', payload)
+    return response.data.data
+  },
+
+  async update(id: string, payload: SavePurchaseOrderPayload): Promise<PurchaseOrder> {
+    const response = await httpClient.put<ApiSuccess<PurchaseOrder>>(
+      `/purchase-orders/${id}`,
+      payload,
+    )
+    return response.data.data
+  },
+
+  async submit(id: string): Promise<PurchaseOrder> {
+    const response = await httpClient.post<ApiSuccess<PurchaseOrder>>(
+      `/purchase-orders/${id}/submit`,
+    )
+    return response.data.data
+  },
+
+  async approve(id: string, payload: ApprovePurchaseOrderPayload): Promise<PurchaseOrder> {
+    const response = await httpClient.post<ApiSuccess<PurchaseOrder>>(
+      `/purchase-orders/${id}/approve`,
+      payload,
+    )
+    return response.data.data
+  },
+
+  async reject(id: string, payload: RejectPurchaseOrderPayload): Promise<PurchaseOrder> {
+    const response = await httpClient.post<ApiSuccess<PurchaseOrder>>(
+      `/purchase-orders/${id}/reject`,
+      payload,
+    )
+    return response.data.data
+  },
+
+  async cancel(id: string, payload: CancelPurchaseOrderPayload): Promise<PurchaseOrder> {
+    const response = await httpClient.post<ApiSuccess<PurchaseOrder>>(
+      `/purchase-orders/${id}/cancel`,
+      payload,
+    )
+    return response.data.data
+  },
+}
+
+/** Badge color mapping per status (aligns with the ui/Badge `color` palette). */
+export function statusBadgeColor(
+  status: PurchaseOrderStatus,
+): 'light' | 'warning' | 'success' | 'error' {
+  switch (status) {
+    case 'SUBMITTED':
+      return 'warning'
+    case 'APPROVED':
+      return 'success'
+    case 'REJECTED':
+      return 'error'
+    case 'DRAFT':
+    case 'CANCELLED':
+    default:
+      return 'light'
+  }
+}
