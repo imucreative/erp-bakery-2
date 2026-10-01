@@ -30,6 +30,7 @@ import {
   PurchaseOrderTimeline,
   PurchaseOrderActionModals,
   PurchaseOrderComments,
+  PurchaseOrderAttachments,
   type PurchaseOrderAction,
 } from '@/components/procurement/purchase-order'
 import { usePermission } from '@/composables/usePermission'
@@ -288,6 +289,9 @@ async function onConfirmAction(note: string): Promise<void> {
           </ComponentCard>
           <ComponentCard title="Komentar">
             <PurchaseOrderComments :purchase-order-id="po.id" />
+          </ComponentCard>
+          <ComponentCard title="Lampiran">
+            <PurchaseOrderAttachments :purchase-order-id="po.id" :can-manage="canUpdate" />
           </ComponentCard>
         </div>
       </div>
