@@ -8,5 +8,6 @@ export { default as PurchaseOrderActionModals } from './PurchaseOrderActionModal
 export { default as PurchaseOrderSummary } from './PurchaseOrderSummary.vue'
 export { default as PurchaseOrderItemsTable } from './PurchaseOrderItemsTable.vue'
 export { default as PurchaseOrderActionBar } from './PurchaseOrderActionBar.vue'
+export { default as PurchaseOrderComments } from './PurchaseOrderComments.vue'
 export type { EditorItemRow } from './PurchaseOrderItemsEditor.vue'
 export type { PurchaseOrderAction } from './PurchaseOrderActionModals.vue'
