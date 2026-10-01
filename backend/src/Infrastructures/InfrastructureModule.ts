@@ -23,6 +23,7 @@ import { RecipeRepository } from '../Domains/recipes/RecipeRepository';
 import { ProductionOrderRepository } from '../Domains/production/ProductionOrderRepository';
 import { PurchaseRequestRepository } from '../Domains/purchase-requests/PurchaseRequestRepository';
 import { PurchaseRequestAttachmentStorage } from '../Domains/purchase-requests/PurchaseRequestAttachmentStorage';
+import { PurchaseOrderAttachmentStorage } from '../Domains/purchase-orders/PurchaseOrderAttachmentStorage';
 import { PurchaseOrderRepository } from '../Domains/purchase-orders/PurchaseOrderRepository';
 import { PasswordHash } from '../Applications/security/PasswordHash';
 import { TokenManager } from '../Applications/security/TokenManager';
@@ -49,6 +50,7 @@ import { ProductionOrderRepositoryPostgres } from './repository/ProductionOrderR
 import { PurchaseRequestRepositoryPostgres } from './repository/PurchaseRequestRepositoryPostgres';
 import { PurchaseOrderRepositoryPostgres } from './repository/PurchaseOrderRepositoryPostgres';
 import { LocalPurchaseRequestAttachmentStorage } from './storage/LocalPurchaseRequestAttachmentStorage';
+import { LocalPurchaseOrderAttachmentStorage } from './storage/LocalPurchaseOrderAttachmentStorage';
 import { BcryptPasswordHash } from './security/BcryptPasswordHash';
 import { JwtTokenManager } from './security/JwtTokenManager';
 
@@ -143,6 +145,10 @@ import { CancelPurchaseOrderUseCase } from '../Applications/use_case/purchase-or
 import { GetPurchaseOrdersUseCase } from '../Applications/use_case/purchase-orders/GetPurchaseOrdersUseCase';
 import { AddPurchaseOrderCommentUseCase } from '../Applications/use_case/purchase-orders/AddPurchaseOrderCommentUseCase';
 import { GetPurchaseOrderCommentsUseCase } from '../Applications/use_case/purchase-orders/GetPurchaseOrderCommentsUseCase';
+import { UploadPurchaseOrderAttachmentUseCase } from '../Applications/use_case/purchase-orders/UploadPurchaseOrderAttachmentUseCase';
+import { ListPurchaseOrderAttachmentsUseCase } from '../Applications/use_case/purchase-orders/ListPurchaseOrderAttachmentsUseCase';
+import { GetPurchaseOrderAttachmentUseCase } from '../Applications/use_case/purchase-orders/GetPurchaseOrderAttachmentUseCase';
+import { DeletePurchaseOrderAttachmentUseCase } from '../Applications/use_case/purchase-orders/DeletePurchaseOrderAttachmentUseCase';
 
 /**
  * InfrastructureModule — NestJS DI container.
@@ -258,6 +264,10 @@ import { GetPurchaseOrderCommentsUseCase } from '../Applications/use_case/purcha
     {
       provide: PurchaseRequestAttachmentStorage,
       useFactory: () => new LocalPurchaseRequestAttachmentStorage(),
+    },
+    {
+      provide: PurchaseOrderAttachmentStorage,
+      useFactory: () => new LocalPurchaseOrderAttachmentStorage(),
     },
 
     // ─── Use Cases ────────────────────────────────────────────────────────
@@ -862,6 +872,36 @@ import { GetPurchaseOrderCommentsUseCase } from '../Applications/use_case/purcha
         new GetPurchaseOrderCommentsUseCase(poRepo),
       inject: [PurchaseOrderRepository],
     },
+    {
+      provide: UploadPurchaseOrderAttachmentUseCase,
+      useFactory: (
+        poRepo: PurchaseOrderRepository,
+        storage: PurchaseOrderAttachmentStorage,
+      ) => new UploadPurchaseOrderAttachmentUseCase(poRepo, storage),
+      inject: [PurchaseOrderRepository, PurchaseOrderAttachmentStorage],
+    },
+    {
+      provide: ListPurchaseOrderAttachmentsUseCase,
+      useFactory: (poRepo: PurchaseOrderRepository) =>
+        new ListPurchaseOrderAttachmentsUseCase(poRepo),
+      inject: [PurchaseOrderRepository],
+    },
+    {
+      provide: GetPurchaseOrderAttachmentUseCase,
+      useFactory: (
+        poRepo: PurchaseOrderRepository,
+        storage: PurchaseOrderAttachmentStorage,
+      ) => new GetPurchaseOrderAttachmentUseCase(poRepo, storage),
+      inject: [PurchaseOrderRepository, PurchaseOrderAttachmentStorage],
+    },
+    {
+      provide: DeletePurchaseOrderAttachmentUseCase,
+      useFactory: (
+        poRepo: PurchaseOrderRepository,
+        storage: PurchaseOrderAttachmentStorage,
+      ) => new DeletePurchaseOrderAttachmentUseCase(poRepo, storage),
+      inject: [PurchaseOrderRepository, PurchaseOrderAttachmentStorage],
+    },
   ],
   exports: [
     'PG_POOL',
@@ -977,6 +1017,10 @@ import { GetPurchaseOrderCommentsUseCase } from '../Applications/use_case/purcha
     GetPurchaseOrdersUseCase,
     AddPurchaseOrderCommentUseCase,
     GetPurchaseOrderCommentsUseCase,
+    UploadPurchaseOrderAttachmentUseCase,
+    ListPurchaseOrderAttachmentsUseCase,
+    GetPurchaseOrderAttachmentUseCase,
+    DeletePurchaseOrderAttachmentUseCase,
   ],
 })
 export class InfrastructureModule {}

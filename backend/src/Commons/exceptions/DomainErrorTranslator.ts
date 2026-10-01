@@ -721,6 +721,20 @@ const DomainErrorTranslator = {
       'Ukuran file melebihi batas maksimum 5 MB',
     ),
 
+    // ── Purchase Order Attachments (doc 35 §5) ───────────────────
+    'PURCHASE_ORDER_ATTACHMENT.NOT_FOUND': new NotFoundError(
+      'Lampiran purchase order tidak ditemukan',
+    ),
+    'UPLOAD_PURCHASE_ORDER_ATTACHMENT.FILE_REQUIRED': new InvariantError(
+      'File lampiran wajib disertakan',
+    ),
+    'UPLOAD_PURCHASE_ORDER_ATTACHMENT.MIME_NOT_ALLOWED': new InvariantError(
+      'Tipe file tidak diizinkan; hanya PDF, JPG, atau PNG',
+    ),
+    'UPLOAD_PURCHASE_ORDER_ATTACHMENT.FILE_TOO_LARGE': new InvariantError(
+      'Ukuran file melebihi batas maksimum 5 MB',
+    ),
+
     // ── Purchase Order ───────────────────────────────────────────
     'PURCHASE_ORDER.NOT_FOUND': new NotFoundError('Purchase order tidak ditemukan'),
     'CREATE_PURCHASE_ORDER.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(

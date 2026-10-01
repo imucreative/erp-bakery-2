@@ -1,11 +1,22 @@
 import { PurchaseOrder } from './entities/PurchaseOrder';
 import { CreatePurchaseOrderItemInput } from './entities/CreatePurchaseOrder';
 import { PurchaseOrderComment } from './entities/PurchaseOrderComment';
+import {
+  PurchaseOrderAttachment,
+  PurchaseOrderAttachmentWithPath,
+} from './entities/PurchaseOrderAttachment';
 import { PurchaseOrderCommentCategory } from './purchaseOrderCommentCategory';
 
 export interface NewPurchaseOrderCommentData {
   category: PurchaseOrderCommentCategory;
   body: string;
+}
+
+export interface NewPurchaseOrderAttachmentData {
+  originalName: string;
+  storedPath: string;
+  mimeType: string;
+  sizeBytes: number;
 }
 
 /**
@@ -133,4 +144,44 @@ export abstract class PurchaseOrderRepository {
     purchaseOrderId: string,
     companyId: string,
   ): Promise<PurchaseOrderComment[]>;
+
+  /**
+   * Persist an attachment metadata row (the physical file is written by the
+   * use case before this call) and return the stored metadata with the
+   * uploader name resolved (JOIN to users).
+   */
+  abstract addAttachment(
+    purchaseOrderId: string,
+    companyId: string,
+    uploadedBy: string | null,
+    data: NewPurchaseOrderAttachmentData,
+  ): Promise<PurchaseOrderAttachment>;
+
+  /** List a PO's attachments chronologically (each carries uploadedByName). */
+  abstract listAttachments(
+    purchaseOrderId: string,
+    companyId: string,
+  ): Promise<PurchaseOrderAttachment[]>;
+
+  /**
+   * Fetch a single attachment (including the internal storedPath) scoped to
+   * both the PO and the company. Throws PURCHASE_ORDER_ATTACHMENT.NOT_FOUND
+   * when the attachment does not belong to that PO/company (IDOR guard).
+   */
+  abstract getAttachmentById(
+    purchaseOrderId: string,
+    attachmentId: string,
+    companyId: string,
+  ): Promise<PurchaseOrderAttachmentWithPath>;
+
+  /**
+   * Delete an attachment row scoped to the PO and company, returning the
+   * deleted metadata (including storedPath) so the use case can remove the
+   * physical file. Throws PURCHASE_ORDER_ATTACHMENT.NOT_FOUND when missing.
+   */
+  abstract deleteAttachment(
+    purchaseOrderId: string,
+    attachmentId: string,
+    companyId: string,
+  ): Promise<PurchaseOrderAttachmentWithPath>;
 }
