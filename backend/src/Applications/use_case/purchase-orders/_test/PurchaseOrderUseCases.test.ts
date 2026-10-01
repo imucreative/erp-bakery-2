@@ -265,6 +265,93 @@ describe('CreatePurchaseOrderUseCase', () => {
     );
     expect(poRepo.createDraft).not.toHaveBeenCalled();
   });
+
+  // ── Items locked to the source PR (doc 26 §8) ──────────────────────────
+  it('should reject an item whose product is not in the source PR', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    supplierRepo.getSupplierById.mockResolvedValue(activeSupplier() as never);
+
+    const payload = {
+      ...basePayload,
+      items: [{ productId: 'prod-foreign', quantity: 1, uomId: 'uom-1', unitPrice: 100, taxPercent: 0 }],
+    };
+
+    await expect(createUseCase().execute(payload, 'c1', 'u1')).rejects.toThrow(
+      'PURCHASE_ORDER.ITEM_NOT_IN_PR',
+    );
+    expect(poRepo.createDraft).not.toHaveBeenCalled();
+  });
+
+  it('should reject a duplicate product within one PO', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    supplierRepo.getSupplierById.mockResolvedValue(activeSupplier() as never);
+
+    const payload = {
+      ...basePayload,
+      items: [
+        { productId: 'prod-1', quantity: 1, uomId: 'uom-1', unitPrice: 5000, taxPercent: 0 },
+        { productId: 'prod-1', quantity: 1, uomId: 'uom-1', unitPrice: 5000, taxPercent: 0 },
+      ],
+    };
+
+    await expect(createUseCase().execute(payload, 'c1', 'u1')).rejects.toThrow(
+      'PURCHASE_ORDER.DUPLICATE_ITEM',
+    );
+    expect(poRepo.createDraft).not.toHaveBeenCalled();
+  });
+
+  it('should reject a quantity that exceeds the matching PR line', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    supplierRepo.getSupplierById.mockResolvedValue(activeSupplier() as never);
+
+    // PR line for prod-1 has quantity 3; asking for 4 must fail.
+    const payload = {
+      ...basePayload,
+      items: [{ productId: 'prod-1', quantity: 4, uomId: 'uom-1', unitPrice: 5000, taxPercent: 0 }],
+    };
+
+    await expect(createUseCase().execute(payload, 'c1', 'u1')).rejects.toThrow(
+      'PURCHASE_ORDER.QTY_EXCEEDS_PR',
+    );
+    expect(poRepo.createDraft).not.toHaveBeenCalled();
+  });
+
+  it('should accept a subset of PR items with quantity <= the PR line (partial PO)', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    supplierRepo.getSupplierById.mockResolvedValue(activeSupplier() as never);
+    productRepo.getProductById.mockResolvedValue({ id: 'prod' } as never);
+    uomRepo.getUomById.mockResolvedValue({ id: 'uom' } as never);
+    poRepo.createDraft.mockResolvedValue({ id: 'po1' } as never);
+
+    // Only prod-1, with a reduced quantity (2 <= PR's 3). prod-2 is omitted.
+    const payload = {
+      ...basePayload,
+      items: [{ productId: 'prod-1', quantity: 2, uomId: 'uom-1', unitPrice: 5000, taxPercent: 0 }],
+    };
+
+    await createUseCase().execute(payload, 'c1', 'u1');
+
+    const arg = poRepo.createDraft.mock.calls[0][2];
+    expect(arg.items).toHaveLength(1);
+    expect(arg.items[0]).toEqual(expect.objectContaining({ productId: 'prod-1', quantity: 2 }));
+    expect(arg.totalAmount).toBe(10000);
+  });
+
+  it('should accept PR-prefilled items (locked to PR by construction)', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    supplierRepo.getSupplierById.mockResolvedValue(activeSupplier() as never);
+    productRepo.getProductById.mockResolvedValue({ id: 'prod' } as never);
+    uomRepo.getUomById.mockResolvedValue({ id: 'uom' } as never);
+    poRepo.createDraft.mockResolvedValue({ id: 'po1' } as never);
+
+    const { items, ...noItems } = basePayload;
+    void items;
+    await createUseCase().execute(noItems, 'c1', 'u1');
+
+    expect(poRepo.createDraft).toHaveBeenCalled();
+    const arg = poRepo.createDraft.mock.calls[0][2];
+    expect(arg.items).toHaveLength(2);
+  });
 });
 
 describe('UpdatePurchaseOrderUseCase', () => {
@@ -290,6 +377,82 @@ describe('UpdatePurchaseOrderUseCase', () => {
       'c1',
       'u1',
       expect.objectContaining({ totalAmount: 20000, taxTotal: 1650, grandTotal: 21650 }),
+    );
+  });
+
+  it('should reject update items that are not in the source PR', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    supplierRepo.getSupplierById.mockResolvedValue(activeSupplier() as never);
+
+    const useCase = new UpdatePurchaseOrderUseCase(
+      poRepo,
+      prRepo,
+      supplierRepo,
+      paymentTermRepo,
+      productRepo,
+      uomRepo,
+    );
+    const payload = {
+      ...basePayload,
+      items: [{ productId: 'prod-foreign', quantity: 1, uomId: 'uom-1', unitPrice: 100, taxPercent: 0 }],
+    };
+
+    await expect(useCase.execute('po1', payload, 'c1', 'u1')).rejects.toThrow(
+      'PURCHASE_ORDER.ITEM_NOT_IN_PR',
+    );
+    expect(poRepo.updateDraft).not.toHaveBeenCalled();
+  });
+
+  it('should reject update when a line quantity exceeds the PR line', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    supplierRepo.getSupplierById.mockResolvedValue(activeSupplier() as never);
+
+    const useCase = new UpdatePurchaseOrderUseCase(
+      poRepo,
+      prRepo,
+      supplierRepo,
+      paymentTermRepo,
+      productRepo,
+      uomRepo,
+    );
+    const payload = {
+      ...basePayload,
+      items: [{ productId: 'prod-2', quantity: 3, uomId: 'uom-1', unitPrice: 2500, taxPercent: 0 }],
+    };
+
+    await expect(useCase.execute('po1', payload, 'c1', 'u1')).rejects.toThrow(
+      'PURCHASE_ORDER.QTY_EXCEEDS_PR',
+    );
+    expect(poRepo.updateDraft).not.toHaveBeenCalled();
+  });
+
+  it('should accept a valid subset update locked to the PR', async () => {
+    prRepo.getById.mockResolvedValue(approvedPr() as never);
+    supplierRepo.getSupplierById.mockResolvedValue(activeSupplier() as never);
+    productRepo.getProductById.mockResolvedValue({ id: 'prod' } as never);
+    uomRepo.getUomById.mockResolvedValue({ id: 'uom' } as never);
+    poRepo.updateDraft.mockResolvedValue({ id: 'po1' } as never);
+
+    const useCase = new UpdatePurchaseOrderUseCase(
+      poRepo,
+      prRepo,
+      supplierRepo,
+      paymentTermRepo,
+      productRepo,
+      uomRepo,
+    );
+    const payload = {
+      ...basePayload,
+      items: [{ productId: 'prod-1', quantity: 1, uomId: 'uom-1', unitPrice: 5000, taxPercent: 0 }],
+    };
+
+    await useCase.execute('po1', payload, 'c1', 'u1');
+
+    expect(poRepo.updateDraft).toHaveBeenCalledWith(
+      'po1',
+      'c1',
+      'u1',
+      expect.objectContaining({ totalAmount: 5000 }),
     );
   });
 

@@ -6,6 +6,7 @@ import {
   computeItemMoney,
   computeEstimatedPaymentDueDate,
   roundMoney,
+  validateItemsAgainstPr,
 } from '../../../Domains/purchase-orders/entities/CreatePurchaseOrder';
 import { PurchaseOrder } from '../../../Domains/purchase-orders/entities/PurchaseOrder';
 import { PurchaseOrderRepository } from '../../../Domains/purchase-orders/PurchaseOrderRepository';
@@ -25,7 +26,10 @@ import { UomRepository } from '../../../Domains/uoms/UomRepository';
  * resets it to DRAFT while logging the transition.
  *
  * As with create, items are optional: when omitted they are prefilled from the
- * source PR lines (unitPrice = PR estimatedPrice, taxPercent = 0).
+ * source PR lines (unitPrice = PR estimatedPrice, taxPercent = 0). Items are
+ * locked to the source PR the same way as create: every productId must belong
+ * to the PR, no duplicate products, and quantity must not exceed the matching
+ * PR line (a subset of PR items is allowed).
  */
 export class UpdatePurchaseOrderUseCase {
   constructor(
@@ -95,6 +99,10 @@ export class UpdatePurchaseOrderUseCase {
     if (items.length === 0) {
       throw new Error('CREATE_PURCHASE_ORDER.ITEMS_REQUIRED');
     }
+
+    // Items stay locked to the source PR (same PR, purchaseRequestId unchanged):
+    // every productId must come from the PR, no duplicates, qty <= PR line qty.
+    validateItemsAgainstPr(items, pr.items);
 
     const productIds = [...new Set(items.map((i) => i.productId))];
     const uomIds = [...new Set(items.map((i) => i.uomId))];

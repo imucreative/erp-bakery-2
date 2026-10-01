@@ -791,6 +791,15 @@ const DomainErrorTranslator = {
     'PURCHASE_ORDER.PAYMENT_TERM_INACTIVE': new InvariantError(
       'Payment term tidak aktif; tidak dapat digunakan untuk purchase order',
     ),
+    'PURCHASE_ORDER.ITEM_NOT_IN_PR': new InvariantError(
+      'Item purchase order harus berasal dari item purchase request sumber',
+    ),
+    'PURCHASE_ORDER.DUPLICATE_ITEM': new InvariantError(
+      'Produk yang sama tidak boleh muncul lebih dari sekali dalam satu purchase order',
+    ),
+    'PURCHASE_ORDER.QTY_EXCEEDS_PR': new InvariantError(
+      'Jumlah item purchase order tidak boleh melebihi jumlah pada purchase request sumber',
+    ),
     'REJECT_PURCHASE_ORDER.NOTE_REQUIRED': new InvariantError(
       'Alasan penolakan purchase order wajib diisi',
     ),

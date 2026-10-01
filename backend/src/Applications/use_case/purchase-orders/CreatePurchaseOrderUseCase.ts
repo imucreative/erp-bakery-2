@@ -4,6 +4,7 @@ import {
   computeItemMoney,
   computeEstimatedPaymentDueDate,
   roundMoney,
+  validateItemsAgainstPr,
 } from '../../../Domains/purchase-orders/entities/CreatePurchaseOrder';
 import { PurchaseOrder } from '../../../Domains/purchase-orders/entities/PurchaseOrder';
 import { PurchaseOrderRepository } from '../../../Domains/purchase-orders/PurchaseOrderRepository';
@@ -33,6 +34,10 @@ import { UomRepository } from '../../../Domains/uoms/UomRepository';
  *       - If the body omitted items, PREFILL from the PR lines: productId,
  *         quantity, uomId carry over; unitPrice defaults to the PR line's
  *         estimatedPrice; taxPercent defaults to 0. The user can edit later.
+ *     Items are LOCKED to the source PR: every productId must belong to the PR,
+ *     no duplicate products, and each line's quantity must not exceed the
+ *     matching PR line (per-line, not accumulated across POs). A subset of PR
+ *     items is allowed. UOM/unitPrice/taxPercent remain free.
  *  7. Validate every item product/uom belongs to the company.
  *  8. Compute header totals (Σsubtotal, Σtax, grand) server-side.
  *  9. Persist the DRAFT (repository generates po_number, logs null -> DRAFT).
@@ -116,6 +121,11 @@ export class CreatePurchaseOrderUseCase {
     if (items.length === 0) {
       throw new Error('CREATE_PURCHASE_ORDER.ITEMS_REQUIRED');
     }
+
+    // 6b. Items are locked to the source PR: every productId must come from the
+    // PR, no duplicates, and quantity must not exceed the matching PR line.
+    // Prefilled items (copied from the PR) satisfy this by construction.
+    validateItemsAgainstPr(items, pr.items);
 
     // 7. Company-scope validation of item references.
     const productIds = [...new Set(items.map((i) => i.productId))];

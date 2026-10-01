@@ -149,6 +149,55 @@ export function verifyItem(raw: unknown): void {
 }
 
 /**
+ * Minimal PR line shape needed to lock PO items to their source PR. The use
+ * case passes the APPROVED PR's items (productId + quantity) here.
+ */
+export interface SourcePrItem {
+  productId: string;
+  quantity: number;
+}
+
+/**
+ * Enforce that PO items stay locked to the source Purchase Request (doc 26 §8,
+ * business rule approved by the user):
+ *
+ *   1. ITEM_NOT_IN_PR  — every PO productId must exist in the source PR items.
+ *   2. DUPLICATE_ITEM  — the same productId must not appear more than once.
+ *   3. QTY_EXCEEDS_PR  — per line, quantity must not exceed the matching PR
+ *                        line's quantity (checked per-line, not accumulated
+ *                        across other POs).
+ *
+ * A PO MAY contain a subset of the PR items (partial PO is allowed); it is not
+ * required to include every PR line. UOM, unitPrice and taxPercent are free and
+ * intentionally NOT validated against the PR.
+ */
+export function validateItemsAgainstPr(
+  items: CreatePurchaseOrderItemInput[],
+  prItems: SourcePrItem[],
+): void {
+  const prQtyByProduct = new Map<string, number>();
+  for (const prItem of prItems) {
+    prQtyByProduct.set(prItem.productId, prItem.quantity);
+  }
+
+  const seen = new Set<string>();
+  for (const item of items) {
+    if (seen.has(item.productId)) {
+      throw new Error('PURCHASE_ORDER.DUPLICATE_ITEM');
+    }
+    seen.add(item.productId);
+
+    const prQuantity = prQtyByProduct.get(item.productId);
+    if (prQuantity === undefined) {
+      throw new Error('PURCHASE_ORDER.ITEM_NOT_IN_PR');
+    }
+    if (item.quantity > prQuantity) {
+      throw new Error('PURCHASE_ORDER.QTY_EXCEEDS_PR');
+    }
+  }
+}
+
+/**
  * Compute a line's money fields server-side (anti-tamper, doc 26 §6):
  *   subtotal   = quantity * unitPrice
  *   taxAmount  = subtotal * taxPercent / 100
