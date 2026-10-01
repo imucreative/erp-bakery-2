@@ -14,13 +14,14 @@
  */
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ChevronLeft } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import Button from '@/components/ui/Button.vue'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
 import {
   PurchaseRequestItemsEditor,
+  PurchaseRequestHeaderFields,
   type EditorItemRow,
 } from '@/components/procurement/purchase-request'
 import { tomorrowISO } from '@/lib/format'
@@ -184,15 +185,27 @@ async function onSubmit(): Promise<void> {
 function onCancel(): void {
   void router.push({ name: 'PurchaseRequests' })
 }
-
-const inputClass =
-  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
-const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
 </script>
 
 <template>
   <AdminLayout>
     <PageBreadcrumb :pageTitle="pageTitle" />
+
+    <!-- Page header: back (icon-only) + title on the start -->
+    <div class="mb-5 flex flex-wrap items-center gap-3">
+      <button
+        type="button"
+        aria-label="Kembali ke Daftar"
+        title="Kembali ke Daftar"
+        class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
+        @click="onCancel"
+      >
+        <ChevronLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
+      </button>
+      <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
+        {{ pageTitle }}
+      </h3>
+    </div>
 
     <ComponentCard :title="pageTitle">
       <div v-if="loading" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
@@ -216,48 +229,14 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
         </p>
 
         <!-- Header -->
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label :class="labelClass">Outlet Tujuan<span class="text-error-500">*</span></label>
-            <div class="relative">
-              <select
-                v-model="destinationOutletId"
-                :disabled="isReadOnly"
-                :class="[inputClass, 'appearance-none pe-10']"
-              >
-                <option value="" disabled>Pilih outlet tujuan</option>
-                <option v-for="o in outlets" :key="o.id" :value="o.id">{{ o.name }}</option>
-              </select>
-              <ChevronDownIcon
-                class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-              />
-            </div>
-          </div>
-          <div>
-            <label :class="labelClass">Tanggal Dibutuhkan<span class="text-error-500">*</span></label>
-            <input
-              v-model="expectedDate"
-              type="date"
-              :min="minDate"
-              :disabled="isReadOnly"
-              :class="inputClass"
-            />
-            <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
-              Harus besok atau setelahnya.
-            </p>
-          </div>
-        </div>
-
-        <div>
-          <label :class="labelClass">Catatan</label>
-          <textarea
-            v-model="notes"
-            rows="2"
-            :disabled="isReadOnly"
-            placeholder="Catatan opsional untuk PR ini..."
-            class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-          ></textarea>
-        </div>
+        <PurchaseRequestHeaderFields
+          v-model:destination-outlet-id="destinationOutletId"
+          v-model:expected-date="expectedDate"
+          v-model:notes="notes"
+          :outlets="outlets"
+          :min-date="minDate"
+          :disabled="isReadOnly"
+        />
 
         <!-- Line items -->
         <div>

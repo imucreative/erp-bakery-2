@@ -1,8 +1,9 @@
 <script setup lang="ts">
 /**
  * PurchaseRequestDetail — full-page read-only view of a Purchase Request:
- * header + line items + total, plus a vertical approval timeline built from
- * `statusLogs`. Renders status- and permission-aware lifecycle actions:
+ * header meta + line items + total, plus a vertical approval timeline built
+ * from `statusLogs`, comments, and attachments. Renders status- and
+ * permission-aware lifecycle actions:
  *
  *   DRAFT     → Edit, Submit (pr.create), Cancel (pr.update)
  *   SUBMITTED → Approve (pr.approve), Reject (pr.approve, note required)
@@ -12,16 +13,21 @@
  * Approve/reject/cancel go through a confirmation modal. Mutations keep the
  * user on the page; backend errors (409 invalid transition, 400 validation)
  * surface in the modal or an inline banner.
+ *
+ * This view owns all state and handlers; presentation is delegated to feature
+ * sub-components (summary, items table, action bar, timeline, comments,
+ * attachments), which are stateless and communicate via props/events.
  */
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Pencil, Send, Check, X, Ban } from 'lucide-vue-next'
+import { ChevronLeft } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import Badge from '@/components/ui/Badge.vue'
-import Button from '@/components/ui/Button.vue'
 import {
+  PurchaseRequestSummary,
+  PurchaseRequestItemsTable,
+  PurchaseRequestActionBar,
   PurchaseRequestTimeline,
   PurchaseRequestActionModals,
   PurchaseRequestComments,
@@ -30,14 +36,11 @@ import {
 } from '@/components/procurement/purchase-request'
 import { usePermission } from '@/composables/usePermission'
 import { toMessage } from '@/composables/usePurchaseRequests'
-import { formatDate, formatDateTime, formatRupiah } from '@/lib/format'
 import { outletService } from '@/services/outlet.service'
 import { productService } from '@/services/product.service'
 import { uomService } from '@/services/uom.service'
 import {
   purchaseRequestService,
-  PURCHASE_REQUEST_STATUS_LABELS,
-  statusBadgeColor,
   type PurchaseRequest,
 } from '@/services/purchase-request.service'
 
@@ -194,189 +197,85 @@ async function onConfirmAction(note: string): Promise<void> {
       {{ loadError }}
     </div>
 
-    <div v-else-if="pr" class="grid grid-cols-1 gap-5 lg:grid-cols-3">
-      <!-- Main column: header + items -->
-      <div class="space-y-5 lg:col-span-2">
-        <ComponentCard :title="pr.prNumber">
-          <!-- Action error banner (mutation failures keep user here) -->
-          <p
-            v-if="actionError"
-            class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
+    <template v-else-if="pr">
+      <!-- Page header: back (icon-only) + title on the start, lifecycle actions on the end -->
+      <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            aria-label="Kembali ke Daftar"
+            title="Kembali ke Daftar"
+            class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
+            @click="goToList"
           >
-            {{ actionError }}
-          </p>
+            <ChevronLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
+          </button>
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
+            {{ pr.prNumber }}
+          </h3>
+        </div>
 
-          <!-- Header meta -->
-          <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Status</dt>
-              <dd class="mt-1">
-                <Badge :color="statusBadgeColor(pr.status)">
-                  {{ PURCHASE_REQUEST_STATUS_LABELS[pr.status] }}
-                </Badge>
-              </dd>
-            </div>
-            <div>
-              <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Outlet Tujuan</dt>
-              <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
-                {{ outletName(pr.destinationOutletId) }}
-              </dd>
-            </div>
-            <div>
-              <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Tanggal Dibutuhkan</dt>
-              <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
-                {{ formatDate(pr.expectedDate) }}
-              </dd>
-            </div>
-            <div>
-              <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Dibuat</dt>
-              <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
-                {{ formatDateTime(pr.createdAt) }}
-              </dd>
-            </div>
-            <div v-if="pr.notes" class="sm:col-span-2">
-              <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Catatan</dt>
-              <dd class="mt-1 text-theme-sm text-gray-700 dark:text-gray-300">{{ pr.notes }}</dd>
-            </div>
-          </dl>
+        <PurchaseRequestActionBar
+          v-if="hasAnyAction"
+          :show-edit="showEdit"
+          :show-submit="showSubmit"
+          :show-approve="showApprove"
+          :show-reject="showReject"
+          :show-cancel="showCancel"
+          :submitting="actionSubmitting"
+          @edit="goToEdit"
+          @submit="doSubmit"
+          @approve="openAction('approve')"
+          @reject="openAction('reject')"
+          @cancel="openAction('cancel')"
+        />
+      </div>
 
-          <!-- Items -->
-          <div class="mt-6 overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
-            <table class="min-w-full">
-              <thead>
-                <tr class="border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]">
-                  <th class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                    Produk
-                  </th>
-                  <th class="px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                    Qty
-                  </th>
-                  <th class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                    UOM
-                  </th>
-                  <th class="px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                    Estimasi Harga
-                  </th>
-                  <th class="px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                    Subtotal
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="item in pr.items"
-                  :key="item.id"
-                  class="border-b border-gray-100 last:border-0 dark:border-gray-800"
-                >
-                  <td class="px-4 py-3 text-theme-sm text-gray-800 dark:text-white/90">
-                    {{ productName(item.productId) }}
-                  </td>
-                  <td class="px-4 py-3 text-end text-theme-sm text-gray-600 dark:text-gray-300">
-                    {{ item.quantity }}
-                  </td>
-                  <td class="px-4 py-3 text-theme-sm text-gray-600 dark:text-gray-300">
-                    {{ uomName(item.uomId) }}
-                  </td>
-                  <td class="px-4 py-3 text-end text-theme-sm text-gray-600 dark:text-gray-300">
-                    {{ formatRupiah(item.estimatedPrice) }}
-                  </td>
-                  <td class="px-4 py-3 text-end text-theme-sm text-gray-800 dark:text-white/90">
-                    {{ formatRupiah(item.subtotal) }}
-                  </td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr class="border-t border-gray-200 dark:border-gray-800">
-                  <td
-                    colspan="4"
-                    class="px-4 py-3 text-end text-theme-sm font-medium text-gray-600 dark:text-gray-300"
-                  >
-                    Total Estimasi
-                  </td>
-                  <td class="px-4 py-3 text-end text-theme-sm font-semibold text-gray-800 dark:text-white/90">
-                    {{ formatRupiah(pr.totalEstimatedAmount) }}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+      <div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <!-- Main column: summary + items -->
+        <div class="space-y-5 lg:col-span-2">
+          <ComponentCard title="Informasi Purchase Request">
+            <!-- Action error banner (mutation failures keep user here) -->
+            <p
+              v-if="actionError"
+              class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
+            >
+              {{ actionError }}
+            </p>
 
-          <!-- Actions -->
-          <div class="mt-6 flex flex-wrap items-center gap-3">
-            <button
-              v-if="showEdit"
-              type="button"
-              class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
-              @click="goToEdit"
-            >
-              <Pencil class="h-4 w-4" aria-hidden="true" />
-              Edit
-            </button>
-            <button
-              v-if="showSubmit"
-              type="button"
-              :disabled="actionSubmitting"
-              class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
-              @click="doSubmit"
-            >
-              <Send class="h-4 w-4" aria-hidden="true" />
-              {{ actionSubmitting ? 'Memproses...' : 'Ajukan' }}
-            </button>
-            <button
-              v-if="showApprove"
-              type="button"
-              class="inline-flex items-center gap-2 rounded-lg bg-success-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-success-600"
-              @click="openAction('approve')"
-            >
-              <Check class="h-4 w-4" aria-hidden="true" />
-              Setujui
-            </button>
-            <button
-              v-if="showReject"
-              type="button"
-              class="inline-flex items-center gap-2 rounded-lg bg-error-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-error-600"
-              @click="openAction('reject')"
-            >
-              <X class="h-4 w-4" aria-hidden="true" />
-              Tolak
-            </button>
-            <button
-              v-if="showCancel"
-              type="button"
-              class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-error-600 ring-1 ring-inset ring-error-200 transition hover:bg-error-50 dark:bg-transparent dark:ring-error-500/30 dark:hover:bg-error-500/10"
-              @click="openAction('cancel')"
-            >
-              <Ban class="h-4 w-4" aria-hidden="true" />
-              Batalkan
-            </button>
+            <PurchaseRequestSummary :pr="pr" :outlet-name="outletName" />
 
-            <span
+            <div class="mt-6">
+              <PurchaseRequestItemsTable
+                :pr="pr"
+                :product-name="productName"
+                :uom-name="uomName"
+              />
+            </div>
+
+            <p
               v-if="!hasAnyAction"
-              class="text-theme-sm text-gray-400 dark:text-gray-500"
+              class="mt-6 text-theme-sm text-gray-400 dark:text-gray-500"
             >
               Tidak ada aksi untuk status ini.
-            </span>
+            </p>
+          </ComponentCard>
+        </div>
 
-            <Button size="sm" variant="outline" :on-click="goToList" class-name="ms-auto">
-              Kembali ke Daftar
-            </Button>
-          </div>
-        </ComponentCard>
+        <!-- Side column: approval timeline + comments + attachments -->
+        <div class="space-y-5 lg:col-span-1">
+          <ComponentCard title="Riwayat Persetujuan">
+            <PurchaseRequestTimeline :logs="pr.statusLogs" />
+          </ComponentCard>
+          <ComponentCard title="Komentar">
+            <PurchaseRequestComments :purchase-request-id="pr.id" />
+          </ComponentCard>
+          <ComponentCard title="Lampiran">
+            <PurchaseRequestAttachments :purchase-request-id="pr.id" :can-manage="canUpdate" />
+          </ComponentCard>
+        </div>
       </div>
-
-      <!-- Side column: approval timeline + comments -->
-      <div class="space-y-5 lg:col-span-1">
-        <ComponentCard title="Riwayat Persetujuan">
-          <PurchaseRequestTimeline :logs="pr.statusLogs" />
-        </ComponentCard>
-        <ComponentCard title="Komentar">
-          <PurchaseRequestComments :purchase-request-id="pr.id" />
-        </ComponentCard>
-        <ComponentCard title="Lampiran">
-          <PurchaseRequestAttachments :purchase-request-id="pr.id" :can-manage="canUpdate" />
-        </ComponentCard>
-      </div>
-    </div>
+    </template>
 
     <PurchaseRequestActionModals
       :action="activeAction"
