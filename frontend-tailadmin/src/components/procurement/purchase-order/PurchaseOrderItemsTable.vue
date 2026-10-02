@@ -74,7 +74,7 @@ const props = defineProps<{
       </tbody>
       <tfoot>
         <tr class="border-t border-gray-100 dark:border-gray-800">
-          <td colspan="5" class="px-4 py-2 text-end text-theme-sm font-medium text-gray-600 dark:text-gray-300">
+          <td colspan="6" class="px-4 py-2 text-end text-theme-sm font-medium text-gray-600 dark:text-gray-300">
             Subtotal
           </td>
           <td class="px-4 py-2 text-end text-theme-sm text-gray-700 dark:text-gray-300">
@@ -83,7 +83,7 @@ const props = defineProps<{
           <td></td>
         </tr>
         <tr>
-          <td colspan="5" class="px-4 py-2 text-end text-theme-sm font-medium text-gray-600 dark:text-gray-300">
+          <td colspan="6" class="px-4 py-2 text-end text-theme-sm font-medium text-gray-600 dark:text-gray-300">
             Pajak
           </td>
           <td class="px-4 py-2 text-end text-theme-sm text-gray-700 dark:text-gray-300">
@@ -92,7 +92,7 @@ const props = defineProps<{
           <td></td>
         </tr>
         <tr class="border-t border-gray-200 dark:border-gray-800">
-          <td colspan="5" class="px-4 py-3 text-end text-theme-sm font-semibold text-gray-700 dark:text-gray-200">
+          <td colspan="6" class="px-4 py-3 text-end text-theme-sm font-semibold text-gray-700 dark:text-gray-200">
             Grand Total
           </td>
           <td class="px-4 py-3 text-end text-theme-sm font-semibold text-gray-800 dark:text-white/90">
