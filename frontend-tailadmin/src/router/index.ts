@@ -223,6 +223,42 @@ const router = createRouter({
       },
     },
     {
+      path: '/inventory/adjustments',
+      name: 'InventoryStockAdjustments',
+      component: () => import('../views/Inventory/StockAdjustmentList.vue'),
+      meta: {
+        title: 'Stock Adjustments',
+        permission: 'inventory.adjustment.read',
+      },
+    },
+    {
+      path: '/inventory/adjustments/create',
+      name: 'InventoryStockAdjustmentCreate',
+      component: () => import('../views/Inventory/StockAdjustmentForm.vue'),
+      meta: {
+        title: 'Buat Stock Adjustment',
+        permission: 'inventory.adjustment.create',
+      },
+    },
+    {
+      path: '/inventory/adjustments/:id',
+      name: 'InventoryStockAdjustmentDetail',
+      component: () => import('../views/Inventory/StockAdjustmentDetail.vue'),
+      meta: {
+        title: 'Detail Stock Adjustment',
+        permission: 'inventory.adjustment.read',
+      },
+    },
+    {
+      path: '/inventory/adjustments/:id/edit',
+      name: 'InventoryStockAdjustmentEdit',
+      component: () => import('../views/Inventory/StockAdjustmentForm.vue'),
+      meta: {
+        title: 'Edit Stock Adjustment',
+        permission: 'inventory.adjustment.update',
+      },
+    },
+    {
       path: '/system/users',
       name: 'Users',
       component: () => import('../views/System/UserList.vue'),

@@ -1,0 +1,11 @@
+/** Barrel exports for the Stock Adjustment feature components. */
+export { default as StockAdjustmentFilterBar } from './StockAdjustmentFilterBar.vue'
+export { default as StockAdjustmentTable } from './StockAdjustmentTable.vue'
+export { default as StockAdjustmentHeaderFields } from './StockAdjustmentHeaderFields.vue'
+export { default as StockAdjustmentItemsEditor } from './StockAdjustmentItemsEditor.vue'
+export { default as StockAdjustmentSummary } from './StockAdjustmentSummary.vue'
+export { default as StockAdjustmentItemsTable } from './StockAdjustmentItemsTable.vue'
+export { default as StockAdjustmentActionBar } from './StockAdjustmentActionBar.vue'
+export { default as StockAdjustmentActionModals } from './StockAdjustmentActionModals.vue'
+export type { EditorItemRow } from './StockAdjustmentItemsEditor.vue'
+export type { StockAdjustmentAction } from './StockAdjustmentActionModals.vue'

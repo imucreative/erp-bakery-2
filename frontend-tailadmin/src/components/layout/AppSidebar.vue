@@ -338,6 +338,11 @@ const menuGroups: MenuGroup[] = [
         name: 'Batch & Expiry',
         path: '/inventory/batches',
       },
+      {
+        icon: DocsIcon,
+        name: 'Stock Adjustment',
+        path: '/inventory/adjustments',
+      },
     ],
   },
   {
