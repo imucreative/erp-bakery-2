@@ -47,6 +47,15 @@ export abstract class RecipeRepository {
   /** DRAFT/ACTIVE -> ARCHIVED. */
   abstract archive(id: string, companyId: string): Promise<Recipe>;
 
+  /**
+   * Soft-delete a recipe (sets deleted_at). DRAFT and ARCHIVED recipes may be
+   * deleted (archive cleanup); ACTIVE recipes are protected because they are
+   * currently in use. Company-scoped. Throws RECIPE.NOT_FOUND when missing and
+   * RECIPE.ACTIVE_NOT_DELETABLE when the recipe is ACTIVE. recipe_items cascade
+   * logically via the deleted_at filter applied by all read queries.
+   */
+  abstract softDelete(id: string, companyId: string): Promise<void>;
+
   /** Fetch the single ACTIVE recipe for a product (used by production). */
   abstract getActiveByProduct(productId: string, companyId: string): Promise<Recipe>;
 }

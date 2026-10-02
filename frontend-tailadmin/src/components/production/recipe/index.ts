@@ -1,0 +1,11 @@
+/** Barrel exports for the Recipe (BOM) feature components. */
+export { default as RecipeFilterBar } from './RecipeFilterBar.vue'
+export { default as RecipeTable } from './RecipeTable.vue'
+export { default as RecipeHeaderFields } from './RecipeHeaderFields.vue'
+export { default as RecipeItemsEditor } from './RecipeItemsEditor.vue'
+export { default as RecipeSummary } from './RecipeSummary.vue'
+export { default as RecipeItemsTable } from './RecipeItemsTable.vue'
+export { default as RecipeActionBar } from './RecipeActionBar.vue'
+export { default as RecipeActionModals } from './RecipeActionModals.vue'
+export type { RecipeEditorItemRow } from './RecipeItemsEditor.vue'
+export type { RecipeAction } from './RecipeActionModals.vue'

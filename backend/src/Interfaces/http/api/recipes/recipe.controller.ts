@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -14,6 +15,7 @@ import { CreateRecipeUseCase } from '../../../../Applications/use_case/recipes/C
 import { UpdateRecipeUseCase } from '../../../../Applications/use_case/recipes/UpdateRecipeUseCase';
 import { ActivateRecipeUseCase } from '../../../../Applications/use_case/recipes/ActivateRecipeUseCase';
 import { ArchiveRecipeUseCase } from '../../../../Applications/use_case/recipes/ArchiveRecipeUseCase';
+import { DeleteRecipeUseCase } from '../../../../Applications/use_case/recipes/DeleteRecipeUseCase';
 import { GetRecipesUseCase } from '../../../../Applications/use_case/recipes/GetRecipesUseCase';
 import { JwtAccessPayload } from '../../../../Applications/security/TokenManager';
 import { AuthorizationError } from '../../../../Commons/exceptions/AuthorizationError';
@@ -35,6 +37,7 @@ import { RecipeQueryDto } from './dto/recipe-query.dto';
  * PUT   /production/recipes/:id          update draft
  * POST  /production/recipes/:id/activate DRAFT -> ACTIVE (one active per product)
  * POST  /production/recipes/:id/archive  -> ARCHIVED
+ * DELETE /production/recipes/:id         soft-delete DRAFT or ARCHIVED (not ACTIVE)
  */
 @ApiTags('Recipes')
 @ApiBearerAuth()
@@ -45,6 +48,7 @@ export class RecipeController {
     private readonly updateUseCase: UpdateRecipeUseCase,
     private readonly activateUseCase: ActivateRecipeUseCase,
     private readonly archiveUseCase: ArchiveRecipeUseCase,
+    private readonly deleteUseCase: DeleteRecipeUseCase,
     private readonly getUseCase: GetRecipesUseCase,
   ) {}
 
@@ -129,5 +133,18 @@ export class RecipeController {
   async archive(@Param('id') id: string, @GetUser() user: JwtAccessPayload) {
     const recipe = await this.archiveUseCase.execute(id, this._companyId(user));
     return successResponse(recipe);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('recipe.manage')
+  @ApiOperation({ summary: 'Delete a recipe (soft-delete DRAFT or ARCHIVED, not ACTIVE)' })
+  @ApiParam({ name: 'id', description: 'Recipe UUID' })
+  @ApiResponse({ status: 200, description: 'Deleted' })
+  @ApiResponse({ status: 400, description: 'Recipe is ACTIVE (ACTIVE recipes cannot be deleted)' })
+  @ApiResponse({ status: 404, description: 'Not found' })
+  async remove(@Param('id') id: string, @GetUser() user: JwtAccessPayload) {
+    await this.deleteUseCase.execute(id, this._companyId(user));
+    return successResponse({ id });
   }
 }
