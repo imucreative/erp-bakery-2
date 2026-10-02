@@ -135,6 +135,12 @@
                     class="menu-item-text"
                     >{{ item.name }}</span
                   >
+                  <span
+                    v-if="item.soon && (isExpanded || isHovered || isMobileOpen)"
+                    class="ms-auto rounded-full bg-gray-100 px-2 py-0.5 text-theme-xs font-medium text-gray-500 dark:bg-white/10 dark:text-gray-400"
+                  >
+                    Soon
+                  </span>
                 </router-link>
                 <transition
                   @enter="startTransition"
@@ -166,6 +172,12 @@
                         >
                           {{ subItem.name }}
                           <span class="flex items-center gap-1 ms-auto">
+                            <span
+                              v-if="subItem.soon"
+                              class="rounded-full bg-gray-100 px-2 py-0.5 text-theme-xs font-medium text-gray-500 dark:bg-white/10 dark:text-gray-400"
+                            >
+                              Soon
+                            </span>
                             <span
                               v-if="subItem.new"
                               :class="[
@@ -218,17 +230,26 @@
 import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import {
+  ArrowLeftRight,
+  Banknote,
+  BarChart3,
+  BookOpen,
   Boxes,
   CalendarClock,
+  ClipboardCheck,
   ClipboardList,
   CreditCard,
+  Factory,
   Inbox,
   Layers,
   LayoutDashboard,
   Package,
+  ReceiptText,
+  RotateCcw,
   Ruler,
   ScrollText,
   ShieldCheck,
+  ShoppingBag,
   ShoppingCart,
   SlidersHorizontal,
   Store,
@@ -253,6 +274,7 @@ interface SubItem {
   path: string
   pro?: boolean
   new?: boolean
+  soon?: boolean
   permission?: string
 }
 
@@ -263,6 +285,7 @@ interface MenuItem {
   subItems?: SubItem[]
   new?: boolean
   pro?: boolean
+  soon?: boolean
   permission?: string
 }
 
@@ -272,6 +295,39 @@ interface MenuGroup {
 }
 
 const menuGroups: MenuGroup[] = [
+    
+  {
+    title: 'Menu',
+    items: [
+      {
+        icon: LayoutDashboard,
+        name: 'Dashboard',
+        subItems: [{ name: 'Ecommerce', path: '/', pro: false }],
+      },
+      {
+        icon: UserCircle,
+        name: 'User Profile',
+        path: '/profile',
+      },
+    ],
+  },
+  {
+    title: 'System Administration',
+    items: [
+      {
+        icon: Users,
+        name: 'Users',
+        path: '/system/users',
+        permission: 'user.read',
+      },
+      {
+        icon: ShieldCheck,
+        name: 'Roles',
+        path: '/system/roles',
+        permission: 'role.read',
+      },
+    ],
+  },
   {
     title: 'Master Data',
     items: [
@@ -340,6 +396,12 @@ const menuGroups: MenuGroup[] = [
         path: '/procurement/goods-receipts',
         permission: 'procurement.gr.read',
       },
+      {
+        icon: RotateCcw,
+        name: 'Purchase Return',
+        path: '/error-404',
+        soon: true,
+      },
     ],
   },
   {
@@ -369,37 +431,73 @@ const menuGroups: MenuGroup[] = [
         path: '/inventory/adjustments',
         permission: 'inventory.adjustment.read',
       },
-    ],
-  },
-  {
-    title: 'System Administration',
-    items: [
       {
-        icon: Users,
-        name: 'Users',
-        path: '/system/users',
-        permission: 'user.read',
+        icon: ClipboardCheck,
+        name: 'Stock Opname',
+        path: '/error-404',
+        soon: true,
       },
       {
-        icon: ShieldCheck,
-        name: 'Roles',
-        path: '/system/roles',
-        permission: 'role.read',
+        icon: ArrowLeftRight,
+        name: 'Stock Transfer',
+        path: '/error-404',
+        soon: true,
       },
     ],
   },
   {
-    title: 'Menu',
+    title: 'Production',
     items: [
       {
-        icon: LayoutDashboard,
-        name: 'Dashboard',
-        subItems: [{ name: 'Ecommerce', path: '/', pro: false }],
+        icon: BookOpen,
+        name: 'Recipe',
+        path: '/error-404',
+        soon: true,
       },
       {
-        icon: UserCircle,
-        name: 'User Profile',
-        path: '/profile',
+        icon: Factory,
+        name: 'Production',
+        path: '/error-404',
+        soon: true,
+      },
+    ],
+  },
+  {
+    title: 'Sales',
+    items: [
+      {
+        icon: ShoppingBag,
+        name: 'Point of Sale (POS)',
+        path: '/error-404',
+        soon: true,
+      },
+    ],
+  },
+  {
+    title: 'Finance',
+    items: [
+      {
+        icon: ReceiptText,
+        name: 'Vendor Invoice',
+        path: '/error-404',
+        soon: true,
+      },
+      {
+        icon: Banknote,
+        name: 'Accounts Payable',
+        path: '/error-404',
+        soon: true,
+      },
+    ],
+  },
+  {
+    title: 'Reports',
+    items: [
+      {
+        icon: BarChart3,
+        name: 'Reports',
+        path: '/error-404',
+        soon: true,
       },
     ],
   },
