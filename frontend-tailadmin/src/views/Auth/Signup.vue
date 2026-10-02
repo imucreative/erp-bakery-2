@@ -5,7 +5,7 @@
         class="relative flex lg:flex-row w-full h-screen justify-center flex-col dark:bg-gray-900"
       >
         <div class="flex flex-col flex-1 lg:w-1/2 w-full">
-          <div class="w-full max-w-md pt-10 mx-auto">
+          <div class="w-full max-w-xl pt-10 mx-auto">
             <router-link
               to="/signin"
               class="inline-flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
@@ -26,16 +26,16 @@
                   stroke-linejoin="round"
                 />
               </svg>
-              Kembali ke halaman masuk
+              Sign In
             </router-link>
           </div>
           <!-- Form -->
-          <div class="flex flex-col justify-center flex-1 w-full max-w-md mx-auto py-10">
+          <div class="flex flex-col justify-center flex-1 w-full max-w-xl mx-auto py-8">
             <div class="mb-5 sm:mb-8">
               <h1
                 class="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md"
               >
-                Daftar Perusahaan
+                Sign Up
               </h1>
               <p class="text-sm text-gray-500 dark:text-gray-400">
                 Buat perusahaan baru beserta akun pemilik (owner) untuk mulai menggunakan Bakery
@@ -51,7 +51,7 @@
                 {{ errorMessage }}
               </div>
               <form @submit.prevent="handleSubmit">
-                <div class="space-y-5">
+                <div class="space-y-4">
                   <!-- Company Name -->
                   <div>
                     <label
@@ -110,43 +110,45 @@
                       class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                     />
                   </div>
-                  <!-- Owner Email -->
-                  <div>
-                    <label
-                      for="ownerEmail"
-                      class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-                    >
-                      Email Owner<span class="text-error-500">*</span>
-                    </label>
-                    <input
-                      v-model="ownerEmail"
-                      type="email"
-                      id="ownerEmail"
-                      name="ownerEmail"
-                      placeholder="owner@perusahaan.com"
-                      class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                    />
-                  </div>
-                  <!-- Owner Password -->
-                  <div>
-                    <label
-                      for="ownerPassword"
-                      class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-                    >
-                      Password Owner<span class="text-error-500">*</span>
-                    </label>
-                    <div class="relative">
-                      <input
-                        v-model="ownerPassword"
-                        :type="showPassword ? 'text' : 'password'"
-                        id="ownerPassword"
-                        placeholder="Minimal 8 karakter"
-                        class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent py-2.5 px-4 ltr:pr-11 rtl:pl-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                      />
-                      <span
-                        @click="togglePasswordVisibility"
-                        class="absolute z-30 text-gray-500 -translate-y-1/2 cursor-pointer ltr:right-4 rtl:left-4 top-1/2 dark:text-gray-400"
+                  <!-- Owner Email + Password (side by side on >= sm) -->
+                  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    <!-- Owner Email -->
+                    <div>
+                      <label
+                        for="ownerEmail"
+                        class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
                       >
+                        Email Owner<span class="text-error-500">*</span>
+                      </label>
+                      <input
+                        v-model="ownerEmail"
+                        type="email"
+                        id="ownerEmail"
+                        name="ownerEmail"
+                        placeholder="owner@perusahaan.com"
+                        class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                      />
+                    </div>
+                    <!-- Owner Password -->
+                    <div>
+                      <label
+                        for="ownerPassword"
+                        class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
+                      >
+                        Password Owner<span class="text-error-500">*</span>
+                      </label>
+                      <div class="relative">
+                        <input
+                          v-model="ownerPassword"
+                          :type="showPassword ? 'text' : 'password'"
+                          id="ownerPassword"
+                          placeholder="Minimal 8 karakter"
+                          class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent py-2.5 px-4 ltr:pr-11 rtl:pl-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                        />
+                        <span
+                          @click="togglePasswordVisibility"
+                          class="absolute z-30 text-gray-500 -translate-y-1/2 cursor-pointer ltr:right-4 rtl:left-4 top-1/2 dark:text-gray-400"
+                        >
                         <svg
                           v-if="!showPassword"
                           class="fill-current"
@@ -180,41 +182,8 @@
                           />
                         </svg>
                       </span>
+                      </div>
                     </div>
-                  </div>
-                  <!-- Phone (optional) -->
-                  <div>
-                    <label
-                      for="phone"
-                      class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-                    >
-                      Telepon
-                    </label>
-                    <input
-                      v-model="phone"
-                      type="tel"
-                      id="phone"
-                      name="phone"
-                      placeholder="Opsional"
-                      class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                    />
-                  </div>
-                  <!-- Address (optional) -->
-                  <div>
-                    <label
-                      for="address"
-                      class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-                    >
-                      Alamat
-                    </label>
-                    <textarea
-                      v-model="address"
-                      id="address"
-                      name="address"
-                      rows="3"
-                      placeholder="Opsional"
-                      class="dark:bg-dark-900 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                    ></textarea>
                   </div>
                   <!-- Button -->
                   <div>
@@ -252,7 +221,7 @@
                   <router-link
                     to="/signin"
                     class="text-brand-500 hover:text-brand-600 dark:text-brand-400"
-                    >Masuk</router-link
+                    >Sign In</router-link
                   >
                 </p>
               </div>
@@ -266,7 +235,7 @@
             <common-grid-shape />
             <div class="flex flex-col items-center max-w-xs">
               <router-link to="/" class="block mb-4">
-                <img width="{231}" height="{48}" src="/images/logo/auth-logo.svg" alt="Logo" />
+                <img width="{231}" height="{48}" src="/images/logo/logo-dark.svg" alt="Logo" />
               </router-link>
               <p class="text-center text-gray-400 dark:text-white/60">
                 Kelola operasional bakery Anda dalam satu platform ERP terpadu.
@@ -294,8 +263,6 @@ const slug = ref('')
 const ownerName = ref('')
 const ownerEmail = ref('')
 const ownerPassword = ref('')
-const phone = ref('')
-const address = ref('')
 
 const showPassword = ref(false)
 const submitting = ref(false)
@@ -357,8 +324,8 @@ const handleSubmit = async () => {
       ownerName: ownerName.value.trim(),
       ownerEmail: ownerEmail.value.trim(),
       ownerPassword: ownerPassword.value,
-      phone: phone.value.trim() || undefined,
-      address: address.value.trim() || undefined,
+      phone: undefined,
+      address: undefined,
     })
     // Backend does not return tokens, so no auto-login — send the user to sign in.
     await router.push({ name: 'Signin', query: { registered: '1' } })

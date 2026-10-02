@@ -1,53 +1,83 @@
-<svg width="154" height="32" viewBox="0 0 154 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M0 8.42105C0 3.77023 3.77023 0 8.42105 0H23.5789C28.2298 0 32 3.77023 32 8.42105V23.5789C32 28.2298 28.2298 32 23.5789 32H8.42105C3.77023 32 0 28.2298 0 23.5789V8.42105Z" fill="#465FFF"/>
-<g filter="url(#filter0_d_1624_24907)">
-<path d="M8.42383 8.42152C8.42383 7.49135 9.17787 6.7373 10.108 6.7373V6.7373C11.0382 6.7373 11.7922 7.49135 11.7922 8.42152V23.5794C11.7922 24.5096 11.0382 25.2636 10.108 25.2636V25.2636C9.17787 25.2636 8.42383 24.5096 8.42383 23.5794V8.42152Z" fill="white"/>
-</g>
-<g filter="url(#filter1_d_1624_24907)">
-<path d="M14.7422 15.1569C14.7422 14.2267 15.4962 13.4727 16.4264 13.4727V13.4727C17.3566 13.4727 18.1106 14.2267 18.1106 15.1569V23.5779C18.1106 24.5081 17.3566 25.2621 16.4264 25.2621V25.2621C15.4962 25.2621 14.7422 24.5081 14.7422 23.5779V15.1569Z" fill="white" fill-opacity="0.9" shape-rendering="crispEdges"/>
-</g>
-<g filter="url(#filter2_d_1624_24907)">
-<path d="M21.0547 10.9459C21.0547 10.0158 21.8087 9.26172 22.7389 9.26172V9.26172C23.6691 9.26172 24.4231 10.0158 24.4231 10.9459V23.5775C24.4231 24.5077 23.6691 25.2617 22.7389 25.2617V25.2617C21.8087 25.2617 21.0547 24.5077 21.0547 23.5775V10.9459Z" fill="white" fill-opacity="0.7" shape-rendering="crispEdges"/>
-</g>
-<path d="M44 10.1149H49.0885V24.6909H52.1321V10.1149H57.2206V7.30912H44V10.1149Z" fill="#101828"/>
-<path d="M60.6175 25C62.4484 25 64.0416 24.1678 64.5409 22.9551L64.7549 24.6909H67.2992V17.5575C67.2992 14.2999 65.3494 12.5878 62.1869 12.5878C59.0006 12.5878 56.9081 14.2523 56.9081 16.7966H59.3811C59.3811 15.5601 60.3322 14.8468 62.0442 14.8468C63.5185 14.8468 64.4696 15.4888 64.4696 17.0819V17.3435L60.9504 17.605C58.1684 17.819 56.599 19.1744 56.599 21.3382C56.599 23.5495 58.1208 25 60.6175 25ZM61.5686 22.8124C60.2609 22.8124 59.5475 22.2893 59.5475 21.2193C59.5475 20.2682 60.2371 19.6737 62.0442 19.5073L64.4934 19.317V19.9353C64.4934 21.7424 63.352 22.8124 61.5686 22.8124Z" fill="#101828"/>
-<path d="M71.5995 10.5905C72.5506 10.5905 73.3353 9.80581 73.3353 8.83091C73.3353 7.85601 72.5506 7.09511 71.5995 7.09511C70.6008 7.09511 69.8161 7.85601 69.8161 8.83091C69.8161 9.80581 70.6008 10.5905 71.5995 10.5905ZM70.149 24.6909H73.0499V12.9445H70.149V24.6909Z" fill="#101828"/>
-<path d="M78.9718 24.6909V7H76.0946V24.6909H78.9718Z" fill="#101828"/>
-<path d="M83.9408 24.6909L85.3437 20.6724H91.8352L93.2381 24.6909H96.4481L90.1707 7.30912H87.0558L80.7784 24.6909H83.9408ZM88.2209 12.4927C88.3873 12.0172 88.53 11.4941 88.6013 11.1612C88.6489 11.5178 88.8153 12.041 88.958 12.4927L90.9554 18.1044H86.2473L88.2209 12.4927Z" fill="#101828"/>
-<path d="M102.493 25C104.276 25 105.798 24.2153 106.511 22.86L106.701 24.6909H109.364V7H106.487V14.4425C105.75 13.2774 104.3 12.5878 102.659 12.5878C99.1161 12.5878 96.9761 15.2034 96.9761 18.8653C96.9761 22.5033 99.0923 25 102.493 25ZM103.135 22.3369C101.113 22.3369 99.877 20.8626 99.877 18.7701C99.877 16.6777 101.113 15.1797 103.135 15.1797C105.156 15.1797 106.463 16.6539 106.463 18.7701C106.463 20.8864 105.156 22.3369 103.135 22.3369Z" fill="#101828"/>
-<path d="M115.289 24.6909V18.033C115.289 16.1308 116.406 15.2272 117.785 15.2272C119.164 15.2272 120.044 16.107 120.044 17.7477V24.6909H122.945V18.033C122.945 16.107 124.015 15.2034 125.418 15.2034C126.797 15.2034 127.701 16.0832 127.701 17.7715V24.6909H130.578V17.0106C130.578 14.2999 129.008 12.5878 126.155 12.5878C124.372 12.5878 122.993 13.4676 122.398 14.823C121.78 13.4676 120.543 12.5878 118.76 12.5878C117.072 12.5878 115.883 13.3487 115.289 14.3236L115.051 12.9445H112.388V24.6909H115.289Z" fill="#101828"/>
-<path d="M134.876 10.5905C135.827 10.5905 136.612 9.80581 136.612 8.83091C136.612 7.85601 135.827 7.09511 134.876 7.09511C133.877 7.09511 133.093 7.85601 133.093 8.83091C133.093 9.80581 133.877 10.5905 134.876 10.5905ZM133.426 24.6909H136.327V12.9445H133.426V24.6909Z" fill="#101828"/>
-<path d="M142.225 24.6909V18.3659C142.225 16.4637 143.318 15.2272 145.102 15.2272C146.6 15.2272 147.575 16.1783 147.575 18.1519V24.6909H150.476V17.4624C150.476 14.4188 148.954 12.5878 146.005 12.5878C144.412 12.5878 142.985 13.2774 142.248 14.4663L142.011 12.9445H139.324V24.6909H142.225Z" fill="#101828"/>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="782.572" height="84.456" viewBox="120.601 341.04 782.572 84.456" xml:space="preserve">
+<desc>Created with Fabric.js 6.7.1</desc>
 <defs>
-<filter id="filter0_d_1624_24907" x="7.42383" y="6.2373" width="5.36841" height="20.5263" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-<feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-<feOffset dy="0.5"/>
-<feGaussianBlur stdDeviation="0.5"/>
-<feComposite in2="hardAlpha" operator="out"/>
-<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.12 0"/>
-<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1624_24907"/>
-<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1624_24907" result="shape"/>
-</filter>
-<filter id="filter1_d_1624_24907" x="13.7422" y="12.9727" width="5.36841" height="13.7895" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-<feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-<feOffset dy="0.5"/>
-<feGaussianBlur stdDeviation="0.5"/>
-<feComposite in2="hardAlpha" operator="out"/>
-<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.12 0"/>
-<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1624_24907"/>
-<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1624_24907" result="shape"/>
-</filter>
-<filter id="filter2_d_1624_24907" x="20.0547" y="8.76172" width="5.36841" height="18" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-<feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-<feOffset dy="0.5"/>
-<feGaussianBlur stdDeviation="0.5"/>
-<feComposite in2="hardAlpha" operator="out"/>
-<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.12 0"/>
-<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1624_24907"/>
-<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1624_24907" result="shape"/>
-</filter>
 </defs>
+
+<g transform="matrix(1.1689 0 0 1.1689 522.8191 408.3206)" style="" id="iText_textPair_0e25afd0-5219-4489-bfd8-844ecbb63140">
+		<text xml:space="preserve" font-family="Brandmark-Montserrat" font-size="100" font-style="normal" font-weight="300" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(255,255,255); fill-opacity: 0; fill-rule: nonzero; opacity: 1; text-decoration-thickness: 7.793%; white-space: pre;"><tspan x="-344.0999" y="31.414">BAKERYBASE</tspan></text>
+</g>
+<g transform="matrix(1.1689 0 0 1.1689 512 384)" id="glyphGroup_textPair_0e25afd0-5219-4489-bfd8-844ecbb63140">
+<g style="">
+		<g transform="matrix(1.3889 0 0 1.3889 -306.15 0)">
+<g style="">
+		<g transform="matrix(1 0 0 1 0 0)">
+<path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: #101010; fill-rule: nonzero; opacity: 1;" transform=" translate(-102.232, -95.9747)" d="M 119.944 99.4307 C 118 97.2707 115.264 95.8307 111.664 95.1827 C 114.256 94.3187 116.272 92.8787 117.856 90.9347 C 119.368 88.9907 120.088 86.5427 120.088 83.6627 C 120.088 79.5587 118.576 76.3907 115.552 74.0867 C 112.456 71.8547 108.208 70.7747 102.736 70.7747 L 81.712 70.7747 L 81.712 73.9427 L 102.592 73.9427 C 106.984 73.9427 110.44 74.8067 112.816 76.4627 C 115.192 78.1907 116.344 80.7107 116.344 83.9507 C 116.344 87.2627 115.192 89.7827 112.816 91.4387 C 110.44 93.1667 106.984 94.0307 102.592 94.0307 L 81.712 94.0307 L 81.712 97.1987 L 104.176 97.1987 C 109.072 97.1987 112.744 98.0627 115.336 99.7187 C 117.856 101.3747 119.08 104.0387 119.08 107.5667 C 119.08 111.0947 117.856 113.7587 115.336 115.4147 C 112.816 117.1427 109.072 118.0067 104.176 118.0067 L 81.712 118.0067 L 81.712 121.1747 L 104.176 121.1747 C 110.296 121.1747 114.976 120.0227 118.072 117.7187 C 121.168 115.4147 122.752 112.1027 122.752 107.8547 C 122.752 104.3987 121.816 101.5907 119.944 99.4307 Z" stroke-linecap="round"/>
+</g>
+</g>
+</g>
+		<g transform="matrix(1.3889 0 0 1.3889 -236.4 0)">
+<g style="">
+		<g transform="matrix(1 0 0 1 0 0)">
+<path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: #101010; fill-rule: nonzero; opacity: 1;" transform=" translate(-100, -95.9747)" d="M 101.836 70.7747 L 98.164 70.7747 L 74.98 121.1747 L 78.94 121.1747 L 99.964 74.8067 L 121.06 121.1747 L 125.02 121.1747 Z" stroke-linecap="round"/>
+</g>
+</g>
+</g>
+		<g transform="matrix(1.3889 0 0 1.3889 -160.4 0)">
+<g style="">
+		<g transform="matrix(1 0 0 1 0 0)">
+<path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: #101010; fill-rule: nonzero; opacity: 1;" transform=" translate(-104.032, -95.9747)" d="M 98.452 96.3347 L 120.124 121.1747 L 124.588 121.1747 L 100.9 93.6707 L 123.076 70.7747 L 118.612 70.7747 L 87.148 103.1747 L 87.148 70.7747 L 83.476 70.7747 L 83.476 121.1747 L 87.148 121.1747 L 87.148 107.9267 Z" stroke-linecap="round"/>
+</g>
+</g>
+</g>
+		<g transform="matrix(1.3889 0 0 1.3889 -96 0)">
+<g style="">
+		<g transform="matrix(1 0 0 1 0 0)">
+<path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: #101010; fill-rule: nonzero; opacity: 1;" transform=" translate(-101.008, -95.9747)" d="M 117.316 93.9587 L 84.7 93.9587 L 84.7 97.1987 L 117.316 97.1987 Z M 117.316 70.7747 L 84.7 70.7747 L 84.7 74.0867 L 117.316 74.0867 Z M 84.7 117.8627 L 84.7 121.1747 L 117.316 121.1747 L 117.316 117.8627 Z" stroke-linecap="round"/>
+</g>
+</g>
+</g>
+		<g transform="matrix(1.3889 0 0 1.3889 -24.55 0)">
+<g style="">
+		<g transform="matrix(1 0 0 1 0 0)">
+<path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: #101010; fill-rule: nonzero; opacity: 1;" transform=" translate(-102.448, -95.9747)" d="M 109.432 103.5347 C 113.248 102.4547 116.128 100.5107 118.216 97.7747 C 120.232 95.1107 121.24 91.7267 121.24 87.7667 C 121.24 82.4387 119.44 78.2627 115.84 75.2387 C 112.24 72.2867 107.272 70.7747 100.936 70.7747 L 82.864 70.7747 L 82.864 74.0867 L 100.936 74.0867 C 106.336 74.0867 110.44 75.2387 113.248 77.6147 C 116.056 80.0627 117.496 83.3747 117.496 87.7667 C 117.496 92.1587 116.056 95.4707 113.248 97.8467 C 110.44 100.2227 106.336 101.4467 100.936 101.4467 L 82.864 101.4467 L 82.864 121.1747 L 86.536 121.1747 L 86.536 104.6867 L 100.936 104.6867 C 102.448 104.6867 104.032 104.5427 105.832 104.3267 L 117.856 121.1747 L 122.032 121.1747 Z" stroke-linecap="round"/>
+</g>
+</g>
+</g>
+		<g transform="matrix(1.3889 0 0 1.3889 39.3 0)">
+<g style="">
+		<g transform="matrix(1 0 0 1 0 0)">
+<path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: #101010; fill-rule: nonzero; opacity: 1;" transform=" translate(-100, -95.9747)" d="M 101.836 103.8227 L 122.14 70.7747 L 118.324 70.7747 L 100.108 100.4387 L 81.892 70.7747 L 77.86 70.7747 L 98.164 103.8227 L 98.164 121.1747 L 101.836 121.1747 Z" stroke-linecap="round"/>
+</g>
+</g>
+</g>
+		<g transform="matrix(1.3889 0 0 1.3889 111.25 0)">
+<g style="">
+		<g transform="matrix(1 0 0 1 0 0)">
+<path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: #3641F5; fill-rule: nonzero; opacity: 1;" transform=" translate(-102.232, -95.9747)" d="M 119.944 99.4307 C 118 97.2707 115.264 95.8307 111.664 95.1827 C 114.256 94.3187 116.272 92.8787 117.856 90.9347 C 119.368 88.9907 120.088 86.5427 120.088 83.6627 C 120.088 79.5587 118.576 76.3907 115.552 74.0867 C 112.456 71.8547 108.208 70.7747 102.736 70.7747 L 81.712 70.7747 L 81.712 73.9427 L 102.592 73.9427 C 106.984 73.9427 110.44 74.8067 112.816 76.4627 C 115.192 78.1907 116.344 80.7107 116.344 83.9507 C 116.344 87.2627 115.192 89.7827 112.816 91.4387 C 110.44 93.1667 106.984 94.0307 102.592 94.0307 L 81.712 94.0307 L 81.712 97.1987 L 104.176 97.1987 C 109.072 97.1987 112.744 98.0627 115.336 99.7187 C 117.856 101.3747 119.08 104.0387 119.08 107.5667 C 119.08 111.0947 117.856 113.7587 115.336 115.4147 C 112.816 117.1427 109.072 118.0067 104.176 118.0067 L 81.712 118.0067 L 81.712 121.1747 L 104.176 121.1747 C 110.296 121.1747 114.976 120.0227 118.072 117.7187 C 121.168 115.4147 122.752 112.1027 122.752 107.8547 C 122.752 104.3987 121.816 101.5907 119.944 99.4307 Z" stroke-linecap="round"/>
+</g>
+</g>
+</g>
+		<g transform="matrix(1.3889 0 0 1.3889 181 0)">
+<g style="">
+		<g transform="matrix(1 0 0 1 0 0)">
+<path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: #3641F5; fill-rule: nonzero; opacity: 1;" transform=" translate(-100, -95.9747)" d="M 101.836 70.7747 L 98.164 70.7747 L 74.98 121.1747 L 78.94 121.1747 L 99.964 74.8067 L 121.06 121.1747 L 125.02 121.1747 Z" stroke-linecap="round"/>
+</g>
+</g>
+</g>
+		<g transform="matrix(1.3889 0 0 1.3889 246.7 0)">
+<g style="">
+		<g transform="matrix(1 0 0 1 0 0)">
+<path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: #3641F5; fill-rule: nonzero; opacity: 1;" transform=" translate(-100, -95.9747)" d="M 89.596 119.5907 C 92.908 120.8867 96.436 121.5347 100.108 121.5347 C 104.068 121.5347 107.452 120.9587 110.188 119.7347 C 112.924 118.5107 114.94 116.9267 116.308 114.9107 C 117.604 112.8947 118.252 110.6627 118.252 108.2147 C 118.252 105.2627 117.46 102.8867 115.948 101.0867 C 114.364 99.3587 112.492 98.0627 110.26 97.1987 C 108.028 96.3347 105.076 95.4707 101.404 94.5347 C 98.092 93.7427 95.5 92.9507 93.556 92.2307 C 91.612 91.5107 90.028 90.5027 88.732 89.1347 C 87.436 87.7667 86.788 85.9667 86.788 83.7347 C 86.788 80.7827 88.012 78.3347 90.388 76.4627 C 92.764 74.5907 96.292 73.6547 100.972 73.6547 C 103.348 73.6547 105.724 74.0147 108.172 74.7347 C 110.548 75.4547 112.78 76.5347 114.796 77.9027 L 116.164 74.9507 C 114.22 73.5827 111.844 72.4307 109.18 71.6387 C 106.516 70.8467 103.78 70.4147 100.972 70.4147 C 97.012 70.4147 93.7 70.9907 91.036 72.2147 C 88.372 73.4387 86.356 75.0227 85.06 77.0387 C 83.764 79.1267 83.116 81.3587 83.116 83.8067 C 83.116 86.8307 83.908 89.2067 85.492 91.0067 C 87.004 92.8067 88.948 94.1747 91.18 95.0387 C 93.412 95.9027 96.364 96.7667 100.036 97.7027 C 103.276 98.4947 105.868 99.2147 107.812 99.9347 C 109.756 100.6547 111.34 101.6627 112.636 103.0307 C 113.932 104.3987 114.58 106.1987 114.58 108.4307 C 114.58 111.3827 113.356 113.7587 110.908 115.5587 C 108.46 117.3587 104.86 118.2947 100.036 118.2947 C 96.724 118.2947 93.556 117.7187 90.604 116.4947 C 87.58 115.3427 85.204 113.8307 83.404 111.9587 L 81.748 114.6947 C 83.62 116.7107 86.212 118.3667 89.596 119.5907 Z" stroke-linecap="round"/>
+</g>
+</g>
+</g>
+		<g transform="matrix(1.3889 0 0 1.3889 312 0)">
+<g style="">
+		<g transform="matrix(1 0 0 1 0 0)">
+<path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: #3641F5; fill-rule: nonzero; opacity: 1;" transform=" translate(-101.008, -95.9747)" d="M 117.316 93.9587 L 84.7 93.9587 L 84.7 97.1987 L 117.316 97.1987 Z M 117.316 70.7747 L 84.7 70.7747 L 84.7 74.0867 L 117.316 74.0867 Z M 84.7 117.8627 L 84.7 121.1747 L 117.316 121.1747 L 117.316 117.8627 Z" stroke-linecap="round"/>
+</g>
+</g>
+</g>
+</g>
+</g>
 </svg>
