@@ -327,6 +327,11 @@ const menuGroups: MenuGroup[] = [
         name: 'Stock On Hand',
         path: '/inventory/stock-on-hand',
       },
+      {
+        icon: ListIcon,
+        name: 'Stock Ledger',
+        path: '/inventory/ledger',
+      },
     ],
   },
   {

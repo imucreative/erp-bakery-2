@@ -205,6 +205,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/inventory/ledger',
+      name: 'InventoryStockLedger',
+      component: () => import('../views/Inventory/StockLedgerList.vue'),
+      meta: {
+        title: 'Stock Ledger',
+        permission: 'inventory.read',
+      },
+    },
+    {
       path: '/system/users',
       name: 'Users',
       component: () => import('../views/System/UserList.vue'),
