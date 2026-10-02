@@ -295,6 +295,33 @@ const router = createRouter({
       },
     },
     {
+      path: '/production/orders',
+      name: 'ProductionOrders',
+      component: () => import('../views/Production/ProductionOrderList.vue'),
+      meta: {
+        title: 'Production Orders',
+        permission: 'production-order.read',
+      },
+    },
+    {
+      path: '/production/orders/create',
+      name: 'ProductionOrderCreate',
+      component: () => import('../views/Production/ProductionOrderForm.vue'),
+      meta: {
+        title: 'Jadwalkan Produksi',
+        permission: 'production-order.manage',
+      },
+    },
+    {
+      path: '/production/orders/:id',
+      name: 'ProductionOrderDetail',
+      component: () => import('../views/Production/ProductionOrderDetail.vue'),
+      meta: {
+        title: 'Detail Production Order',
+        permission: 'production-order.read',
+      },
+    },
+    {
       path: '/system/users',
       name: 'Users',
       component: () => import('../views/System/UserList.vue'),
