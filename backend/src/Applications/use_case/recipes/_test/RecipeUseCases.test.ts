@@ -120,10 +120,10 @@ describe('DeleteRecipeUseCase', () => {
     expect(recipeRepo.softDelete).toHaveBeenCalledWith('r', 'c1');
   });
 
-  it('should propagate ONLY_DRAFT_DELETABLE for non-DRAFT recipes', async () => {
-    recipeRepo.softDelete.mockRejectedValue(new Error('RECIPE.ONLY_DRAFT_DELETABLE'));
+  it('should propagate ACTIVE_NOT_DELETABLE for ACTIVE recipes', async () => {
+    recipeRepo.softDelete.mockRejectedValue(new Error('RECIPE.ACTIVE_NOT_DELETABLE'));
     await expect(new DeleteRecipeUseCase(recipeRepo).execute('r', 'c1')).rejects.toThrow(
-      'RECIPE.ONLY_DRAFT_DELETABLE',
+      'RECIPE.ACTIVE_NOT_DELETABLE',
     );
   });
 

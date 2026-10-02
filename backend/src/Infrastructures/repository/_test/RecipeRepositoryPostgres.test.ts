@@ -124,6 +124,21 @@ describe('RecipeRepositoryPostgres', () => {
       expect(updateCall).toBeDefined();
     });
 
+    it('should soft-delete an ARCHIVED recipe and commit', async () => {
+      client.query
+        .mockResolvedValueOnce(undefined) // BEGIN
+        .mockResolvedValueOnce({ rows: [header({ status: 'ARCHIVED' })], rowCount: 1 }) // lock header
+        .mockResolvedValueOnce({ rowCount: 1 }) // UPDATE deleted_at
+        .mockResolvedValueOnce(undefined); // COMMIT
+
+      await repo.softDelete('r1', 'c1');
+      expect(client.query).toHaveBeenCalledWith('COMMIT');
+      const updateCall = client.query.mock.calls.find(
+        (c) => typeof c[0] === 'string' && c[0].includes('deleted_at = NOW()'),
+      );
+      expect(updateCall).toBeDefined();
+    });
+
     it('should throw NotFoundError when recipe is missing', async () => {
       client.query
         .mockResolvedValueOnce(undefined) // BEGIN
@@ -135,22 +150,15 @@ describe('RecipeRepositoryPostgres', () => {
     });
 
     it('should reject deleting an ACTIVE recipe', async () => {
-      client.query
-        .mockResolvedValueOnce(undefined) // BEGIN
-        .mockResolvedValueOnce({ rows: [header({ status: 'ACTIVE' })], rowCount: 1 }) // lock header
-        .mockResolvedValueOnce(undefined); // ROLLBACK
+      client.query.mockImplementation((sql: unknown) => {
+        if (typeof sql === 'string' && sql.includes('FOR UPDATE')) {
+          return Promise.resolve({ rows: [header({ status: 'ACTIVE' })], rowCount: 1 });
+        }
+        return Promise.resolve(undefined);
+      });
 
       await expect(repo.softDelete('r1', 'c1')).rejects.toBeInstanceOf(InvariantError);
-      expect(client.query).toHaveBeenCalledWith('ROLLBACK');
-    });
-
-    it('should reject deleting an ARCHIVED recipe', async () => {
-      client.query
-        .mockResolvedValueOnce(undefined) // BEGIN
-        .mockResolvedValueOnce({ rows: [header({ status: 'ARCHIVED' })], rowCount: 1 }) // lock header
-        .mockResolvedValueOnce(undefined); // ROLLBACK
-
-      await expect(repo.softDelete('r1', 'c1')).rejects.toBeInstanceOf(InvariantError);
+      await expect(repo.softDelete('r1', 'c1')).rejects.toThrow('RECIPE.ACTIVE_NOT_DELETABLE');
       expect(client.query).toHaveBeenCalledWith('ROLLBACK');
     });
   });

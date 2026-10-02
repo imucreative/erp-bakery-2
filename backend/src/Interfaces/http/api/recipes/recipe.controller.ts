@@ -37,7 +37,7 @@ import { RecipeQueryDto } from './dto/recipe-query.dto';
  * PUT   /production/recipes/:id          update draft
  * POST  /production/recipes/:id/activate DRAFT -> ACTIVE (one active per product)
  * POST  /production/recipes/:id/archive  -> ARCHIVED
- * DELETE /production/recipes/:id         soft-delete DRAFT only
+ * DELETE /production/recipes/:id         soft-delete DRAFT or ARCHIVED (not ACTIVE)
  */
 @ApiTags('Recipes')
 @ApiBearerAuth()
@@ -138,10 +138,10 @@ export class RecipeController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('recipe.manage')
-  @ApiOperation({ summary: 'Delete a recipe (soft-delete, DRAFT only)' })
+  @ApiOperation({ summary: 'Delete a recipe (soft-delete DRAFT or ARCHIVED, not ACTIVE)' })
   @ApiParam({ name: 'id', description: 'Recipe UUID' })
   @ApiResponse({ status: 200, description: 'Deleted' })
-  @ApiResponse({ status: 400, description: 'Recipe is not DRAFT (only DRAFT is deletable)' })
+  @ApiResponse({ status: 400, description: 'Recipe is ACTIVE (ACTIVE recipes cannot be deleted)' })
   @ApiResponse({ status: 404, description: 'Not found' })
   async remove(@Param('id') id: string, @GetUser() user: JwtAccessPayload) {
     await this.deleteUseCase.execute(id, this._companyId(user));

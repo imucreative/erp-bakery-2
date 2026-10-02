@@ -8,7 +8,7 @@
  *   edit      → parent navigates to the edit page (DRAFT only)
  *   activate  → parent opens the activate confirmation modal (DRAFT → ACTIVE)
  *   archive   → parent opens the archive confirmation modal (DRAFT|ACTIVE → ARCHIVED)
- *   delete    → parent opens the delete confirmation modal (DRAFT only, soft-delete)
+ *   delete    → parent opens the delete confirmation modal (DRAFT|ARCHIVED, soft-delete)
  *   duplicate → parent copies an ARCHIVED recipe into a new create draft
  *
  * Every button carries a relevant icon (icon + text) per the UI standard. When

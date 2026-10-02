@@ -358,8 +358,10 @@ export class RecipeRepositoryPostgres extends RecipeRepository {
       if (!headerResult.rowCount) {
         throw new NotFoundError('RECIPE.NOT_FOUND');
       }
-      if (headerResult.rows[0].status !== 'DRAFT') {
-        throw new InvariantError('RECIPE.ONLY_DRAFT_DELETABLE');
+      // DRAFT and ARCHIVED recipes may be soft-deleted (archive cleanup).
+      // Only ACTIVE recipes are protected because they are currently in use.
+      if (headerResult.rows[0].status === 'ACTIVE') {
+        throw new InvariantError('RECIPE.ACTIVE_NOT_DELETABLE');
       }
 
       // recipes table carries only deleted_at (no deleted_by column). Items are

@@ -5,9 +5,9 @@
  * actions (canTransition is mirrored from the backend — actions outside the
  * current transition are never shown):
  *
- *   DRAFT    → Edit (recipe.manage), Activate (recipe.manage), Archive (recipe.manage)
- *   ACTIVE   → Archive (recipe.manage)   [NOT editable; cannot return to DRAFT]
- *   ARCHIVED → terminal (no actions)
+ *   DRAFT    → Edit (recipe.manage), Activate (recipe.manage), Archive (recipe.manage), Delete (recipe.manage)
+ *   ACTIVE   → Archive (recipe.manage)   [NOT editable; cannot return to DRAFT; NOT deletable]
+ *   ARCHIVED → Duplicate to Draft (recipe.manage), Delete (recipe.manage)   [terminal lifecycle]
  *
  * The backend lifecycle endpoints take no body, so each action is a plain
  * confirmation modal. Mutations keep the user on the page; backend errors
@@ -78,9 +78,12 @@ const showActivate = computed<boolean>(() => canManage.value && status.value ===
 const showArchive = computed<boolean>(
   () => canManage.value && (status.value === 'DRAFT' || status.value === 'ACTIVE'),
 )
-// Soft-delete is DRAFT-only (backend rejects ACTIVE/ARCHIVED). Duplicate turns a
-// terminal ARCHIVED recipe into a brand-new create draft (frontend-only prefill).
-const showDelete = computed<boolean>(() => canManage.value && status.value === 'DRAFT')
+// Soft-delete is allowed for DRAFT and ARCHIVED (backend rejects only ACTIVE with
+// 400 RECIPE.ACTIVE_NOT_DELETABLE). Duplicate turns a terminal ARCHIVED recipe
+// into a brand-new create draft (frontend-only prefill).
+const showDelete = computed<boolean>(
+  () => canManage.value && (status.value === 'DRAFT' || status.value === 'ARCHIVED'),
+)
 const showDuplicate = computed<boolean>(() => canManage.value && status.value === 'ARCHIVED')
 const hasAnyAction = computed<boolean>(
   () =>

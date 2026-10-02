@@ -5,9 +5,10 @@
  * endpoints take NO request body, so this modal is a plain confirmation with no
  * input — it only emits `confirm`. Activate explains the "one active recipe per
  * product" rule; archive explains it is terminal; delete is a destructive
- * soft-delete allowed only for DRAFT. The parent runs the mutation and surfaces
- * backend errors via `errorMessage` (notably the 409 "another active recipe
- * exists" clash on activate, or 400/404 on delete), keeping the user on the
+ * soft-delete allowed for DRAFT or ARCHIVED (the backend rejects only ACTIVE
+ * with 400 RECIPE.ACTIVE_NOT_DELETABLE). The parent runs the mutation and
+ * surfaces backend errors via `errorMessage` (notably the 409 "another active
+ * recipe exists" clash on activate, or 400/404 on delete), keeping the user on the
  * page. Transparent backdrop + rounded-3xl panel per the UI standard.
  */
 import { computed } from 'vue'
@@ -55,7 +56,7 @@ const description = computed<string>(() => {
     case 'archive':
       return 'Arsipkan resep ini? Resep yang diarsipkan bersifat final dan tidak dapat diaktifkan kembali.'
     case 'delete':
-      return 'Hapus resep draft ini? Resep yang dihapus akan dikeluarkan dari daftar. Hanya resep berstatus Draft yang dapat dihapus.'
+      return 'Hapus resep ini? Resep yang dihapus akan dikeluarkan dari daftar. Resep berstatus Draft atau Arsip dapat dihapus; resep Aktif tidak dapat dihapus.'
     default:
       return ''
   }
@@ -63,7 +64,7 @@ const description = computed<string>(() => {
 
 const warningText = computed<string>(() =>
   props.action === 'delete'
-    ? 'Resep draft yang dihapus tidak dapat dikembalikan dari daftar.'
+    ? 'Resep yang dihapus tidak dapat dikembalikan dari daftar.'
     : 'Resep yang diarsipkan tidak dapat dikembalikan.',
 )
 
