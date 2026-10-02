@@ -44,6 +44,7 @@ import {
   type SourcePoItem,
 } from '@/components/procurement/goods-receipt'
 import { toISODate } from '@/lib/format'
+import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import { toMessage } from '@/composables/usePurchaseRequests'
 import { outletService } from '@/services/outlet.service'
 import { productService, type Product } from '@/services/product.service'
@@ -178,18 +179,20 @@ async function loadSupportingData(): Promise<void> {
   // Picker list: only APPROVED POs that still have outstanding (≥1 item not yet
   // fully received). Fully-received POs are excluded via `receivable: true` so
   // they never appear as a selectable source when creating a GR.
-  const [poResult, productResult, uomResult, supplierResult, outletResult] = await Promise.all([
-    purchaseOrderService.list({ page: 1, limit: 100, status: 'APPROVED', receivable: true }),
-    productService.list({ page: 1, limit: 100 }),
-    uomService.list({ page: 1, limit: 100, isActive: 'true' }),
-    supplierService.list({ page: 1, limit: 100 }),
-    outletService.list({ page: 1, limit: 100 }),
+  const [allOrders, allProducts, allUoms, allSuppliers, allOutlets] = await Promise.all([
+    fetchAllPaginated((page) =>
+      purchaseOrderService.list({ page, limit: PAGE_LIMIT, status: 'APPROVED', receivable: true }),
+    ),
+    fetchAllPaginated((page) => productService.list({ page, limit: PAGE_LIMIT })),
+    fetchAllPaginated((page) => uomService.list({ page, limit: PAGE_LIMIT, isActive: 'true' })),
+    fetchAllPaginated((page) => supplierService.list({ page, limit: PAGE_LIMIT })),
+    fetchAllPaginated((page) => outletService.list({ page, limit: PAGE_LIMIT })),
   ])
-  approvedOrders.value = poResult.items
-  products.value = productResult.items
-  uoms.value = uomResult.items
-  supplierNames.value = new Map(supplierResult.items.map((s) => [s.id, s.name]))
-  outletNames.value = new Map(outletResult.items.map((o) => [o.id, o.name]))
+  approvedOrders.value = allOrders
+  products.value = allProducts
+  uoms.value = allUoms
+  supplierNames.value = new Map(allSuppliers.map((s) => [s.id, s.name]))
+  outletNames.value = new Map(allOutlets.map((o) => [o.id, o.name]))
 }
 
 async function loadExisting(id: string): Promise<void> {

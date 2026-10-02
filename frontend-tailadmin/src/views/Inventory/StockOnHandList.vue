@@ -18,6 +18,7 @@ import {
 } from '@/components/inventory/stock-on-hand'
 import { useStockOnHand } from '@/composables/useStockOnHand'
 import { outletService } from '@/services/outlet.service'
+import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 
 const pageTitle = 'Stock On Hand'
 
@@ -48,8 +49,10 @@ const outlets = ref<OutletOption[]>([])
 
 async function loadOutlets(): Promise<void> {
   try {
-    const result = await outletService.list({ page: 1, limit: 100, isActive: 'true' })
-    outlets.value = result.items.map((o) => ({ id: o.id, name: o.name }))
+    const allOutlets = await fetchAllPaginated((page) =>
+      outletService.list({ page, limit: PAGE_LIMIT, isActive: 'true' }),
+    )
+    outlets.value = allOutlets.map((o) => ({ id: o.id, name: o.name }))
   } catch {
     // Non-fatal: the dropdown falls back to "Semua Outlet" only.
     outlets.value = []

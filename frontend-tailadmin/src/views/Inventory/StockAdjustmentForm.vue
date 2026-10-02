@@ -31,6 +31,7 @@ import {
   type EditorItemRow,
 } from '@/components/inventory/stock-adjustment'
 import { toISODate } from '@/lib/format'
+import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import { toMessage } from '@/composables/useStockLedger'
 import { outletService, type Outlet } from '@/services/outlet.service'
 import { productService, type Product } from '@/services/product.service'
@@ -99,12 +100,13 @@ async function loadBatchesForOutlet(targetOutletId: string): Promise<void> {
   }
   batchesLoading.value = true
   try {
-    const result = await inventoryService.getBatches({
-      page: 1,
-      limit: 200,
-      outletId: targetOutletId,
-    })
-    batches.value = result.items
+    batches.value = await fetchAllPaginated((page) =>
+      inventoryService.getBatches({
+        page,
+        limit: PAGE_LIMIT,
+        outletId: targetOutletId,
+      }),
+    )
   } catch (error) {
     formError.value = toMessage(error)
     batches.value = []
@@ -114,12 +116,12 @@ async function loadBatchesForOutlet(targetOutletId: string): Promise<void> {
 }
 
 async function loadSupportingData(): Promise<void> {
-  const [outletResult, productResult] = await Promise.all([
-    outletService.list({ page: 1, limit: 100 }),
-    productService.list({ page: 1, limit: 200 }),
+  const [allOutlets, allProducts] = await Promise.all([
+    fetchAllPaginated((page) => outletService.list({ page, limit: PAGE_LIMIT })),
+    fetchAllPaginated((page) => productService.list({ page, limit: PAGE_LIMIT })),
   ])
-  outlets.value = outletResult.items
-  products.value = productResult.items
+  outlets.value = allOutlets
+  products.value = allProducts
 }
 
 async function loadExisting(id: string): Promise<void> {

@@ -25,6 +25,7 @@ import {
   type EditorItemRow,
 } from '@/components/procurement/purchase-request'
 import { tomorrowISO } from '@/lib/format'
+import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import { toMessage } from '@/composables/usePurchaseRequests'
 import { outletService, type Outlet } from '@/services/outlet.service'
 import { productService, type Product } from '@/services/product.service'
@@ -70,14 +71,14 @@ const isReadOnly = computed<boolean>(
 )
 
 async function loadSupportingData(): Promise<void> {
-  const [outletResult, productResult, uomResult] = await Promise.all([
-    outletService.list({ page: 1, limit: 100, isActive: 'true' }),
-    productService.list({ page: 1, limit: 100, isActive: 'true' }),
-    uomService.list({ page: 1, limit: 100, isActive: 'true' }),
+  const [allOutlets, allProducts, allUoms] = await Promise.all([
+    fetchAllPaginated((page) => outletService.list({ page, limit: PAGE_LIMIT, isActive: 'true' })),
+    fetchAllPaginated((page) => productService.list({ page, limit: PAGE_LIMIT, isActive: 'true' })),
+    fetchAllPaginated((page) => uomService.list({ page, limit: PAGE_LIMIT, isActive: 'true' })),
   ])
-  outlets.value = outletResult.items
-  products.value = productResult.items
-  uoms.value = uomResult.items
+  outlets.value = allOutlets
+  products.value = allProducts
+  uoms.value = allUoms
 }
 
 async function loadExisting(id: string): Promise<void> {

@@ -19,6 +19,7 @@ import {
 import { usePermission } from '@/composables/usePermission'
 import { useStockAdjustments } from '@/composables/useStockAdjustments'
 import { outletService, type Outlet } from '@/services/outlet.service'
+import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import type { StockAdjustment } from '@/services/stock-adjustment.service'
 
 const pageTitle = 'Stock Adjustments'
@@ -49,9 +50,11 @@ const outletNames = ref<Map<string, string>>(new Map())
 
 async function loadLookups(): Promise<void> {
   try {
-    const result = await outletService.list({ page: 1, limit: 100 })
-    outlets.value = result.items
-    outletNames.value = new Map(result.items.map((o) => [o.id, o.name]))
+    const allOutlets = await fetchAllPaginated((page) =>
+      outletService.list({ page, limit: PAGE_LIMIT }),
+    )
+    outlets.value = allOutlets
+    outletNames.value = new Map(allOutlets.map((o) => [o.id, o.name]))
   } catch {
     // Non-fatal: fall back to showing raw ids in the table.
     outlets.value = []

@@ -19,6 +19,7 @@ import {
 import { useStockLedger } from '@/composables/useStockLedger'
 import { outletService } from '@/services/outlet.service'
 import { productService } from '@/services/product.service'
+import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 
 const pageTitle = 'Stock Ledger'
 
@@ -60,9 +61,11 @@ const productNames = ref<Map<string, { name: string; sku: string }>>(new Map())
 
 async function loadOutlets(): Promise<void> {
   try {
-    const result = await outletService.list({ page: 1, limit: 100, isActive: 'true' })
-    outlets.value = result.items.map((o) => ({ id: o.id, name: o.name }))
-    outletNames.value = new Map(result.items.map((o) => [o.id, o.name]))
+    const allOutlets = await fetchAllPaginated((page) =>
+      outletService.list({ page, limit: PAGE_LIMIT, isActive: 'true' }),
+    )
+    outlets.value = allOutlets.map((o) => ({ id: o.id, name: o.name }))
+    outletNames.value = new Map(allOutlets.map((o) => [o.id, o.name]))
   } catch {
     // Non-fatal: dropdown falls back to "Semua Outlet"; table shows raw ids.
     outlets.value = []
@@ -72,10 +75,12 @@ async function loadOutlets(): Promise<void> {
 
 async function loadProducts(): Promise<void> {
   try {
-    const result = await productService.list({ page: 1, limit: 100 })
-    products.value = result.items.map((p) => ({ id: p.id, name: p.name, sku: p.sku }))
+    const allProducts = await fetchAllPaginated((page) =>
+      productService.list({ page, limit: PAGE_LIMIT }),
+    )
+    products.value = allProducts.map((p) => ({ id: p.id, name: p.name, sku: p.sku }))
     productNames.value = new Map(
-      result.items.map((p) => [p.id, { name: p.name, sku: p.sku }]),
+      allProducts.map((p) => [p.id, { name: p.name, sku: p.sku }]),
     )
   } catch {
     // Non-fatal: dropdown falls back to "Semua Produk"; table shows raw ids.

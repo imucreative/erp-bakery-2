@@ -19,6 +19,7 @@ import {
 import { usePermission } from '@/composables/usePermission'
 import { usePurchaseRequests } from '@/composables/usePurchaseRequests'
 import { outletService } from '@/services/outlet.service'
+import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import type { PurchaseRequest } from '@/services/purchase-request.service'
 
 const pageTitle = 'Purchase Requests'
@@ -47,8 +48,10 @@ const outletNames = ref<Map<string, string>>(new Map())
 
 async function loadOutlets(): Promise<void> {
   try {
-    const result = await outletService.list({ page: 1, limit: 100, isActive: 'true' })
-    outletNames.value = new Map(result.items.map((o) => [o.id, o.name]))
+    const allOutlets = await fetchAllPaginated((page) =>
+      outletService.list({ page, limit: PAGE_LIMIT, isActive: 'true' }),
+    )
+    outletNames.value = new Map(allOutlets.map((o) => [o.id, o.name]))
   } catch {
     // Non-fatal: fall back to showing the raw id in the table.
     outletNames.value = new Map()

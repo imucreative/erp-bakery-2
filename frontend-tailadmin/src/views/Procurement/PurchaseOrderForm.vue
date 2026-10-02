@@ -49,6 +49,7 @@ import {
   type SourcePrItem,
 } from '@/components/procurement/purchase-order'
 import { formatDate, toISODate } from '@/lib/format'
+import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import { toMessage } from '@/composables/usePurchaseRequests'
 import { outletService, type Outlet } from '@/services/outlet.service'
 import { productService, type Product } from '@/services/product.service'
@@ -196,21 +197,27 @@ async function loadSupportingData(): Promise<void> {
   // Picker list: only APPROVED PRs that still have outstanding (≥1 item not yet
   // fully consumed by other active POs). Fully-ordered PRs are excluded via
   // `orderable: true` so they never appear as a selectable source for a new PO.
-  const [prResult, supplierResult, paymentTermResult, productResult, uomResult, outletResult] =
+  const [allRequests, allSuppliers, paymentTermResult, allProducts, allUoms, allOutlets] =
     await Promise.all([
-      purchaseRequestService.list({ page: 1, limit: 100, status: 'APPROVED', orderable: true }),
-      supplierService.list({ page: 1, limit: 100, isActive: 'true' }),
+      fetchAllPaginated((page) =>
+        purchaseRequestService.list({ page, limit: PAGE_LIMIT, status: 'APPROVED', orderable: true }),
+      ),
+      fetchAllPaginated((page) =>
+        supplierService.list({ page, limit: PAGE_LIMIT, isActive: 'true' }),
+      ),
       paymentTermService.lookup(),
-      productService.list({ page: 1, limit: 100, isActive: 'true' }),
-      uomService.list({ page: 1, limit: 100, isActive: 'true' }),
-      outletService.list({ page: 1, limit: 100 }),
+      fetchAllPaginated((page) =>
+        productService.list({ page, limit: PAGE_LIMIT, isActive: 'true' }),
+      ),
+      fetchAllPaginated((page) => uomService.list({ page, limit: PAGE_LIMIT, isActive: 'true' })),
+      fetchAllPaginated((page) => outletService.list({ page, limit: PAGE_LIMIT })),
     ])
-  approvedRequests.value = prResult.items
-  suppliers.value = supplierResult.items
+  approvedRequests.value = allRequests
+  suppliers.value = allSuppliers
   paymentTerms.value = paymentTermResult
-  products.value = productResult.items
-  uoms.value = uomResult.items
-  outletNames.value = new Map(outletResult.items.map((o) => [o.id, o.name]))
+  products.value = allProducts
+  uoms.value = allUoms
+  outletNames.value = new Map(allOutlets.map((o) => [o.id, o.name]))
 }
 
 async function loadExisting(id: string): Promise<void> {

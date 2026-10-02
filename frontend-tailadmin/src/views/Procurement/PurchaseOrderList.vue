@@ -20,6 +20,7 @@ import { usePermission } from '@/composables/usePermission'
 import { usePurchaseOrders } from '@/composables/usePurchaseOrders'
 import { supplierService, type Supplier } from '@/services/supplier.service'
 import { purchaseRequestService } from '@/services/purchase-request.service'
+import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import type { PurchaseOrder } from '@/services/purchase-order.service'
 
 const pageTitle = 'Purchase Orders'
@@ -51,13 +52,15 @@ const prNumbers = ref<Map<string, string>>(new Map())
 
 async function loadLookups(): Promise<void> {
   try {
-    const [supplierResult, prResult] = await Promise.all([
-      supplierService.list({ page: 1, limit: 100, isActive: 'true' }),
-      purchaseRequestService.list({ page: 1, limit: 100 }),
+    const [allSuppliers, allRequests] = await Promise.all([
+      fetchAllPaginated((page) =>
+        supplierService.list({ page, limit: PAGE_LIMIT, isActive: 'true' }),
+      ),
+      fetchAllPaginated((page) => purchaseRequestService.list({ page, limit: PAGE_LIMIT })),
     ])
-    suppliers.value = supplierResult.items
-    supplierNames.value = new Map(supplierResult.items.map((s) => [s.id, s.name]))
-    prNumbers.value = new Map(prResult.items.map((pr) => [pr.id, pr.prNumber]))
+    suppliers.value = allSuppliers
+    supplierNames.value = new Map(allSuppliers.map((s) => [s.id, s.name]))
+    prNumbers.value = new Map(allRequests.map((pr) => [pr.id, pr.prNumber]))
   } catch {
     // Non-fatal: fall back to showing raw ids in the table.
     suppliers.value = []

@@ -35,6 +35,7 @@ import {
 } from '@/components/procurement/purchase-order'
 import { usePermission } from '@/composables/usePermission'
 import { toMessage } from '@/composables/usePurchaseRequests'
+import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import { outletService } from '@/services/outlet.service'
 import { productService } from '@/services/product.service'
 import { uomService } from '@/services/uom.service'
@@ -105,18 +106,18 @@ const hasAnyAction = computed<boolean>(
 
 // ── Load ─────────────────────────────────────────────────────────────
 async function loadLookups(): Promise<void> {
-  const [outletResult, productResult, uomResult, supplierResult, prResult] = await Promise.all([
-    outletService.list({ page: 1, limit: 100 }),
-    productService.list({ page: 1, limit: 100 }),
-    uomService.list({ page: 1, limit: 100 }),
-    supplierService.list({ page: 1, limit: 100 }),
-    purchaseRequestService.list({ page: 1, limit: 100 }),
+  const [allOutlets, allProducts, allUoms, allSuppliers, allRequests] = await Promise.all([
+    fetchAllPaginated((page) => outletService.list({ page, limit: PAGE_LIMIT })),
+    fetchAllPaginated((page) => productService.list({ page, limit: PAGE_LIMIT })),
+    fetchAllPaginated((page) => uomService.list({ page, limit: PAGE_LIMIT })),
+    fetchAllPaginated((page) => supplierService.list({ page, limit: PAGE_LIMIT })),
+    fetchAllPaginated((page) => purchaseRequestService.list({ page, limit: PAGE_LIMIT })),
   ])
-  outletNames.value = new Map(outletResult.items.map((o) => [o.id, o.name]))
-  productNames.value = new Map(productResult.items.map((p) => [p.id, `${p.name} (${p.sku})`]))
-  uomNames.value = new Map(uomResult.items.map((u) => [u.id, u.name]))
-  supplierNames.value = new Map(supplierResult.items.map((s) => [s.id, s.name]))
-  prNumbers.value = new Map(prResult.items.map((pr) => [pr.id, pr.prNumber]))
+  outletNames.value = new Map(allOutlets.map((o) => [o.id, o.name]))
+  productNames.value = new Map(allProducts.map((p) => [p.id, `${p.name} (${p.sku})`]))
+  uomNames.value = new Map(allUoms.map((u) => [u.id, u.name]))
+  supplierNames.value = new Map(allSuppliers.map((s) => [s.id, s.name]))
+  prNumbers.value = new Map(allRequests.map((pr) => [pr.id, pr.prNumber]))
 }
 
 async function loadPo(): Promise<void> {
