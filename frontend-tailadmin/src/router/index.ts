@@ -214,6 +214,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/inventory/batches',
+      name: 'InventoryBatches',
+      component: () => import('../views/Inventory/BatchList.vue'),
+      meta: {
+        title: 'Batch & Expiry',
+        permission: 'inventory.read',
+      },
+    },
+    {
       path: '/system/users',
       name: 'Users',
       component: () => import('../views/System/UserList.vue'),

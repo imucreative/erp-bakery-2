@@ -1,0 +1,187 @@
+<script setup lang="ts">
+/**
+ * BatchList — thin controller for the read-only Batch & Expiry list page.
+ * List state (pagination / outlet / product / status filters + include-non-batch
+ * toggle) lives in `useBatches`; the toolbar, table, and detail modal are
+ * separate feature components. The batches endpoint returns raw InventoryBatch
+ * rows carrying IDs only, so outlet and product names are resolved from
+ * one-time lookup maps (same pattern as the Stock Ledger list). Expiry
+ * classification is backend-derived — never recomputed here. Read-only: no
+ * create button, no mutations; the only row action opens a read-only detail
+ * modal fetched via the service.
+ */
+import { onMounted, ref } from 'vue'
+import AdminLayout from '@/components/layout/AdminLayout.vue'
+import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import ComponentCard from '@/components/common/ComponentCard.vue'
+import Button from '@/components/ui/Button.vue'
+import {
+  BatchFilterBar,
+  BatchTable,
+  BatchDetailModal,
+} from '@/components/inventory/batches'
+import { useBatches, toMessage } from '@/composables/useBatches'
+import { inventoryService, type BatchWithExpiry } from '@/services/inventory.service'
+import { outletService } from '@/services/outlet.service'
+import { productService } from '@/services/product.service'
+
+const pageTitle = 'Batch & Expiry'
+
+const {
+  items,
+  meta,
+  loading,
+  errorMessage,
+  outletId,
+  productId,
+  status,
+  includeNonBatch,
+  page,
+  totalPages,
+  canPrev,
+  canNext,
+  fetchList,
+  prevPage,
+  nextPage,
+} = useBatches()
+
+interface OutletOption {
+  id: string
+  name: string
+}
+
+interface ProductOption {
+  id: string
+  name: string
+  sku: string
+}
+
+// Options for the filter dropdowns, resolved once.
+const outlets = ref<OutletOption[]>([])
+const products = ref<ProductOption[]>([])
+
+// Lookup maps used by the table/modal to resolve raw IDs → display names.
+const outletNames = ref<Map<string, string>>(new Map())
+const productNames = ref<Map<string, { name: string; sku: string }>>(new Map())
+
+async function loadOutlets(): Promise<void> {
+  try {
+    const result = await outletService.list({ page: 1, limit: 100, isActive: 'true' })
+    outlets.value = result.items.map((o) => ({ id: o.id, name: o.name }))
+    outletNames.value = new Map(result.items.map((o) => [o.id, o.name]))
+  } catch {
+    // Non-fatal: dropdown falls back to "Semua Outlet"; table shows raw ids.
+    outlets.value = []
+    outletNames.value = new Map()
+  }
+}
+
+async function loadProducts(): Promise<void> {
+  try {
+    const result = await productService.list({ page: 1, limit: 100 })
+    products.value = result.items.map((p) => ({ id: p.id, name: p.name, sku: p.sku }))
+    productNames.value = new Map(
+      result.items.map((p) => [p.id, { name: p.name, sku: p.sku }]),
+    )
+  } catch {
+    // Non-fatal: dropdown falls back to "Semua Produk"; table shows raw ids.
+    products.value = []
+    productNames.value = new Map()
+  }
+}
+
+// Detail modal state.
+const detailOpen = ref<boolean>(false)
+const detail = ref<BatchWithExpiry | null>(null)
+const detailLoading = ref<boolean>(false)
+const detailError = ref<string | null>(null)
+
+async function openDetail(id: string): Promise<void> {
+  detailOpen.value = true
+  detail.value = null
+  detailError.value = null
+  detailLoading.value = true
+  try {
+    detail.value = await inventoryService.getBatchById(id)
+  } catch (error) {
+    detailError.value = toMessage(error)
+  } finally {
+    detailLoading.value = false
+  }
+}
+
+function closeDetail(): void {
+  detailOpen.value = false
+  detail.value = null
+  detailError.value = null
+}
+
+onMounted(() => {
+  void loadOutlets()
+  void loadProducts()
+  void fetchList()
+})
+</script>
+
+<template>
+  <AdminLayout>
+    <PageBreadcrumb :pageTitle="pageTitle" />
+
+    <ComponentCard
+      title="Batch & Expiry"
+      desc="Pemantauan batch inventaris beserta status kedaluwarsanya per produk dan outlet."
+    >
+      <!-- Toolbar -->
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <BatchFilterBar
+          v-model:outlet-id="outletId"
+          v-model:product-id="productId"
+          v-model:status="status"
+          v-model:include-non-batch="includeNonBatch"
+          :outlets="outlets"
+          :products="products"
+        />
+      </div>
+
+      <BatchTable
+        :items="items"
+        :loading="loading"
+        :error-message="errorMessage"
+        :outlet-names="outletNames"
+        :product-names="productNames"
+        @view="openDetail"
+      />
+
+      <!-- Pagination -->
+      <div
+        v-if="!loading && !errorMessage && items.length > 0"
+        class="flex flex-col items-center justify-between gap-3 pt-2 sm:flex-row"
+      >
+        <span class="text-theme-sm text-gray-500 dark:text-gray-400">
+          Menampilkan {{ items.length }} dari {{ meta.total }} data
+        </span>
+        <div class="flex items-center gap-2">
+          <Button size="sm" variant="outline" :disabled="!canPrev" :on-click="prevPage">
+            Sebelumnya
+          </Button>
+          <span class="text-theme-sm text-gray-600 dark:text-gray-300">
+            {{ page }} / {{ totalPages }}
+          </span>
+          <Button size="sm" variant="outline" :disabled="!canNext" :on-click="nextPage">
+            Berikutnya
+          </Button>
+        </div>
+      </div>
+    </ComponentCard>
+
+    <BatchDetailModal
+      :open="detailOpen"
+      :detail="detail"
+      :loading="detailLoading"
+      :error-message="detailError"
+      :outlet-names="outletNames"
+      :product-names="productNames"
+      @close="closeDetail"
+    />
+  </AdminLayout>
+</template>

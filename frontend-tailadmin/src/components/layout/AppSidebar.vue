@@ -231,6 +231,7 @@ import {
   UserCircleIcon,
 } from '@/icons'
 import BoxCubeIcon from '@/icons/BoxCubeIcon.vue'
+import ArchiveIcon from '@/icons/ArchiveIcon.vue'
 import SidebarWidget from './SidebarWidget.vue'
 
 const route = useRoute()
@@ -331,6 +332,11 @@ const menuGroups: MenuGroup[] = [
         icon: ListIcon,
         name: 'Stock Ledger',
         path: '/inventory/ledger',
+      },
+      {
+        icon: ArchiveIcon,
+        name: 'Batch & Expiry',
+        path: '/inventory/batches',
       },
     ],
   },

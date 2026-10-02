@@ -243,6 +243,128 @@ function toLedgerQuery(
   return query
 }
 
+/**
+ * Batch lifecycle status (doc 27 / backend contract). A batch is ACTIVE while
+ * available, EXPIRED once past its expiry, CONSUMED when fully depleted, or
+ * QUARANTINE when held. All transitions are backend-owned.
+ */
+export const BATCH_STATUSES = ['ACTIVE', 'EXPIRED', 'CONSUMED', 'QUARANTINE'] as const
+export type BatchStatus = (typeof BATCH_STATUSES)[number]
+
+/** Indonesian display labels for each batch status. */
+export const BATCH_STATUS_LABELS: Record<BatchStatus, string> = {
+  ACTIVE: 'Aktif',
+  EXPIRED: 'Kedaluwarsa',
+  CONSUMED: 'Habis',
+  QUARANTINE: 'Karantina',
+}
+
+/** Human label for a batch status; falls back to the raw code if unknown. */
+export function batchStatusLabel(status: string): string {
+  return BATCH_STATUS_LABELS[status as BatchStatus] ?? status
+}
+
+/**
+ * Expiry classification for a batch, derived entirely by the backend
+ * (expiring-soon = within 30 days; non-batch or null expiry = NOT_APPLICABLE).
+ * The frontend must NOT recompute this — it displays the backend value.
+ */
+export const EXPIRY_STATES = [
+  'EXPIRED',
+  'EXPIRING_SOON',
+  'OK',
+  'NOT_APPLICABLE',
+] as const
+export type ExpiryState = (typeof EXPIRY_STATES)[number]
+
+/** Indonesian display labels for each expiry state. */
+export const EXPIRY_STATE_LABELS: Record<ExpiryState, string> = {
+  EXPIRED: 'Kedaluwarsa',
+  EXPIRING_SOON: 'Segera Kedaluwarsa',
+  OK: 'Aman',
+  NOT_APPLICABLE: 'Tidak Berlaku',
+}
+
+/** Human label for an expiry state; falls back to the raw code if unknown. */
+export function expiryStateLabel(state: string): string {
+  return EXPIRY_STATE_LABELS[state as ExpiryState] ?? state
+}
+
+/**
+ * A single `InventoryBatch` as returned by the backend. Carries IDs only (no
+ * joined names); the view resolves outlet/product names from one-time lookup
+ * maps. `batchNumber` is `''` for synthetic non-batch rows (`isNonBatch`).
+ * `expiredDate` / `receivedDate` are ISO date strings (date-only) or null.
+ */
+export interface InventoryBatchRow {
+  id: string
+  companyId: string
+  outletId: string
+  productId: string
+  batchNumber: string
+  lotKey: string
+  lotNumber: string | null
+  expiredDate: string | null
+  receivedDate: string | null
+  qtyAvailable: number
+  status: BatchStatus
+  isNonBatch: boolean
+}
+
+/**
+ * A batch paired with its backend-derived expiry classification. This is the
+ * item shape returned by both the list and detail endpoints.
+ */
+export interface BatchWithExpiry {
+  batch: InventoryBatchRow
+  expiryState: ExpiryState
+}
+
+export interface BatchesListParams {
+  page: number
+  limit: number
+  outletId?: string
+  productId?: string
+  status?: string
+  /**
+   * When `true`, include synthetic non-batch rows. Sent as the string `'true'`;
+   * omitted when false/undefined so the default list keeps its contract.
+   */
+  includeNonBatch?: boolean
+}
+
+export interface BatchesListResult {
+  items: BatchWithExpiry[]
+  meta: ListMeta
+}
+
+function toBatchesQuery(
+  params: BatchesListParams,
+): Record<string, string | number> {
+  const query: Record<string, string | number> = {
+    page: params.page,
+    limit: params.limit,
+  }
+  if (params.outletId) {
+    query.outletId = params.outletId
+  }
+  if (params.productId) {
+    query.productId = params.productId
+  }
+  if (params.status) {
+    query.status = params.status
+  }
+  if (params.includeNonBatch) {
+    query.includeNonBatch = 'true'
+  }
+  return query
+}
+
+interface ApiItemResponse<T> {
+  success: true
+  data: T
+}
+
 export const inventoryService = {
   async getStockOnHand(
     params: StockOnHandListParams,
@@ -260,5 +382,20 @@ export const inventoryService = {
       { params: toLedgerQuery(params) },
     )
     return { items: response.data.data, meta: response.data.meta }
+  },
+
+  async getBatches(params: BatchesListParams): Promise<BatchesListResult> {
+    const response = await httpClient.get<ApiListResponse<BatchWithExpiry>>(
+      '/inventory/batches',
+      { params: toBatchesQuery(params) },
+    )
+    return { items: response.data.data, meta: response.data.meta }
+  },
+
+  async getBatchById(id: string): Promise<BatchWithExpiry> {
+    const response = await httpClient.get<ApiItemResponse<BatchWithExpiry>>(
+      `/inventory/batches/${id}`,
+    )
+    return response.data.data
   },
 }
