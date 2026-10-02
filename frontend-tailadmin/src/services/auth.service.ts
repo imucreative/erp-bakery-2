@@ -31,9 +31,40 @@ export interface LoginPayload {
   password: string
 }
 
+export interface RegisterCompanyPayload {
+  name: string
+  slug: string
+  ownerName: string
+  ownerEmail: string
+  ownerPassword: string
+  phone?: string
+  address?: string
+}
+
+export interface RegisterCompanyResult {
+  company: Company
+  owner: {
+    id: string
+    name: string
+    email: string
+  }
+}
+
 export const authService = {
   async login(payload: LoginPayload): Promise<AuthTokens> {
     const response = await httpClient.post<ApiSuccess<AuthTokens>>('/auth/login', payload)
+    return response.data.data
+  },
+
+  /**
+   * Public SaaS registration: creates a Company plus its owner user in one call.
+   * No token is returned, so callers must NOT auto-login — redirect to /signin.
+   */
+  async registerCompany(payload: RegisterCompanyPayload): Promise<RegisterCompanyResult> {
+    const response = await httpClient.post<ApiSuccess<RegisterCompanyResult>>(
+      '/companies/register',
+      payload,
+    )
     return response.data.data
   },
 

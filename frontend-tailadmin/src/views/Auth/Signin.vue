@@ -43,6 +43,13 @@
               </div>
               <div>
                 <div
+                  v-if="registeredNotice"
+                  class="mb-4 rounded-lg border border-success-500/40 bg-success-50 px-4 py-3 text-sm text-success-600 dark:border-success-500/40 dark:bg-success-500/10 dark:text-success-400"
+                  role="status"
+                >
+                  Registrasi berhasil. Silakan masuk dengan akun owner Anda.
+                </div>
+                <div
                   v-if="errorMessage"
                   class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-4 py-3 text-sm text-error-600 dark:border-error-500/40 dark:bg-error-500/10 dark:text-error-400"
                   role="alert"
@@ -224,7 +231,7 @@
 <script setup lang="ts">
 import CommonGridShape from '@/components/common/CommonGridShape.vue'
 import FullScreenLayout from '@/components/layout/FullScreenLayout.vue'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { ApiClientError } from '@/services/http'
@@ -232,6 +239,8 @@ import { ApiClientError } from '@/services/http'
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
+
+const registeredNotice = computed(() => route.query.registered === '1')
 
 const email = ref('')
 const password = ref('')
