@@ -5,6 +5,3 @@ export { default as ProductionOrderHeaderFields } from './ProductionOrderHeaderF
 export { default as ProductionOrderSummary } from './ProductionOrderSummary.vue'
 export { default as ProductionOrderMaterialsTable } from './ProductionOrderMaterialsTable.vue'
 export { default as ProductionOrderResultsTable } from './ProductionOrderResultsTable.vue'
-export { default as ProductionOrderActionBar } from './ProductionOrderActionBar.vue'
-export { default as ProductionOrderActionModals } from './ProductionOrderActionModals.vue'
-export type { ProductionOrderAction } from './ProductionOrderActionModals.vue'

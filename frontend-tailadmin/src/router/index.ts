@@ -308,7 +308,7 @@ const router = createRouter({
       name: 'ProductionOrderCreate',
       component: () => import('../views/Production/ProductionOrderForm.vue'),
       meta: {
-        title: 'Jadwalkan Produksi',
+        title: 'Produksi',
         permission: 'production-order.manage',
       },
     },

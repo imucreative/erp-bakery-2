@@ -1,50 +1,31 @@
 /**
  * Production Order service — company-scoped documents that convert raw
- * materials into finished goods through a recipe (BOM), with a multi-step
- * lifecycle and a QA gate. Verified against the backend contract
- * (production-order.controller.ts + DTOs + ProductionOrder entity /
- * ProductionOrderRepositoryPostgres).
+ * materials into finished goods through a recipe (BOM). Verified against the
+ * backend contract (production-order.controller.ts + create-production-order.dto.ts
+ * + ProductionOrder entity / ProductionOrderRepositoryPostgres) on the
+ * feature/production branch.
+ *
+ * Production is INSTANT-COMPLETE: creating a production order runs the whole
+ * production (backflush ingredients FEFO + produce the finished-goods batch,
+ * atomic) and lands the order on COMPLETED. There are NO start/yield/qa/
+ * complete/cancel actions, and COMPLETED is the only practical status.
  *
  * Base path: /production/orders
  *  - GET    /production/orders            → { success, data: ProductionOrder[], meta }
  *      guard: production-order.read
  *      filters: page, limit, outletId? (uuid), productId? (uuid),
- *               status? (SCHEDULED|IN_PROGRESS|YIELD_COMPLETED|QA_PASSED|
- *                        QA_FAILED|COMPLETED|CANCELLED), search? (productionNumber)
+ *               status? (COMPLETED), search? (productionNumber)
  *      NOTE: the LIST returns HEADERS ONLY — `materials` and `results` are
  *      always empty arrays on list rows (the repository loads them per detail).
- *      The list table must therefore NOT rely on materials/results counts.
  *  - GET    /production/orders/:id        → { success, data: ProductionOrder }
- *      (header + materials[] + results[] — the latter two populated only after
- *      COMPLETED).
- *  - POST   /production/orders            → 201 SCHEDULED
+ *      (header + materials[] + results[]).
+ *  - POST   /production/orders            → 201 COMPLETED
  *      guard: production-order.manage
- *      body: { outletId (uuid), recipeId? (uuid) | productId? (uuid) — recipe
- *              wins; providing only productId makes the backend resolve the
- *              product's ACTIVE recipe (rejects when none exists),
- *              scheduledQty>0, productionDate? 'YYYY-MM-DD', notes? }
- *  - POST   /production/orders/:id/start    → SCHEDULED → IN_PROGRESS (no body)
- *  - POST   /production/orders/:id/yield    → IN_PROGRESS → YIELD_COMPLETED
- *      body: { actualQty>0, wasteQty?>=0 (default 0),
- *              resultExpiredDate 'YYYY-MM-DD', notes? }
- *  - POST   /production/orders/:id/qa       → YIELD_COMPLETED → QA_PASSED|QA_FAILED
- *      body: { passed (boolean), qaNotes? }
- *  - POST   /production/orders/:id/complete → QA_PASSED|QA_FAILED → COMPLETED
- *      (backflushing: consume ingredients FEFO + create a finished-goods batch
- *      when QA_PASSED; when QA_FAILED consume ingredients but scrap the output).
- *      May return 400 when ingredient stock is insufficient — surface the
- *      message. (no body)
- *  - POST   /production/orders/:id/cancel   → SCHEDULED → CANCELLED
- *      body: { reason? }
- *
- * CONTRACT NOTES (verified, mirrored by the UI):
- *  - canTransition: SCHEDULED → (IN_PROGRESS | CANCELLED); IN_PROGRESS →
- *    YIELD_COMPLETED; YIELD_COMPLETED → (QA_PASSED | QA_FAILED); QA_PASSED →
- *    COMPLETED; QA_FAILED → COMPLETED; COMPLETED & CANCELLED are terminal.
- *  - The entity exposes NO status-log collection, so the detail view renders no
- *    timeline.
- *  - `actualQty` / `resultExpiredDate` are null until a yield is recorded;
- *    `materials` / `results` are empty until the order is COMPLETED.
+ *      body: see CreateProductionOrderPayload. The UI sends `productId` (the
+ *      finished product); the backend resolves its ACTIVE recipe (404
+ *      RECIPE.NO_ACTIVE_RECIPE when none). May return 400
+ *      INVENTORY.INSUFFICIENT_STOCK when ingredient stock is short — surface
+ *      the message and keep the user on the page.
  */
 
 import { httpClient } from './http'
@@ -68,26 +49,12 @@ interface ApiListResponse<T> {
   meta: ListMeta
 }
 
-/** Production Order lifecycle statuses (production-domain §5). */
-export const PRODUCTION_ORDER_STATUSES = [
-  'SCHEDULED',
-  'IN_PROGRESS',
-  'YIELD_COMPLETED',
-  'QA_PASSED',
-  'QA_FAILED',
-  'COMPLETED',
-  'CANCELLED',
-] as const
+/** Production Order status. Instant-complete → only COMPLETED is produced. */
+export const PRODUCTION_ORDER_STATUSES = ['COMPLETED'] as const
 export type ProductionOrderStatus = (typeof PRODUCTION_ORDER_STATUSES)[number]
 
 export const PRODUCTION_ORDER_STATUS_LABELS: Record<ProductionOrderStatus, string> = {
-  SCHEDULED: 'Terjadwal',
-  IN_PROGRESS: 'Diproses',
-  YIELD_COMPLETED: 'Hasil Dicatat',
-  QA_PASSED: 'QA Lulus',
-  QA_FAILED: 'QA Gagal',
   COMPLETED: 'Selesai',
-  CANCELLED: 'Dibatalkan',
 }
 
 /** A single ingredient consumed (backflushed) by a completed production order. */
@@ -124,12 +91,11 @@ export interface ProductionOrder {
   productionDate: string
   resultExpiredDate: string | null
   status: ProductionOrderStatus
-  qaNotes: string | null
   notes: string | null
   resultBatchId: string | null
-  /** Populated only after COMPLETED (empty on list rows and pre-completion). */
+  /** Consumed ingredients (populated on detail; empty on list rows). */
   materials: ProductionMaterial[]
-  /** Populated only after a QA_PASSED completion (empty otherwise). */
+  /** Produced finished-goods batches (populated on detail; empty on list rows). */
   results: ProductionResult[]
   createdAt: string
   updatedAt: string
@@ -150,31 +116,25 @@ export interface ProductionOrderListResult {
 }
 
 /**
- * Schedule payload. The UI sends `productId` (user picks the finished product;
- * the backend resolves its ACTIVE recipe). `recipeId` is kept in the type for
- * completeness, but the schedule form submits productId only.
+ * Instant-complete production payload. The UI sends `productId` (the user picks
+ * the finished product; the backend resolves its ACTIVE recipe).
+ *  - scheduledQty : production target (planned finished-goods qty), > 0
+ *  - actualQty    : finished goods that succeeded and enter stock, >= 0
+ *  - wasteQty     : quantity that failed/was scrapped, >= 0 (default 0)
+ *  - resultExpiredDate : 'YYYY-MM-DD' expiry of the finished-goods batch,
+ *                        required when actualQty > 0
+ *  - productionDate    : 'YYYY-MM-DD' (default today)
+ *  - notes             : free text (e.g. reason for waste)
  */
-export interface ScheduleProductionOrderPayload {
+export interface CreateProductionOrderPayload {
   outletId: string
-  productId?: string
-  recipeId?: string
+  productId: string
   scheduledQty: number
-  productionDate?: string
-  notes?: string
-}
-
-/** Record-yield payload (IN_PROGRESS → YIELD_COMPLETED). */
-export interface RecordYieldPayload {
   actualQty: number
   wasteQty?: number
-  resultExpiredDate: string
+  resultExpiredDate?: string
+  productionDate?: string
   notes?: string
-}
-
-/** QA check payload (YIELD_COMPLETED → QA_PASSED | QA_FAILED). */
-export interface QaCheckPayload {
-  passed: boolean
-  qaNotes?: string
 }
 
 function toQuery(
@@ -217,9 +177,9 @@ export const productionOrderService = {
     return response.data.data
   },
 
-  // Schedule a new production order (SCHEDULED). The UI submits productId.
+  // Run a production (instant-complete). The UI submits productId.
   async create(
-    payload: ScheduleProductionOrderPayload,
+    payload: CreateProductionOrderPayload,
   ): Promise<ProductionOrder> {
     const response = await httpClient.post<ApiSuccess<ProductionOrder>>(
       '/production/orders',
@@ -227,73 +187,12 @@ export const productionOrderService = {
     )
     return response.data.data
   },
-
-  // SCHEDULED → IN_PROGRESS (no body).
-  async start(id: string): Promise<ProductionOrder> {
-    const response = await httpClient.post<ApiSuccess<ProductionOrder>>(
-      `/production/orders/${id}/start`,
-    )
-    return response.data.data
-  },
-
-  // IN_PROGRESS → YIELD_COMPLETED.
-  async recordYield(
-    id: string,
-    payload: RecordYieldPayload,
-  ): Promise<ProductionOrder> {
-    const response = await httpClient.post<ApiSuccess<ProductionOrder>>(
-      `/production/orders/${id}/yield`,
-      payload,
-    )
-    return response.data.data
-  },
-
-  // YIELD_COMPLETED → QA_PASSED | QA_FAILED.
-  async qaCheck(id: string, payload: QaCheckPayload): Promise<ProductionOrder> {
-    const response = await httpClient.post<ApiSuccess<ProductionOrder>>(
-      `/production/orders/${id}/qa`,
-      payload,
-    )
-    return response.data.data
-  },
-
-  // QA_PASSED|QA_FAILED → COMPLETED (backflushing; may 400 on insufficient stock).
-  async complete(id: string): Promise<ProductionOrder> {
-    const response = await httpClient.post<ApiSuccess<ProductionOrder>>(
-      `/production/orders/${id}/complete`,
-    )
-    return response.data.data
-  },
-
-  // SCHEDULED → CANCELLED (optional reason).
-  async cancel(id: string, reason?: string): Promise<ProductionOrder> {
-    const response = await httpClient.post<ApiSuccess<ProductionOrder>>(
-      `/production/orders/${id}/cancel`,
-      reason ? { reason } : {},
-    )
-    return response.data.data
-  },
 }
 
 /** Badge color mapping per status (aligns with the ui/Badge `color` palette). */
 export function statusBadgeColor(
-  status: ProductionOrderStatus,
+  _status: ProductionOrderStatus,
 ): 'light' | 'info' | 'warning' | 'success' | 'error' {
-  switch (status) {
-    case 'IN_PROGRESS':
-      return 'info'
-    case 'YIELD_COMPLETED':
-      return 'warning'
-    case 'QA_PASSED':
-      return 'info'
-    case 'QA_FAILED':
-      return 'error'
-    case 'COMPLETED':
-      return 'success'
-    case 'CANCELLED':
-      return 'error'
-    case 'SCHEDULED':
-    default:
-      return 'light'
-  }
+  // Only COMPLETED exists in the instant-complete model.
+  return 'success'
 }

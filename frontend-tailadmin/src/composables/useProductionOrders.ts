@@ -14,7 +14,6 @@ import {
   productionOrderService,
   type ProductionOrder,
   type ProductionOrderListParams,
-  type ProductionOrderStatus,
 } from '@/services/production-order.service'
 
 const DEFAULT_LIMIT = 10
@@ -26,8 +25,6 @@ export interface ProductionOrderListMeta {
   total: number
   totalPages: number
 }
-
-export type StatusFilter = 'all' | ProductionOrderStatus
 
 export function useProductionOrders() {
   const items = ref<ProductionOrder[]>([])
@@ -42,7 +39,6 @@ export function useProductionOrders() {
 
   const search = ref<string>('')
   const debouncedSearch = ref<string>('')
-  const statusFilter = ref<StatusFilter>('all')
   const outletFilter = ref<string>('')
   const page = ref<number>(1)
   let searchTimer: ReturnType<typeof setTimeout> | undefined
@@ -59,7 +55,6 @@ export function useProductionOrders() {
         page: page.value,
         limit: DEFAULT_LIMIT,
         search: debouncedSearch.value || undefined,
-        status: statusFilter.value === 'all' ? undefined : statusFilter.value,
         outletId: outletFilter.value || undefined,
       }
       const result = await productionOrderService.list(params)
@@ -84,7 +79,7 @@ export function useProductionOrders() {
     }, SEARCH_DEBOUNCE_MS)
   })
 
-  watch([statusFilter, outletFilter], () => {
+  watch(outletFilter, () => {
     page.value = 1
     void fetchList()
   })
@@ -109,7 +104,6 @@ export function useProductionOrders() {
     loading,
     errorMessage,
     search,
-    statusFilter,
     outletFilter,
     page,
     totalPages,

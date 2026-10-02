@@ -122,11 +122,6 @@ import { CreateRoleUseCase } from '../Applications/use_case/roles/CreateRoleUseC
 import { UpdateRoleUseCase } from '../Applications/use_case/roles/UpdateRoleUseCase';
 import { DeleteRoleUseCase } from '../Applications/use_case/roles/DeleteRoleUseCase';
 import { CreateProductionOrderUseCase } from '../Applications/use_case/production/CreateProductionOrderUseCase';
-import { StartProductionOrderUseCase } from '../Applications/use_case/production/StartProductionOrderUseCase';
-import { RecordYieldUseCase } from '../Applications/use_case/production/RecordYieldUseCase';
-import { QaCheckUseCase } from '../Applications/use_case/production/QaCheckUseCase';
-import { CompleteProductionOrderUseCase } from '../Applications/use_case/production/CompleteProductionOrderUseCase';
-import { CancelProductionOrderUseCase } from '../Applications/use_case/production/CancelProductionOrderUseCase';
 import { GetProductionOrdersUseCase } from '../Applications/use_case/production/GetProductionOrdersUseCase';
 import { CreatePurchaseRequestUseCase } from '../Applications/use_case/purchase-requests/CreatePurchaseRequestUseCase';
 import { UpdatePurchaseRequestUseCase } from '../Applications/use_case/purchase-requests/UpdatePurchaseRequestUseCase';
@@ -692,34 +687,6 @@ import { DeleteGoodsReceiptAttachmentUseCase } from '../Applications/use_case/go
       inject: [ProductionOrderRepository, OutletRepository],
     },
     {
-      provide: StartProductionOrderUseCase,
-      useFactory: (prodRepo: ProductionOrderRepository) =>
-        new StartProductionOrderUseCase(prodRepo),
-      inject: [ProductionOrderRepository],
-    },
-    {
-      provide: RecordYieldUseCase,
-      useFactory: (prodRepo: ProductionOrderRepository) => new RecordYieldUseCase(prodRepo),
-      inject: [ProductionOrderRepository],
-    },
-    {
-      provide: QaCheckUseCase,
-      useFactory: (prodRepo: ProductionOrderRepository) => new QaCheckUseCase(prodRepo),
-      inject: [ProductionOrderRepository],
-    },
-    {
-      provide: CompleteProductionOrderUseCase,
-      useFactory: (prodRepo: ProductionOrderRepository) =>
-        new CompleteProductionOrderUseCase(prodRepo),
-      inject: [ProductionOrderRepository],
-    },
-    {
-      provide: CancelProductionOrderUseCase,
-      useFactory: (prodRepo: ProductionOrderRepository) =>
-        new CancelProductionOrderUseCase(prodRepo),
-      inject: [ProductionOrderRepository],
-    },
-    {
       provide: GetProductionOrdersUseCase,
       useFactory: (prodRepo: ProductionOrderRepository) =>
         new GetProductionOrdersUseCase(prodRepo),
@@ -1113,11 +1080,6 @@ import { DeleteGoodsReceiptAttachmentUseCase } from '../Applications/use_case/go
     DeleteRecipeUseCase,
     GetRecipesUseCase,
     CreateProductionOrderUseCase,
-    StartProductionOrderUseCase,
-    RecordYieldUseCase,
-    QaCheckUseCase,
-    CompleteProductionOrderUseCase,
-    CancelProductionOrderUseCase,
     GetProductionOrdersUseCase,
     CreatePurchaseRequestUseCase,
     UpdatePurchaseRequestUseCase,

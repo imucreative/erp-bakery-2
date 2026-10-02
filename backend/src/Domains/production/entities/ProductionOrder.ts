@@ -21,8 +21,9 @@ export interface ProductionResult {
 }
 
 /**
- * Domain Entity: ProductionOrder (read value object) — header + optional
- * consumed materials and produced results (populated after completion).
+ * Domain Entity: ProductionOrder (read value object) — header + the consumed
+ * materials and produced results. Since production is instant-complete, these
+ * are always populated for a persisted order (production-domain §5).
  */
 export class ProductionOrder {
   public readonly id: string;
@@ -38,7 +39,6 @@ export class ProductionOrder {
   public readonly productionDate: Date;
   public readonly resultExpiredDate: Date | null;
   public readonly status: ProductionStatus;
-  public readonly qaNotes: string | null;
   public readonly notes: string | null;
   public readonly resultBatchId: string | null;
   public readonly materials: ProductionMaterial[];
@@ -60,7 +60,6 @@ export class ProductionOrder {
     productionDate: Date;
     resultExpiredDate: Date | null;
     status: ProductionStatus;
-    qaNotes: string | null;
     notes: string | null;
     resultBatchId: string | null;
     materials?: ProductionMaterial[];
@@ -81,7 +80,6 @@ export class ProductionOrder {
     this.productionDate = payload.productionDate;
     this.resultExpiredDate = payload.resultExpiredDate;
     this.status = payload.status;
-    this.qaNotes = payload.qaNotes;
     this.notes = payload.notes;
     this.resultBatchId = payload.resultBatchId;
     this.materials = payload.materials ?? [];

@@ -1,13 +1,12 @@
 <script setup lang="ts">
 /**
  * ProductionOrderTable — presentational table for the Production Order list.
- * Columns: Nomor, Produk, Outlet, Tanggal, Qty Rencana, Status (badge). Row
- * action is icon-only (view/detail). Renders loading / error / empty states.
- * Product and outlet names are resolved by the parent via injected resolver
- * callbacks (fetched once for the whole page).
+ * Columns: Nomor, Produk, Outlet, Tanggal, Target, Berhasil, Terbuang, Status
+ * (badge). Row action is icon-only (view/detail). Renders loading / error /
+ * empty states. Product and outlet names are resolved by the parent via injected
+ * resolver callbacks (fetched once for the whole page).
  *
- * NOTE: list rows carry HEADERS ONLY (materials/results are empty on list), so
- * this table never shows item/material counts — it shows the scheduled qty.
+ * NOTE: list rows carry HEADERS ONLY (materials/results are empty on list).
  */
 import { Eye } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
@@ -69,7 +68,13 @@ defineEmits<{
               Tanggal
             </th>
             <th class="px-5 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Qty Rencana
+              Target
+            </th>
+            <th class="px-5 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+              Berhasil
+            </th>
+            <th class="px-5 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+              Terbuang
             </th>
             <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
               Status
@@ -99,6 +104,12 @@ defineEmits<{
             </td>
             <td class="px-5 py-4 text-end text-theme-sm text-gray-600 dark:text-gray-300">
               {{ formatNumber(order.scheduledQty) }}
+            </td>
+            <td class="px-5 py-4 text-end text-theme-sm text-gray-600 dark:text-gray-300">
+              {{ order.actualQty !== null ? formatNumber(order.actualQty) : '-' }}
+            </td>
+            <td class="px-5 py-4 text-end text-theme-sm text-gray-600 dark:text-gray-300">
+              {{ formatNumber(order.wasteQty) }}
             </td>
             <td class="px-5 py-4">
               <Badge :color="statusBadgeColor(order.status)">

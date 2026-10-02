@@ -2,7 +2,6 @@ import { Pool, PoolClient } from 'pg';
 import {
   ProductionOrderRepository,
   NewProductionOrderData,
-  RecordYieldData,
   ProductionOrderListFilter,
   ProductionOrderListResult,
 } from '../../Domains/production/ProductionOrderRepository';
@@ -11,7 +10,7 @@ import {
   ProductionMaterial,
   ProductionResult,
 } from '../../Domains/production/entities/ProductionOrder';
-import { ProductionStatus, canTransition } from '../../Domains/production/productionStatus';
+import { ProductionStatus } from '../../Domains/production/productionStatus';
 import { NotFoundError } from '../../Commons/exceptions/NotFoundError';
 import { InvariantError } from '../../Commons/exceptions/InvariantError';
 
@@ -29,7 +28,6 @@ interface HeaderRow {
   production_date: Date;
   result_expired_date: Date | null;
   status: string;
-  qa_notes: string | null;
   notes: string | null;
   result_batch_id: string | null;
   created_at: Date;
@@ -76,15 +74,16 @@ interface BatchRow {
   qty_available: string;
 }
 
-const HEADER_COLUMNS = `id, company_id, outlet_id, production_number, recipe_id, product_id, scale_factor, scheduled_qty, actual_qty, waste_qty, production_date, result_expired_date, status, qa_notes, notes, result_batch_id, created_at, updated_at`;
+const HEADER_COLUMNS = `id, company_id, outlet_id, production_number, recipe_id, product_id, scale_factor, scheduled_qty, actual_qty, waste_qty, production_date, result_expired_date, status, notes, result_batch_id, created_at, updated_at`;
 
 /**
  * Concrete PostgreSQL implementation of ProductionOrderRepository.
  * Raw SQL via pg — no ORM. Company-scoped for SaaS tenant isolation.
  *
- * Lifecycle transitions lock the header row FOR UPDATE and re-validate with
- * productionStatus.canTransition. `complete` performs backflushing atomically
- * under SERIALIZABLE isolation (production-domain rule #2).
+ * Production is INSTANT-COMPLETE: `createInstant` runs the full production in
+ * one SERIALIZABLE transaction — resolve recipe, backflush ingredients FEFO,
+ * produce finished goods, persist snapshots, and land the order on COMPLETED
+ * (production-domain rule #2). There are no lifecycle transitions.
  */
 export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository {
   constructor(private readonly pool: Pool) {
@@ -110,7 +109,6 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
       productionDate: header.production_date,
       resultExpiredDate: header.result_expired_date,
       status: header.status as ProductionStatus,
-      qaNotes: header.qa_notes,
       notes: header.notes,
       resultBatchId: header.result_batch_id,
       materials: materials.map((m) => this._toMaterial(m)),
@@ -176,12 +174,16 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
     return result.rows;
   }
 
-  // ── Scheduling ───────────────────────────────────────────────────────────
+  // ── Instant-complete production (backflushing, atomic) ────────────────────
 
-  async schedule(companyId: string, data: NewProductionOrderData): Promise<ProductionOrder> {
+  async createInstant(
+    companyId: string,
+    data: NewProductionOrderData,
+  ): Promise<ProductionOrder> {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
+      await client.query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
 
       // Resolve the recipe: explicit recipeId wins, else the product's ACTIVE recipe.
       let recipe: RecipeHeaderRow;
@@ -218,34 +220,191 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
       }
       const scaleFactor = data.scheduledQty / yieldQty;
 
+      const outletId = data.outletId;
+      const bizDate = data.productionDate ?? new Date().toISOString().slice(0, 10);
       const number = await this._generateNumber(client, companyId);
-      const productionDate = data.productionDate ?? new Date().toISOString().slice(0, 10);
 
+      // Insert the header already COMPLETED (instant-complete, production-domain §5)
       const headerResult = await client.query<HeaderRow>(
         `INSERT INTO production_orders
            (company_id, outlet_id, production_number, recipe_id, product_id,
-            scale_factor, scheduled_qty, waste_qty, production_date, status, notes, created_by)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,0,$8,'SCHEDULED',$9,$10)
+            scale_factor, scheduled_qty, actual_qty, waste_qty, production_date,
+            result_expired_date, status, notes, created_by, completed_by, completed_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'COMPLETED',$12,$13,$13,NOW())
          RETURNING ${HEADER_COLUMNS}`,
         [
           companyId,
-          data.outletId,
+          outletId,
           number,
           recipe.id,
           recipe.product_id,
           scaleFactor,
           data.scheduledQty,
-          productionDate,
+          data.actualQty,
+          data.wasteQty,
+          bizDate,
+          data.resultExpiredDate,
           data.notes,
           data.createdBy,
         ],
       );
+      const header = headerResult.rows[0];
+      const orderId = header.id;
+
+      // Load recipe ingredient lines for backflushing
+      const itemsResult = await client.query<RecipeItemRow>(
+        `SELECT id, ingredient_product_id, qty, loss_percentage
+         FROM recipe_items WHERE recipe_id = $1`,
+        [recipe.id],
+      );
+
+      // Consume each ingredient FEFO. Quantity = base * scale * (1 + loss/100).
+      for (const item of itemsResult.rows) {
+        const baseQty = Number(item.qty);
+        const loss = Number(item.loss_percentage);
+        const requiredQty = baseQty * scaleFactor * (1 + loss / 100);
+        if (!(requiredQty > 0)) continue;
+
+        // FEFO pick under row locks (nearest expiry first, non-expired, ACTIVE)
+        const batchesResult = await client.query<BatchRow>(
+          `SELECT id, batch_number, lot_key, expired_date, qty_available
+           FROM inventory_batches
+           WHERE company_id = $1 AND outlet_id = $2 AND product_id = $3
+             AND status = 'ACTIVE' AND qty_available > 0
+             AND (expired_date IS NULL OR expired_date >= $4)
+           ORDER BY expired_date ASC NULLS LAST, received_date ASC, created_at ASC
+           FOR UPDATE`,
+          [companyId, outletId, item.ingredient_product_id, bizDate],
+        );
+
+        let remaining = requiredQty;
+        for (const batch of batchesResult.rows) {
+          if (remaining <= 0) break;
+          const available = Number(batch.qty_available);
+          const take = Math.min(available, remaining);
+          if (take <= 0) continue;
+          const beforeQty = available;
+          const afterQty = beforeQty - take;
+
+          // Update authoritative balance + auto-consume status when depleted
+          await client.query(
+            `UPDATE inventory_batches
+             SET qty_available = $1::numeric,
+                 status = CASE WHEN $1::numeric = 0 THEN 'CONSUMED' ELSE status END,
+                 updated_at = NOW()
+             WHERE id = $2 AND company_id = $3`,
+            [afterQty, batch.id, companyId],
+          );
+
+          // Ledger append: PRODUCTION_CONSUME. Source key = order + batch.
+          await client.query(
+            `INSERT INTO inventory_movements
+               (company_id, outlet_id, batch_id, product_id, movement_type,
+                qty, before_qty, after_qty,
+                source_document_type, source_document_id,
+                source_document_item_id, source_document_allocation_id, user_id)
+             VALUES ($1,$2,$3,$4,'PRODUCTION_CONSUME',$5,$6,$7,'PRODUCTION_ORDER',$8,$9,$10,$11)`,
+            [
+              companyId,
+              outletId,
+              batch.id,
+              item.ingredient_product_id,
+              take,
+              beforeQty,
+              afterQty,
+              orderId,
+              item.id,
+              batch.id,
+              data.createdBy,
+            ],
+          );
+
+          // Snapshot the consumption for audit/reconciliation
+          await client.query(
+            `INSERT INTO production_order_materials
+               (production_order_id, recipe_item_id, product_id, batch_id, planned_qty, qty_consumed)
+             VALUES ($1,$2,$3,$4,$5,$6)`,
+            [orderId, item.id, item.ingredient_product_id, batch.id, requiredQty, take],
+          );
+
+          remaining -= take;
+        }
+
+        if (remaining > 1e-9) {
+          // Negative-stock ban (rule #2): not enough ingredient to produce.
+          throw new InvariantError('INVENTORY.INSUFFICIENT_STOCK');
+        }
+      }
+
+      let resultBatchId: string | null = null;
+
+      // Materialise the successful output as finished goods (PRODUCTION_RESULT).
+      // When actualQty is 0 (everything failed/wasted) no finished batch is made.
+      const producedQty = data.actualQty;
+      if (producedQty > 0) {
+        if (!data.resultExpiredDate) {
+          throw new InvariantError('PRODUCTION_ORDER.RESULT_EXPIRY_REQUIRED');
+        }
+        const resultExpiry = data.resultExpiredDate;
+
+        // Finished-goods batch number derived from the production number
+        const finishedBatchNumber = header.production_number;
+
+        const insertBatch = await client.query<{ id: string }>(
+          `INSERT INTO inventory_batches
+             (company_id, outlet_id, product_id, batch_number, lot_key, lot_number,
+              expired_date, received_date, qty_available, status)
+           VALUES ($1,$2,$3,$4,'',NULL,$5,$6,$7,'ACTIVE')
+           RETURNING id`,
+          [
+            companyId,
+            outletId,
+            header.product_id,
+            finishedBatchNumber,
+            resultExpiry,
+            bizDate,
+            producedQty,
+          ],
+        );
+        resultBatchId = insertBatch.rows[0].id;
+
+        await client.query(
+          `INSERT INTO inventory_movements
+             (company_id, outlet_id, batch_id, product_id, movement_type,
+              qty, before_qty, after_qty,
+              source_document_type, source_document_id, user_id)
+           VALUES ($1,$2,$3,$4,'PRODUCTION_RESULT',$5,0,$5,'PRODUCTION_ORDER',$6,$7)`,
+          [companyId, outletId, resultBatchId, header.product_id, producedQty, orderId, data.createdBy],
+        );
+
+        await client.query(
+          `INSERT INTO production_order_results
+             (production_order_id, product_id, batch_id, batch_number, expired_date, qty_produced)
+           VALUES ($1,$2,$3,$4,$5,$6)`,
+          [orderId, header.product_id, resultBatchId, finishedBatchNumber, resultExpiry, producedQty],
+        );
+
+        // Link the finished batch on the header
+        await client.query(
+          `UPDATE production_orders SET result_batch_id = $1, updated_at = NOW()
+           WHERE id = $2 AND company_id = $3`,
+          [resultBatchId, orderId, companyId],
+        );
+      }
+
+      const materials = await this._loadMaterials(client, orderId);
+      const results = await this._loadResults(client, orderId);
 
       await client.query('COMMIT');
-      return this._toOrder(headerResult.rows[0]);
+      return this._toOrder({ ...header, result_batch_id: resultBatchId }, materials, results);
     } catch (err) {
       await client.query('ROLLBACK');
-      if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === '23505') {
+      if (
+        err &&
+        typeof err === 'object' &&
+        'code' in err &&
+        (err as { code: string }).code === '23505'
+      ) {
         throw new InvariantError('PRODUCTION_ORDER.NUMBER_CONFLICT');
       }
       throw err;
@@ -318,311 +477,5 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
 
     // List returns headers only (materials/results loaded on detail)
     return { rows: headerResult.rows.map((h) => this._toOrder(h)), total };
-  }
-
-  // ── Simple lifecycle transitions ─────────────────────────────────────────
-
-  private async _transition(
-    id: string,
-    companyId: string,
-    to: ProductionStatus,
-    extraSet: string,
-    extraParams: unknown[],
-  ): Promise<ProductionOrder> {
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      const headerResult = await client.query<HeaderRow>(
-        `SELECT ${HEADER_COLUMNS} FROM production_orders
-         WHERE id = $1 AND company_id = $2 FOR UPDATE`,
-        [id, companyId],
-      );
-      if (!headerResult.rowCount) {
-        throw new NotFoundError('PRODUCTION_ORDER.NOT_FOUND');
-      }
-      const header = headerResult.rows[0];
-      if (!canTransition(header.status as ProductionStatus, to)) {
-        throw new InvariantError('PRODUCTION_ORDER.INVALID_STATUS_TRANSITION');
-      }
-
-      // params: [ ...extraParams, id, companyId ]; status is inlined literal
-      const idPos = extraParams.length + 1;
-      const companyPos = extraParams.length + 2;
-      const updated = await client.query<HeaderRow>(
-        `UPDATE production_orders
-         SET status = '${to}', ${extraSet} updated_at = NOW()
-         WHERE id = $${idPos} AND company_id = $${companyPos}
-         RETURNING ${HEADER_COLUMNS}`,
-        [...extraParams, id, companyId],
-      );
-
-      await client.query('COMMIT');
-      return this._toOrder(updated.rows[0]);
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
-  }
-
-  async start(id: string, companyId: string, actorId: string | null): Promise<ProductionOrder> {
-    return this._transition(id, companyId, 'IN_PROGRESS', 'started_by = $1, started_at = NOW(),', [
-      actorId,
-    ]);
-  }
-
-  async recordYield(
-    id: string,
-    companyId: string,
-    data: RecordYieldData,
-  ): Promise<ProductionOrder> {
-    return this._transition(
-      id,
-      companyId,
-      'YIELD_COMPLETED',
-      'actual_qty = $1, waste_qty = $2, result_expired_date = $3, notes = COALESCE($4, notes), yield_at = NOW(),',
-      [data.actualQty, data.wasteQty, data.resultExpiredDate, data.notes],
-    );
-  }
-
-  async qaPass(
-    id: string,
-    companyId: string,
-    qaNotes: string | null,
-    actorId: string | null,
-  ): Promise<ProductionOrder> {
-    return this._transition(
-      id,
-      companyId,
-      'QA_PASSED',
-      'qa_notes = $1, qa_at = NOW(), completed_by = $2,',
-      [qaNotes, actorId],
-    );
-  }
-
-  async qaFail(
-    id: string,
-    companyId: string,
-    qaNotes: string | null,
-    actorId: string | null,
-  ): Promise<ProductionOrder> {
-    return this._transition(
-      id,
-      companyId,
-      'QA_FAILED',
-      'qa_notes = $1, qa_at = NOW(), completed_by = $2,',
-      [qaNotes, actorId],
-    );
-  }
-
-  async cancel(
-    id: string,
-    companyId: string,
-    reason: string | null,
-    actorId: string | null,
-  ): Promise<ProductionOrder> {
-    return this._transition(
-      id,
-      companyId,
-      'CANCELLED',
-      'qa_notes = COALESCE($1, qa_notes), cancelled_at = NOW(), completed_by = $2,',
-      [reason, actorId],
-    );
-  }
-
-  // ── Completion (backflushing, atomic) ─────────────────────────────────────
-
-  async complete(id: string, companyId: string, actorId: string | null): Promise<ProductionOrder> {
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-      await client.query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
-
-      // Lock the production order header
-      const headerResult = await client.query<HeaderRow>(
-        `SELECT ${HEADER_COLUMNS} FROM production_orders
-         WHERE id = $1 AND company_id = $2 FOR UPDATE`,
-        [id, companyId],
-      );
-      if (!headerResult.rowCount) {
-        throw new NotFoundError('PRODUCTION_ORDER.NOT_FOUND');
-      }
-      const header = headerResult.rows[0];
-      const fromStatus = header.status as ProductionStatus;
-      if (!canTransition(fromStatus, 'COMPLETED')) {
-        throw new InvariantError('PRODUCTION_ORDER.INVALID_STATUS_TRANSITION');
-      }
-
-      const qaPassed = fromStatus === 'QA_PASSED';
-      const scaleFactor = Number(header.scale_factor);
-      const outletId = header.outlet_id;
-      const businessDate = header.production_date
-        ? new Date(header.production_date)
-        : new Date();
-      const bizDate = businessDate.toISOString().slice(0, 10);
-
-      // Load recipe ingredient lines for backflushing
-      const itemsResult = await client.query<RecipeItemRow>(
-        `SELECT id, ingredient_product_id, qty, loss_percentage
-         FROM recipe_items WHERE recipe_id = $1`,
-        [header.recipe_id],
-      );
-
-      // Consume each ingredient FEFO. Quantity = base * scale * (1 + loss/100).
-      for (const item of itemsResult.rows) {
-        const baseQty = Number(item.qty);
-        const loss = Number(item.loss_percentage);
-        const requiredQty = baseQty * scaleFactor * (1 + loss / 100);
-        if (!(requiredQty > 0)) continue;
-
-        // FEFO pick under row locks (nearest expiry first, non-expired, ACTIVE)
-        const batchesResult = await client.query<BatchRow>(
-          `SELECT id, batch_number, lot_key, expired_date, qty_available
-           FROM inventory_batches
-           WHERE company_id = $1 AND outlet_id = $2 AND product_id = $3
-             AND status = 'ACTIVE' AND qty_available > 0
-             AND (expired_date IS NULL OR expired_date >= $4)
-           ORDER BY expired_date ASC NULLS LAST, received_date ASC, created_at ASC
-           FOR UPDATE`,
-          [companyId, outletId, item.ingredient_product_id, bizDate],
-        );
-
-        let remaining = requiredQty;
-        for (const batch of batchesResult.rows) {
-          if (remaining <= 0) break;
-          const available = Number(batch.qty_available);
-          const take = Math.min(available, remaining);
-          if (take <= 0) continue;
-          const beforeQty = available;
-          const afterQty = beforeQty - take;
-
-          // Update authoritative balance + auto-consume status when depleted
-          await client.query(
-            `UPDATE inventory_batches
-             SET qty_available = $1::numeric,
-                 status = CASE WHEN $1::numeric = 0 THEN 'CONSUMED' ELSE status END,
-                 updated_at = NOW()
-             WHERE id = $2 AND company_id = $3`,
-            [afterQty, batch.id, companyId],
-          );
-
-          // Ledger append: PRODUCTION_CONSUME. Source key = order + batch.
-          await client.query(
-            `INSERT INTO inventory_movements
-               (company_id, outlet_id, batch_id, product_id, movement_type,
-                qty, before_qty, after_qty,
-                source_document_type, source_document_id,
-                source_document_item_id, source_document_allocation_id, user_id)
-             VALUES ($1,$2,$3,$4,'PRODUCTION_CONSUME',$5,$6,$7,'PRODUCTION_ORDER',$8,$9,$10,$11)`,
-            [
-              companyId,
-              outletId,
-              batch.id,
-              item.ingredient_product_id,
-              take,
-              beforeQty,
-              afterQty,
-              id,
-              item.id,
-              batch.id,
-              actorId,
-            ],
-          );
-
-          // Snapshot the consumption for audit/reconciliation
-          await client.query(
-            `INSERT INTO production_order_materials
-               (production_order_id, recipe_item_id, product_id, batch_id, planned_qty, qty_consumed)
-             VALUES ($1,$2,$3,$4,$5,$6)`,
-            [id, item.id, item.ingredient_product_id, batch.id, requiredQty, take],
-          );
-
-          remaining -= take;
-        }
-
-        if (remaining > 1e-9) {
-          // Negative-stock ban (rule #2): not enough ingredient to complete.
-          throw new InvariantError('INVENTORY.INSUFFICIENT_STOCK');
-        }
-      }
-
-      let resultBatchId: string | null = null;
-
-      // On QA pass, materialise finished goods as a new batch (PRODUCTION_RESULT).
-      // On QA fail, ingredients are consumed but the output is scrapped (no batch).
-      if (qaPassed) {
-        const producedQty = header.actual_qty === null ? 0 : Number(header.actual_qty);
-        if (!(producedQty > 0)) {
-          throw new InvariantError('PRODUCTION_ORDER.NO_YIELD_RECORDED');
-        }
-        if (!header.result_expired_date) {
-          throw new InvariantError('PRODUCTION_ORDER.RESULT_EXPIRY_REQUIRED');
-        }
-        const resultExpiry = new Date(header.result_expired_date).toISOString().slice(0, 10);
-
-        // Finished-goods batch number derived from the production number
-        const finishedBatchNumber = header.production_number;
-
-        const insertBatch = await client.query<{ id: string }>(
-          `INSERT INTO inventory_batches
-             (company_id, outlet_id, product_id, batch_number, lot_key, lot_number,
-              expired_date, received_date, qty_available, status)
-           VALUES ($1,$2,$3,$4,'',NULL,$5,$6,$7,'ACTIVE')
-           RETURNING id`,
-          [
-            companyId,
-            outletId,
-            header.product_id,
-            finishedBatchNumber,
-            resultExpiry,
-            bizDate,
-            producedQty,
-          ],
-        );
-        resultBatchId = insertBatch.rows[0].id;
-
-        await client.query(
-          `INSERT INTO inventory_movements
-             (company_id, outlet_id, batch_id, product_id, movement_type,
-              qty, before_qty, after_qty,
-              source_document_type, source_document_id, user_id)
-           VALUES ($1,$2,$3,$4,'PRODUCTION_RESULT',$5,0,$5,'PRODUCTION_ORDER',$6,$7)`,
-          [companyId, outletId, resultBatchId, header.product_id, producedQty, id, actorId],
-        );
-
-        await client.query(
-          `INSERT INTO production_order_results
-             (production_order_id, product_id, batch_id, batch_number, expired_date, qty_produced)
-           VALUES ($1,$2,$3,$4,$5,$6)`,
-          [id, header.product_id, resultBatchId, finishedBatchNumber, resultExpiry, producedQty],
-        );
-      }
-
-      // Flip status to COMPLETED and record the finished batch link
-      const updated = await client.query<HeaderRow>(
-        `UPDATE production_orders
-         SET status = 'COMPLETED', result_batch_id = $1, completed_by = $2, completed_at = NOW(),
-             updated_at = NOW()
-         WHERE id = $3 AND company_id = $4
-         RETURNING ${HEADER_COLUMNS}`,
-        [resultBatchId, actorId, id, companyId],
-      );
-
-      const materials = await this._loadMaterials(client, id);
-      const results = await this._loadResults(client, id);
-
-      await client.query('COMMIT');
-      return this._toOrder(updated.rows[0], materials, results);
-    } catch (err) {
-      await client.query('ROLLBACK');
-      if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === '23505') {
-        throw new InvariantError('INVENTORY.DUPLICATE_MOVEMENT_SOURCE');
-      }
-      throw err;
-    } finally {
-      client.release();
-    }
   }
 }

@@ -1,13 +1,11 @@
 <script setup lang="ts">
 /**
- * ProductionOrderSummary — read-only header meta card for a Production Order.
- * Renders the status badge, product, recipe, outlet, scheduled/actual/waste
- * quantities, production date, result expiry, QA notes, timestamps and optional
- * notes. Pure presentation: resolves product/outlet/recipe ids → names via
- * injected resolver callbacks so it never fetches or holds lookup state.
- *
- * `actualQty` / `resultExpiredDate` are null until a yield is recorded; they
- * render as `-` before that. QA notes only appear once a QA decision exists.
+ * ProductionOrderSummary — read-only header meta card for a completed Production
+ * Order (instant-complete model). Renders the status badge, product, recipe,
+ * outlet, target/success/waste quantities, production date, result expiry,
+ * timestamps and optional notes. Pure presentation: resolves product/outlet/
+ * recipe ids → names via injected resolver callbacks so it never fetches or
+ * holds lookup state.
  */
 import Badge from '@/components/ui/Badge.vue'
 import { formatDate, formatDateTime, formatNumber } from '@/lib/format'
@@ -54,19 +52,19 @@ const props = defineProps<{
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Qty Rencana</dt>
+      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Target</dt>
       <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
         {{ formatNumber(props.order.scheduledQty) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Qty Aktual</dt>
+      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Berhasil</dt>
       <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
         {{ props.order.actualQty !== null ? formatNumber(props.order.actualQty) : '-' }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Qty Terbuang (Waste)</dt>
+      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Gagal / Terbuang</dt>
       <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
         {{ formatNumber(props.order.wasteQty) }}
       </dd>
@@ -87,13 +85,6 @@ const props = defineProps<{
       <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Dibuat</dt>
       <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
         {{ formatDateTime(props.order.createdAt) }}
-      </dd>
-    </div>
-
-    <div v-if="props.order.qaNotes" class="sm:col-span-2">
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Catatan QA</dt>
-      <dd class="mt-1 text-theme-sm text-gray-700 dark:text-gray-300">
-        {{ props.order.qaNotes }}
       </dd>
     </div>
 

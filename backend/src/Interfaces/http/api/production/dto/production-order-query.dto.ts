@@ -21,7 +21,7 @@ export class ProductionOrderQueryDto {
   productId?: string;
 
   @ApiPropertyOptional({
-    description: 'Filter by status (SCHEDULED, IN_PROGRESS, YIELD_COMPLETED, QA_PASSED, QA_FAILED, COMPLETED, CANCELLED)',
+    description: 'Filter by status (production is instant-complete, so always COMPLETED)',
   })
   @IsOptional()
   @IsString()

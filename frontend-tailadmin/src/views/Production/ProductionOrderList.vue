@@ -34,7 +34,6 @@ const {
   loading,
   errorMessage,
   search,
-  statusFilter,
   outletFilter,
   page,
   totalPages,
@@ -45,19 +44,20 @@ const {
   nextPage,
 } = useProductionOrders()
 
-// Resolve outlet + product names from one-time lookups.
+// Resolve outlet + product names from one-time lookups. The outlet filter uses
+// only the outlets the current user may access.
 const outlets = ref<Outlet[]>([])
 const outletNames = ref<Map<string, string>>(new Map())
 const productNames = ref<Map<string, string>>(new Map())
 
 async function loadLookups(): Promise<void> {
   try {
-    const [allOutlets, allProducts] = await Promise.all([
-      fetchAllPaginated((p) => outletService.list({ page: p, limit: PAGE_LIMIT })),
+    const [accessibleOutlets, allProducts] = await Promise.all([
+      outletService.getAccessible(),
       fetchAllPaginated((p) => productService.list({ page: p, limit: PAGE_LIMIT })),
     ])
-    outlets.value = allOutlets
-    outletNames.value = new Map(allOutlets.map((o) => [o.id, o.name]))
+    outlets.value = accessibleOutlets
+    outletNames.value = new Map(accessibleOutlets.map((o) => [o.id, o.name]))
     productNames.value = new Map(allProducts.map((p) => [p.id, `${p.name} (${p.sku})`]))
   } catch {
     // Non-fatal: fall back to showing raw ids in the table.
@@ -94,18 +94,17 @@ onMounted(() => {
 
     <ComponentCard
       title="Production Orders"
-      desc="Kelola perintah produksi: konversi bahan baku menjadi barang jadi melalui resep (BOM) dengan tahap QA."
+      desc="Perintah produksi instan: konversi bahan baku menjadi barang jadi melalui resep (BOM) dalam satu aksi."
     >
       <!-- Toolbar -->
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <ProductionOrderFilterBar
           v-model:search="search"
-          v-model:status="statusFilter"
           v-model:outlet="outletFilter"
           :outlets="outlets"
         />
         <Button v-if="canCreate" size="sm" variant="primary" :on-click="goToCreate">
-          + Jadwalkan Produksi
+          + Produksi
         </Button>
       </div>
 

@@ -91,6 +91,28 @@ export class OutletController {
     return listResponse(rows, total, page, limit);
   }
 
+  @Get('accessible')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'List outlets the current user may operate in',
+    description:
+      'Returns the outlets accessible to the authenticated user within their active company. ' +
+      'OWNER / super-admin get every non-deleted outlet of the company; other users get only ' +
+      'their ACTIVE user_outlets assignments. Authentication only — no outlet.read required, ' +
+      'so operational roles (e.g. cashier, production) can resolve their own outlets.',
+  })
+  @ApiResponse({ status: 200, description: 'Accessible outlet list' })
+  async accessible(@GetUser() user: JwtAccessPayload) {
+    const companyId = this._companyId(user);
+    const allOutlets = user.isSuperAdmin || user.roleCode === 'OWNER';
+    const outlets = await this.outletRepository.findAccessibleByUser(
+      user.sub,
+      companyId,
+      allOutlets,
+    );
+    return successResponse(outlets);
+  }
+
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('outlet.read')

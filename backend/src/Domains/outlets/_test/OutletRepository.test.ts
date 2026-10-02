@@ -40,6 +40,13 @@ describe('OutletRepository (abstract contract)', () => {
     ): Promise<void> {
       throw new Error('NOT_IMPLEMENTED');
     }
+    async findAccessibleByUser(
+      _userId: string,
+      _companyId: string,
+      _allOutlets: boolean,
+    ): Promise<Outlet[]> {
+      throw new Error('NOT_IMPLEMENTED');
+    }
   }
 
   const repo = new TestOutletRepository();
@@ -76,5 +83,9 @@ describe('OutletRepository (abstract contract)', () => {
     await expect(repo.verifyOutletsBelongToCompany('c', ['o'])).rejects.toThrow(
       'NOT_IMPLEMENTED',
     );
+  });
+
+  it('findAccessibleByUser should throw when not implemented', async () => {
+    await expect(repo.findAccessibleByUser('u', 'c', false)).rejects.toThrow('NOT_IMPLEMENTED');
   });
 });
