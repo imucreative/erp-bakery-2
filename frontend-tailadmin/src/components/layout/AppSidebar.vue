@@ -50,7 +50,10 @@
     >
       <nav class="mb-6">
         <div class="flex flex-col gap-4">
-          <div v-for="(menuGroup, groupIndex) in menuGroups" :key="groupIndex">
+          <div
+            v-for="(menuGroup, groupIndex) in visibleMenuGroups"
+            :key="menuGroup.title"
+          >
             <h2
               :class="[
                 'mb-4 text-xs uppercase flex leading-5 text-gray-400',
@@ -212,37 +215,45 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import {
+  Boxes,
+  CalendarClock,
+  ClipboardList,
+  CreditCard,
+  Inbox,
+  Layers,
+  LayoutDashboard,
+  Package,
+  Ruler,
+  ScrollText,
+  ShieldCheck,
+  ShoppingCart,
+  SlidersHorizontal,
+  Store,
+  Tag,
+  Truck,
+  UserCircle,
+  Users,
+} from 'lucide-vue-next'
 
 import { useSidebar } from '@/composables/useSidebar'
-import {
-  BoxIcon,
-  CalenderIcon,
-  ChevronDownIcon,
-  DocsIcon,
-  GridIcon,
-  HorizontalDots,
-  ListIcon,
-  PageIcon,
-  PieChartIcon,
-  PlugInIcon,
-  TableIcon,
-  UserCircleIcon,
-} from '@/icons'
-import BoxCubeIcon from '@/icons/BoxCubeIcon.vue'
-import ArchiveIcon from '@/icons/ArchiveIcon.vue'
+import { usePermission } from '@/composables/usePermission'
+import { ChevronDownIcon, HorizontalDots } from '@/icons'
 import SidebarWidget from './SidebarWidget.vue'
 
 const route = useRoute()
 
 const { isExpanded, isMobileOpen, isHovered, openSubmenu } = useSidebar()
+const { can } = usePermission()
 
 interface SubItem {
   name: string
   path: string
   pro?: boolean
   new?: boolean
+  permission?: string
 }
 
 interface MenuItem {
@@ -252,6 +263,7 @@ interface MenuItem {
   subItems?: SubItem[]
   new?: boolean
   pro?: boolean
+  permission?: string
 }
 
 interface MenuGroup {
@@ -264,39 +276,46 @@ const menuGroups: MenuGroup[] = [
     title: 'Master Data',
     items: [
       {
-        icon: BoxCubeIcon,
+        icon: Store,
         name: 'Outlets',
         path: '/master/outlets',
+        permission: 'outlet.read',
       },
       {
-        icon: ListIcon,
+        icon: Ruler,
         name: 'Units of Measure',
         path: '/master/uoms',
+        permission: 'uom.read',
       },
       {
-        icon: BoxCubeIcon,
+        icon: Truck,
         name: 'Suppliers',
         path: '/master/suppliers',
+        permission: 'supplier.read',
       },
       {
-        icon: ListIcon,
+        icon: CreditCard,
         name: 'Payment Terms',
         path: '/master/payment-terms',
+        permission: 'payment-term.read',
       },
       {
-        icon: ListIcon,
+        icon: Layers,
         name: 'Product Groups',
         path: '/master/product-groups',
+        permission: 'product-group.read',
       },
       {
-        icon: ListIcon,
+        icon: Tag,
         name: 'Categories',
         path: '/master/categories',
+        permission: 'category.read',
       },
       {
-        icon: BoxCubeIcon,
+        icon: Package,
         name: 'Products',
         path: '/master/products',
+        permission: 'product.read',
       },
     ],
   },
@@ -304,19 +323,22 @@ const menuGroups: MenuGroup[] = [
     title: 'Procurement',
     items: [
       {
-        icon: DocsIcon,
+        icon: ClipboardList,
         name: 'Purchase Requests',
         path: '/procurement/purchase-requests',
+        permission: 'procurement.pr.read',
       },
       {
-        icon: DocsIcon,
+        icon: ShoppingCart,
         name: 'Purchase Orders',
         path: '/procurement/purchase-orders',
+        permission: 'procurement.po.read',
       },
       {
-        icon: DocsIcon,
+        icon: Inbox,
         name: 'Goods Receipts',
         path: '/procurement/goods-receipts',
+        permission: 'procurement.gr.read',
       },
     ],
   },
@@ -324,24 +346,28 @@ const menuGroups: MenuGroup[] = [
     title: 'Inventory',
     items: [
       {
-        icon: BoxIcon,
+        icon: Boxes,
         name: 'Stock On Hand',
         path: '/inventory/stock-on-hand',
+        permission: 'inventory.read',
       },
       {
-        icon: ListIcon,
+        icon: ScrollText,
         name: 'Stock Ledger',
         path: '/inventory/ledger',
+        permission: 'inventory.read',
       },
       {
-        icon: ArchiveIcon,
+        icon: CalendarClock,
         name: 'Batch & Expiry',
         path: '/inventory/batches',
+        permission: 'inventory.read',
       },
       {
-        icon: DocsIcon,
+        icon: SlidersHorizontal,
         name: 'Stock Adjustment',
         path: '/inventory/adjustments',
+        permission: 'inventory.adjustment.read',
       },
     ],
   },
@@ -349,14 +375,16 @@ const menuGroups: MenuGroup[] = [
     title: 'System Administration',
     items: [
       {
-        icon: UserCircleIcon,
+        icon: Users,
         name: 'Users',
         path: '/system/users',
+        permission: 'user.read',
       },
       {
-        icon: UserCircleIcon,
+        icon: ShieldCheck,
         name: 'Roles',
         path: '/system/roles',
+        permission: 'role.read',
       },
     ],
   },
@@ -364,84 +392,53 @@ const menuGroups: MenuGroup[] = [
     title: 'Menu',
     items: [
       {
-        icon: GridIcon,
+        icon: LayoutDashboard,
         name: 'Dashboard',
         subItems: [{ name: 'Ecommerce', path: '/', pro: false }],
       },
       {
-        icon: CalenderIcon,
-        name: 'Calendar',
-        path: '/calendar',
-      },
-      {
-        icon: UserCircleIcon,
+        icon: UserCircle,
         name: 'User Profile',
         path: '/profile',
-      },
-
-      {
-        name: 'Forms',
-        icon: ListIcon,
-        subItems: [
-          { name: 'Form Elements', path: '/form-elements', pro: false },
-        ],
-      },
-      {
-        name: 'Tables',
-        icon: TableIcon,
-        subItems: [{ name: 'Basic Tables', path: '/basic-tables', pro: false }],
-      },
-      {
-        name: 'Pages',
-        icon: PageIcon,
-        subItems: [
-          { name: 'Blank Page', path: '/blank', pro: false },
-          { name: '404 Page', path: '/error-404', pro: false },
-        ],
-      },
-    ],
-  },
-  {
-    title: 'Others',
-    items: [
-      {
-        icon: PieChartIcon,
-        name: 'Charts',
-        subItems: [
-          { name: 'Line Chart', path: '/line-chart', pro: false },
-          { name: 'Bar Chart', path: '/bar-chart', pro: false },
-        ],
-      },
-      {
-        icon: BoxCubeIcon,
-        name: 'Ui Elements',
-        subItems: [
-          { name: 'Alerts', path: '/alerts', pro: false },
-          { name: 'Avatars', path: '/avatars', pro: false },
-          { name: 'Badge', path: '/badge', pro: false },
-          { name: 'Buttons', path: '/buttons', pro: false },
-          { name: 'Images', path: '/images', pro: false },
-          { name: 'Videos', path: '/videos', pro: false },
-        ],
-      },
-      {
-        icon: PlugInIcon,
-        name: 'Authentication',
-        subItems: [
-          { name: 'Signin', path: '/signin', pro: false },
-          { name: 'Signup', path: '/signup', pro: false },
-        ],
       },
     ],
   },
 ]
 
+/**
+ * Permission-gated view of the menu. An item is shown when it has no
+ * `permission` or when `can(permission)` is true; items with `subItems` keep
+ * only the sub-items the user may see. Groups left with no visible items are
+ * dropped entirely. Computed so it re-runs when the auth store changes.
+ */
+const visibleMenuGroups = computed<MenuGroup[]>(() => {
+  const isItemVisible = (item: MenuItem): boolean =>
+    !item.permission || can(item.permission)
+
+  return menuGroups
+    .map((group) => {
+      const items = group.items
+        .filter(isItemVisible)
+        .map((item) => {
+          if (!item.subItems) {
+            return item
+          }
+          const subItems = item.subItems.filter(
+            (subItem) => !subItem.permission || can(subItem.permission),
+          )
+          return { ...item, subItems }
+        })
+        .filter((item) => !item.subItems || item.subItems.length > 0)
+
+      return { ...group, items }
+    })
+    .filter((group) => group.items.length > 0)
+})
+
 const isActive = (path?: string) => (path ? route.path === path : false)
 
-
-
 const setActiveMenuFromRoute = () => {
-  menuGroups.forEach((group, groupIndex) => {
+  visibleMenuGroups.value.forEach((group, groupIndex) => {
     group.items.forEach((item, itemIndex) => {
       if (item.subItems?.some((subItem) => isActive(subItem.path))) {
         openSubmenu.value = `${groupIndex}-${itemIndex}`
