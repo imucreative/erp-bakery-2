@@ -13,6 +13,8 @@ export interface PurchaseOrderListQuery {
   destinationOutletId?: string;
   purchaseRequestId?: string;
   search?: string;
+  /** Picker: only APPROVED POs with remaining receivable quantity (for GR). */
+  receivable?: boolean;
 }
 
 /**
@@ -36,6 +38,7 @@ export class GetPurchaseOrdersUseCase {
       destinationOutletId: query.destinationOutletId,
       purchaseRequestId: query.purchaseRequestId,
       search: query.search,
+      receivable: query.receivable,
     });
   }
 

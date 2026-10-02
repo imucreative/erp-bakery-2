@@ -428,6 +428,33 @@ export class PurchaseRequestRepositoryPostgres extends PurchaseRequestRepository
       params.push(`%${filter.search}%`);
       conditions.push(`(pr_number ILIKE $${params.length} OR notes ILIKE $${params.length})`);
     }
+    if (filter.orderable) {
+      // Picker filter (2026-10-02): only APPROVED PRs that still have at least
+      // one line with outstanding orderable quantity > 0. Outstanding per PR
+      // line = pr_item.quantity − Σ(po_item.quantity) consumed by ACTIVE sibling
+      // POs (status DRAFT/SUBMITTED/APPROVED, not hard-deleted), matched by
+      // product_id (consumption is per-product, identical to
+      // getConsumedQtyByPrItem). The exclusion of CANCELLED/REJECTED POs rests
+      // on that PO status clause — no duplicated lifecycle rule. The whole PR is
+      // orderable iff ANY line has qty > consumed; aggregation happens in the DB
+      // (no N+1).
+      conditions.push(`status = 'APPROVED'`);
+      conditions.push(`EXISTS (
+        SELECT 1
+        FROM purchase_request_items pri
+        WHERE pri.purchase_request_id = purchase_requests.id
+          AND pri.quantity > COALESCE((
+            SELECT SUM(poi.quantity)
+            FROM purchase_order_items poi
+            JOIN purchase_orders po ON po.id = poi.purchase_order_id
+            WHERE po.purchase_request_id = purchase_requests.id
+              AND po.company_id = purchase_requests.company_id
+              AND po.deleted_at IS NULL
+              AND po.status IN ('DRAFT','SUBMITTED','APPROVED')
+              AND poi.product_id = pri.product_id
+          ), 0)
+      )`);
+    }
 
     const whereClause = conditions.join(' AND ');
 
@@ -468,6 +495,11 @@ export class PurchaseRequestRepositoryPostgres extends PurchaseRequestRepository
    * Generic guarded status transition + timeline log. Loads the header FOR
    * UPDATE, verifies canTransition, applies the extra column sets, writes a log
    * row, commits — all atomically.
+   *
+   * Note (Opsi A, 2026-10-02): a status transition NEVER touches deleted_at.
+   * CANCELLED is a terminal business status that must stay visible in list
+   * views (deleted_at is reserved for genuine hard-delete). cancel() therefore
+   * uses this method like any other transition, without soft-deleting.
    */
   private async _transition(
     id: string,
@@ -476,7 +508,6 @@ export class PurchaseRequestRepositoryPostgres extends PurchaseRequestRepository
     to: PurchaseRequestStatus,
     note: string | null,
     extraSets: string[] = [],
-    softDelete = false,
   ): Promise<PurchaseRequest> {
     const client = await this.pool.connect();
     try {
@@ -496,9 +527,6 @@ export class PurchaseRequestRepositoryPostgres extends PurchaseRequestRepository
       }
 
       const sets = ['status = $1', 'updated_by = $2', 'updated_at = NOW()', ...extraSets];
-      if (softDelete) {
-        sets.push('deleted_at = NOW()', 'deleted_by = $2');
-      }
 
       const updated = await client.query<HeaderRow>(
         `UPDATE purchase_requests SET ${sets.join(', ')}
@@ -552,7 +580,10 @@ export class PurchaseRequestRepositoryPostgres extends PurchaseRequestRepository
     userId: string | null,
     note: string | null,
   ): Promise<PurchaseRequest> {
-    return this._transition(id, companyId, userId, 'CANCELLED', note, [], true);
+    // Opsi A (2026-10-02): CANCELLED is a terminal business status that stays
+    // visible in list views; it no longer soft-deletes the row. deleted_at is
+    // reserved for genuine hard-delete only.
+    return this._transition(id, companyId, userId, 'CANCELLED', note);
   }
 
   async ensureExists(id: string, companyId: string): Promise<void> {

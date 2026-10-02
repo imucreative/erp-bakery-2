@@ -49,6 +49,15 @@ export interface PurchaseOrderListFilter {
   destinationOutletId?: string;
   purchaseRequestId?: string;
   search?: string;
+  /**
+   * Picker filter (Opsi A follow-up, 2026-10-02). When true, return only
+   * APPROVED POs that still have at least one line with outstanding receivable
+   * quantity > 0 — i.e. POs a new Goods Receipt can still consume. A fully
+   * received PO (every line outstanding = 0) is excluded. Does not change the
+   * default list contract: the main list still returns every PO (including
+   * fully-received and CANCELLED) when `receivable` is absent.
+   */
+  receivable?: boolean;
 }
 
 export interface PurchaseOrderListResult {
@@ -129,7 +138,12 @@ export abstract class PurchaseOrderRepository {
     note: string | null,
   ): Promise<PurchaseOrder>;
 
-  /** DRAFT|REJECTED|APPROVED -> CANCELLED (soft-delete + terminal status). */
+  /**
+   * DRAFT|REJECTED|APPROVED -> CANCELLED (terminal status). Opsi A
+   * (2026-10-02): cancelling no longer soft-deletes the row — a CANCELLED PO
+   * stays visible in list views; deleted_at is reserved for genuine
+   * hard-delete only.
+   */
   abstract cancel(
     id: string,
     companyId: string,

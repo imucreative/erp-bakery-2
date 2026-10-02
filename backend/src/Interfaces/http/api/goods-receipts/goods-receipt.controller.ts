@@ -206,7 +206,7 @@ export class GoodsReceiptController {
   @Post(':id/cancel')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('procurement.gr.update')
-  @ApiOperation({ summary: 'Cancel a goods receipt (DRAFT -> CANCELLED, soft-delete)' })
+  @ApiOperation({ summary: 'Cancel a goods receipt (DRAFT -> CANCELLED, stays visible)' })
   @ApiParam({ name: 'id', description: 'Goods receipt UUID' })
   @ApiResponse({ status: 200, description: 'Cancelled' })
   @ApiResponse({ status: 400, description: 'Invalid status transition' })

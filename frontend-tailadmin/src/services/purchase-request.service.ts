@@ -151,6 +151,14 @@ export interface PurchaseRequestListParams {
   status?: PurchaseRequestStatus
   destinationOutletId?: string
   search?: string
+  /**
+   * Picker-only filter: when `true`, restrict the result to APPROVED PRs that
+   * still have ≥1 item with outstanding > 0 (not yet fully consumed by other
+   * active POs). Used by the PO form's source-PR picker so fully-ordered PRs
+   * don't appear. Sent as the string `'true'`; omitted when false/undefined so
+   * the main List page keeps its full, unfiltered contract.
+   */
+  orderable?: boolean
 }
 
 export interface PurchaseRequestListResult {
@@ -198,6 +206,9 @@ function toQuery(params: PurchaseRequestListParams): Record<string, string | num
   }
   if (params.search) {
     query.search = params.search
+  }
+  if (params.orderable) {
+    query.orderable = 'true'
   }
   return query
 }

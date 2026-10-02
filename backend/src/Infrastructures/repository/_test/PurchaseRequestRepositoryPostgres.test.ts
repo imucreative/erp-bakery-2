@@ -231,7 +231,7 @@ describe('PurchaseRequestRepositoryPostgres', () => {
       expect(updateCall[0]).toContain('approved_at = NOW()');
     });
 
-    it('cancel: DRAFT -> CANCELLED soft-deletes (sets deleted_at) and logs', async () => {
+    it('cancel: DRAFT -> CANCELLED is terminal but NOT soft-deleted (Opsi A), logs and stays visible', async () => {
       client.query
         .mockResolvedValueOnce(undefined) // BEGIN
         .mockResolvedValueOnce({ rows: [header({ status: 'DRAFT' })], rowCount: 1 }) // lock
@@ -244,7 +244,13 @@ describe('PurchaseRequestRepositoryPostgres', () => {
       const result = await repo.cancel('pr1', 'c1', 'u1', null);
       expect(result.status).toBe('CANCELLED');
       const updateCall = client.query.mock.calls[2];
-      expect(updateCall[0]).toContain('deleted_at = NOW()');
+      // Opsi A: cancel must NOT soft-delete; the row stays visible in list.
+      expect(updateCall[0]).not.toContain('deleted_at');
+      expect(updateCall[0]).not.toContain('deleted_by');
+      expect(updateCall[0]).toContain("status = $1");
+      // A CANCELLED timeline log is still written.
+      const logCall = client.query.mock.calls[3];
+      expect(logCall[1]).toEqual(['pr1', 'DRAFT', 'CANCELLED', 'u1', null]);
     });
   });
 
@@ -452,6 +458,35 @@ describe('PurchaseRequestRepositoryPostgres', () => {
       expect(result.rows).toHaveLength(1);
       const countCall = (mockPool.query as jest.Mock).mock.calls[0];
       expect(countCall[0]).toContain('deleted_at IS NULL');
+    });
+
+    it('orderable=true restricts to APPROVED PRs with remaining orderable qty (picker)', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ count: '1' }], rowCount: 1 }) // count
+        .mockResolvedValueOnce({ rows: [header({ status: 'APPROVED' })], rowCount: 1 }) // headers
+        .mockResolvedValueOnce({ rows: [itemRow()], rowCount: 1 }) // items
+        .mockResolvedValueOnce({ rows: [logRow({ to_status: 'APPROVED' })], rowCount: 1 }); // logs
+
+      const result = await repo.list('c1', { limit: 10, offset: 0, orderable: true });
+      expect(result.total).toBe(1);
+
+      const countSql = String((mockPool.query as jest.Mock).mock.calls[0][0]);
+      expect(countSql).toContain("status = 'APPROVED'");
+      expect(countSql).toContain('EXISTS (');
+      expect(countSql).toContain('purchase_order_items');
+      expect(countSql).toContain("po.status IN ('DRAFT','SUBMITTED','APPROVED')");
+      expect(countSql).toContain('deleted_at IS NULL');
+    });
+
+    it('does NOT add the orderable predicate on a normal list (default contract unchanged)', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ count: '0' }], rowCount: 1 }) // count
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // headers
+
+      await repo.list('c1', { limit: 10, offset: 0 });
+      const countSql = String((mockPool.query as jest.Mock).mock.calls[0][0]);
+      expect(countSql).not.toContain('EXISTS (');
+      expect(countSql).not.toContain("status = 'APPROVED'");
     });
   });
 });

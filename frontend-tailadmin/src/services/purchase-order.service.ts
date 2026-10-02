@@ -170,6 +170,14 @@ export interface PurchaseOrderListParams {
   destinationOutletId?: string
   purchaseRequestId?: string
   search?: string
+  /**
+   * Picker-only filter: when `true`, restrict the result to APPROVED POs that
+   * still have ≥1 item with outstanding > 0 (not yet fully received by other
+   * GRs). Used by the GR form's source-PO picker so fully-received POs don't
+   * appear. Sent as the string `'true'`; omitted when false/undefined so the
+   * main List page keeps its full, unfiltered contract.
+   */
+  receivable?: boolean
 }
 
 export interface PurchaseOrderListResult {
@@ -244,6 +252,9 @@ function toQuery(params: PurchaseOrderListParams): Record<string, string | numbe
   }
   if (params.search) {
     query.search = params.search
+  }
+  if (params.receivable) {
+    query.receivable = 'true'
   }
   return query
 }

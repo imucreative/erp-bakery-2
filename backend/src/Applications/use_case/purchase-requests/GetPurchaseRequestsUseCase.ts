@@ -11,6 +11,8 @@ export interface PurchaseRequestListQuery {
   status?: string;
   destinationOutletId?: string;
   search?: string;
+  /** Picker: only APPROVED PRs with remaining orderable quantity (for PO). */
+  orderable?: boolean;
 }
 
 /**
@@ -32,6 +34,7 @@ export class GetPurchaseRequestsUseCase {
       status: query.status,
       destinationOutletId: query.destinationOutletId,
       search: query.search,
+      orderable: query.orderable,
     });
   }
 

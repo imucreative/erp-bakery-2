@@ -112,7 +112,11 @@ export class PurchaseRequestController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @RequirePermission('procurement.pr.read')
-  @ApiOperation({ summary: 'List purchase requests' })
+  @ApiOperation({
+    summary:
+      'List purchase requests. Pass orderable=true to get only APPROVED PRs ' +
+      'with remaining orderable quantity (source picker for a new PO).',
+  })
   @ApiResponse({ status: 200, description: 'Paginated purchase request list' })
   async list(@Query() query: PurchaseRequestQueryDto, @GetUser() user: JwtAccessPayload) {
     const companyId = this._companyId(user);
@@ -124,6 +128,7 @@ export class PurchaseRequestController {
         status: query.status,
         destinationOutletId: query.destinationOutletId,
         search: query.search,
+        orderable: query.orderable === 'true',
       },
       companyId,
     );

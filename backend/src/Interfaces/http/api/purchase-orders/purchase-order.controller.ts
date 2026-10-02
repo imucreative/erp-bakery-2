@@ -119,7 +119,11 @@ export class PurchaseOrderController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @RequirePermission('procurement.po.read')
-  @ApiOperation({ summary: 'List purchase orders' })
+  @ApiOperation({
+    summary:
+      'List purchase orders. Pass receivable=true to get only APPROVED POs ' +
+      'with remaining receivable quantity (source picker for a new GR).',
+  })
   @ApiResponse({ status: 200, description: 'Paginated purchase order list' })
   async list(@Query() query: PurchaseOrderQueryDto, @GetUser() user: JwtAccessPayload) {
     const companyId = this._companyId(user);
@@ -133,6 +137,7 @@ export class PurchaseOrderController {
         destinationOutletId: query.destinationOutletId,
         purchaseRequestId: query.purchaseRequestId,
         search: query.search,
+        receivable: query.receivable === 'true',
       },
       companyId,
     );

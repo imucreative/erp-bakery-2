@@ -553,6 +553,18 @@ describe('GetPurchaseOrdersUseCase', () => {
     );
   });
 
+  it('should pass the receivable picker flag through to the repository', async () => {
+    poRepo.list.mockResolvedValue({ rows: [], total: 0 });
+    await new GetPurchaseOrdersUseCase(poRepo).list(
+      { limit: 10, offset: 0, receivable: true },
+      'c1',
+    );
+    expect(poRepo.list).toHaveBeenCalledWith(
+      'c1',
+      expect.objectContaining({ receivable: true }),
+    );
+  });
+
   it('should return detail via getById', async () => {
     poRepo.getById.mockResolvedValue({ id: 'po' } as never);
     const result = await new GetPurchaseOrdersUseCase(poRepo).detail('po', 'c1');

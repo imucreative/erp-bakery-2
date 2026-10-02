@@ -33,6 +33,15 @@ export interface PurchaseRequestListFilter {
   status?: string;
   destinationOutletId?: string;
   search?: string;
+  /**
+   * Picker filter (Opsi A follow-up, 2026-10-02). When true, return only
+   * APPROVED PRs that still have at least one line with outstanding orderable
+   * quantity > 0 — i.e. PRs a new Purchase Order can still consume. A fully
+   * ordered PR (every line outstanding = 0) is excluded. Does not change the
+   * default list contract: the main list still returns every PR (including
+   * fully-ordered and CANCELLED) when `orderable` is absent.
+   */
+  orderable?: boolean;
 }
 
 export interface PurchaseRequestListResult {
@@ -94,7 +103,11 @@ export abstract class PurchaseRequestRepository {
     note: string | null,
   ): Promise<PurchaseRequest>;
 
-  /** DRAFT|REJECTED -> CANCELLED (soft-delete + terminal status). */
+  /**
+   * DRAFT|REJECTED -> CANCELLED (terminal status). Opsi A (2026-10-02):
+   * cancelling no longer soft-deletes the row — a CANCELLED PR stays visible in
+   * list views; deleted_at is reserved for genuine hard-delete only.
+   */
   abstract cancel(
     id: string,
     companyId: string,

@@ -193,9 +193,12 @@ const duePreview = computed<string | null>(() => {
 })
 
 async function loadSupportingData(): Promise<void> {
+  // Picker list: only APPROVED PRs that still have outstanding (≥1 item not yet
+  // fully consumed by other active POs). Fully-ordered PRs are excluded via
+  // `orderable: true` so they never appear as a selectable source for a new PO.
   const [prResult, supplierResult, paymentTermResult, productResult, uomResult, outletResult] =
     await Promise.all([
-      purchaseRequestService.list({ page: 1, limit: 100, status: 'APPROVED' }),
+      purchaseRequestService.list({ page: 1, limit: 100, status: 'APPROVED', orderable: true }),
       supplierService.list({ page: 1, limit: 100, isActive: 'true' }),
       paymentTermService.lookup(),
       productService.list({ page: 1, limit: 100, isActive: 'true' }),
@@ -213,6 +216,17 @@ async function loadSupportingData(): Promise<void> {
 async function loadExisting(id: string): Promise<void> {
   const po = await purchaseOrderService.getById(id)
   loadedStatus.value = po.status
+  // The picker list (`approvedRequests`) is filtered to `orderable` PRs, so a PR
+  // that this PO already fully consumed would be absent — leaving the locked
+  // select blank. Ensure the source PR is present so its number renders.
+  if (!approvedRequests.value.some((pr) => pr.id === po.purchaseRequestId)) {
+    try {
+      const sourcePr = await purchaseRequestService.getById(po.purchaseRequestId)
+      approvedRequests.value = [sourcePr, ...approvedRequests.value]
+    } catch {
+      // Non-fatal: the select may show the raw id via the prNumber fallback.
+    }
+  }
   // Don't let watchers overwrite the loaded values.
   suppressPrPrefill = true
   suppressSupplierDefault = true

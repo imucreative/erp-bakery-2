@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsBooleanString, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class PurchaseOrderQueryDto {
   @ApiPropertyOptional({ example: 1 })
@@ -36,4 +36,15 @@ export class PurchaseOrderQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({
+    example: 'true',
+    description:
+      'Picker filter: when "true", return only APPROVED POs that still have ' +
+      'remaining receivable quantity (used when choosing a source PO for a new ' +
+      'Goods Receipt). Fully-received POs are excluded.',
+  })
+  @IsOptional()
+  @IsBooleanString()
+  receivable?: string;
 }

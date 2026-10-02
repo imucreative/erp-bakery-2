@@ -493,10 +493,13 @@ export class GoodsReceiptRepositoryPostgres extends GoodsReceiptRepository {
     companyId: string,
     excludeGoodsReceiptId?: string,
   ): Promise<Map<string, number>> {
-    // Sum (accepted + rejected) per PO line from CONSUMING GRs of this PO.
-    // Selecting status IN (DRAFT, COMPLETED) automatically excludes CANCELLED
-    // (which is also soft-deleted), so its consumption returns to the PO. The
-    // deleted_at IS NULL guard keeps any soft-deleted header out of the sum.
+    // Sum (accepted + rejected) per PO line from CONSUMING GRs of this PO. The
+    // correctness of excluding CANCELLED rests on the STATUS clause: selecting
+    // status IN (DRAFT, COMPLETED) excludes CANCELLED, so its consumption
+    // returns to the PO. (Since Opsi A, 2026-10-02, CANCELLED is no longer
+    // soft-deleted — it stays visible — so the exclusion must NOT rely on
+    // deleted_at.) The deleted_at IS NULL guard only keeps genuinely
+    // hard-deleted headers out of the sum.
     const params: unknown[] = [purchaseOrderId, companyId];
     let excludeClause = '';
     if (excludeGoodsReceiptId) {
@@ -547,10 +550,12 @@ export class GoodsReceiptRepositoryPostgres extends GoodsReceiptRepository {
         throw new InvariantError('GOODS_RECEIPT.INVALID_STATUS_TRANSITION');
       }
 
+      // Opsi A (2026-10-02): CANCELLED is a terminal business status that stays
+      // visible in list views; it no longer soft-deletes the row. deleted_at is
+      // reserved for genuine hard-delete only.
       const updated = await client.query<HeaderRow>(
         `UPDATE goods_receipts
-         SET status = 'CANCELLED', updated_by = $1, updated_at = NOW(),
-             deleted_at = NOW(), deleted_by = $1
+         SET status = 'CANCELLED', updated_by = $1, updated_at = NOW()
          WHERE id = $2 AND company_id = $3
          RETURNING ${HEADER_COLUMNS}`,
         [userId, id, companyId],

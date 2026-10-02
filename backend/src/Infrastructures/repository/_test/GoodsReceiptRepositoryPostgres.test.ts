@@ -266,6 +266,27 @@ describe('GoodsReceiptRepositoryPostgres.complete', () => {
     expect(client.release).toHaveBeenCalled();
   });
 
+  it('cancel (Opsi A): DRAFT -> CANCELLED keeps the row visible (no deleted_at/by) and logs', async () => {
+    client.query
+      .mockResolvedValueOnce(undefined) // BEGIN
+      .mockResolvedValueOnce({ rows: [headerRow({ status: 'DRAFT' })], rowCount: 1 }) // lock header
+      .mockResolvedValueOnce({ rows: [headerRow({ status: 'CANCELLED' })], rowCount: 1 }) // update
+      .mockResolvedValueOnce(undefined) // insert log
+      .mockResolvedValueOnce({ rows: [itemRow()], rowCount: 1 }) // _loadItems
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // _loadLogs
+      .mockResolvedValueOnce(undefined); // COMMIT
+
+    const gr = await repo.cancel('gr1', 'c1', 'u1', 'batal');
+    expect(gr.status).toBe('CANCELLED');
+
+    const updateCall = client.query.mock.calls[2];
+    // Opsi A: cancel must NOT soft-delete; the row stays visible in list.
+    expect(String(updateCall[0])).not.toContain('deleted_at');
+    expect(String(updateCall[0])).not.toContain('deleted_by');
+    expect(String(updateCall[0])).toContain("status = 'CANCELLED'");
+    expect(client.query).toHaveBeenCalledWith('COMMIT');
+  });
+
   it('rolls back when the balance update would go negative (shared negative-stock ban)', async () => {
     // Not expected for inbound PURCHASE, but proves the shared ledger guard is
     // active on this path. Force an outbound-like failure by making before_qty

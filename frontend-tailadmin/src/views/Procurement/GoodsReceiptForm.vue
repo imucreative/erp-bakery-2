@@ -175,8 +175,11 @@ function prefillRows(source: SourcePoItem[]): EditorItemRow[] {
 }
 
 async function loadSupportingData(): Promise<void> {
+  // Picker list: only APPROVED POs that still have outstanding (≥1 item not yet
+  // fully received). Fully-received POs are excluded via `receivable: true` so
+  // they never appear as a selectable source when creating a GR.
   const [poResult, productResult, uomResult, supplierResult, outletResult] = await Promise.all([
-    purchaseOrderService.list({ page: 1, limit: 100, status: 'APPROVED' }),
+    purchaseOrderService.list({ page: 1, limit: 100, status: 'APPROVED', receivable: true }),
     productService.list({ page: 1, limit: 100 }),
     uomService.list({ page: 1, limit: 100, isActive: 'true' }),
     supplierService.list({ page: 1, limit: 100 }),
@@ -192,6 +195,17 @@ async function loadSupportingData(): Promise<void> {
 async function loadExisting(id: string): Promise<void> {
   const gr = await goodsReceiptService.getById(id)
   loadedStatus.value = gr.status
+  // The picker list (`approvedOrders`) is filtered to `receivable` POs, so a PO
+  // that this GR already fully received would be absent — leaving the locked
+  // select blank. Ensure the source PO is present so its number renders.
+  if (!approvedOrders.value.some((po) => po.id === gr.purchaseOrderId)) {
+    try {
+      const sourcePo = await purchaseOrderService.getById(gr.purchaseOrderId)
+      approvedOrders.value = [sourcePo, ...approvedOrders.value]
+    } catch {
+      // Non-fatal: the select may show the raw id via the poNumber fallback.
+    }
+  }
   // Don't let watchers overwrite the loaded values.
   suppressPoPrefill = true
   purchaseOrderId.value = gr.purchaseOrderId

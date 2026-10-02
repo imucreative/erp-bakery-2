@@ -104,7 +104,11 @@ export abstract class GoodsReceiptRepository {
     excludeGoodsReceiptId?: string,
   ): Promise<Map<string, number>>;
 
-  /** DRAFT -> CANCELLED (soft-delete + terminal status). */
+  /**
+   * DRAFT -> CANCELLED (terminal status). Opsi A (2026-10-02): cancelling no
+   * longer soft-deletes the row — a CANCELLED GR stays visible in list views;
+   * deleted_at is reserved for genuine hard-delete only.
+   */
   abstract cancel(
     id: string,
     companyId: string,

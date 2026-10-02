@@ -184,6 +184,18 @@ describe('GetPurchaseRequestsUseCase', () => {
     expect(prRepo.list).toHaveBeenCalled();
   });
 
+  it('should pass the orderable picker flag through to the repository', async () => {
+    prRepo.list.mockResolvedValue({ rows: [], total: 0 });
+    await new GetPurchaseRequestsUseCase(prRepo).list(
+      { limit: 10, offset: 0, orderable: true },
+      'c1',
+    );
+    expect(prRepo.list).toHaveBeenCalledWith(
+      'c1',
+      expect.objectContaining({ orderable: true }),
+    );
+  });
+
   it('should return detail via getById', async () => {
     prRepo.getById.mockResolvedValue({ id: 'pr' } as never);
     const result = await new GetPurchaseRequestsUseCase(prRepo).detail('pr', 'c1');

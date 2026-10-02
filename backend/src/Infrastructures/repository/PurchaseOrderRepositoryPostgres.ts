@@ -518,6 +518,32 @@ export class PurchaseOrderRepositoryPostgres extends PurchaseOrderRepository {
       params.push(`%${filter.search}%`);
       conditions.push(`(po_number ILIKE $${params.length} OR notes ILIKE $${params.length})`);
     }
+    if (filter.receivable) {
+      // Picker filter (2026-10-02): only APPROVED POs that still have at least
+      // one line with outstanding receivable quantity > 0. Outstanding per PO
+      // line = po_item.quantity − Σ(accepted+rejected) consumed by CONSUMING
+      // sibling GRs (status DRAFT/COMPLETED, not hard-deleted). The exclusion of
+      // CANCELLED GRs rests on that GR status clause — identical to
+      // getConsumedQtyByPoItem — so there is no duplicated lifecycle rule.
+      // The whole PO is receivable iff ANY line has qty > consumed; aggregation
+      // happens in the DB (no N+1).
+      conditions.push(`status = 'APPROVED'`);
+      conditions.push(`EXISTS (
+        SELECT 1
+        FROM purchase_order_items poi
+        WHERE poi.purchase_order_id = purchase_orders.id
+          AND poi.quantity > COALESCE((
+            SELECT SUM(gri.accepted_quantity + gri.rejected_quantity)
+            FROM goods_receipt_items gri
+            JOIN goods_receipts gr ON gr.id = gri.goods_receipt_id
+            WHERE gr.purchase_order_id = purchase_orders.id
+              AND gr.company_id = purchase_orders.company_id
+              AND gr.deleted_at IS NULL
+              AND gr.status IN ('DRAFT','COMPLETED')
+              AND gri.purchase_order_item_id = poi.id
+          ), 0)
+      )`);
+    }
 
     const whereClause = conditions.join(' AND ');
 
@@ -559,10 +585,13 @@ export class PurchaseOrderRepositoryPostgres extends PurchaseOrderRepository {
     companyId: string,
     excludePurchaseOrderId?: string,
   ): Promise<Map<string, number>> {
-    // Sum item quantities from ACTIVE POs of this PR. Selecting status IN
-    // (DRAFT, SUBMITTED, APPROVED) automatically excludes CANCELLED (which is
-    // also soft-deleted) and REJECTED, so their quota returns to the PR. The
-    // deleted_at IS NULL guard keeps any soft-deleted header out of the sum.
+    // Sum item quantities from ACTIVE POs of this PR. The correctness of
+    // excluding CANCELLED and REJECTED rests on the STATUS clause: selecting
+    // status IN (DRAFT, SUBMITTED, APPROVED) excludes both, so their quota
+    // returns to the PR. (Since Opsi A, 2026-10-02, CANCELLED is no longer
+    // soft-deleted — it stays visible — so the exclusion must NOT rely on
+    // deleted_at.) The deleted_at IS NULL guard only keeps genuinely
+    // hard-deleted headers out of the sum.
     const params: unknown[] = [purchaseRequestId, companyId];
     let excludeClause = '';
     if (excludePurchaseOrderId) {
@@ -593,6 +622,11 @@ export class PurchaseOrderRepositoryPostgres extends PurchaseOrderRepository {
    * Generic guarded status transition + timeline log. Loads the header FOR
    * UPDATE, verifies canTransition, applies the extra column sets, writes a log
    * row, commits — all atomically.
+   *
+   * Note (Opsi A, 2026-10-02): a status transition NEVER touches deleted_at.
+   * CANCELLED is a terminal business status that must stay visible in list
+   * views (deleted_at is reserved for genuine hard-delete). cancel() therefore
+   * uses this method like any other transition, without soft-deleting.
    */
   private async _transition(
     id: string,
@@ -601,7 +635,6 @@ export class PurchaseOrderRepositoryPostgres extends PurchaseOrderRepository {
     to: PurchaseOrderStatus,
     note: string | null,
     extraSets: string[] = [],
-    softDelete = false,
   ): Promise<PurchaseOrder> {
     const client = await this.pool.connect();
     try {
@@ -621,9 +654,6 @@ export class PurchaseOrderRepositoryPostgres extends PurchaseOrderRepository {
       }
 
       const sets = ['status = $1', 'updated_by = $2', 'updated_at = NOW()', ...extraSets];
-      if (softDelete) {
-        sets.push('deleted_at = NOW()', 'deleted_by = $2');
-      }
 
       const updated = await client.query<HeaderRow>(
         `UPDATE purchase_orders SET ${sets.join(', ')}
@@ -677,7 +707,10 @@ export class PurchaseOrderRepositoryPostgres extends PurchaseOrderRepository {
     userId: string | null,
     note: string | null,
   ): Promise<PurchaseOrder> {
-    return this._transition(id, companyId, userId, 'CANCELLED', note, [], true);
+    // Opsi A (2026-10-02): CANCELLED is a terminal business status that stays
+    // visible in list views; it no longer soft-deletes the row. deleted_at is
+    // reserved for genuine hard-delete only.
+    return this._transition(id, companyId, userId, 'CANCELLED', note);
   }
 
   async ensureExists(id: string, companyId: string): Promise<void> {
