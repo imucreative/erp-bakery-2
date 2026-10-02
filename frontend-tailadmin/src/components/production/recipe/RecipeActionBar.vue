@@ -5,19 +5,23 @@
  * the submitting flag, and decides which actions are visible via the `show*`
  * props. This component only renders buttons and emits intents:
  *
- *   edit     → parent navigates to the edit page (DRAFT only)
- *   activate → parent opens the activate confirmation modal (DRAFT → ACTIVE)
- *   archive  → parent opens the archive confirmation modal (DRAFT|ACTIVE → ARCHIVED)
+ *   edit      → parent navigates to the edit page (DRAFT only)
+ *   activate  → parent opens the activate confirmation modal (DRAFT → ACTIVE)
+ *   archive   → parent opens the archive confirmation modal (DRAFT|ACTIVE → ARCHIVED)
+ *   delete    → parent opens the delete confirmation modal (DRAFT only, soft-delete)
+ *   duplicate → parent copies an ARCHIVED recipe into a new create draft
  *
  * Every button carries a relevant icon (icon + text) per the UI standard. When
  * no action is available the parent hides the whole bar (see hasAnyAction).
  */
-import { Pencil, CheckCircle2, Archive } from 'lucide-vue-next'
+import { Pencil, CheckCircle2, Archive, Trash2, Copy } from 'lucide-vue-next'
 
 const props = defineProps<{
   showEdit: boolean
   showActivate: boolean
   showArchive: boolean
+  showDelete: boolean
+  showDuplicate: boolean
   submitting: boolean
 }>()
 
@@ -25,6 +29,8 @@ const emit = defineEmits<{
   (e: 'edit'): void
   (e: 'activate'): void
   (e: 'archive'): void
+  (e: 'delete'): void
+  (e: 'duplicate'): void
 }>()
 </script>
 
@@ -58,6 +64,26 @@ const emit = defineEmits<{
     >
       <Archive class="h-4 w-4" aria-hidden="true" />
       Arsipkan
+    </button>
+    <button
+      v-if="props.showDuplicate"
+      type="button"
+      :disabled="props.submitting"
+      class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
+      @click="emit('duplicate')"
+    >
+      <Copy class="h-4 w-4" aria-hidden="true" />
+      Duplikat ke Draft
+    </button>
+    <button
+      v-if="props.showDelete"
+      type="button"
+      :disabled="props.submitting"
+      class="inline-flex items-center gap-2 rounded-lg bg-error-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-error-600 disabled:cursor-not-allowed disabled:opacity-60"
+      @click="emit('delete')"
+    >
+      <Trash2 class="h-4 w-4" aria-hidden="true" />
+      Hapus
     </button>
   </div>
 </template>

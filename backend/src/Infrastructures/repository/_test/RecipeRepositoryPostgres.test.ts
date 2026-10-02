@@ -107,6 +107,54 @@ describe('RecipeRepositoryPostgres', () => {
     });
   });
 
+  describe('softDelete', () => {
+    it('should soft-delete a DRAFT recipe and commit', async () => {
+      client.query
+        .mockResolvedValueOnce(undefined) // BEGIN
+        .mockResolvedValueOnce({ rows: [header({ status: 'DRAFT' })], rowCount: 1 }) // lock header
+        .mockResolvedValueOnce({ rowCount: 1 }) // UPDATE deleted_at
+        .mockResolvedValueOnce(undefined); // COMMIT
+
+      await repo.softDelete('r1', 'c1');
+      expect(client.query).toHaveBeenCalledWith('COMMIT');
+      // The UPDATE must set deleted_at
+      const updateCall = client.query.mock.calls.find(
+        (c) => typeof c[0] === 'string' && c[0].includes('deleted_at = NOW()'),
+      );
+      expect(updateCall).toBeDefined();
+    });
+
+    it('should throw NotFoundError when recipe is missing', async () => {
+      client.query
+        .mockResolvedValueOnce(undefined) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // lock header -> none
+        .mockResolvedValueOnce(undefined); // ROLLBACK
+
+      await expect(repo.softDelete('x', 'c1')).rejects.toBeInstanceOf(NotFoundError);
+      expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+    });
+
+    it('should reject deleting an ACTIVE recipe', async () => {
+      client.query
+        .mockResolvedValueOnce(undefined) // BEGIN
+        .mockResolvedValueOnce({ rows: [header({ status: 'ACTIVE' })], rowCount: 1 }) // lock header
+        .mockResolvedValueOnce(undefined); // ROLLBACK
+
+      await expect(repo.softDelete('r1', 'c1')).rejects.toBeInstanceOf(InvariantError);
+      expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+    });
+
+    it('should reject deleting an ARCHIVED recipe', async () => {
+      client.query
+        .mockResolvedValueOnce(undefined) // BEGIN
+        .mockResolvedValueOnce({ rows: [header({ status: 'ARCHIVED' })], rowCount: 1 }) // lock header
+        .mockResolvedValueOnce(undefined); // ROLLBACK
+
+      await expect(repo.softDelete('r1', 'c1')).rejects.toBeInstanceOf(InvariantError);
+      expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+    });
+  });
+
   describe('getActiveByProduct', () => {
     it('should throw NO_ACTIVE_RECIPE when none exists', async () => {
       (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: [], rowCount: 0 });

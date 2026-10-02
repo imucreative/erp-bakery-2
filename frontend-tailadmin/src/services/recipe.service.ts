@@ -23,6 +23,9 @@
  *      409 "Another active recipe exists for the product" when the product
  *      already has an ACTIVE recipe.
  *  - POST   /production/recipes/:id/archive  → DRAFT|ACTIVE → ARCHIVED guard: recipe.manage
+ *  - DELETE /production/recipes/:id          → soft-delete (DRAFT only)   guard: recipe.manage
+ *      Backend rejects ACTIVE/ARCHIVED with 400 RECIPE.ONLY_DRAFT_DELETABLE
+ *      and 404 when the recipe does not exist. Success: 200 { success, data: { id } }.
  *
  * CONTRACT NOTES (verified, mirrored by the UI):
  *  - `version` is backend-owned (read-only); created at 1, never edited by the UI.
@@ -172,6 +175,15 @@ export const recipeService = {
   async archive(id: string): Promise<Recipe> {
     const response = await httpClient.post<ApiSuccess<Recipe>>(
       `/production/recipes/${id}/archive`,
+    )
+    return response.data.data
+  },
+
+  // Soft-delete a DRAFT recipe. The backend returns only the deleted id; the UI
+  // redirects to the list on success and surfaces 400/404 on the detail page.
+  async remove(id: string): Promise<{ id: string }> {
+    const response = await httpClient.delete<ApiSuccess<{ id: string }>>(
+      `/production/recipes/${id}`,
     )
     return response.data.data
   },

@@ -116,6 +116,7 @@ import { CreateRecipeUseCase } from '../Applications/use_case/recipes/CreateReci
 import { UpdateRecipeUseCase } from '../Applications/use_case/recipes/UpdateRecipeUseCase';
 import { ActivateRecipeUseCase } from '../Applications/use_case/recipes/ActivateRecipeUseCase';
 import { ArchiveRecipeUseCase } from '../Applications/use_case/recipes/ArchiveRecipeUseCase';
+import { DeleteRecipeUseCase } from '../Applications/use_case/recipes/DeleteRecipeUseCase';
 import { GetRecipesUseCase } from '../Applications/use_case/recipes/GetRecipesUseCase';
 import { CreateRoleUseCase } from '../Applications/use_case/roles/CreateRoleUseCase';
 import { UpdateRoleUseCase } from '../Applications/use_case/roles/UpdateRoleUseCase';
@@ -675,6 +676,11 @@ import { DeleteGoodsReceiptAttachmentUseCase } from '../Applications/use_case/go
       inject: [RecipeRepository],
     },
     {
+      provide: DeleteRecipeUseCase,
+      useFactory: (recipeRepo: RecipeRepository) => new DeleteRecipeUseCase(recipeRepo),
+      inject: [RecipeRepository],
+    },
+    {
       provide: GetRecipesUseCase,
       useFactory: (recipeRepo: RecipeRepository) => new GetRecipesUseCase(recipeRepo),
       inject: [RecipeRepository],
@@ -1104,6 +1110,7 @@ import { DeleteGoodsReceiptAttachmentUseCase } from '../Applications/use_case/go
     UpdateRecipeUseCase,
     ActivateRecipeUseCase,
     ArchiveRecipeUseCase,
+    DeleteRecipeUseCase,
     GetRecipesUseCase,
     CreateProductionOrderUseCase,
     StartProductionOrderUseCase,

@@ -15,16 +15,25 @@ import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
 import type { Product } from '@/services/product.service'
 import type { Uom } from '@/services/uom.service'
 
-const props = defineProps<{
-  name: string
-  productId: string
-  yieldQty: number
-  yieldUomId: string
-  instructions: string
-  products: Product[]
-  uoms: Uom[]
-  disabled: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    name: string
+    productId: string
+    yieldQty: number
+    yieldUomId: string
+    instructions: string
+    products: Product[]
+    uoms: Uom[]
+    disabled: boolean
+    /**
+     * Finished-product ids to HIDE from the picker because they already own a
+     * live (DRAFT/ACTIVE) recipe. Empty in edit mode (the current recipe's own
+     * product must stay selectable). Supplied by the parent form in create mode.
+     */
+    blockedProductIds?: string[]
+  }>(),
+  { blockedProductIds: () => [] },
+)
 
 const emit = defineEmits<{
   (e: 'update:name', value: string): void
@@ -34,6 +43,26 @@ const emit = defineEmits<{
   (e: 'update:instructions', value: string): void
 }>()
 
+const productMap = computed<Map<string, Product>>(
+  () => new Map(props.products.map((p) => [p.id, p])),
+)
+
+/**
+ * When the finished product changes, propagate it and auto-default the yield UOM
+ * to the product's base UOM — but only when the user has not already set/changed
+ * a yield UOM (never overwrite an existing value, so loaded/edited recipes keep
+ * their stored UOM).
+ */
+function onProductChange(value: string): void {
+  emit('update:productId', value)
+  if (!props.yieldUomId) {
+    const product = productMap.value.get(value)
+    if (product?.uomId) {
+      emit('update:yieldUomId', product.uomId)
+    }
+  }
+}
+
 const inputClass =
   'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
 const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
@@ -42,10 +71,18 @@ function productLabel(product: Product): string {
   return `${product.name} (${product.sku})`
 }
 
-/** Finished products are listed first by name for a tidy picker. */
-const sortedProducts = computed<Product[]>(() =>
-  [...props.products].sort((a, b) => a.name.localeCompare(b.name)),
-)
+/**
+ * Finished products sorted by name, with any product that already owns a live
+ * recipe filtered out. The currently-selected product is always kept (edit mode,
+ * or a value that is otherwise blocked) so the picker never drops the active
+ * selection.
+ */
+const sortedProducts = computed<Product[]>(() => {
+  const blocked = new Set(props.blockedProductIds)
+  return [...props.products]
+    .filter((p) => !blocked.has(p.id) || p.id === props.productId)
+    .sort((a, b) => a.name.localeCompare(b.name))
+})
 </script>
 
 <template>
@@ -72,7 +109,7 @@ const sortedProducts = computed<Product[]>(() =>
             :value="props.productId"
             :disabled="props.disabled"
             :class="[inputClass, 'appearance-none pe-10']"
-            @change="emit('update:productId', ($event.target as HTMLSelectElement).value)"
+            @change="onProductChange(($event.target as HTMLSelectElement).value)"
           >
             <option value="" disabled>Pilih produk jadi</option>
             <option v-for="product in sortedProducts" :key="product.id" :value="product.id">

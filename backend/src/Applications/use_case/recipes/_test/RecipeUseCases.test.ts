@@ -2,6 +2,7 @@ import { CreateRecipeUseCase } from '../CreateRecipeUseCase';
 import { UpdateRecipeUseCase } from '../UpdateRecipeUseCase';
 import { ActivateRecipeUseCase } from '../ActivateRecipeUseCase';
 import { ArchiveRecipeUseCase } from '../ArchiveRecipeUseCase';
+import { DeleteRecipeUseCase } from '../DeleteRecipeUseCase';
 import { GetRecipesUseCase } from '../GetRecipesUseCase';
 import { RecipeRepository } from '../../../../Domains/recipes/RecipeRepository';
 import { ProductRepository } from '../../../../Domains/products/ProductRepository';
@@ -14,6 +15,7 @@ const recipeRepo: jest.Mocked<RecipeRepository> = {
   list: jest.fn(),
   activate: jest.fn(),
   archive: jest.fn(),
+  softDelete: jest.fn(),
   getActiveByProduct: jest.fn(),
 } as unknown as jest.Mocked<RecipeRepository>;
 
@@ -108,6 +110,28 @@ describe('Activate/Archive delegate to repository', () => {
     recipeRepo.archive.mockResolvedValue({ id: 'r' } as never);
     await new ArchiveRecipeUseCase(recipeRepo).execute('r', 'c1');
     expect(recipeRepo.archive).toHaveBeenCalledWith('r', 'c1');
+  });
+});
+
+describe('DeleteRecipeUseCase', () => {
+  it('delete -> repo.softDelete (company-scoped)', async () => {
+    recipeRepo.softDelete.mockResolvedValue(undefined);
+    await new DeleteRecipeUseCase(recipeRepo).execute('r', 'c1');
+    expect(recipeRepo.softDelete).toHaveBeenCalledWith('r', 'c1');
+  });
+
+  it('should propagate ONLY_DRAFT_DELETABLE for non-DRAFT recipes', async () => {
+    recipeRepo.softDelete.mockRejectedValue(new Error('RECIPE.ONLY_DRAFT_DELETABLE'));
+    await expect(new DeleteRecipeUseCase(recipeRepo).execute('r', 'c1')).rejects.toThrow(
+      'RECIPE.ONLY_DRAFT_DELETABLE',
+    );
+  });
+
+  it('should propagate NOT_FOUND', async () => {
+    recipeRepo.softDelete.mockRejectedValue(new Error('RECIPE.NOT_FOUND'));
+    await expect(new DeleteRecipeUseCase(recipeRepo).execute('missing', 'c1')).rejects.toThrow(
+      'RECIPE.NOT_FOUND',
+    );
   });
 });
 

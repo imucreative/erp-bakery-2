@@ -345,6 +345,40 @@ export class RecipeRepositoryPostgres extends RecipeRepository {
     }
   }
 
+  async softDelete(id: string, companyId: string): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const headerResult = await client.query<HeaderRow>(
+        `SELECT ${HEADER_COLUMNS} FROM recipes
+         WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL FOR UPDATE`,
+        [id, companyId],
+      );
+      if (!headerResult.rowCount) {
+        throw new NotFoundError('RECIPE.NOT_FOUND');
+      }
+      if (headerResult.rows[0].status !== 'DRAFT') {
+        throw new InvariantError('RECIPE.ONLY_DRAFT_DELETABLE');
+      }
+
+      // recipes table carries only deleted_at (no deleted_by column). Items are
+      // hidden implicitly: all recipe reads filter the header by deleted_at.
+      await client.query(
+        `UPDATE recipes SET deleted_at = NOW(), updated_at = NOW()
+         WHERE id = $1 AND company_id = $2`,
+        [id, companyId],
+      );
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
   async getActiveByProduct(productId: string, companyId: string): Promise<Recipe> {
     const headerResult = await this.pool.query<HeaderRow>(
       `SELECT ${HEADER_COLUMNS} FROM recipes

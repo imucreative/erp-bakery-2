@@ -34,6 +34,7 @@ import {
   type RecipeAction,
 } from '@/components/production/recipe'
 import { usePermission } from '@/composables/usePermission'
+import { useRecipeDraft } from '@/composables/useRecipeDraft'
 import { toMessage } from '@/composables/useStockLedger'
 import { productService, type Product } from '@/services/product.service'
 import { uomService, type Uom } from '@/services/uom.service'
@@ -48,6 +49,7 @@ import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 const route = useRoute()
 const router = useRouter()
 const { can } = usePermission()
+const { setDraft } = useRecipeDraft()
 
 const recipeId = computed<string>(() => String(route.params.id))
 
@@ -76,8 +78,17 @@ const showActivate = computed<boolean>(() => canManage.value && status.value ===
 const showArchive = computed<boolean>(
   () => canManage.value && (status.value === 'DRAFT' || status.value === 'ACTIVE'),
 )
+// Soft-delete is DRAFT-only (backend rejects ACTIVE/ARCHIVED). Duplicate turns a
+// terminal ARCHIVED recipe into a brand-new create draft (frontend-only prefill).
+const showDelete = computed<boolean>(() => canManage.value && status.value === 'DRAFT')
+const showDuplicate = computed<boolean>(() => canManage.value && status.value === 'ARCHIVED')
 const hasAnyAction = computed<boolean>(
-  () => showEdit.value || showActivate.value || showArchive.value,
+  () =>
+    showEdit.value ||
+    showActivate.value ||
+    showArchive.value ||
+    showDelete.value ||
+    showDuplicate.value,
 )
 
 // ── Load ─────────────────────────────────────────────────────────────
@@ -134,6 +145,14 @@ async function onConfirmAction(): Promise<void> {
   actionSubmitting.value = true
   actionError.value = null
   try {
+    if (action === 'delete') {
+      // Soft-delete returns only the id; the recipe leaves the list, so redirect
+      // there with a success flag. Errors (400/404) stay on this page.
+      await recipeService.remove(id)
+      activeAction.value = null
+      void router.push({ name: 'ProductionRecipes', query: { deleted: '1' } })
+      return
+    }
     const updated =
       action === 'activate'
         ? await recipeService.activate(id)
@@ -145,6 +164,34 @@ async function onConfirmAction(): Promise<void> {
   } finally {
     actionSubmitting.value = false
   }
+}
+
+/**
+ * "Duplikat ke Draft" — copy an ARCHIVED recipe's editable data into a transient
+ * draft and open the create form. recipeNumber/version/status are intentionally
+ * dropped (the backend assigns a fresh DRAFT v1). The finished product IS copied,
+ * but the create picker hides products that already own a DRAFT/ACTIVE recipe —
+ * so the user may need to pick another product (expected per the one-live-recipe
+ * rule).
+ */
+function onDuplicate(): void {
+  if (!recipe.value) {
+    return
+  }
+  const source = recipe.value
+  setDraft({
+    name: `${source.name} (Salinan)`,
+    yieldQty: source.yieldQty,
+    yieldUomId: source.yieldUomId,
+    instructions: source.instructions ?? '',
+    items: source.items.map((item) => ({
+      ingredientProductId: item.ingredientProductId,
+      qty: item.qty,
+      uomId: item.uomId,
+      lossPercentage: item.lossPercentage,
+    })),
+  })
+  void router.push({ name: 'ProductionRecipeCreate' })
 }
 </script>
 
@@ -200,10 +247,14 @@ async function onConfirmAction(): Promise<void> {
           :show-edit="showEdit"
           :show-activate="showActivate"
           :show-archive="showArchive"
+          :show-delete="showDelete"
+          :show-duplicate="showDuplicate"
           :submitting="actionSubmitting"
           @edit="goToEdit"
           @activate="openAction('activate')"
           @archive="openAction('archive')"
+          @delete="openAction('delete')"
+          @duplicate="onDuplicate"
         />
       </div>
 

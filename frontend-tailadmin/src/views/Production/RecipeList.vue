@@ -8,7 +8,8 @@
  * not a modal).
  */
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { CheckCircle2 } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
@@ -21,9 +22,14 @@ import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import type { Recipe } from '@/services/recipe.service'
 
 const pageTitle = 'Recipe'
+const route = useRoute()
 const router = useRouter()
 const { can } = usePermission()
 const canManage = computed<boolean>(() => can('recipe.manage'))
+
+// Success feedback after a draft recipe was deleted on the detail page
+// (redirected here with ?deleted=1). Dismissible; cleared from the URL on mount.
+const deletedNotice = ref<boolean>(false)
 
 const {
   items,
@@ -74,7 +80,16 @@ function goToDetail(recipe: Recipe): void {
   void router.push({ name: 'ProductionRecipeDetail', params: { id: recipe.id } })
 }
 
+function dismissDeletedNotice(): void {
+  deletedNotice.value = false
+}
+
 onMounted(() => {
+  if (route.query.deleted === '1') {
+    deletedNotice.value = true
+    // Strip the flag so a refresh/back doesn't re-show the banner.
+    void router.replace({ name: 'ProductionRecipes' })
+  }
   void loadLookups()
   void fetchList()
 })
@@ -83,6 +98,24 @@ onMounted(() => {
 <template>
   <AdminLayout>
     <PageBreadcrumb :pageTitle="pageTitle" />
+
+    <div
+      v-if="deletedNotice"
+      class="mb-4 flex items-start justify-between gap-3 rounded-lg border border-success-500/40 bg-success-50 px-4 py-3 text-sm text-success-600 dark:bg-success-500/10 dark:text-success-500"
+      role="status"
+    >
+      <span class="flex items-center gap-2">
+        <CheckCircle2 class="h-4 w-4 shrink-0" aria-hidden="true" />
+        Resep draft berhasil dihapus.
+      </span>
+      <button
+        type="button"
+        class="text-success-600 underline-offset-2 hover:underline dark:text-success-500"
+        @click="dismissDeletedNotice"
+      >
+        Tutup
+      </button>
+    </div>
 
     <ComponentCard
       title="Recipe"

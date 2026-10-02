@@ -46,6 +46,10 @@ const sortedProducts = computed<Product[]>(() =>
   [...props.products].sort((a, b) => a.name.localeCompare(b.name)),
 )
 
+const productMap = computed<Map<string, Product>>(
+  () => new Map(props.products.map((p) => [p.id, p])),
+)
+
 function productLabel(product: Product): string {
   return `${product.name} (${product.sku})`
 }
@@ -57,6 +61,23 @@ function emitRows(rows: RecipeEditorItemRow[]): void {
 function updateRow(index: number, patch: Partial<RecipeEditorItemRow>): void {
   const next = props.modelValue.map((row, i) => (i === index ? { ...row, ...patch } : row))
   emitRows(next)
+}
+
+/**
+ * When an ingredient is picked, set it and auto-default this row's UOM to the
+ * ingredient's base UOM — only when the row has no UOM yet, so a loaded/edited
+ * row keeps its stored UOM and a manual override is never overwritten.
+ */
+function onIngredientChange(index: number, value: string): void {
+  const row = props.modelValue[index]
+  const patch: Partial<RecipeEditorItemRow> = { ingredientProductId: value }
+  if (row && !row.uomId) {
+    const product = productMap.value.get(value)
+    if (product?.uomId) {
+      patch.uomId = product.uomId
+    }
+  }
+  updateRow(index, patch)
 }
 
 function addRow(): void {
@@ -112,7 +133,7 @@ function removeRow(index: number): void {
                   :value="row.ingredientProductId"
                   :disabled="disabled"
                   :class="[inputClass, 'appearance-none pe-10']"
-                  @change="updateRow(index, { ingredientProductId: ($event.target as HTMLSelectElement).value })"
+                  @change="onIngredientChange(index, ($event.target as HTMLSelectElement).value)"
                 >
                   <option value="" disabled>Pilih bahan...</option>
                   <option v-for="product in sortedProducts" :key="product.id" :value="product.id">

@@ -27,16 +27,19 @@ import {
 } from '@/components/production/recipe'
 import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import { toMessage } from '@/composables/useStockLedger'
+import { useRecipeDraft } from '@/composables/useRecipeDraft'
 import { productService, type Product } from '@/services/product.service'
 import { uomService, type Uom } from '@/services/uom.service'
 import {
   recipeService,
+  type Recipe,
   type SaveRecipePayload,
   type RecipeStatus,
 } from '@/services/recipe.service'
 
 const route = useRoute()
 const router = useRouter()
+const { consumeDraft } = useRecipeDraft()
 
 const editId = computed<string | null>(() => {
   const id = route.params.id
@@ -48,6 +51,11 @@ const pageTitle = computed<string>(() => (isEdit.value ? 'Edit Resep' : 'Buat Re
 // ── Supporting data ──────────────────────────────────────────────────
 const products = ref<Product[]>([])
 const uoms = ref<Uom[]>([])
+
+// Finished-product ids that already own a live (DRAFT/ACTIVE) recipe and so must
+// be hidden from the create picker (one live recipe per product). Empty in edit
+// mode so the recipe being edited keeps its own product selectable.
+const blockedProductIds = ref<string[]>([])
 
 // ── Form state ───────────────────────────────────────────────────────
 const name = ref<string>('')
@@ -86,6 +94,51 @@ async function loadSupportingData(): Promise<void> {
   uoms.value = allUoms
 }
 
+/**
+ * Build the set of finished-product ids blocked from the create picker: every
+ * product that already owns a DRAFT or ACTIVE recipe. The list endpoint accepts
+ * one status per call, so DRAFT and ACTIVE are fetched separately and unioned.
+ * Only runs in create mode (edit mode must keep the current product selectable).
+ */
+async function loadBlockedProductIds(): Promise<void> {
+  const [drafts, actives] = await Promise.all([
+    fetchAllPaginated<Recipe>((page) =>
+      recipeService.list({ page, limit: PAGE_LIMIT, status: 'DRAFT' }),
+    ),
+    fetchAllPaginated<Recipe>((page) =>
+      recipeService.list({ page, limit: PAGE_LIMIT, status: 'ACTIVE' }),
+    ),
+  ])
+  const blocked = new Set<string>()
+  for (const recipe of [...drafts, ...actives]) {
+    blocked.add(recipe.productId)
+  }
+  blockedProductIds.value = [...blocked]
+}
+
+/**
+ * Prefill the create form from a "Duplikat ke Draft" source (ARCHIVED recipe).
+ * Consumed once; a plain "Buat Resep" leaves the form empty. The finished
+ * product is intentionally NOT copied — the create picker hides products that
+ * already own a live recipe, so the user chooses the finished product fresh.
+ */
+function applyDuplicateDraft(): void {
+  const draft = consumeDraft()
+  if (!draft) {
+    return
+  }
+  name.value = draft.name
+  yieldQty.value = draft.yieldQty
+  yieldUomId.value = draft.yieldUomId
+  instructions.value = draft.instructions
+  items.value = draft.items.map((item) => ({
+    ingredientProductId: item.ingredientProductId,
+    qty: item.qty,
+    uomId: item.uomId,
+    lossPercentage: item.lossPercentage,
+  }))
+}
+
 async function loadExisting(id: string): Promise<void> {
   const recipe = await recipeService.getById(id)
   loadedStatus.value = recipe.status
@@ -109,6 +162,11 @@ onMounted(async () => {
     await loadSupportingData()
     if (editId.value) {
       await loadExisting(editId.value)
+    } else {
+      // Create mode: hide products that already own a live recipe, then apply
+      // any pending "Duplikat ke Draft" prefill.
+      await loadBlockedProductIds()
+      applyDuplicateDraft()
     }
   } catch (error) {
     loadError.value = toMessage(error)
@@ -251,6 +309,7 @@ function onCancel(): void {
           v-model:instructions="instructions"
           :products="products"
           :uoms="uoms"
+          :blocked-product-ids="blockedProductIds"
           :disabled="isReadOnly"
         />
 
