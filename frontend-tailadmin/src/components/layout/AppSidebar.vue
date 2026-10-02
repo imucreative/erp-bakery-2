@@ -451,8 +451,8 @@ const menuGroups: MenuGroup[] = [
       {
         icon: BookOpen,
         name: 'Recipe',
-        path: '/error-404',
-        soon: true,
+        path: '/production/recipes',
+        permission: 'recipe.read',
       },
       {
         icon: Factory,

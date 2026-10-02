@@ -259,6 +259,42 @@ const router = createRouter({
       },
     },
     {
+      path: '/production/recipes',
+      name: 'ProductionRecipes',
+      component: () => import('../views/Production/RecipeList.vue'),
+      meta: {
+        title: 'Recipe',
+        permission: 'recipe.read',
+      },
+    },
+    {
+      path: '/production/recipes/create',
+      name: 'ProductionRecipeCreate',
+      component: () => import('../views/Production/RecipeForm.vue'),
+      meta: {
+        title: 'Buat Resep',
+        permission: 'recipe.manage',
+      },
+    },
+    {
+      path: '/production/recipes/:id/edit',
+      name: 'ProductionRecipeEdit',
+      component: () => import('../views/Production/RecipeForm.vue'),
+      meta: {
+        title: 'Edit Resep',
+        permission: 'recipe.manage',
+      },
+    },
+    {
+      path: '/production/recipes/:id',
+      name: 'ProductionRecipeDetail',
+      component: () => import('../views/Production/RecipeDetail.vue'),
+      meta: {
+        title: 'Detail Resep',
+        permission: 'recipe.read',
+      },
+    },
+    {
       path: '/system/users',
       name: 'Users',
       component: () => import('../views/System/UserList.vue'),
