@@ -392,8 +392,8 @@ export class StockAdjustmentRepositoryPostgres extends StockAdjustmentRepository
         // Mutate authoritative balance
         await client.query(
           `UPDATE inventory_batches
-           SET qty_available = $1,
-               status = CASE WHEN $1 = 0 THEN 'CONSUMED' ELSE status END,
+           SET qty_available = $1::numeric,
+               status = CASE WHEN $1::numeric = 0 THEN 'CONSUMED' ELSE status END,
                updated_at = NOW()
            WHERE id = $2 AND company_id = $3`,
           [afterQty, item.batch_id, companyId],

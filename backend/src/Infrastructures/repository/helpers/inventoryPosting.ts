@@ -166,9 +166,9 @@ export async function applyBalanceAndAppendMovement(
   // reaching zero marks it CONSUMED.
   await client.query(
     `UPDATE inventory_batches
-     SET qty_available = $1,
+     SET qty_available = $1::numeric,
          status = CASE
-           WHEN $1 = 0 THEN 'CONSUMED'
+           WHEN $1::numeric = 0 THEN 'CONSUMED'
            WHEN $2 THEN 'ACTIVE'
            ELSE status
          END,
