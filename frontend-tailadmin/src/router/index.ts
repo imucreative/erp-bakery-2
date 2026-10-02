@@ -196,6 +196,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/inventory/stock-on-hand',
+      name: 'InventoryStockOnHand',
+      component: () => import('../views/Inventory/StockOnHandList.vue'),
+      meta: {
+        title: 'Stock On Hand',
+        permission: 'inventory.read',
+      },
+    },
+    {
       path: '/system/users',
       name: 'Users',
       component: () => import('../views/System/UserList.vue'),

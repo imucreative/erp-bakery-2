@@ -217,6 +217,7 @@ import { useRoute } from 'vue-router'
 
 import { useSidebar } from '@/composables/useSidebar'
 import {
+  BoxIcon,
   CalenderIcon,
   ChevronDownIcon,
   DocsIcon,
@@ -315,6 +316,16 @@ const menuGroups: MenuGroup[] = [
         icon: DocsIcon,
         name: 'Goods Receipts',
         path: '/procurement/goods-receipts',
+      },
+    ],
+  },
+  {
+    title: 'Inventory',
+    items: [
+      {
+        icon: BoxIcon,
+        name: 'Stock On Hand',
+        path: '/inventory/stock-on-hand',
       },
     ],
   },

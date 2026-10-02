@@ -99,3 +99,17 @@ export function tomorrowISO(): string {
   tomorrow.setDate(tomorrow.getDate() + 1)
   return toISODate(tomorrow)
 }
+
+const numberFormatter = new Intl.NumberFormat('id-ID', {
+  maximumFractionDigits: 2,
+})
+
+/**
+ * Format a plain numeric quantity with Indonesian thousands separators
+ * (e.g. `1.250`, `12,5`). Used for stock quantities and other non-currency
+ * counts. Nullish/invalid input renders as `0`.
+ */
+export function formatNumber(value: number | null | undefined): string {
+  const amount = typeof value === 'number' && Number.isFinite(value) ? value : 0
+  return numberFormatter.format(amount)
+}
