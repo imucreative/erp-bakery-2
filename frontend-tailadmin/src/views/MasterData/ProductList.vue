@@ -12,6 +12,7 @@ import Button from '@/components/ui/Button.vue'
 import ProductTable from '@/components/masterdata/product/ProductTable.vue'
 import ProductFormModal from '@/components/masterdata/product/ProductFormModal.vue'
 import ProductDeleteModal from '@/components/masterdata/product/ProductDeleteModal.vue'
+import ProductUomConversionModal from '@/components/masterdata/product/ProductUomConversionModal.vue'
 import { usePermission } from '@/composables/usePermission'
 import { useProducts } from '@/composables/useProducts'
 import type {
@@ -178,6 +179,16 @@ async function onConfirmDelete(): Promise<void> {
   }
 }
 
+// ── UOM conversion modal ─────────────────────────────────────────────
+const conversionOpen = ref<boolean>(false)
+const conversionTarget = ref<Product | null>(null)
+
+async function openConversions(product: Product): Promise<void> {
+  await ensureOptions()
+  conversionTarget.value = product
+  conversionOpen.value = true
+}
+
 onMounted(() => {
   void fetchList()
   void ensureOptions()
@@ -212,6 +223,7 @@ onMounted(() => {
         :uom-name-by-id="uomNameById"
         @edit="openEdit"
         @delete="openDelete"
+        @conversions="openConversions"
       />
 
       <!-- Pagination -->
@@ -258,6 +270,15 @@ onMounted(() => {
       :error-message="deleteError"
       @close="deleteOpen = false"
       @confirm="onConfirmDelete"
+    />
+
+    <ProductUomConversionModal
+      :open="conversionOpen"
+      :product="conversionTarget"
+      :uoms="uoms"
+      :uom-name-by-id="uomNameById"
+      :can-manage="canManage"
+      @close="conversionOpen = false"
     />
   </AdminLayout>
 </template>

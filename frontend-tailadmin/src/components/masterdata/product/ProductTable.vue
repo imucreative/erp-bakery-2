@@ -4,7 +4,7 @@
  * via `uomNameById` and formats price/type. Compact icon-only row actions per
  * the master-module UI standard. Emits edit/delete; loading/error/empty states.
  */
-import { Pencil, Trash2 } from 'lucide-vue-next'
+import { Pencil, Trash2, Ruler } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
 import { PRODUCT_TYPE_LABELS, type Product } from '@/services/product.service'
 
@@ -19,6 +19,7 @@ defineProps<{
 defineEmits<{
   (event: 'edit', product: Product): void
   (event: 'delete', product: Product): void
+  (event: 'conversions', product: Product): void
 }>()
 
 function formatIdr(value: number): string {
@@ -107,6 +108,15 @@ function formatIdr(value: number): string {
             <td class="px-5 py-4">
               <div class="flex items-center justify-end gap-2">
                 <button
+                  type="button"
+                  aria-label="Satuan & Konversi"
+                  title="Satuan & Konversi"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
+                  @click="$emit('conversions', product)"
+                >
+                  <Ruler class="h-4 w-4" aria-hidden="true" />
+                </button>
+                <button
                   v-if="canManage"
                   type="button"
                   aria-label="Edit"
@@ -126,9 +136,6 @@ function formatIdr(value: number): string {
                 >
                   <Trash2 class="h-4 w-4" aria-hidden="true" />
                 </button>
-                <span v-if="!canManage" class="text-theme-xs text-gray-400 dark:text-gray-500">
-                  —
-                </span>
               </div>
             </td>
           </tr>

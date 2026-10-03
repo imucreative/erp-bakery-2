@@ -307,6 +307,45 @@ const DomainErrorTranslator = {
     // ── Product ──────────────────────────────────────────────────
     'PRODUCT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError('Data produk tidak lengkap'),
 
+    // ── ProductUomConversion (UOM Conversion T1) ─────────────────
+    'CREATE_PRODUCT_UOM_CONVERSION.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal membuat konversi UOM: properti yang dibutuhkan tidak ada',
+    ),
+    'CREATE_PRODUCT_UOM_CONVERSION.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal membuat konversi UOM: tipe data tidak sesuai',
+    ),
+    'CREATE_PRODUCT_UOM_CONVERSION.FACTOR_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal membuat konversi UOM: faktor harus berupa angka',
+    ),
+    'CREATE_PRODUCT_UOM_CONVERSION.FACTOR_MUST_BE_POSITIVE': new InvariantError(
+      'Gagal membuat konversi UOM: faktor konversi harus lebih dari nol',
+    ),
+    'CREATE_PRODUCT_UOM_CONVERSION.UOM_INACTIVE': new InvariantError(
+      'Gagal membuat konversi UOM: satuan (UOM) tidak aktif',
+    ),
+    'CREATE_PRODUCT_UOM_CONVERSION.UOM_IS_BASE_UNIT': new InvariantError(
+      'Gagal membuat konversi UOM: satuan alternatif tidak boleh sama dengan satuan dasar produk',
+    ),
+    'UPDATE_PRODUCT_UOM_CONVERSION.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal memperbarui konversi UOM: tidak ada field yang dikirimkan',
+    ),
+    'UPDATE_PRODUCT_UOM_CONVERSION.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal memperbarui konversi UOM: tipe data tidak sesuai',
+    ),
+    'UPDATE_PRODUCT_UOM_CONVERSION.FACTOR_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal memperbarui konversi UOM: faktor harus berupa angka',
+    ),
+    'UPDATE_PRODUCT_UOM_CONVERSION.FACTOR_MUST_BE_POSITIVE': new InvariantError(
+      'Gagal memperbarui konversi UOM: faktor konversi harus lebih dari nol',
+    ),
+    'PRODUCT_UOM_CONVERSION.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data konversi UOM tidak lengkap',
+    ),
+    'PRODUCT_UOM_CONVERSION.NOT_FOUND': new NotFoundError('Konversi UOM tidak ditemukan'),
+    'PRODUCT_UOM_CONVERSION.DUPLICATE': new ConflictError(
+      'Konversi UOM untuk satuan ini sudah terdaftar pada produk tersebut',
+    ),
+
     // ── CreateUser / UpdateUser ──────────────────────────────────
     'CREATE_USER.ROLE_REQUIRED': new InvariantError(
       'Gagal membuat user: role wajib dipilih',
