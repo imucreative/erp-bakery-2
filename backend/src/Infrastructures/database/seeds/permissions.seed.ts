@@ -188,7 +188,7 @@ export const DEFAULT_ROLES = [
     permissions: [
       'product-group.read', 'category.read', 'uom.read',
       'supplier.read', 'payment-term.read', 'product.read', 'procurement.return.read',
-      'recipe.manage', 'production.manage',
+      'recipe.manage', 'production-order.read', 'production-order.manage',
     ],
   },
   {
