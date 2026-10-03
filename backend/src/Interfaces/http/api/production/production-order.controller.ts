@@ -19,6 +19,7 @@ import { GetUser } from '../../decorators/get-user.decorator';
 import { RequirePermission } from '../../decorators/require-permission.decorator';
 import { CreateProductionOrderDto } from './dto/create-production-order.dto';
 import { ProductionOrderQueryDto } from './dto/production-order-query.dto';
+import { ProducibleQueryDto } from './dto/producible-query.dto';
 
 /**
  * ProductionOrderController — converts ingredients into finished goods.
@@ -95,5 +96,63 @@ export class ProductionOrderController {
   async create(@Body() dto: CreateProductionOrderDto, @GetUser() user: JwtAccessPayload) {
     const order = await this.createUseCase.execute(dto, this._companyId(user), user.sub);
     return successResponse(order);
+  }
+}
+
+/**
+ * ProductionController — read-only production helpers mounted directly under
+ * /production (sibling to /production/orders).
+ *
+ * GET /production/producible — producible-quantity (capacity) preview for a
+ * finished product at an outlet. Company-scoped; guarded by
+ * production-order.read (consistent with production reads). READ-ONLY: computes
+ * from current ingredient stock, posts no movements, mutates nothing. The
+ * ingredient consumption math reuses the exact instant-complete backflushing
+ * formula, so the previewed producible quantity equals what a submit would run.
+ */
+@ApiTags('Production')
+@ApiBearerAuth()
+@Controller('production')
+export class ProductionController {
+  constructor(private readonly getUseCase: GetProductionOrdersUseCase) {}
+
+  private _companyId(user: JwtAccessPayload): string {
+    if (!user.companyId) {
+      throw new AuthorizationError('AUTHORIZATION.NO_COMPANY_CONTEXT');
+    }
+    return user.companyId;
+  }
+
+  @Get('producible')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('production-order.read')
+  @ApiOperation({
+    summary: 'Producible quantity preview (max finished units from current ingredient stock)',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Active recipe, max producible finished units, and per-ingredient requirement/availability',
+  })
+  @ApiResponse({ status: 404, description: 'Outlet or active recipe not found' })
+  async producible(@Query() query: ProducibleQueryDto, @GetUser() user: JwtAccessPayload) {
+    const result = await this.getUseCase.producible(
+      query.productId,
+      query.outletId,
+      this._companyId(user),
+    );
+    return successResponse({
+      productId: query.productId,
+      outletId: query.outletId,
+      recipe: result.recipe,
+      producibleQty: result.producibleQty,
+      items: result.items.map((item) => ({
+        ingredientProductId: item.ingredientProductId,
+        uomId: item.uomId,
+        requiredPerUnit: item.requiredPerUnit,
+        availableQty: item.availableQty,
+        isLimiting: item.isLimiting,
+      })),
+    });
   }
 }

@@ -2,6 +2,7 @@
 export { default as ProductionOrderFilterBar } from './ProductionOrderFilterBar.vue'
 export { default as ProductionOrderTable } from './ProductionOrderTable.vue'
 export { default as ProductionOrderHeaderFields } from './ProductionOrderHeaderFields.vue'
+export { default as ProductionProduciblePanel } from './ProductionProduciblePanel.vue'
 export { default as ProductionOrderSummary } from './ProductionOrderSummary.vue'
 export { default as ProductionOrderMaterialsTable } from './ProductionOrderMaterialsTable.vue'
 export { default as ProductionOrderResultsTable } from './ProductionOrderResultsTable.vue'

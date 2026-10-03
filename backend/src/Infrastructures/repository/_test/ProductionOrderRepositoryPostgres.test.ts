@@ -210,4 +210,113 @@ describe('ProductionOrderRepositoryPostgres (instant-complete)', () => {
       expect(result.rows[0].status).toBe('COMPLETED');
     });
   });
+
+  describe('getProducible', () => {
+    const recipeRow = {
+      id: 'recipe-1',
+      recipe_number: 'RCP-2026-000001',
+      name: 'Roti Coklat',
+      yield_qty: '20',
+      yield_uom_id: 'uom-pcs',
+    };
+
+    it('should throw NO_ACTIVE_RECIPE when the product has no active recipe', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: [], rowCount: 0 }); // recipe lookup
+
+      await expect(repo.getProducible('c1', 'finished-1', 'outlet-1')).rejects.toThrow(
+        'RECIPE.NO_ACTIVE_RECIPE',
+      );
+    });
+
+    it('should compute producibleQty = MIN(floor(available / perUnit)) across ingredients', async () => {
+      // Recipe yields 20 finished units per batch.
+      // ing-1: base 500, loss 0  -> perUnit = 500/20 = 25; available 1000 -> floor(1000/25) = 40
+      // ing-2: base 100, loss 0  -> perUnit = 100/20 = 5;  available 60   -> floor(60/5)   = 12 (limiting)
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [recipeRow], rowCount: 1 }) // recipe
+        .mockResolvedValueOnce({
+          rows: [
+            { ingredient_product_id: 'ing-1', qty: '500', loss_percentage: '0', uom_id: 'uom-g' },
+            { ingredient_product_id: 'ing-2', qty: '100', loss_percentage: '0', uom_id: 'uom-g' },
+          ],
+          rowCount: 2,
+        }) // recipe items
+        .mockResolvedValueOnce({
+          rows: [
+            { product_id: 'ing-1', qty_available: '1000' },
+            { product_id: 'ing-2', qty_available: '60' },
+          ],
+          rowCount: 2,
+        }); // stock
+
+      const result = await repo.getProducible('c1', 'finished-1', 'outlet-1');
+
+      expect(result.producibleQty).toBe(12);
+      expect(result.recipe).toEqual({
+        id: 'recipe-1',
+        recipeNumber: 'RCP-2026-000001',
+        name: 'Roti Coklat',
+        yieldQty: 20,
+        yieldUomId: 'uom-pcs',
+      });
+      const ing1 = result.items.find((i) => i.ingredientProductId === 'ing-1')!;
+      const ing2 = result.items.find((i) => i.ingredientProductId === 'ing-2')!;
+      expect(ing1.requiredPerUnit).toBe(25);
+      expect(ing1.availableQty).toBe(1000);
+      expect(ing1.isLimiting).toBe(false);
+      expect(ing2.requiredPerUnit).toBe(5);
+      expect(ing2.isLimiting).toBe(true);
+    });
+
+    it('should account for loss% in the per-unit requirement', async () => {
+      // ing-1: base 100, loss 25 -> perUnit = 100 * 1.25 / 20 = 6.25; available 100 -> floor(16) = 16
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [recipeRow], rowCount: 1 })
+        .mockResolvedValueOnce({
+          rows: [
+            { ingredient_product_id: 'ing-1', qty: '100', loss_percentage: '25', uom_id: 'uom-g' },
+          ],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({
+          rows: [{ product_id: 'ing-1', qty_available: '100' }],
+          rowCount: 1,
+        });
+
+      const result = await repo.getProducible('c1', 'finished-1', 'outlet-1');
+
+      expect(result.items[0].requiredPerUnit).toBe(6.25);
+      expect(result.producibleQty).toBe(16);
+    });
+
+    it('should return producibleQty 0 when an ingredient has zero stock', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [recipeRow], rowCount: 1 })
+        .mockResolvedValueOnce({
+          rows: [
+            { ingredient_product_id: 'ing-1', qty: '500', loss_percentage: '0', uom_id: 'uom-g' },
+          ],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // no stock at all
+
+      const result = await repo.getProducible('c1', 'finished-1', 'outlet-1');
+
+      expect(result.producibleQty).toBe(0);
+      expect(result.items[0].availableQty).toBe(0);
+      expect(result.items[0].isLimiting).toBe(true);
+    });
+
+    it('should return producibleQty 0 for an empty recipe (no ingredient lines)', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [recipeRow], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // no items
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // no stock
+
+      const result = await repo.getProducible('c1', 'finished-1', 'outlet-1');
+
+      expect(result.producibleQty).toBe(0);
+      expect(result.items).toHaveLength(0);
+    });
+  });
 });

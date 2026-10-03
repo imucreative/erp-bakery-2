@@ -688,9 +688,9 @@ import { DeleteGoodsReceiptAttachmentUseCase } from '../Applications/use_case/go
     },
     {
       provide: GetProductionOrdersUseCase,
-      useFactory: (prodRepo: ProductionOrderRepository) =>
-        new GetProductionOrdersUseCase(prodRepo),
-      inject: [ProductionOrderRepository],
+      useFactory: (prodRepo: ProductionOrderRepository, outletRepo: OutletRepository) =>
+        new GetProductionOrdersUseCase(prodRepo, outletRepo),
+      inject: [ProductionOrderRepository, OutletRepository],
     },
     {
       provide: CreatePurchaseRequestUseCase,

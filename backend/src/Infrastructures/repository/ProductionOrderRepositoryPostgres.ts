@@ -4,6 +4,8 @@ import {
   NewProductionOrderData,
   ProductionOrderListFilter,
   ProductionOrderListResult,
+  ProducibleResult,
+  ProducibleIngredient,
 } from '../../Domains/production/ProductionOrderRepository';
 import {
   ProductionOrder,
@@ -11,6 +13,10 @@ import {
   ProductionResult,
 } from '../../Domains/production/entities/ProductionOrder';
 import { ProductionStatus } from '../../Domains/production/productionStatus';
+import {
+  scaledIngredientConsumption,
+  ingredientRequirementPerUnit,
+} from '../../Domains/production/productionConsumption';
 import { NotFoundError } from '../../Commons/exceptions/NotFoundError';
 import { InvariantError } from '../../Commons/exceptions/InvariantError';
 
@@ -262,7 +268,8 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
       for (const item of itemsResult.rows) {
         const baseQty = Number(item.qty);
         const loss = Number(item.loss_percentage);
-        const requiredQty = baseQty * scaleFactor * (1 + loss / 100);
+        // Shared consumption math — identical to the producible-qty preview.
+        const requiredQty = scaledIngredientConsumption(baseQty, loss, scaleFactor);
         if (!(requiredQty > 0)) continue;
 
         // FEFO pick under row locks (nearest expiry first, non-expired, ACTIVE)
@@ -477,5 +484,121 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
 
     // List returns headers only (materials/results loaded on detail)
     return { rows: headerResult.rows.map((h) => this._toOrder(h)), total };
+  }
+
+  // ── Producible quantity (read-only capacity preview) ──────────────────────
+
+  async getProducible(
+    companyId: string,
+    productId: string,
+    outletId: string,
+  ): Promise<ProducibleResult> {
+    // Resolve the single ACTIVE recipe for the finished product (company-scoped).
+    const recipeResult = await this.pool.query<{
+      id: string;
+      recipe_number: string;
+      name: string;
+      yield_qty: string;
+      yield_uom_id: string;
+    }>(
+      `SELECT id, recipe_number, name, yield_qty, yield_uom_id
+       FROM recipes
+       WHERE company_id = $1 AND product_id = $2 AND status = 'ACTIVE' AND deleted_at IS NULL`,
+      [companyId, productId],
+    );
+    if (!recipeResult.rowCount) {
+      throw new NotFoundError('RECIPE.NO_ACTIVE_RECIPE');
+    }
+    const recipeRow = recipeResult.rows[0];
+    const yieldQty = Number(recipeRow.yield_qty);
+    if (!(yieldQty > 0)) {
+      throw new InvariantError('PRODUCTION_ORDER.RECIPE_YIELD_INVALID');
+    }
+
+    // Recipe ingredient lines (per-batch base qty + loss% + uom)
+    const itemsResult = await this.pool.query<{
+      ingredient_product_id: string;
+      qty: string;
+      loss_percentage: string;
+      uom_id: string;
+    }>(
+      `SELECT ingredient_product_id, qty, loss_percentage, uom_id
+       FROM recipe_items WHERE recipe_id = $1`,
+      [recipeRow.id],
+    );
+
+    // Stock on hand per ingredient at the outlet — sum of ACTIVE batch balances
+    // (same source of truth as Stock On Hand, rule #8). Grouped per product.
+    const stockResult = await this.pool.query<{ product_id: string; qty_available: string }>(
+      `SELECT product_id, COALESCE(SUM(qty_available), 0) AS qty_available
+       FROM inventory_batches
+       WHERE company_id = $1 AND outlet_id = $2 AND status = 'ACTIVE'
+       GROUP BY product_id`,
+      [companyId, outletId],
+    );
+    const stockByProduct = new Map<string, number>();
+    for (const row of stockResult.rows) {
+      stockByProduct.set(row.product_id, Number(row.qty_available));
+    }
+
+    const items: ProducibleIngredient[] = [];
+    let producibleQty: number | null = null;
+
+    for (const item of itemsResult.rows) {
+      const baseQty = Number(item.qty);
+      const loss = Number(item.loss_percentage);
+      // Shared consumption math — identical to instant-complete backflushing.
+      const requiredPerUnit = ingredientRequirementPerUnit(baseQty, loss, yieldQty);
+      const availableQty = stockByProduct.get(item.ingredient_product_id) ?? 0;
+
+      // Zero/negative requirement lines do not consume stock, so they never
+      // constrain capacity. Report them (maxUnits unbounded) but exclude from MIN.
+      if (!(requiredPerUnit > 0)) {
+        items.push({
+          ingredientProductId: item.ingredient_product_id,
+          uomId: item.uom_id,
+          requiredPerUnit: 0,
+          availableQty,
+          maxUnits: Number.MAX_SAFE_INTEGER,
+          isLimiting: false,
+        });
+        continue;
+      }
+
+      // Whole finished units this ingredient can support (floor — integer output).
+      const maxUnits = Math.floor(availableQty / requiredPerUnit);
+      producibleQty = producibleQty === null ? maxUnits : Math.min(producibleQty, maxUnits);
+
+      items.push({
+        ingredientProductId: item.ingredient_product_id,
+        uomId: item.uom_id,
+        requiredPerUnit,
+        availableQty,
+        maxUnits,
+        isLimiting: false,
+      });
+    }
+
+    // No constraining ingredients at all (empty recipe or every line is 0-req) → 0.
+    const finalProducible = producibleQty ?? 0;
+
+    // Flag the limiting ingredient(s): those whose maxUnits equals producibleQty.
+    for (const line of items) {
+      if (line.requiredPerUnit > 0 && line.maxUnits === finalProducible) {
+        line.isLimiting = true;
+      }
+    }
+
+    return {
+      recipe: {
+        id: recipeRow.id,
+        recipeNumber: recipeRow.recipe_number,
+        name: recipeRow.name,
+        yieldQty,
+        yieldUomId: recipeRow.yield_uom_id,
+      },
+      producibleQty: finalProducible,
+      items,
+    };
   }
 }

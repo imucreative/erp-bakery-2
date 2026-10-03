@@ -19,28 +19,37 @@
  * result expiry required when actual>0). On failure we stay on the page, surface
  * the backend message, and keep the inputs intact. On success → detail page.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ChevronLeft, Factory } from 'lucide-vue-next'
+import { AlertTriangle, ChevronLeft, Factory } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import Button from '@/components/ui/Button.vue'
-import { ProductionOrderHeaderFields } from '@/components/production/production-order'
-import { toISODate } from '@/lib/format'
+import {
+  ProductionOrderHeaderFields,
+  ProductionProduciblePanel,
+} from '@/components/production/production-order'
+import { formatNumber, toISODate } from '@/lib/format'
 import { toMessage } from '@/composables/useStockLedger'
+import { fetchAllPaginated } from '@/lib/fetchAll'
+import { ApiClientError } from '@/services/http'
 import { outletService, type Outlet } from '@/services/outlet.service'
 import { productService, type Product } from '@/services/product.service'
+import { uomService, type Uom } from '@/services/uom.service'
 import { recipeService } from '@/services/recipe.service'
 import {
   productionOrderService,
   type CreateProductionOrderPayload,
+  type ProducibleInfo,
 } from '@/services/production-order.service'
 
 const router = useRouter()
 const pageTitle = 'Produksi'
 const PRODUCT_SEARCH_LIMIT = 10
 const PRODUCT_SEARCH_DEBOUNCE_MS = 300
+const PRODUCIBLE_DEBOUNCE_MS = 250
+const RESOLVE_PAGE_LIMIT = 100
 
 // ── Supporting data ──────────────────────────────────────────────────
 const outlets = ref<Outlet[]>([])
@@ -62,9 +71,59 @@ const resultExpiredDate = ref<string>('')
 const productionDate = ref<string>(toISODate(new Date()))
 const notes = ref<string>('')
 
-// ACTIVE recipe for the chosen product (resolved on select).
-const recipeInfo = ref<string | null>(null)
+// ACTIVE recipe presence for the chosen product. The recipe NAME is shown in the
+// producible panel below (single source), so HeaderFields only needs the
+// "missing recipe" soft warning that mirrors the backend rejection.
 const recipeMissing = ref<boolean>(false)
+
+// ── Producible (production capacity) preview ─────────────────────────
+const producibleInfo = ref<ProducibleInfo | null>(null)
+const producibleLoading = ref<boolean>(false)
+const producibleError = ref<string | null>(null)
+let producibleTimer: ReturnType<typeof setTimeout> | undefined
+// Monotonic token so a slow earlier request can't overwrite a newer result.
+let producibleRequestId = 0
+
+// Lazy-loaded id→name resolvers for the ingredient table + yield UOM. Both the
+// product and UOM masters are loaded ONCE on first need (not per row) to avoid
+// N+1 — the producible items[] only carry ids. Mirrors RecipeDetail resolution.
+const productNames = ref<Map<string, string>>(new Map())
+const uomNames = ref<Map<string, string>>(new Map())
+const mastersLoaded = ref<boolean>(false)
+let mastersPromise: Promise<void> | null = null
+
+function ingredientName(id: string): string {
+  return productNames.value.get(id) ?? 'Bahan tidak dikenal'
+}
+
+function uomName(id: string): string {
+  return uomNames.value.get(id) ?? ''
+}
+
+/** Load the product + UOM name maps once (idempotent, shared promise). */
+async function ensureMastersLoaded(): Promise<void> {
+  if (mastersLoaded.value) {
+    return
+  }
+  if (!mastersPromise) {
+    mastersPromise = (async () => {
+      const [allProducts, allUoms] = await Promise.all([
+        fetchAllPaginated<Product>((page) =>
+          productService.list({ page, limit: RESOLVE_PAGE_LIMIT }),
+        ),
+        fetchAllPaginated<Uom>((page) => uomService.list({ page, limit: RESOLVE_PAGE_LIMIT })),
+      ])
+      productNames.value = new Map(allProducts.map((p) => [p.id, `${p.name} (${p.sku})`]))
+      uomNames.value = new Map(allUoms.map((u) => [u.id, u.name]))
+      mastersLoaded.value = true
+    })().catch((error) => {
+      // Non-fatal: names fall back to placeholders; reset so a retry can refetch.
+      mastersPromise = null
+      throw error
+    })
+  }
+  await mastersPromise
+}
 
 // ── Load / lifecycle ─────────────────────────────────────────────────
 const loading = ref<boolean>(true)
@@ -120,7 +179,6 @@ async function onProductSelect(product: Product): Promise<void> {
   productId.value = product.id
   productLabel.value = `${product.name} (${product.sku})`
   productResults.value = []
-  recipeInfo.value = null
   recipeMissing.value = false
   try {
     const result = await recipeService.list({
@@ -129,15 +187,11 @@ async function onProductSelect(product: Product): Promise<void> {
       productId: product.id,
       status: 'ACTIVE',
     })
-    const recipe = result.items[0]
-    if (recipe) {
-      recipeInfo.value = `${recipe.name} (${recipe.recipeNumber})`
-    } else {
-      recipeMissing.value = true
-    }
+    recipeMissing.value = result.items.length === 0
   } catch {
-    // Non-fatal: leave recipe info empty; the backend validates on submit.
-    recipeInfo.value = null
+    // Non-fatal: the backend validates on submit and the producible panel will
+    // also surface a missing recipe (404 RECIPE.NO_ACTIVE_RECIPE).
+    recipeMissing.value = false
   }
 }
 
@@ -145,9 +199,73 @@ function onProductClear(): void {
   productId.value = ''
   productLabel.value = ''
   productResults.value = []
-  recipeInfo.value = null
   recipeMissing.value = false
 }
+
+// ── Producible preview: fetch when BOTH product + outlet are set ──────
+function resetProducible(): void {
+  producibleInfo.value = null
+  producibleError.value = null
+  producibleLoading.value = false
+}
+
+async function loadProducible(product: string, outlet: string): Promise<void> {
+  const requestId = ++producibleRequestId
+  producibleLoading.value = true
+  producibleError.value = null
+  producibleInfo.value = null
+  try {
+    // Resolve ingredient/UOM names (once) in parallel with the preview fetch.
+    const [info] = await Promise.all([
+      productionOrderService.getProducible(product, outlet),
+      ensureMastersLoaded().catch(() => undefined),
+    ])
+    if (requestId !== producibleRequestId) {
+      return // A newer request superseded this one.
+    }
+    producibleInfo.value = info
+    recipeMissing.value = false
+  } catch (error) {
+    if (requestId !== producibleRequestId) {
+      return
+    }
+    // A 404 whose message points at the recipe → no ACTIVE recipe (soft state).
+    if (error instanceof ApiClientError && error.status === 404 && /recipe/i.test(error.message)) {
+      recipeMissing.value = true
+      producibleError.value = null
+    } else {
+      producibleError.value = toMessage(error)
+    }
+  } finally {
+    if (requestId === producibleRequestId) {
+      producibleLoading.value = false
+    }
+  }
+}
+
+watch([productId, outletId], ([product, outlet]) => {
+  if (producibleTimer) {
+    clearTimeout(producibleTimer)
+  }
+  if (!product || !outlet) {
+    resetProducible()
+    return
+  }
+  producibleTimer = setTimeout(() => {
+    void loadProducible(product, outlet)
+  }, PRODUCIBLE_DEBOUNCE_MS)
+})
+
+// Soft, non-blocking hint: the user entered more successful units than the
+// computed capacity. Informative only — the backend remains the authority.
+const overProducibleHint = computed<boolean>(() => {
+  const info = producibleInfo.value
+  const actual = actualQty.value
+  if (!info || actual === null || Number.isNaN(Number(actual))) {
+    return false
+  }
+  return Number(actual) > info.producibleQty
+})
 
 // ── Validation + submit ──────────────────────────────────────────────
 function validate(): string | null {
@@ -207,6 +325,15 @@ async function onSubmit(): Promise<void> {
 function onCancel(): void {
   void router.push({ name: 'ProductionOrders' })
 }
+
+onBeforeUnmount(() => {
+  if (producibleTimer) {
+    clearTimeout(producibleTimer)
+  }
+  if (productSearchTimer) {
+    clearTimeout(productSearchTimer)
+  }
+})
 </script>
 
 <template>
@@ -264,13 +391,34 @@ function onCancel(): void {
           :outlet-locked="outletLocked"
           :product-results="productResults"
           :product-searching="productSearching"
-          :recipe-info="recipeInfo"
+          :recipe-info="null"
           :recipe-missing="recipeMissing"
           :disabled="submitting"
           @product-search="onProductSearch"
           @product-select="onProductSelect"
           @product-clear="onProductClear"
         />
+
+        <ProductionProduciblePanel
+          v-if="productId && outletId"
+          :info="producibleInfo"
+          :loading="producibleLoading"
+          :recipe-missing="recipeMissing"
+          :error="producibleError"
+          :ingredient-name="ingredientName"
+          :uom-name="uomName"
+        />
+
+        <p
+          v-if="overProducibleHint"
+          class="flex items-center gap-2 rounded-lg border border-warning-500/40 bg-warning-50 px-3 py-2 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
+          role="status"
+        >
+          <AlertTriangle class="h-4 w-4 shrink-0" aria-hidden="true" />
+          Jumlah berhasil ({{ formatNumber(actualQty) }}) melebihi kapasitas yang dihitung ({{
+            formatNumber(producibleInfo?.producibleQty)
+          }}). Produksi mungkin ditolak backend bila stok bahan tidak mencukupi.
+        </p>
 
         <p
           v-if="formError"

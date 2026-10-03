@@ -7,6 +7,7 @@ const prodRepo: jest.Mocked<ProductionOrderRepository> = {
   createInstant: jest.fn(),
   getById: jest.fn(),
   list: jest.fn(),
+  getProducible: jest.fn(),
 } as unknown as jest.Mocked<ProductionOrderRepository>;
 
 const outletRepo: jest.Mocked<OutletRepository> = {
@@ -105,13 +106,16 @@ describe('CreateProductionOrderUseCase (instant-complete)', () => {
 describe('GetProductionOrdersUseCase', () => {
   it('should throw INVALID_STATUS for unknown status', async () => {
     await expect(
-      new GetProductionOrdersUseCase(prodRepo).list({ limit: 10, offset: 0, status: 'NOPE' }, 'c1'),
+      new GetProductionOrdersUseCase(prodRepo, outletRepo).list(
+        { limit: 10, offset: 0, status: 'NOPE' },
+        'c1',
+      ),
     ).rejects.toThrow('PRODUCTION_ORDER.INVALID_STATUS');
   });
 
   it('should list with a valid status', async () => {
     prodRepo.list.mockResolvedValue({ rows: [], total: 0 });
-    await new GetProductionOrdersUseCase(prodRepo).list(
+    await new GetProductionOrdersUseCase(prodRepo, outletRepo).list(
       { limit: 10, offset: 0, status: 'COMPLETED' },
       'c1',
     );
@@ -120,7 +124,40 @@ describe('GetProductionOrdersUseCase', () => {
 
   it('should return detail via getById', async () => {
     prodRepo.getById.mockResolvedValue({ id: 'po1' } as never);
-    const result = await new GetProductionOrdersUseCase(prodRepo).detail('po1', 'c1');
+    const result = await new GetProductionOrdersUseCase(prodRepo, outletRepo).detail('po1', 'c1');
     expect(result).toEqual({ id: 'po1' });
+  });
+
+  describe('producible', () => {
+    it('should validate the outlet then delegate to the repository', async () => {
+      prodRepo.getProducible.mockResolvedValue({ producibleQty: 5 } as never);
+
+      const result = await new GetProductionOrdersUseCase(prodRepo, outletRepo).producible(
+        'prod-1',
+        'outlet-1',
+        'c1',
+      );
+
+      expect(outletRepo.getOutletById).toHaveBeenCalledWith('outlet-1', 'c1');
+      expect(prodRepo.getProducible).toHaveBeenCalledWith('c1', 'prod-1', 'outlet-1');
+      expect(result).toEqual({ producibleQty: 5 });
+    });
+
+    it('should propagate OUTLET.NOT_FOUND before computing capacity', async () => {
+      outletRepo.getOutletById.mockRejectedValueOnce(new Error('OUTLET.NOT_FOUND'));
+
+      await expect(
+        new GetProductionOrdersUseCase(prodRepo, outletRepo).producible('prod-1', 'outlet-1', 'c1'),
+      ).rejects.toThrow('OUTLET.NOT_FOUND');
+      expect(prodRepo.getProducible).not.toHaveBeenCalled();
+    });
+
+    it('should propagate RECIPE.NO_ACTIVE_RECIPE from the repository', async () => {
+      prodRepo.getProducible.mockRejectedValue(new Error('RECIPE.NO_ACTIVE_RECIPE'));
+
+      await expect(
+        new GetProductionOrdersUseCase(prodRepo, outletRepo).producible('prod-1', 'outlet-1', 'c1'),
+      ).rejects.toThrow('RECIPE.NO_ACTIVE_RECIPE');
+    });
   });
 });

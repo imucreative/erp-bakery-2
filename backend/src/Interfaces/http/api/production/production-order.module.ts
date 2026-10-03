@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { ProductionOrderController } from './production-order.controller';
+import { ProductionOrderController, ProductionController } from './production-order.controller';
 
 /**
  * ProductionOrderModule
  * Use cases provided & exported by InfrastructureModule (@Global).
  */
 @Module({
-  controllers: [ProductionOrderController],
+  controllers: [ProductionOrderController, ProductionController],
 })
 export class ProductionOrderModule {}

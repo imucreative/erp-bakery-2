@@ -27,6 +27,34 @@ export interface ProductionOrderListResult {
   total: number;
 }
 
+/** One ingredient line of a producible-quantity calculation. */
+export interface ProducibleIngredient {
+  ingredientProductId: string;
+  uomId: string;
+  /** Ingredient needed to produce exactly ONE finished unit (loss + yield applied). */
+  requiredPerUnit: number;
+  /** Stock on hand of the ingredient at the outlet (sum of ACTIVE batch balances). */
+  availableQty: number;
+  /** Max finished units this single ingredient can support = floor(available / perUnit). */
+  maxUnits: number;
+  /** True when this ingredient is (one of) the constraint(s) on producibleQty. */
+  isLimiting: boolean;
+}
+
+/** Result of the read-only producible-quantity calculation for a product+outlet. */
+export interface ProducibleResult {
+  recipe: {
+    id: string;
+    recipeNumber: string;
+    name: string;
+    yieldQty: number;
+    yieldUomId: string;
+  };
+  /** Max whole finished units producible = MIN(maxUnits) across all ingredients. */
+  producibleQty: number;
+  items: ProducibleIngredient[];
+}
+
 /**
  * Abstract repository — Production Order domain. Company-scoped (SaaS tenant
  * isolation).
@@ -63,4 +91,25 @@ export abstract class ProductionOrderRepository {
     companyId: string,
     filter: ProductionOrderListFilter,
   ): Promise<ProductionOrderListResult>;
+
+  /**
+   * Read-only production capacity preview for a finished product at an outlet.
+   *
+   * Resolves the product's single ACTIVE recipe (throws RECIPE.NO_ACTIVE_RECIPE
+   * when none), then for each ingredient line computes the per-unit requirement
+   * (loss% + recipe yield applied, via the shared consumption math) and the
+   * ingredient's stock on hand at the outlet (sum of ACTIVE inventory_batches
+   * balances — same source of truth as Stock On Hand, rule #8). The producible
+   * quantity is the MIN across ingredients of floor(available / perUnit), i.e.
+   * the whole finished units the current ingredient stock can support. This is a
+   * pure read — it posts no movements and mutates nothing.
+   *
+   * The per-ingredient requirement is computed with the SAME expression the
+   * instant-complete backflushing path uses, so the preview equals execution.
+   */
+  abstract getProducible(
+    companyId: string,
+    productId: string,
+    outletId: string,
+  ): Promise<ProducibleResult>;
 }

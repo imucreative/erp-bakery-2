@@ -116,6 +116,43 @@ export interface ProductionOrderListResult {
 }
 
 /**
+ * One ingredient line of a producible-quantity preview. `requiredPerUnit` is the
+ * amount of this ingredient consumed to make one finished unit (loss% + recipe
+ * yield already applied), `availableQty` the ingredient's stock on hand at the
+ * outlet, and `isLimiting` flags the ingredient(s) that cap `producibleQty`.
+ */
+export interface ProducibleIngredient {
+  ingredientProductId: string
+  uomId: string
+  requiredPerUnit: number
+  availableQty: number
+  isLimiting: boolean
+}
+
+/**
+ * Read-only production-capacity preview for a finished product at an outlet,
+ * returned by GET /production/producible. `producibleQty` is the maximum WHOLE
+ * finished units the current ingredient stock can support = MIN across
+ * ingredients of floor(availableQty / requiredPerUnit). The ingredient math
+ * reuses the exact instant-complete backflushing formula, so this preview equals
+ * what a submit would actually run. A missing ACTIVE recipe is a 404
+ * (RECIPE.NO_ACTIVE_RECIPE); an invalid outlet is a 404 (OUTLET.NOT_FOUND).
+ */
+export interface ProducibleInfo {
+  productId: string
+  outletId: string
+  recipe: {
+    id: string
+    recipeNumber: string
+    name: string
+    yieldQty: number
+    yieldUomId: string
+  }
+  producibleQty: number
+  items: ProducibleIngredient[]
+}
+
+/**
  * Instant-complete production payload. The UI sends `productId` (the user picks
  * the finished product; the backend resolves its ACTIVE recipe).
  *  - scheduledQty : production target (planned finished-goods qty), > 0
@@ -184,6 +221,23 @@ export const productionOrderService = {
     const response = await httpClient.post<ApiSuccess<ProductionOrder>>(
       '/production/orders',
       payload,
+    )
+    return response.data.data
+  },
+
+  /**
+   * Producible-quantity (capacity) preview for a finished product at an outlet.
+   * Read-only: computes the max finished units makeable from current ingredient
+   * stock. Throws ApiClientError 404 when the product has no ACTIVE recipe
+   * (RECIPE.NO_ACTIVE_RECIPE) or the outlet is invalid (OUTLET.NOT_FOUND).
+   */
+  async getProducible(
+    productId: string,
+    outletId: string,
+  ): Promise<ProducibleInfo> {
+    const response = await httpClient.get<ApiSuccess<ProducibleInfo>>(
+      '/production/producible',
+      { params: { productId, outletId } },
     )
     return response.data.data
   },
