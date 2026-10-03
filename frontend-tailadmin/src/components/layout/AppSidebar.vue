@@ -399,8 +399,8 @@ const menuGroups: MenuGroup[] = [
       {
         icon: RotateCcw,
         name: 'Purchase Return',
-        path: '/error-404',
-        soon: true,
+        path: '/procurement/purchase-returns',
+        permission: 'procurement.return.read',
       },
     ],
   },

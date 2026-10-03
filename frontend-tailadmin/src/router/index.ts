@@ -196,6 +196,42 @@ const router = createRouter({
       },
     },
     {
+      path: '/procurement/purchase-returns',
+      name: 'PurchaseReturns',
+      component: () => import('../views/Procurement/PurchaseReturnList.vue'),
+      meta: {
+        title: 'Purchase Returns',
+        permission: 'procurement.return.read',
+      },
+    },
+    {
+      path: '/procurement/purchase-returns/new',
+      name: 'PurchaseReturnCreate',
+      component: () => import('../views/Procurement/PurchaseReturnForm.vue'),
+      meta: {
+        title: 'Buat Purchase Return',
+        permission: 'procurement.return.create',
+      },
+    },
+    {
+      path: '/procurement/purchase-returns/:id',
+      name: 'PurchaseReturnDetail',
+      component: () => import('../views/Procurement/PurchaseReturnDetail.vue'),
+      meta: {
+        title: 'Detail Purchase Return',
+        permission: 'procurement.return.read',
+      },
+    },
+    {
+      path: '/procurement/purchase-returns/:id/edit',
+      name: 'PurchaseReturnEdit',
+      component: () => import('../views/Procurement/PurchaseReturnForm.vue'),
+      meta: {
+        title: 'Edit Purchase Return',
+        permission: 'procurement.return.update',
+      },
+    },
+    {
       path: '/inventory/stock-on-hand',
       name: 'InventoryStockOnHand',
       component: () => import('../views/Inventory/StockOnHandList.vue'),
