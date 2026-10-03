@@ -33,7 +33,7 @@ const emit = defineEmits<{
         @input="emit('update:search', ($event.target as HTMLInputElement).value)"
       />
     </div>
-    <div class="relative w-full sm:w-48">
+    <div class="relative w-full sm:w-55">
       <select
         :value="status"
         class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
