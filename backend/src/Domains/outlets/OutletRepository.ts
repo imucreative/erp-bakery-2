@@ -61,4 +61,20 @@ export abstract class OutletRepository {
     companyId: string,
     outletIds: string[],
   ): Promise<void>;
+
+  /**
+   * List the outlets a user may operate in, scoped to the company.
+   *
+   * - `allOutlets = true` (OWNER / super-admin): every non-deleted outlet of
+   *   the company.
+   * - `allOutlets = false` (regular user): only the outlets explicitly assigned
+   *   via an ACTIVE user_outlets row and still non-deleted.
+   *
+   * Soft-deleted outlets are always excluded. Ordered by code ASC.
+   */
+  abstract findAccessibleByUser(
+    userId: string,
+    companyId: string,
+    allOutlets: boolean,
+  ): Promise<Outlet[]>;
 }

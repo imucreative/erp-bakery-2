@@ -456,9 +456,9 @@ const menuGroups: MenuGroup[] = [
       },
       {
         icon: Factory,
-        name: 'Production',
-        path: '/error-404',
-        soon: true,
+        name: 'Production Orders',
+        path: '/production/orders',
+        permission: 'production-order.read',
       },
     ],
   },

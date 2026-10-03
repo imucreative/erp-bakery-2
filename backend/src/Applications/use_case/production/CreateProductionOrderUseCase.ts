@@ -4,12 +4,16 @@ import { ProductionOrderRepository } from '../../../Domains/production/Productio
 import { OutletRepository } from '../../../Domains/outlets/OutletRepository';
 
 /**
- * UseCase: CreateProductionOrderUseCase — schedule a production order.
+ * UseCase: CreateProductionOrderUseCase — INSTANT-COMPLETE production run.
  *
- * 1. Validate payload (CreateProductionOrder entity)
- * 2. Confirm the target outlet exists in the company
- * 3. Delegate to repository: resolve recipe (explicit or product's ACTIVE
- *    recipe), compute scale_factor, generate PRD number, persist SCHEDULED.
+ * Creating a production order IS the production action (production-domain §5):
+ * 1. Validate payload (CreateProductionOrder entity).
+ * 2. Confirm the target outlet exists in the company.
+ * 3. Delegate to the repository, which — in one atomic transaction — resolves
+ *    the ACTIVE recipe, backflushes ingredients via FEFO (PRODUCTION_CONSUME),
+ *    produces the finished-goods batch when actualQty > 0 (PRODUCTION_RESULT),
+ *    records scheduled/actual/waste quantities, and lands the order on
+ *    COMPLETED.
  */
 export class CreateProductionOrderUseCase {
   constructor(
@@ -27,11 +31,14 @@ export class CreateProductionOrderUseCase {
     // Outlet must exist in the company (throws OUTLET.NOT_FOUND)
     await this.outletRepository.getOutletById(order.outletId, companyId);
 
-    return this.productionOrderRepository.schedule(companyId, {
+    return this.productionOrderRepository.createInstant(companyId, {
       outletId: order.outletId,
       recipeId: order.recipeId,
       productId: order.productId,
       scheduledQty: order.scheduledQty,
+      actualQty: order.actualQty,
+      wasteQty: order.wasteQty,
+      resultExpiredDate: order.resultExpiredDate,
       productionDate: order.productionDate,
       notes: order.notes,
       createdBy: actorId,

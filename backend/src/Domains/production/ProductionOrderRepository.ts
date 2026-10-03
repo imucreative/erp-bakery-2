@@ -5,17 +5,12 @@ export interface NewProductionOrderData {
   recipeId: string | null;
   productId: string | null;
   scheduledQty: number;
+  actualQty: number;
+  wasteQty: number;
+  resultExpiredDate: string | null;
   productionDate: string | null;
   notes: string | null;
   createdBy: string | null;
-}
-
-export interface RecordYieldData {
-  actualQty: number;
-  wasteQty: number;
-  resultExpiredDate: string;
-  notes: string | null;
-  actorId: string | null;
 }
 
 export interface ProductionOrderListFilter {
@@ -32,28 +27,63 @@ export interface ProductionOrderListResult {
   total: number;
 }
 
+/** One ingredient line of a producible-quantity calculation. */
+export interface ProducibleIngredient {
+  ingredientProductId: string;
+  uomId: string;
+  /** Ingredient needed to produce exactly ONE finished unit (loss + yield applied). */
+  requiredPerUnit: number;
+  /** Stock on hand of the ingredient at the outlet (sum of ACTIVE batch balances). */
+  availableQty: number;
+  /** Max finished units this single ingredient can support = floor(available / perUnit). */
+  maxUnits: number;
+  /** True when this ingredient is (one of) the constraint(s) on producibleQty. */
+  isLimiting: boolean;
+}
+
+/** Result of the read-only producible-quantity calculation for a product+outlet. */
+export interface ProducibleResult {
+  recipe: {
+    id: string;
+    recipeNumber: string;
+    name: string;
+    yieldQty: number;
+    yieldUomId: string;
+  };
+  /** Max whole finished units producible = MIN(maxUnits) across all ingredients. */
+  producibleQty: number;
+  items: ProducibleIngredient[];
+}
+
 /**
  * Abstract repository — Production Order domain. Company-scoped (SaaS tenant
- * isolation). Lifecycle transitions are validated in the domain
- * (productionStatus.canTransition) and enforced again in the repository under
- * a concurrency-safe lock.
+ * isolation).
  *
- * `complete` performs backflushing (production-domain rule #2) atomically:
- *   - resolve the ACTIVE recipe items and compute scaled+loss consumption,
- *   - allocate ingredients FEFO and post PRODUCTION_CONSUME movements,
- *   - if QA passed, create a finished-goods batch and post a PRODUCTION_RESULT
- *     movement; if QA failed, scrap the output (no finished batch),
+ * Production is INSTANT-COMPLETE: `createInstant` is the single production
+ * action and performs the whole run atomically (production-domain rule #2) in
+ * one SERIALIZABLE transaction:
+ *   - resolve the ACTIVE recipe (explicit recipeId or the product's single
+ *     ACTIVE recipe) and compute scale_factor = scheduledQty / recipe.yieldQty,
+ *   - backflush ingredients: allocate FEFO and post PRODUCTION_CONSUME movements
+ *     (throws INVENTORY.INSUFFICIENT_STOCK when ingredient stock cannot cover
+ *     the recipe requirement),
+ *   - when actualQty > 0, create a finished-goods batch and post a
+ *     PRODUCTION_RESULT movement,
  *   - persist production_order_materials / production_order_results snapshots,
- *   - flip status to COMPLETED.
- * All of the above commit together in one SERIALIZABLE transaction or none do.
+ *   - record scheduledQty / actualQty / wasteQty and land the order on
+ *     COMPLETED.
+ * All of the above commit together or none do.
  */
 export abstract class ProductionOrderRepository {
   /**
-   * Schedule a new production order. Resolves the recipe (explicit recipeId or
-   * the product's single ACTIVE recipe), denormalises product_id, computes
-   * scale_factor = scheduledQty / recipe.yieldQty, generates PRD-YYYY-NNNNNN.
+   * Run and persist a production order in a single atomic action. The returned
+   * order is already COMPLETED with its consumed materials and produced results
+   * populated.
    */
-  abstract schedule(companyId: string, data: NewProductionOrderData): Promise<ProductionOrder>;
+  abstract createInstant(
+    companyId: string,
+    data: NewProductionOrderData,
+  ): Promise<ProductionOrder>;
 
   abstract getById(id: string, companyId: string): Promise<ProductionOrder>;
 
@@ -62,48 +92,24 @@ export abstract class ProductionOrderRepository {
     filter: ProductionOrderListFilter,
   ): Promise<ProductionOrderListResult>;
 
-  /** SCHEDULED -> IN_PROGRESS. */
-  abstract start(id: string, companyId: string, actorId: string | null): Promise<ProductionOrder>;
-
-  /** IN_PROGRESS -> YIELD_COMPLETED. Records actual/waste qty + result expiry. */
-  abstract recordYield(
-    id: string,
-    companyId: string,
-    data: RecordYieldData,
-  ): Promise<ProductionOrder>;
-
-  /** YIELD_COMPLETED -> QA_PASSED. */
-  abstract qaPass(
-    id: string,
-    companyId: string,
-    qaNotes: string | null,
-    actorId: string | null,
-  ): Promise<ProductionOrder>;
-
-  /** YIELD_COMPLETED -> QA_FAILED. */
-  abstract qaFail(
-    id: string,
-    companyId: string,
-    qaNotes: string | null,
-    actorId: string | null,
-  ): Promise<ProductionOrder>;
-
   /**
-   * QA_PASSED|QA_FAILED -> COMPLETED. Executes backflushing atomically.
-   * On QA_PASSED the finished-goods batch is created; on QA_FAILED the output
-   * is scrapped (ingredients still consumed).
+   * Read-only production capacity preview for a finished product at an outlet.
+   *
+   * Resolves the product's single ACTIVE recipe (throws RECIPE.NO_ACTIVE_RECIPE
+   * when none), then for each ingredient line computes the per-unit requirement
+   * (loss% + recipe yield applied, via the shared consumption math) and the
+   * ingredient's stock on hand at the outlet (sum of ACTIVE inventory_batches
+   * balances — same source of truth as Stock On Hand, rule #8). The producible
+   * quantity is the MIN across ingredients of floor(available / perUnit), i.e.
+   * the whole finished units the current ingredient stock can support. This is a
+   * pure read — it posts no movements and mutates nothing.
+   *
+   * The per-ingredient requirement is computed with the SAME expression the
+   * instant-complete backflushing path uses, so the preview equals execution.
    */
-  abstract complete(
-    id: string,
+  abstract getProducible(
     companyId: string,
-    actorId: string | null,
-  ): Promise<ProductionOrder>;
-
-  /** SCHEDULED -> CANCELLED. */
-  abstract cancel(
-    id: string,
-    companyId: string,
-    reason: string | null,
-    actorId: string | null,
-  ): Promise<ProductionOrder>;
+    productId: string,
+    outletId: string,
+  ): Promise<ProducibleResult>;
 }

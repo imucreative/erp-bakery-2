@@ -10,11 +10,6 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateProductionOrderUseCase } from '../../../../Applications/use_case/production/CreateProductionOrderUseCase';
-import { StartProductionOrderUseCase } from '../../../../Applications/use_case/production/StartProductionOrderUseCase';
-import { RecordYieldUseCase } from '../../../../Applications/use_case/production/RecordYieldUseCase';
-import { QaCheckUseCase } from '../../../../Applications/use_case/production/QaCheckUseCase';
-import { CompleteProductionOrderUseCase } from '../../../../Applications/use_case/production/CompleteProductionOrderUseCase';
-import { CancelProductionOrderUseCase } from '../../../../Applications/use_case/production/CancelProductionOrderUseCase';
 import { GetProductionOrdersUseCase } from '../../../../Applications/use_case/production/GetProductionOrdersUseCase';
 import { JwtAccessPayload } from '../../../../Applications/security/TokenManager';
 import { AuthorizationError } from '../../../../Commons/exceptions/AuthorizationError';
@@ -23,26 +18,21 @@ import { parsePagination } from '../../../../Commons/helpers/pagination.helper';
 import { GetUser } from '../../decorators/get-user.decorator';
 import { RequirePermission } from '../../decorators/require-permission.decorator';
 import { CreateProductionOrderDto } from './dto/create-production-order.dto';
-import { RecordYieldDto } from './dto/record-yield.dto';
-import { QaCheckDto } from './dto/qa-check.dto';
-import { CancelProductionOrderDto } from './dto/cancel-production-order.dto';
 import { ProductionOrderQueryDto } from './dto/production-order-query.dto';
+import { ProducibleQueryDto } from './dto/producible-query.dto';
 
 /**
  * ProductionOrderController — converts ingredients into finished goods.
  * Company-scoped; permission-guarded (production-order.read / .manage).
  *
- * Lifecycle: SCHEDULED -> IN_PROGRESS -> YIELD_COMPLETED -> QA_PASSED|QA_FAILED
- *            -> COMPLETED (backflushing); SCHEDULED -> CANCELLED.
+ * Production is INSTANT-COMPLETE: creating a production order runs the whole
+ * production (backflush ingredients FEFO + produce finished goods, atomic) and
+ * lands the order on COMPLETED. There are no start/yield/qa/complete/cancel
+ * actions.
  *
- * GET   /production/orders                 list
- * GET   /production/orders/:id             detail
- * POST  /production/orders                 schedule
- * POST  /production/orders/:id/start       SCHEDULED -> IN_PROGRESS
- * POST  /production/orders/:id/yield       IN_PROGRESS -> YIELD_COMPLETED
- * POST  /production/orders/:id/qa          YIELD_COMPLETED -> QA_PASSED|QA_FAILED
- * POST  /production/orders/:id/complete    QA_* -> COMPLETED (consume + produce)
- * POST  /production/orders/:id/cancel      SCHEDULED -> CANCELLED
+ * GET   /production/orders       list
+ * GET   /production/orders/:id   detail
+ * POST  /production/orders       run production (create = COMPLETED)
  */
 @ApiTags('Production Orders')
 @ApiBearerAuth()
@@ -50,11 +40,6 @@ import { ProductionOrderQueryDto } from './dto/production-order-query.dto';
 export class ProductionOrderController {
   constructor(
     private readonly createUseCase: CreateProductionOrderUseCase,
-    private readonly startUseCase: StartProductionOrderUseCase,
-    private readonly recordYieldUseCase: RecordYieldUseCase,
-    private readonly qaCheckUseCase: QaCheckUseCase,
-    private readonly completeUseCase: CompleteProductionOrderUseCase,
-    private readonly cancelUseCase: CancelProductionOrderUseCase,
     private readonly getUseCase: GetProductionOrdersUseCase,
   ) {}
 
@@ -102,92 +87,72 @@ export class ProductionOrderController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('production-order.manage')
-  @ApiOperation({ summary: 'Schedule a production order' })
-  @ApiResponse({ status: 201, description: 'Scheduled' })
-  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiOperation({
+    summary: 'Run a production order (instant-complete: create = COMPLETED, backflushing)',
+  })
+  @ApiResponse({ status: 201, description: 'Produced; stock consumed and finished goods created' })
+  @ApiResponse({ status: 400, description: 'Validation error or insufficient ingredient stock' })
+  @ApiResponse({ status: 404, description: 'Outlet or active recipe not found' })
   async create(@Body() dto: CreateProductionOrderDto, @GetUser() user: JwtAccessPayload) {
     const order = await this.createUseCase.execute(dto, this._companyId(user), user.sub);
     return successResponse(order);
   }
+}
 
-  @Post(':id/start')
-  @HttpCode(HttpStatus.OK)
-  @RequirePermission('production-order.manage')
-  @ApiOperation({ summary: 'Start production (SCHEDULED -> IN_PROGRESS)' })
-  @ApiParam({ name: 'id', description: 'Production order UUID' })
-  @ApiResponse({ status: 200, description: 'Started' })
-  async start(@Param('id') id: string, @GetUser() user: JwtAccessPayload) {
-    const order = await this.startUseCase.execute(id, this._companyId(user), user.sub);
-    return successResponse(order);
+/**
+ * ProductionController — read-only production helpers mounted directly under
+ * /production (sibling to /production/orders).
+ *
+ * GET /production/producible — producible-quantity (capacity) preview for a
+ * finished product at an outlet. Company-scoped; guarded by
+ * production-order.read (consistent with production reads). READ-ONLY: computes
+ * from current ingredient stock, posts no movements, mutates nothing. The
+ * ingredient consumption math reuses the exact instant-complete backflushing
+ * formula, so the previewed producible quantity equals what a submit would run.
+ */
+@ApiTags('Production')
+@ApiBearerAuth()
+@Controller('production')
+export class ProductionController {
+  constructor(private readonly getUseCase: GetProductionOrdersUseCase) {}
+
+  private _companyId(user: JwtAccessPayload): string {
+    if (!user.companyId) {
+      throw new AuthorizationError('AUTHORIZATION.NO_COMPANY_CONTEXT');
+    }
+    return user.companyId;
   }
 
-  @Post(':id/yield')
+  @Get('producible')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('production-order.manage')
-  @ApiOperation({ summary: 'Record yield (IN_PROGRESS -> YIELD_COMPLETED)' })
-  @ApiParam({ name: 'id', description: 'Production order UUID' })
-  @ApiResponse({ status: 200, description: 'Yield recorded' })
-  async recordYield(
-    @Param('id') id: string,
-    @Body() dto: RecordYieldDto,
-    @GetUser() user: JwtAccessPayload,
-  ) {
-    const order = await this.recordYieldUseCase.execute(id, dto, this._companyId(user), user.sub);
-    return successResponse(order);
-  }
-
-  @Post(':id/qa')
-  @HttpCode(HttpStatus.OK)
-  @RequirePermission('production-order.manage')
-  @ApiOperation({ summary: 'QA check (YIELD_COMPLETED -> QA_PASSED | QA_FAILED)' })
-  @ApiParam({ name: 'id', description: 'Production order UUID' })
-  @ApiResponse({ status: 200, description: 'QA recorded' })
-  async qaCheck(
-    @Param('id') id: string,
-    @Body() dto: QaCheckDto,
-    @GetUser() user: JwtAccessPayload,
-  ) {
-    const order = await this.qaCheckUseCase.execute(
-      id,
-      dto.passed,
-      this._companyId(user),
-      dto.qaNotes ?? null,
-      user.sub,
-    );
-    return successResponse(order);
-  }
-
-  @Post(':id/complete')
-  @HttpCode(HttpStatus.OK)
-  @RequirePermission('production-order.manage')
+  @RequirePermission('production-order.read')
   @ApiOperation({
-    summary: 'Complete production (QA_PASSED|QA_FAILED -> COMPLETED, backflushing)',
+    summary: 'Producible quantity preview (max finished units from current ingredient stock)',
   })
-  @ApiParam({ name: 'id', description: 'Production order UUID' })
-  @ApiResponse({ status: 200, description: 'Completed; stock consumed/produced' })
-  @ApiResponse({ status: 400, description: 'Insufficient ingredient stock' })
-  async complete(@Param('id') id: string, @GetUser() user: JwtAccessPayload) {
-    const order = await this.completeUseCase.execute(id, this._companyId(user), user.sub);
-    return successResponse(order);
-  }
-
-  @Post(':id/cancel')
-  @HttpCode(HttpStatus.OK)
-  @RequirePermission('production-order.manage')
-  @ApiOperation({ summary: 'Cancel a production order (SCHEDULED -> CANCELLED)' })
-  @ApiParam({ name: 'id', description: 'Production order UUID' })
-  @ApiResponse({ status: 200, description: 'Cancelled' })
-  async cancel(
-    @Param('id') id: string,
-    @Body() dto: CancelProductionOrderDto,
-    @GetUser() user: JwtAccessPayload,
-  ) {
-    const order = await this.cancelUseCase.execute(
-      id,
+  @ApiResponse({
+    status: 200,
+    description:
+      'Active recipe, max producible finished units, and per-ingredient requirement/availability',
+  })
+  @ApiResponse({ status: 404, description: 'Outlet or active recipe not found' })
+  async producible(@Query() query: ProducibleQueryDto, @GetUser() user: JwtAccessPayload) {
+    const result = await this.getUseCase.producible(
+      query.productId,
+      query.outletId,
       this._companyId(user),
-      dto.reason ?? null,
-      user.sub,
     );
-    return successResponse(order);
+    return successResponse({
+      productId: query.productId,
+      outletId: query.outletId,
+      recipe: result.recipe,
+      producibleQty: result.producibleQty,
+      items: result.items.map((item) => ({
+        ingredientProductId: item.ingredientProductId,
+        uomId: item.uomId,
+        requiredPerUnit: item.requiredPerUnit,
+        availableQty: item.availableQty,
+        isLimiting: item.isLimiting,
+      })),
+    });
   }
 }

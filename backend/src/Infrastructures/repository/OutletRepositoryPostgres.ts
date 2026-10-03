@@ -182,6 +182,37 @@ export class OutletRepositoryPostgres extends OutletRepository {
     }
   }
 
+  async findAccessibleByUser(
+    userId: string,
+    companyId: string,
+    allOutlets: boolean,
+  ): Promise<Outlet[]> {
+    if (allOutlets) {
+      // OWNER / super-admin: every non-deleted outlet of the active company.
+      const result = await this.pool.query<OutletRow>(
+        `SELECT id, company_id, code, name, address, phone, is_active, created_at, updated_at
+         FROM outlets
+         WHERE company_id = $1 AND deleted_at IS NULL
+         ORDER BY code ASC`,
+        [companyId],
+      );
+      return result.rows.map((row) => this._toOutlet(row));
+    }
+
+    // Regular user: only outlets with an ACTIVE assignment, scoped to company.
+    const result = await this.pool.query<OutletRow>(
+      `SELECT o.id, o.company_id, o.code, o.name, o.address, o.phone,
+              o.is_active, o.created_at, o.updated_at
+       FROM outlets o
+       JOIN user_outlets uo ON uo.outlet_id = o.id
+       WHERE uo.user_id = $1 AND uo.is_active = TRUE
+         AND o.company_id = $2 AND o.deleted_at IS NULL
+       ORDER BY o.code ASC`,
+      [userId, companyId],
+    );
+    return result.rows.map((row) => this._toOutlet(row));
+  }
+
   async verifyOutletsBelongToCompany(
     companyId: string,
     outletIds: string[],

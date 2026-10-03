@@ -1,26 +1,19 @@
 /**
- * Production Order lifecycle (production-domain §5):
- *   SCHEDULED -> IN_PROGRESS -> YIELD_COMPLETED -> QA_PASSED|QA_FAILED -> COMPLETED
- *   SCHEDULED -> CANCELLED (abandon before work starts)
+ * Production Order lifecycle (production-domain §5) — INSTANT-COMPLETE.
  *
- * Stock is mutated ONLY on the transition into COMPLETED (backflushing,
+ * Production is a single, atomic action: creating a production order IS the
+ * production run. Ingredients are backflushed and finished goods are produced
+ * in one transaction, and the order is persisted directly as COMPLETED. There
+ * are no intermediate states (no SCHEDULED/IN_PROGRESS/QA) and no cancellation
+ * (nothing partial is ever persisted — a create either fully succeeds and lands
+ * on COMPLETED, or it fails and nothing is written).
+ *
+ * Stock is mutated as part of that same create transaction (backflushing,
  * production-domain rule #2):
- *   - from QA_PASSED: consume ingredients via FEFO (PRODUCTION_CONSUME) and
- *     create the finished-goods batch (PRODUCTION_RESULT).
- *   - from QA_FAILED: consume ingredients but scrap the output (no finished
- *     batch); the produced quantity is recorded as waste.
- *
- * Forbidden: YIELD_COMPLETED -> COMPLETED directly (must pass through QA).
+ *   - consume ingredients via FEFO (PRODUCTION_CONSUME), and
+ *   - when actualQty > 0, create the finished-goods batch (PRODUCTION_RESULT).
  */
-export const PRODUCTION_STATUSES = [
-  'SCHEDULED',
-  'IN_PROGRESS',
-  'YIELD_COMPLETED',
-  'QA_PASSED',
-  'QA_FAILED',
-  'COMPLETED',
-  'CANCELLED',
-] as const;
+export const PRODUCTION_STATUSES = ['COMPLETED'] as const;
 
 export type ProductionStatus = (typeof PRODUCTION_STATUSES)[number];
 
@@ -28,21 +21,7 @@ export function isProductionStatus(value: unknown): value is ProductionStatus {
   return typeof value === 'string' && (PRODUCTION_STATUSES as readonly string[]).includes(value);
 }
 
-const ALLOWED_TRANSITIONS: Record<ProductionStatus, ProductionStatus[]> = {
-  SCHEDULED: ['IN_PROGRESS', 'CANCELLED'],
-  IN_PROGRESS: ['YIELD_COMPLETED'],
-  YIELD_COMPLETED: ['QA_PASSED', 'QA_FAILED'],
-  QA_PASSED: ['COMPLETED'],
-  QA_FAILED: ['COMPLETED'],
-  COMPLETED: [],
-  CANCELLED: [],
-};
-
-export function canTransition(from: ProductionStatus, to: ProductionStatus): boolean {
-  return ALLOWED_TRANSITIONS[from]?.includes(to) ?? false;
-}
-
-/** Terminal states — no further transitions allowed. */
+/** Terminal states — no further transitions allowed. COMPLETED is terminal. */
 export function isTerminalStatus(status: ProductionStatus): boolean {
-  return status === 'COMPLETED' || status === 'CANCELLED';
+  return status === 'COMPLETED';
 }

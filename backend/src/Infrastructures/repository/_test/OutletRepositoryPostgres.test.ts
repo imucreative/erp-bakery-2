@@ -168,4 +168,39 @@ describe('OutletRepositoryPostgres', () => {
       ).rejects.toBeInstanceOf(NotFoundError);
     });
   });
+
+  describe('findAccessibleByUser', () => {
+    it('should return all non-deleted company outlets for OWNER/super-admin', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValue({ rows: [outletRow], rowCount: 1 });
+
+      const result = await repo.findAccessibleByUser('user-uuid', 'company-uuid', true);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBeInstanceOf(Outlet);
+      const sql = (mockPool.query as jest.Mock).mock.calls[0][0] as string;
+      expect(sql).toContain('FROM outlets');
+      expect(sql).not.toContain('user_outlets');
+      expect((mockPool.query as jest.Mock).mock.calls[0][1]).toEqual(['company-uuid']);
+    });
+
+    it('should join ACTIVE user_outlets assignments for a regular user', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValue({ rows: [outletRow], rowCount: 1 });
+
+      const result = await repo.findAccessibleByUser('user-uuid', 'company-uuid', false);
+
+      expect(result).toHaveLength(1);
+      const sql = (mockPool.query as jest.Mock).mock.calls[0][0] as string;
+      expect(sql).toContain('JOIN user_outlets');
+      expect(sql).toContain('uo.is_active = TRUE');
+      expect(sql).toContain('o.deleted_at IS NULL');
+      expect((mockPool.query as jest.Mock).mock.calls[0][1]).toEqual(['user-uuid', 'company-uuid']);
+    });
+
+    it('should return an empty array when the user has no assignments', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValue({ rows: [], rowCount: 0 });
+
+      const result = await repo.findAccessibleByUser('user-uuid', 'company-uuid', false);
+      expect(result).toEqual([]);
+    });
+  });
 });
