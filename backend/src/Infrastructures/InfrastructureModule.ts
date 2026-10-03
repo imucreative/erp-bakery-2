@@ -28,6 +28,7 @@ import { PurchaseOrderAttachmentStorage } from '../Domains/purchase-orders/Purch
 import { GoodsReceiptAttachmentStorage } from '../Domains/goods-receipts/GoodsReceiptAttachmentStorage';
 import { PurchaseOrderRepository } from '../Domains/purchase-orders/PurchaseOrderRepository';
 import { GoodsReceiptRepository } from '../Domains/goods-receipts/GoodsReceiptRepository';
+import { PurchaseReturnRepository } from '../Domains/purchase-returns/PurchaseReturnRepository';
 import { PasswordHash } from '../Applications/security/PasswordHash';
 import { TokenManager } from '../Applications/security/TokenManager';
 
@@ -54,6 +55,7 @@ import { ProductionOrderRepositoryPostgres } from './repository/ProductionOrderR
 import { PurchaseRequestRepositoryPostgres } from './repository/PurchaseRequestRepositoryPostgres';
 import { PurchaseOrderRepositoryPostgres } from './repository/PurchaseOrderRepositoryPostgres';
 import { GoodsReceiptRepositoryPostgres } from './repository/GoodsReceiptRepositoryPostgres';
+import { PurchaseReturnRepositoryPostgres } from './repository/PurchaseReturnRepositoryPostgres';
 import { LocalPurchaseRequestAttachmentStorage } from './storage/LocalPurchaseRequestAttachmentStorage';
 import { LocalPurchaseOrderAttachmentStorage } from './storage/LocalPurchaseOrderAttachmentStorage';
 import { LocalGoodsReceiptAttachmentStorage } from './storage/LocalGoodsReceiptAttachmentStorage';
@@ -168,6 +170,13 @@ import { UploadGoodsReceiptAttachmentUseCase } from '../Applications/use_case/go
 import { ListGoodsReceiptAttachmentsUseCase } from '../Applications/use_case/goods-receipts/ListGoodsReceiptAttachmentsUseCase';
 import { GetGoodsReceiptAttachmentUseCase } from '../Applications/use_case/goods-receipts/GetGoodsReceiptAttachmentUseCase';
 import { DeleteGoodsReceiptAttachmentUseCase } from '../Applications/use_case/goods-receipts/DeleteGoodsReceiptAttachmentUseCase';
+import { CreatePurchaseReturnUseCase } from '../Applications/use_case/purchase-returns/CreatePurchaseReturnUseCase';
+import { UpdatePurchaseReturnUseCase } from '../Applications/use_case/purchase-returns/UpdatePurchaseReturnUseCase';
+import { SubmitPurchaseReturnUseCase } from '../Applications/use_case/purchase-returns/SubmitPurchaseReturnUseCase';
+import { CompletePurchaseReturnUseCase } from '../Applications/use_case/purchase-returns/CompletePurchaseReturnUseCase';
+import { CancelPurchaseReturnUseCase } from '../Applications/use_case/purchase-returns/CancelPurchaseReturnUseCase';
+import { GetPurchaseReturnsUseCase } from '../Applications/use_case/purchase-returns/GetPurchaseReturnsUseCase';
+import { GetReturnableUseCase } from '../Applications/use_case/purchase-returns/GetReturnableUseCase';
 
 /**
  * InfrastructureModule — NestJS DI container.
@@ -285,6 +294,10 @@ import { DeleteGoodsReceiptAttachmentUseCase } from '../Applications/use_case/go
     {
       provide: GoodsReceiptRepository,
       useFactory: () => new GoodsReceiptRepositoryPostgres(pool),
+    },
+    {
+      provide: PurchaseReturnRepository,
+      useFactory: () => new PurchaseReturnRepositoryPostgres(pool),
     },
 
     // ─── Storage ──────────────────────────────────────────────────────────
@@ -1048,6 +1061,65 @@ import { DeleteGoodsReceiptAttachmentUseCase } from '../Applications/use_case/go
       ) => new DeleteGoodsReceiptAttachmentUseCase(grRepo, storage),
       inject: [GoodsReceiptRepository, GoodsReceiptAttachmentStorage],
     },
+    {
+      provide: CreatePurchaseReturnUseCase,
+      useFactory: (
+        prRepo: PurchaseReturnRepository,
+        grRepo: GoodsReceiptRepository,
+        supplierRepo: SupplierRepository,
+        outletRepo: OutletRepository,
+      ) => new CreatePurchaseReturnUseCase(prRepo, grRepo, supplierRepo, outletRepo),
+      inject: [
+        PurchaseReturnRepository,
+        GoodsReceiptRepository,
+        SupplierRepository,
+        OutletRepository,
+      ],
+    },
+    {
+      provide: UpdatePurchaseReturnUseCase,
+      useFactory: (
+        prRepo: PurchaseReturnRepository,
+        grRepo: GoodsReceiptRepository,
+        supplierRepo: SupplierRepository,
+        outletRepo: OutletRepository,
+      ) => new UpdatePurchaseReturnUseCase(prRepo, grRepo, supplierRepo, outletRepo),
+      inject: [
+        PurchaseReturnRepository,
+        GoodsReceiptRepository,
+        SupplierRepository,
+        OutletRepository,
+      ],
+    },
+    {
+      provide: SubmitPurchaseReturnUseCase,
+      useFactory: (prRepo: PurchaseReturnRepository) =>
+        new SubmitPurchaseReturnUseCase(prRepo),
+      inject: [PurchaseReturnRepository],
+    },
+    {
+      provide: CompletePurchaseReturnUseCase,
+      useFactory: (prRepo: PurchaseReturnRepository) =>
+        new CompletePurchaseReturnUseCase(prRepo),
+      inject: [PurchaseReturnRepository],
+    },
+    {
+      provide: CancelPurchaseReturnUseCase,
+      useFactory: (prRepo: PurchaseReturnRepository) =>
+        new CancelPurchaseReturnUseCase(prRepo),
+      inject: [PurchaseReturnRepository],
+    },
+    {
+      provide: GetPurchaseReturnsUseCase,
+      useFactory: (prRepo: PurchaseReturnRepository) =>
+        new GetPurchaseReturnsUseCase(prRepo),
+      inject: [PurchaseReturnRepository],
+    },
+    {
+      provide: GetReturnableUseCase,
+      useFactory: (prRepo: PurchaseReturnRepository) => new GetReturnableUseCase(prRepo),
+      inject: [PurchaseReturnRepository],
+    },
   ],
   exports: [
     'PG_POOL',
@@ -1075,6 +1147,7 @@ import { DeleteGoodsReceiptAttachmentUseCase } from '../Applications/use_case/go
     PurchaseRequestRepository,
     PurchaseOrderRepository,
     GoodsReceiptRepository,
+    PurchaseReturnRepository,
     RegisterCompanyUseCase,
     LoginUseCase,
     RefreshTokenUseCase,
@@ -1182,6 +1255,13 @@ import { DeleteGoodsReceiptAttachmentUseCase } from '../Applications/use_case/go
     ListGoodsReceiptAttachmentsUseCase,
     GetGoodsReceiptAttachmentUseCase,
     DeleteGoodsReceiptAttachmentUseCase,
+    CreatePurchaseReturnUseCase,
+    UpdatePurchaseReturnUseCase,
+    SubmitPurchaseReturnUseCase,
+    CompletePurchaseReturnUseCase,
+    CancelPurchaseReturnUseCase,
+    GetPurchaseReturnsUseCase,
+    GetReturnableUseCase,
   ],
 })
 export class InfrastructureModule {}

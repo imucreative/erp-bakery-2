@@ -22,6 +22,7 @@ import { ProductionOrderModule } from './Interfaces/http/api/production/producti
 import { PurchaseRequestModule } from './Interfaces/http/api/purchase-requests/purchase-request.module';
 import { PurchaseOrderModule } from './Interfaces/http/api/purchase-orders/purchase-order.module';
 import { GoodsReceiptModule } from './Interfaces/http/api/goods-receipts/goods-receipt.module';
+import { PurchaseReturnModule } from './Interfaces/http/api/purchase-returns/purchase-return.module';
 import { AllExceptionsFilter } from './Commons/exceptions/AllExceptionsFilter';
 import { JwtAuthGuard } from './Interfaces/http/guards/jwt-auth.guard';
 import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
@@ -62,6 +63,7 @@ import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
     PurchaseRequestModule,
     PurchaseOrderModule,
     GoodsReceiptModule,
+    PurchaseReturnModule,
   ],
   providers: [
     // Global exception filter — converts domain/HTTP errors to standard JSON
