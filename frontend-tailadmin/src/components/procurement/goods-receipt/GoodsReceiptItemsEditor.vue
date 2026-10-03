@@ -12,7 +12,9 @@
  *      at least one of the two must be > 0 for an included item.
  *   4. For a batch-tracked product with `acceptedQuantity > 0`, `batchNumber`
  *      and `expiryDate` are required. Non-batch products: batch/expiry optional.
- *   5. UOM is free-choice (default from the PO item).
+ *   5. UOM is READ-ONLY — it follows the PO item (GR unit = PO unit, per UOM
+ *      Conversion design decision #4). The row inherits `uomId` from the PO item
+ *      and the column renders the UOM name as a label, not a select.
  *
  * Because of (1), the Product column is READ-ONLY (a label, not a catalog
  * select) and there is no free "Add Item" button. Rows start prefilled from the
@@ -91,6 +93,11 @@ function productLabel(productId: string): string {
   return `${product.name} (${product.sku})`
 }
 
+/** Human label for a row's UOM (resolved by `uomId`) with a graceful fallback. */
+function uomLabel(uomId: string): string {
+  return uomMap.value.get(uomId)?.name || '—'
+}
+
 /** True when the row's product is batch-tracked (batch + expiry become required). */
 function isBatchTracked(productId: string): boolean {
   return productMap.value.get(productId)?.isBatchTracked ?? false
@@ -136,22 +143,6 @@ const addableItems = computed<SourcePoItem[]>(() => {
   const used = new Set(props.modelValue.map((row) => row.purchaseOrderItemId))
   return props.poItems.filter((item) => !used.has(item.purchaseOrderItemId))
 })
-
-/**
- * The UOM options to render for a given row. Starts from the loaded (active)
- * UOM list, then — if the row already holds a `uomId` that is NOT in that list
- * (e.g. the product's UOM was deactivated) — appends a synthetic "(nonaktif)"
- * option so the select shows the current, valid selection instead of blank.
- */
-function uomOptionsForRow(row: EditorItemRow): Array<{ id: string; label: string }> {
-  const options = props.uoms.map((u) => ({ id: u.id, label: u.name }))
-  if (row.uomId && !uomMap.value.has(row.uomId)) {
-    const product = productMap.value.get(row.productId)
-    const base = product ? `UOM ${product.name}` : 'UOM saat ini'
-    options.push({ id: row.uomId, label: `${base} (nonaktif)` })
-  }
-  return options
-}
 
 function emitRows(rows: EditorItemRow[]): void {
   emit('update:modelValue', rows)
@@ -291,23 +282,15 @@ function removeRow(index: number): void {
                 Maks {{ maxQtyForRow(row) }} (sisa PO)
               </span>
             </td>
-            <!-- UOM -->
+            <!-- UOM (read-only — follows the source PO item) -->
             <td class="px-4 py-3 align-top">
-              <div class="relative">
-                <select
-                  :value="row.uomId"
-                  :disabled="disabled"
-                  :class="[inputClass, 'appearance-none pe-10']"
-                  @change="updateRow(index, { uomId: ($event.target as HTMLSelectElement).value })"
-                >
-                  <option value="" disabled>Pilih UOM</option>
-                  <option v-for="u in uomOptionsForRow(row)" :key="u.id" :value="u.id">
-                    {{ u.label }}
-                  </option>
-                </select>
-                <ChevronDownIcon
-                  class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-                />
+              <div class="flex min-h-11 flex-col justify-center">
+                <span class="text-theme-sm text-gray-800 dark:text-white/90">
+                  {{ uomLabel(row.uomId) }}
+                </span>
+                <span class="text-theme-xs text-gray-400 dark:text-gray-500">
+                  Dari item PO
+                </span>
               </div>
             </td>
             <!-- Batch Number -->

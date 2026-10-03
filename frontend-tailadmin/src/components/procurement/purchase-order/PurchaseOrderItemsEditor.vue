@@ -10,7 +10,11 @@
  *   3. Quantity per row may be ≤ the matching PR item's OUTSTANDING (remaining)
  *      quota across active POs; never more (the `max` and local validation
  *      enforce this). Default from the outstanding quota.
- *   4. UOM is free-choice (default from the PR item).
+ *   4. UOM is restricted to the product's VALID units — its base unit plus any
+ *      ACTIVE registered conversions (loaded on demand per product, cached);
+ *      default from the PR item. A product with no conversions offers only its
+ *      base unit. The product lock from (1) is unaffected. See
+ *      `useProductValidUoms`.
  *   5. Unit price is free (default from the PR estimatedPrice); Tax % is free
  *      (default 0).
  *
@@ -27,13 +31,14 @@
  *   tax      = subtotal * taxPercent / 100
  *   total    = subtotal + tax
  */
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { Trash2 } from 'lucide-vue-next'
 import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
 import { PlusIcon } from '@/icons'
 import { formatRupiah } from '@/lib/format'
 import type { Product } from '@/services/product.service'
 import type { Uom } from '@/services/uom.service'
+import { useProductValidUoms } from '@/composables/useProductValidUoms'
 
 /** A single editable row (local editor shape; parent maps to the API payload). */
 export interface EditorItemRow {
@@ -113,17 +118,53 @@ const addableItems = computed<SourcePrItem[]>(() => {
 })
 
 /**
- * The UOM options to render for a given row. Starts from the loaded (active)
- * UOM list, then — if the row already holds a `uomId` that is NOT in that list
- * (e.g. the product's UOM was deactivated) — appends a synthetic "(nonaktif)"
- * option so the select shows the current, valid selection instead of blank.
+ * Per-product valid UOMs (base + active conversions), loaded on demand and
+ * cached by productId. The resolver draws the base unit from the already-loaded
+ * product/uom maps so no extra wiring is needed. The PR→PO product lock is
+ * unaffected: products stay read-only; only the UOM choices are scoped here.
+ */
+const validUoms = useProductValidUoms({
+  baseUomId: (productId) => productMap.value.get(productId)?.uomId ?? '',
+  baseUomLabel: (uomId) => uomMap.value.get(uomId)?.name ?? 'UOM dasar',
+})
+
+/**
+ * Load conversions for every product present in the rows (rows start prefilled
+ * from the PR), and keep loading as rows are re-added. `ensureLoaded` is
+ * idempotent and de-duplicates across rows sharing a product, so this never
+ * N+1s.
+ */
+onMounted(() => {
+  for (const row of props.modelValue) {
+    if (row.productId) {
+      void validUoms.ensureLoaded(row.productId)
+    }
+  }
+})
+watch(
+  () => props.modelValue.map((row) => row.productId),
+  (productIds) => {
+    for (const productId of productIds) {
+      if (productId) {
+        void validUoms.ensureLoaded(productId)
+      }
+    }
+  },
+)
+
+/**
+ * The UOM options to render for a given row: the product's VALID units (base +
+ * active conversions). If the row already holds a `uomId` that is NOT among the
+ * valid units (e.g. its stored UOM/conversion was deactivated), a synthetic
+ * "(saat ini)"/"(nonaktif)" option is appended so the select shows the current
+ * selection instead of rendering blank.
  */
 function uomOptionsForRow(row: EditorItemRow): Array<{ id: string; label: string }> {
-  const options = props.uoms.map((u) => ({ id: u.id, label: u.name }))
-  if (row.uomId && !uomMap.value.has(row.uomId)) {
-    const product = productMap.value.get(row.productId)
-    const base = product ? `UOM ${product.name}` : 'UOM saat ini'
-    options.push({ id: row.uomId, label: `${base} (nonaktif)` })
+  const options = validUoms.validUoms(row.productId).map((option) => ({ ...option }))
+  if (row.uomId && !options.some((option) => option.id === row.uomId)) {
+    const stored = uomMap.value.get(row.uomId)
+    const label = stored ? `${stored.name} (saat ini)` : 'UOM saat ini (nonaktif)'
+    options.push({ id: row.uomId, label })
   }
   return options
 }
@@ -169,6 +210,8 @@ function onAddFromPr(productId: string): void {
   if (!prItem) {
     return
   }
+  // Load the product's valid UOMs (base + active conversions) for the new row.
+  void validUoms.ensureLoaded(productId)
   emitRows([
     ...props.modelValue,
     {
@@ -269,6 +312,12 @@ function removeRow(index: number): void {
                   class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
                 />
               </div>
+              <span
+                v-if="row.productId && validUoms.isLoading(row.productId)"
+                class="mt-1 block text-theme-xs text-gray-400 dark:text-gray-500"
+              >
+                Memuat satuan...
+              </span>
             </td>
             <!-- Unit Price -->
             <td class="px-4 py-3 align-top">

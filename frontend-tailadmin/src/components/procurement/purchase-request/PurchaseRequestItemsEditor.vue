@@ -11,14 +11,20 @@
  * Two-way binds the rows array via v-model. Selecting a product auto-fills the
  * row's UOM and pre-fills the estimated price from the product's purchasePrice
  * when the price is still zero (convenience only; the user may override).
+ *
+ * UOM scope: the UOM select for a row is restricted to that product's VALID
+ * units — its base unit plus any ACTIVE registered conversions (loaded on
+ * demand per product and cached). A product with no conversions offers only its
+ * base unit. See `useProductValidUoms`.
  */
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { Trash2 } from 'lucide-vue-next'
 import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
 import { PlusIcon } from '@/icons'
 import { formatRupiah } from '@/lib/format'
 import type { Product } from '@/services/product.service'
 import type { Uom } from '@/services/uom.service'
+import { useProductValidUoms } from '@/composables/useProductValidUoms'
 
 /** A single editable row (local editor shape; parent maps to the API payload). */
 export interface EditorItemRow {
@@ -48,20 +54,52 @@ const productMap = computed<Map<string, Product>>(
 const uomMap = computed<Map<string, Uom>>(() => new Map(props.uoms.map((u) => [u.id, u])))
 
 /**
- * The UOM options to render for a given row. Starts from the loaded (active)
- * UOM list, then — if the row already holds a `uomId` that is NOT in that list
- * (e.g. the product's UOM was deactivated and dropped from the active lookup) —
- * appends a synthetic "(nonaktif)" option so the select shows the current,
- * valid selection instead of rendering blank. A blank-looking select would
- * otherwise mislead the user into thinking `uomId` is empty when it is set.
- * Mirrors the payment-term pattern in SupplierFormModal.
+ * Per-product valid UOMs (base + active conversions), loaded on demand and
+ * cached by productId. The resolver draws the base unit from the already-loaded
+ * product/uom maps so no extra wiring is needed.
+ */
+const validUoms = useProductValidUoms({
+  baseUomId: (productId) => productMap.value.get(productId)?.uomId ?? '',
+  baseUomLabel: (uomId) => uomMap.value.get(uomId)?.name ?? 'UOM dasar',
+})
+
+/**
+ * Load conversions for every product already present in the rows (edit mode),
+ * then keep them loaded as rows gain products. `ensureLoaded` is idempotent and
+ * de-duplicates across rows that share a product, so this never N+1s.
+ */
+onMounted(() => {
+  for (const row of props.modelValue) {
+    if (row.productId) {
+      void validUoms.ensureLoaded(row.productId)
+    }
+  }
+})
+watch(
+  () => props.modelValue.map((row) => row.productId),
+  (productIds) => {
+    for (const productId of productIds) {
+      if (productId) {
+        void validUoms.ensureLoaded(productId)
+      }
+    }
+  },
+)
+
+/**
+ * The UOM options to render for a given row: the product's VALID units (base +
+ * active conversions). If the row already holds a `uomId` that is NOT among the
+ * valid units (e.g. the product changed, or its stored UOM/conversion was
+ * deactivated), a synthetic "(nonaktif)" option is appended so the select shows
+ * the current selection instead of rendering blank. Mirrors the payment-term
+ * pattern in SupplierFormModal.
  */
 function uomOptionsForRow(row: EditorItemRow): Array<{ id: string; label: string }> {
-  const options = props.uoms.map((u) => ({ id: u.id, label: u.name }))
-  if (row.uomId && !uomMap.value.has(row.uomId)) {
-    const product = productMap.value.get(row.productId)
-    const base = product ? `UOM ${product.name}` : 'UOM saat ini'
-    options.push({ id: row.uomId, label: `${base} (nonaktif)` })
+  const options = validUoms.validUoms(row.productId).map((option) => ({ ...option }))
+  if (row.uomId && !options.some((option) => option.id === row.uomId)) {
+    const stored = uomMap.value.get(row.uomId)
+    const label = stored ? `${stored.name} (saat ini)` : 'UOM saat ini (nonaktif)'
+    options.push({ id: row.uomId, label })
   }
   return options
 }
@@ -88,6 +126,8 @@ function updateRow(index: number, patch: Partial<EditorItemRow>): void {
 function onProductChange(index: number, productId: string): void {
   const product = productMap.value.get(productId)
   const current = props.modelValue[index]
+  // Load the newly chosen product's valid UOMs (base + active conversions).
+  void validUoms.ensureLoaded(productId)
   // Always derive uomId from the selected product. A product always carries a
   // uomId in the contract, so we set it unconditionally (even when it points to
   // a now-inactive UOM absent from the loaded list — the value is still a valid
@@ -196,6 +236,12 @@ function removeRow(index: number): void {
                   class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
                 />
               </div>
+              <span
+                v-if="row.productId && validUoms.isLoading(row.productId)"
+                class="mt-1 block text-theme-xs text-gray-400 dark:text-gray-500"
+              >
+                Memuat satuan...
+              </span>
             </td>
             <!-- Estimated Price -->
             <td class="px-4 py-3 align-top">
