@@ -434,8 +434,8 @@ const menuGroups: MenuGroup[] = [
       {
         icon: ClipboardCheck,
         name: 'Stock Opname',
-        path: '/error-404',
-        soon: true,
+        path: '/inventory/stock-counts',
+        permission: 'inventory.stock-count.read',
       },
       {
         icon: ArrowLeftRight,

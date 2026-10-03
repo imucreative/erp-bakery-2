@@ -259,6 +259,33 @@ const router = createRouter({
       },
     },
     {
+      path: '/inventory/stock-counts',
+      name: 'InventoryStockOpnames',
+      component: () => import('../views/Inventory/StockOpnameList.vue'),
+      meta: {
+        title: 'Stock Opname',
+        permission: 'inventory.stock-count.read',
+      },
+    },
+    {
+      path: '/inventory/stock-counts/create',
+      name: 'InventoryStockOpnameCreate',
+      component: () => import('../views/Inventory/StockOpnameForm.vue'),
+      meta: {
+        title: 'Buat Stock Opname',
+        permission: 'inventory.stock-count.create',
+      },
+    },
+    {
+      path: '/inventory/stock-counts/:id',
+      name: 'InventoryStockOpnameDetail',
+      component: () => import('../views/Inventory/StockOpnameDetail.vue'),
+      meta: {
+        title: 'Detail Stock Opname',
+        permission: 'inventory.stock-count.read',
+      },
+    },
+    {
       path: '/production/recipes',
       name: 'ProductionRecipes',
       component: () => import('../views/Production/RecipeList.vue'),
