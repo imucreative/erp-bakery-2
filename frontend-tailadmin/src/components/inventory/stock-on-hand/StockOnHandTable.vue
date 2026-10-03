@@ -18,7 +18,7 @@ defineProps<{
 
 /** Short, readable unit label: prefer the UOM code, fall back to the name. */
 function uomLabel(row: StockOnHandRow): string {
-  return row.uomCode || row.uomName
+  return row.uomName
 }
 </script>
 
