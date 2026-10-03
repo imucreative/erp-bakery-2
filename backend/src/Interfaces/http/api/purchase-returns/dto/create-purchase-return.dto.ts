@@ -5,11 +5,13 @@ import {
   IsArray,
   IsDateString,
   IsEnum,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
   IsUUID,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { PURCHASE_RETURN_REASONS } from '../../../../../Domains/purchase-returns/returnReason';
@@ -32,8 +34,15 @@ export class CreatePurchaseReturnItemDto {
   reason!: (typeof PURCHASE_RETURN_REASONS)[number];
 
   @ApiPropertyOptional({
-    description: 'Free-text reason. REQUIRED when reason = OTHER.',
+    description: 'Free-text reason. REQUIRED (non-empty) when reason = OTHER.',
   })
+  // reasonDescription is MANDATORY when reason = OTHER (doc 26 §6 #17): validate
+  // early at the DTO layer so an empty value fails with 400 before the use case.
+  // CreatePurchaseReturn.verifyItem re-validates defensively at the domain layer.
+  @ValidateIf((o: CreatePurchaseReturnItemDto) => o.reason === 'OTHER')
+  @IsString()
+  @IsNotEmpty()
+  @ValidateIf((o: CreatePurchaseReturnItemDto) => o.reason !== 'OTHER')
   @IsOptional()
   @IsString()
   reasonDescription?: string;

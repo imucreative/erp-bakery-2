@@ -2,6 +2,8 @@ import { Pool, PoolClient } from 'pg';
 import {
   PurchaseReturnRepository,
   NewPurchaseReturnData,
+  NewPurchaseReturnCommentData,
+  NewPurchaseReturnAttachmentData,
   PurchaseReturnListFilter,
   PurchaseReturnListResult,
   ReturnableLine,
@@ -11,6 +13,12 @@ import {
   PurchaseReturnItem,
   PurchaseReturnStatusLog,
 } from '../../Domains/purchase-returns/entities/PurchaseReturn';
+import { PurchaseReturnComment } from '../../Domains/purchase-returns/entities/PurchaseReturnComment';
+import {
+  PurchaseReturnAttachment,
+  PurchaseReturnAttachmentWithPath,
+} from '../../Domains/purchase-returns/entities/PurchaseReturnAttachment';
+import { PurchaseReturnCommentCategory } from '../../Domains/purchase-returns/purchaseReturnCommentCategory';
 import {
   PurchaseReturnStatus,
   canTransition,
@@ -88,6 +96,26 @@ const ITEM_COLUMNS = `id, goods_receipt_item_id, source_batch_id, source_movemen
   expired_date, posted_accepted_quantity, previously_returned_quantity, return_quantity,
   reason, reason_description`;
 
+interface CommentRow {
+  id: string;
+  category: string;
+  body: string;
+  author_id: string | null;
+  author_name: string | null;
+  created_at: Date;
+}
+
+interface AttachmentRow {
+  id: string;
+  original_name: string;
+  stored_path: string;
+  mime_type: string;
+  size_bytes: string;
+  uploaded_by: string | null;
+  uploaded_by_name: string | null;
+  created_at: Date;
+}
+
 /**
  * Status-log columns with the actor name resolved via LEFT JOIN to users.
  */
@@ -95,6 +123,18 @@ const LOG_SELECT = `SELECT l.id, l.from_status, l.to_status, l.actor_id,
     actor_users.name AS actor_name, l.note, l.created_at
   FROM purchase_return_status_logs l
   LEFT JOIN users actor_users ON actor_users.id = l.actor_id`;
+
+/** Comment columns with author name resolved via LEFT JOIN to users. */
+const COMMENT_SELECT = `SELECT c.id, c.category, c.body, c.author_id,
+    author_users.name AS author_name, c.created_at
+  FROM purchase_return_comments c
+  LEFT JOIN users author_users ON author_users.id = c.author_id`;
+
+/** Attachment columns with uploader name resolved via LEFT JOIN to users. */
+const ATTACHMENT_SELECT = `SELECT a.id, a.original_name, a.stored_path, a.mime_type,
+    a.size_bytes, a.uploaded_by, uploader_users.name AS uploaded_by_name, a.created_at
+  FROM purchase_return_attachments a
+  LEFT JOIN users uploader_users ON uploader_users.id = a.uploaded_by`;
 
 /**
  * Concrete PostgreSQL implementation of PurchaseReturnRepository.
@@ -146,6 +186,39 @@ export class PurchaseReturnRepositoryPostgres extends PurchaseReturnRepository {
       note: row.note,
       createdAt: row.created_at,
     };
+  }
+
+  private _toComment(row: CommentRow): PurchaseReturnComment {
+    return {
+      id: row.id,
+      category: row.category as PurchaseReturnCommentCategory,
+      body: row.body,
+      authorId: row.author_id,
+      authorName: row.author_name,
+      createdAt: row.created_at,
+    };
+  }
+
+  private _toAttachment(row: AttachmentRow): PurchaseReturnAttachmentWithPath {
+    return {
+      id: row.id,
+      originalName: row.original_name,
+      storedPath: row.stored_path,
+      mimeType: row.mime_type,
+      sizeBytes: Number(row.size_bytes),
+      uploadedBy: row.uploaded_by,
+      uploadedByName: row.uploaded_by_name,
+      createdAt: row.created_at,
+    };
+  }
+
+  /** Drop the internal storedPath before returning metadata to callers. */
+  private _stripPath(
+    attachment: PurchaseReturnAttachmentWithPath,
+  ): PurchaseReturnAttachment {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { storedPath, ...metadata } = attachment;
+    return metadata;
   }
 
   private _toPurchaseReturn(
@@ -897,6 +970,125 @@ export class PurchaseReturnRepositoryPostgres extends PurchaseReturnRepository {
     } finally {
       client.release();
     }
+  }
+
+  async ensureExists(id: string, companyId: string): Promise<void> {
+    const result = await this.pool.query(
+      `SELECT 1 FROM purchase_returns
+       WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL`,
+      [id, companyId],
+    );
+    if (!result.rowCount) {
+      throw new NotFoundError('PURCHASE_RETURN.NOT_FOUND');
+    }
+  }
+
+  async addComment(
+    purchaseReturnId: string,
+    companyId: string,
+    authorId: string | null,
+    data: NewPurchaseReturnCommentData,
+  ): Promise<PurchaseReturnComment> {
+    const inserted = await this.pool.query<{ id: string }>(
+      `INSERT INTO purchase_return_comments
+         (purchase_return_id, company_id, author_id, category, body)
+       VALUES ($1,$2,$3,$4,$5)
+       RETURNING id`,
+      [purchaseReturnId, companyId, authorId, data.category, data.body],
+    );
+    const result = await this.pool.query<CommentRow>(
+      `${COMMENT_SELECT} WHERE c.id = $1`,
+      [inserted.rows[0].id],
+    );
+    return this._toComment(result.rows[0]);
+  }
+
+  async listComments(
+    purchaseReturnId: string,
+    companyId: string,
+  ): Promise<PurchaseReturnComment[]> {
+    const result = await this.pool.query<CommentRow>(
+      `${COMMENT_SELECT}
+       WHERE c.purchase_return_id = $1 AND c.company_id = $2
+       ORDER BY c.created_at ASC, c.id ASC`,
+      [purchaseReturnId, companyId],
+    );
+    return result.rows.map((row) => this._toComment(row));
+  }
+
+  async addAttachment(
+    purchaseReturnId: string,
+    companyId: string,
+    uploadedBy: string | null,
+    data: NewPurchaseReturnAttachmentData,
+  ): Promise<PurchaseReturnAttachment> {
+    const inserted = await this.pool.query<{ id: string }>(
+      `INSERT INTO purchase_return_attachments
+         (purchase_return_id, company_id, original_name, stored_path, mime_type, size_bytes, uploaded_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)
+       RETURNING id`,
+      [
+        purchaseReturnId,
+        companyId,
+        data.originalName,
+        data.storedPath,
+        data.mimeType,
+        data.sizeBytes,
+        uploadedBy,
+      ],
+    );
+    const result = await this.pool.query<AttachmentRow>(
+      `${ATTACHMENT_SELECT} WHERE a.id = $1`,
+      [inserted.rows[0].id],
+    );
+    return this._stripPath(this._toAttachment(result.rows[0]));
+  }
+
+  async listAttachments(
+    purchaseReturnId: string,
+    companyId: string,
+  ): Promise<PurchaseReturnAttachment[]> {
+    const result = await this.pool.query<AttachmentRow>(
+      `${ATTACHMENT_SELECT}
+       WHERE a.purchase_return_id = $1 AND a.company_id = $2
+       ORDER BY a.created_at ASC, a.id ASC`,
+      [purchaseReturnId, companyId],
+    );
+    return result.rows.map((row) => this._stripPath(this._toAttachment(row)));
+  }
+
+  async getAttachmentById(
+    purchaseReturnId: string,
+    attachmentId: string,
+    companyId: string,
+  ): Promise<PurchaseReturnAttachmentWithPath> {
+    const result = await this.pool.query<AttachmentRow>(
+      `${ATTACHMENT_SELECT}
+       WHERE a.id = $1 AND a.purchase_return_id = $2 AND a.company_id = $3`,
+      [attachmentId, purchaseReturnId, companyId],
+    );
+    if (!result.rowCount) {
+      throw new NotFoundError('PURCHASE_RETURN_ATTACHMENT.NOT_FOUND');
+    }
+    return this._toAttachment(result.rows[0]);
+  }
+
+  async deleteAttachment(
+    purchaseReturnId: string,
+    attachmentId: string,
+    companyId: string,
+  ): Promise<PurchaseReturnAttachmentWithPath> {
+    const result = await this.pool.query<AttachmentRow>(
+      `DELETE FROM purchase_return_attachments a
+       WHERE a.id = $1 AND a.purchase_return_id = $2 AND a.company_id = $3
+       RETURNING a.id, a.original_name, a.stored_path, a.mime_type,
+         a.size_bytes, a.uploaded_by, NULL AS uploaded_by_name, a.created_at`,
+      [attachmentId, purchaseReturnId, companyId],
+    );
+    if (!result.rowCount) {
+      throw new NotFoundError('PURCHASE_RETURN_ATTACHMENT.NOT_FOUND');
+    }
+    return this._toAttachment(result.rows[0]);
   }
 
   /** Map a unique-violation on return_number to a friendly conflict. */

@@ -1,5 +1,23 @@
 import { PurchaseReturn } from './entities/PurchaseReturn';
 import { PurchaseReturnReason } from './returnReason';
+import { PurchaseReturnComment } from './entities/PurchaseReturnComment';
+import {
+  PurchaseReturnAttachment,
+  PurchaseReturnAttachmentWithPath,
+} from './entities/PurchaseReturnAttachment';
+import { PurchaseReturnCommentCategory } from './purchaseReturnCommentCategory';
+
+export interface NewPurchaseReturnCommentData {
+  category: PurchaseReturnCommentCategory;
+  body: string;
+}
+
+export interface NewPurchaseReturnAttachmentData {
+  originalName: string;
+  storedPath: string;
+  mimeType: string;
+  sizeBytes: number;
+}
 
 /**
  * One fully resolved Purchase Return line passed from the use case to the
@@ -190,4 +208,69 @@ export abstract class PurchaseReturnRepository {
     userId: string | null,
     note: string | null,
   ): Promise<PurchaseReturn>;
+
+  /**
+   * Verify the return exists in the company (throws PURCHASE_RETURN.NOT_FOUND
+   * otherwise). Used by the comment/attachment use cases to enforce tenant
+   * scope before touching the thread/attachments.
+   */
+  abstract ensureExists(id: string, companyId: string): Promise<void>;
+
+  /**
+   * Append a comment to the return thread and return it with the resolved
+   * author name (JOIN to users).
+   */
+  abstract addComment(
+    purchaseReturnId: string,
+    companyId: string,
+    authorId: string | null,
+    data: NewPurchaseReturnCommentData,
+  ): Promise<PurchaseReturnComment>;
+
+  /** List the return thread chronologically (each item carries authorName). */
+  abstract listComments(
+    purchaseReturnId: string,
+    companyId: string,
+  ): Promise<PurchaseReturnComment[]>;
+
+  /**
+   * Persist an attachment metadata row (the physical file is written by the
+   * use case before this call) and return the stored metadata with the
+   * uploader name resolved (JOIN to users).
+   */
+  abstract addAttachment(
+    purchaseReturnId: string,
+    companyId: string,
+    uploadedBy: string | null,
+    data: NewPurchaseReturnAttachmentData,
+  ): Promise<PurchaseReturnAttachment>;
+
+  /** List a return's attachments chronologically (each carries uploadedByName). */
+  abstract listAttachments(
+    purchaseReturnId: string,
+    companyId: string,
+  ): Promise<PurchaseReturnAttachment[]>;
+
+  /**
+   * Fetch a single attachment (including the internal storedPath) scoped to
+   * both the return and the company. Throws
+   * PURCHASE_RETURN_ATTACHMENT.NOT_FOUND when the attachment does not belong to
+   * that return/company (IDOR guard).
+   */
+  abstract getAttachmentById(
+    purchaseReturnId: string,
+    attachmentId: string,
+    companyId: string,
+  ): Promise<PurchaseReturnAttachmentWithPath>;
+
+  /**
+   * Delete an attachment row scoped to the return and company, returning the
+   * deleted metadata (including storedPath) so the use case can remove the
+   * physical file. Throws PURCHASE_RETURN_ATTACHMENT.NOT_FOUND when missing.
+   */
+  abstract deleteAttachment(
+    purchaseReturnId: string,
+    attachmentId: string,
+    companyId: string,
+  ): Promise<PurchaseReturnAttachmentWithPath>;
 }

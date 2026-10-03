@@ -26,6 +26,7 @@ import { PurchaseRequestRepository } from '../Domains/purchase-requests/Purchase
 import { PurchaseRequestAttachmentStorage } from '../Domains/purchase-requests/PurchaseRequestAttachmentStorage';
 import { PurchaseOrderAttachmentStorage } from '../Domains/purchase-orders/PurchaseOrderAttachmentStorage';
 import { GoodsReceiptAttachmentStorage } from '../Domains/goods-receipts/GoodsReceiptAttachmentStorage';
+import { PurchaseReturnAttachmentStorage } from '../Domains/purchase-returns/PurchaseReturnAttachmentStorage';
 import { PurchaseOrderRepository } from '../Domains/purchase-orders/PurchaseOrderRepository';
 import { GoodsReceiptRepository } from '../Domains/goods-receipts/GoodsReceiptRepository';
 import { PurchaseReturnRepository } from '../Domains/purchase-returns/PurchaseReturnRepository';
@@ -59,6 +60,7 @@ import { PurchaseReturnRepositoryPostgres } from './repository/PurchaseReturnRep
 import { LocalPurchaseRequestAttachmentStorage } from './storage/LocalPurchaseRequestAttachmentStorage';
 import { LocalPurchaseOrderAttachmentStorage } from './storage/LocalPurchaseOrderAttachmentStorage';
 import { LocalGoodsReceiptAttachmentStorage } from './storage/LocalGoodsReceiptAttachmentStorage';
+import { LocalPurchaseReturnAttachmentStorage } from './storage/LocalPurchaseReturnAttachmentStorage';
 import { BcryptPasswordHash } from './security/BcryptPasswordHash';
 import { JwtTokenManager } from './security/JwtTokenManager';
 
@@ -177,6 +179,12 @@ import { CompletePurchaseReturnUseCase } from '../Applications/use_case/purchase
 import { CancelPurchaseReturnUseCase } from '../Applications/use_case/purchase-returns/CancelPurchaseReturnUseCase';
 import { GetPurchaseReturnsUseCase } from '../Applications/use_case/purchase-returns/GetPurchaseReturnsUseCase';
 import { GetReturnableUseCase } from '../Applications/use_case/purchase-returns/GetReturnableUseCase';
+import { AddPurchaseReturnCommentUseCase } from '../Applications/use_case/purchase-returns/AddPurchaseReturnCommentUseCase';
+import { GetPurchaseReturnCommentsUseCase } from '../Applications/use_case/purchase-returns/GetPurchaseReturnCommentsUseCase';
+import { UploadPurchaseReturnAttachmentUseCase } from '../Applications/use_case/purchase-returns/UploadPurchaseReturnAttachmentUseCase';
+import { ListPurchaseReturnAttachmentsUseCase } from '../Applications/use_case/purchase-returns/ListPurchaseReturnAttachmentsUseCase';
+import { GetPurchaseReturnAttachmentUseCase } from '../Applications/use_case/purchase-returns/GetPurchaseReturnAttachmentUseCase';
+import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/purchase-returns/DeletePurchaseReturnAttachmentUseCase';
 
 /**
  * InfrastructureModule — NestJS DI container.
@@ -312,6 +320,10 @@ import { GetReturnableUseCase } from '../Applications/use_case/purchase-returns/
     {
       provide: GoodsReceiptAttachmentStorage,
       useFactory: () => new LocalGoodsReceiptAttachmentStorage(),
+    },
+    {
+      provide: PurchaseReturnAttachmentStorage,
+      useFactory: () => new LocalPurchaseReturnAttachmentStorage(),
     },
 
     // ─── Use Cases ────────────────────────────────────────────────────────
@@ -1120,6 +1132,48 @@ import { GetReturnableUseCase } from '../Applications/use_case/purchase-returns/
       useFactory: (prRepo: PurchaseReturnRepository) => new GetReturnableUseCase(prRepo),
       inject: [PurchaseReturnRepository],
     },
+    {
+      provide: AddPurchaseReturnCommentUseCase,
+      useFactory: (prRepo: PurchaseReturnRepository) =>
+        new AddPurchaseReturnCommentUseCase(prRepo),
+      inject: [PurchaseReturnRepository],
+    },
+    {
+      provide: GetPurchaseReturnCommentsUseCase,
+      useFactory: (prRepo: PurchaseReturnRepository) =>
+        new GetPurchaseReturnCommentsUseCase(prRepo),
+      inject: [PurchaseReturnRepository],
+    },
+    {
+      provide: UploadPurchaseReturnAttachmentUseCase,
+      useFactory: (
+        prRepo: PurchaseReturnRepository,
+        storage: PurchaseReturnAttachmentStorage,
+      ) => new UploadPurchaseReturnAttachmentUseCase(prRepo, storage),
+      inject: [PurchaseReturnRepository, PurchaseReturnAttachmentStorage],
+    },
+    {
+      provide: ListPurchaseReturnAttachmentsUseCase,
+      useFactory: (prRepo: PurchaseReturnRepository) =>
+        new ListPurchaseReturnAttachmentsUseCase(prRepo),
+      inject: [PurchaseReturnRepository],
+    },
+    {
+      provide: GetPurchaseReturnAttachmentUseCase,
+      useFactory: (
+        prRepo: PurchaseReturnRepository,
+        storage: PurchaseReturnAttachmentStorage,
+      ) => new GetPurchaseReturnAttachmentUseCase(prRepo, storage),
+      inject: [PurchaseReturnRepository, PurchaseReturnAttachmentStorage],
+    },
+    {
+      provide: DeletePurchaseReturnAttachmentUseCase,
+      useFactory: (
+        prRepo: PurchaseReturnRepository,
+        storage: PurchaseReturnAttachmentStorage,
+      ) => new DeletePurchaseReturnAttachmentUseCase(prRepo, storage),
+      inject: [PurchaseReturnRepository, PurchaseReturnAttachmentStorage],
+    },
   ],
   exports: [
     'PG_POOL',
@@ -1262,6 +1316,12 @@ import { GetReturnableUseCase } from '../Applications/use_case/purchase-returns/
     CancelPurchaseReturnUseCase,
     GetPurchaseReturnsUseCase,
     GetReturnableUseCase,
+    AddPurchaseReturnCommentUseCase,
+    GetPurchaseReturnCommentsUseCase,
+    UploadPurchaseReturnAttachmentUseCase,
+    ListPurchaseReturnAttachmentsUseCase,
+    GetPurchaseReturnAttachmentUseCase,
+    DeletePurchaseReturnAttachmentUseCase,
   ],
 })
 export class InfrastructureModule {}
