@@ -256,12 +256,28 @@ watch([productId, outletId], ([product, outlet]) => {
   }, PRODUCIBLE_DEBOUNCE_MS)
 })
 
-// Soft, non-blocking hint: the user entered more successful units than the
-// computed capacity. Informative only — the backend remains the authority.
-const overProducibleHint = computed<boolean>(() => {
+// HARD validation: the user entered more successful units (actualQty) than the
+// computed production capacity (producibleQty). This blocks submit because the
+// backend would reject it with INVENTORY.INSUFFICIENT_STOCK.
+//
+// Comparison basis: actualQty vs producibleQty. The backend consumes ingredients
+// based on what is actually PRODUCED (lands in stock = actualQty); loss/waste no
+// longer consumes stock, so wasteQty is intentionally NOT part of this check.
+//
+// Guard against stale/absent data: only block when the producible figure is
+// genuinely KNOWN — i.e. the capacity panel has loaded a result for the current
+// product+outlet (producibleInfo present, not loading, no fetch error). While
+// loading, on fetch error, or before the panel is loaded, we do NOT block on a
+// stale value — the backend stays the final authority. producibleQty is computed
+// from stock at load time and stock can change, so this is early prevention only;
+// on a race the backend still rejects and we surface its message on the page.
+const overProducibleBlocked = computed<boolean>(() => {
   const info = producibleInfo.value
+  if (!info || producibleLoading.value || producibleError.value !== null) {
+    return false
+  }
   const actual = actualQty.value
-  if (!info || actual === null || Number.isNaN(Number(actual))) {
+  if (actual === null || Number.isNaN(Number(actual))) {
     return false
   }
   return Number(actual) > info.producibleQty
@@ -297,6 +313,13 @@ async function onSubmit(): Promise<void> {
   const validationError = validate()
   if (validationError) {
     formError.value = validationError
+    return
+  }
+  // Hard block: refuse to submit when the entered successful quantity exceeds the
+  // KNOWN production capacity. Mirrors the disabled submit button; the computed
+  // guard already ignores unknown/loading/errored producible figures.
+  if (overProducibleBlocked.value) {
+    formError.value = `Jumlah berhasil (${formatNumber(actualQty.value)}) melebihi maksimal yang bisa diproduksi (${formatNumber(producibleInfo.value?.producibleQty)}). Kurangi jumlah atau tambah stok bahan.`
     return
   }
   formError.value = null
@@ -410,14 +433,14 @@ onBeforeUnmount(() => {
         />
 
         <p
-          v-if="overProducibleHint"
-          class="flex items-center gap-2 rounded-lg border border-warning-500/40 bg-warning-50 px-3 py-2 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
-          role="status"
+          v-if="overProducibleBlocked"
+          class="flex items-center gap-2 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
+          role="alert"
         >
           <AlertTriangle class="h-4 w-4 shrink-0" aria-hidden="true" />
-          Jumlah berhasil ({{ formatNumber(actualQty) }}) melebihi kapasitas yang dihitung ({{
+          Jumlah berhasil ({{ formatNumber(actualQty) }}) melebihi maksimal yang bisa diproduksi ({{
             formatNumber(producibleInfo?.producibleQty)
-          }}). Produksi mungkin ditolak backend bila stok bahan tidak mencukupi.
+          }}). Kurangi jumlah atau tambah stok bahan.
         </p>
 
         <p
@@ -433,7 +456,7 @@ onBeforeUnmount(() => {
           </Button>
           <button
             type="submit"
-            :disabled="submitting || outlets.length === 0"
+            :disabled="submitting || outlets.length === 0 || overProducibleBlocked"
             class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Factory class="h-4 w-4" aria-hidden="true" />

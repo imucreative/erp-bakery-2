@@ -264,12 +264,12 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
         [recipe.id],
       );
 
-      // Consume each ingredient FEFO. Quantity = base * scale * (1 + loss/100).
+      // Consume each ingredient FEFO. Quantity = base * scale (loss% is an
+      // estimate only and does NOT reduce stock).
       for (const item of itemsResult.rows) {
         const baseQty = Number(item.qty);
-        const loss = Number(item.loss_percentage);
         // Shared consumption math — identical to the producible-qty preview.
-        const requiredQty = scaledIngredientConsumption(baseQty, loss, scaleFactor);
+        const requiredQty = scaledIngredientConsumption(baseQty, scaleFactor);
         if (!(requiredQty > 0)) continue;
 
         // FEFO pick under row locks (nearest expiry first, non-expired, ACTIVE)
@@ -546,9 +546,9 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
 
     for (const item of itemsResult.rows) {
       const baseQty = Number(item.qty);
-      const loss = Number(item.loss_percentage);
       // Shared consumption math — identical to instant-complete backflushing.
-      const requiredPerUnit = ingredientRequirementPerUnit(baseQty, loss, yieldQty);
+      // loss% is an estimate only and does NOT reduce stock.
+      const requiredPerUnit = ingredientRequirementPerUnit(baseQty, yieldQty);
       const availableQty = stockByProduct.get(item.ingredient_product_id) ?? 0;
 
       // Zero/negative requirement lines do not consume stock, so they never

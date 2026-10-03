@@ -268,8 +268,8 @@ describe('ProductionOrderRepositoryPostgres (instant-complete)', () => {
       expect(ing2.isLimiting).toBe(true);
     });
 
-    it('should account for loss% in the per-unit requirement', async () => {
-      // ing-1: base 100, loss 25 -> perUnit = 100 * 1.25 / 20 = 6.25; available 100 -> floor(16) = 16
+    it('should IGNORE loss% in the per-unit requirement (estimate only)', async () => {
+      // ing-1: base 100, loss 25 (ignored) -> perUnit = 100 / 20 = 5; available 100 -> floor(100/5) = 20
       (mockPool.query as jest.Mock)
         .mockResolvedValueOnce({ rows: [recipeRow], rowCount: 1 })
         .mockResolvedValueOnce({
@@ -285,8 +285,33 @@ describe('ProductionOrderRepositoryPostgres (instant-complete)', () => {
 
       const result = await repo.getProducible('c1', 'finished-1', 'outlet-1');
 
-      expect(result.items[0].requiredPerUnit).toBe(6.25);
-      expect(result.producibleQty).toBe(16);
+      expect(result.items[0].requiredPerUnit).toBe(5);
+      expect(result.producibleQty).toBe(20);
+    });
+
+    it('maximises producible units: stock 1.8, base/unit 0.2 -> 9 (loss ignored)', async () => {
+      // ing-1: base 0.2 per batch, yield 1 -> perUnit = 0.2; stock 1.8 -> floor(1.8/0.2) = 9
+      // loss 12.5 would previously yield 8; it is now ignored.
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({
+          rows: [{ ...recipeRow, yield_qty: '1' }],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({
+          rows: [
+            { ingredient_product_id: 'ing-1', qty: '0.2', loss_percentage: '12.5', uom_id: 'uom-g' },
+          ],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({
+          rows: [{ product_id: 'ing-1', qty_available: '1.8' }],
+          rowCount: 1,
+        });
+
+      const result = await repo.getProducible('c1', 'finished-1', 'outlet-1');
+
+      expect(result.items[0].requiredPerUnit).toBe(0.2);
+      expect(result.producibleQty).toBe(9);
     });
 
     it('should return producibleQty 0 when an ingredient has zero stock', async () => {
