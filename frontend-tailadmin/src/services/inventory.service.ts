@@ -46,6 +46,12 @@ export interface StockOnHandRow {
   productName: string
   outletId: string
   outletName: string
+  /** Base unit of measure of the product (display only, from the backend). */
+  uomId: string
+  /** Short UOM code, e.g. "KG"/"PCS" (display only, from the backend). */
+  uomCode: string
+  /** Full UOM name, e.g. "Kilogram" (display only, from the backend). */
+  uomName: string
   qtyAvailable: number
   minimumStock: number
   isLow: boolean

@@ -13,7 +13,7 @@
  */
 import { Eye } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
-import { formatDate, formatNumber } from '@/lib/format'
+import { formatDate, formatQtyWithUom } from '@/lib/format'
 import {
   batchStatusLabel,
   expiryStateLabel,
@@ -32,6 +32,8 @@ const props = defineProps<{
   errorMessage: string | null
   outletNames: Map<string, string>
   productNames: Map<string, ProductDisplay>
+  /** productId → base UOM label, resolved once by the parent ('' = no unit). */
+  productUomLabels: Map<string, string>
 }>()
 
 const emit = defineEmits<{
@@ -44,6 +46,11 @@ function outletLabel(id: string): string {
 
 function productDisplay(id: string): ProductDisplay {
   return props.productNames.get(id) ?? { name: id, sku: '' }
+}
+
+/** Base unit of the product for this batch; '' when unresolved. */
+function uomLabel(productId: string): string {
+  return props.productUomLabels.get(productId) ?? ''
 }
 
 type BatchStatusColor = 'success' | 'error' | 'light' | 'warning'
@@ -154,7 +161,7 @@ function expiryColor(state: ExpiryState): ExpiryColor {
               <span v-else>{{ row.batch.batchNumber }}</span>
             </td>
             <td class="px-5 py-4 text-end text-theme-sm font-medium text-gray-800 dark:text-white/90">
-              {{ formatNumber(row.batch.qtyAvailable) }}
+              {{ formatQtyWithUom(row.batch.qtyAvailable, uomLabel(row.batch.productId)) }}
             </td>
             <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
               {{ row.batch.expiredDate ? formatDate(row.batch.expiredDate) : '—' }}

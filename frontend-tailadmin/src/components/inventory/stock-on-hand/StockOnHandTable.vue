@@ -2,11 +2,12 @@
 /**
  * StockOnHandTable — presentational, read-only table for the Stock On Hand
  * list. Columns: Produk (name + SKU), Outlet, Qty Tersedia, Minimum Stock,
- * Status. A warning "Rendah" badge is shown when `isLow` is true. Renders
- * loading / error / empty states. No row actions (read-only view).
+ * Status. Quantities are shown with the product's base unit of measure (from
+ * the backend row). A warning "Rendah" badge is shown when `isLow` is true.
+ * Renders loading / error / empty states. No row actions (read-only view).
  */
 import Badge from '@/components/ui/Badge.vue'
-import { formatNumber } from '@/lib/format'
+import { formatQtyWithUom } from '@/lib/format'
 import type { StockOnHandRow } from '@/services/inventory.service'
 
 defineProps<{
@@ -14,6 +15,11 @@ defineProps<{
   loading: boolean
   errorMessage: string | null
 }>()
+
+/** Short, readable unit label: prefer the UOM code, fall back to the name. */
+function uomLabel(row: StockOnHandRow): string {
+  return row.uomCode || row.uomName
+}
 </script>
 
 <template>
@@ -78,10 +84,10 @@ defineProps<{
               {{ row.outletName }}
             </td>
             <td class="px-5 py-4 text-end text-theme-sm font-medium text-gray-800 dark:text-white/90">
-              {{ formatNumber(row.qtyAvailable) }}
+              {{ formatQtyWithUom(row.qtyAvailable, uomLabel(row)) }}
             </td>
             <td class="px-5 py-4 text-end text-theme-sm text-gray-600 dark:text-gray-300">
-              {{ formatNumber(row.minimumStock) }}
+              {{ formatQtyWithUom(row.minimumStock, uomLabel(row)) }}
             </td>
             <td class="px-5 py-4">
               <Badge v-if="row.isLow" color="warning">Rendah</Badge>

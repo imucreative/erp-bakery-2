@@ -113,3 +113,19 @@ export function formatNumber(value: number | null | undefined): string {
   const amount = typeof value === 'number' && Number.isFinite(value) ? value : 0
   return numberFormatter.format(amount)
 }
+
+/**
+ * Format a quantity together with its unit of measure, e.g. `1.800 gram`.
+ * The number is rendered via `formatNumber`; the unit is appended only when a
+ * non-empty label is provided (so a missing/unresolved UOM degrades to the bare
+ * number). Prefer passing a short code ("KG") and falling back to the full name
+ * at the call site. Display-only — never used in calculations.
+ */
+export function formatQtyWithUom(
+  value: number | null | undefined,
+  uomLabel: string | null | undefined,
+): string {
+  const qty = formatNumber(value)
+  const label = typeof uomLabel === 'string' ? uomLabel.trim() : ''
+  return label ? `${qty} ${label}` : qty
+}

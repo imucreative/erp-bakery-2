@@ -27,6 +27,8 @@ const props = defineProps<{
   errorMessage: string | null
   outletNames: Map<string, string>
   productNames: Map<string, ProductDisplay>
+  /** productId → base UOM label, resolved once by the parent (raw-id/no fallback: empty = no unit). */
+  productUomLabels: Map<string, string>
 }>()
 
 function outletLabel(id: string): string {
@@ -35,6 +37,11 @@ function outletLabel(id: string): string {
 
 function productDisplay(id: string): ProductDisplay {
   return props.productNames.get(id) ?? { name: id, sku: '' }
+}
+
+/** Base unit of the product for this row; '' when unresolved (qty shown bare). */
+function uomLabel(productId: string): string {
+  return props.productUomLabels.get(productId) ?? ''
 }
 
 type BadgeColor = 'success' | 'error' | 'light'
@@ -50,17 +57,23 @@ function badgeColor(type: string): BadgeColor {
   return 'light'
 }
 
-/** Signed quantity string: inbound `+qty`, outbound `−qty`, legacy unsigned. */
+/**
+ * Signed quantity string with the product's base unit appended when known:
+ * inbound `+qty`, outbound `−qty`, legacy unsigned. The sign reflects the
+ * movement direction; the unit is display-only and omitted when unresolved.
+ */
 function signedQty(row: InventoryMovementRow): string {
   const value = formatNumber(row.qty)
+  const unit = uomLabel(row.productId)
+  const suffix = unit ? ` ${unit}` : ''
   const direction = movementDirection(row.movementType)
   if (direction === 'INBOUND') {
-    return `+${value}`
+    return `+${value}${suffix}`
   }
   if (direction === 'OUTBOUND') {
-    return `\u2212${value}`
+    return `\u2212${value}${suffix}`
   }
-  return value
+  return `${value}${suffix}`
 }
 
 function qtyClass(type: string): string {

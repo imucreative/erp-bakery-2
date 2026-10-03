@@ -144,8 +144,9 @@ export class InventoryRepositoryPostgres extends InventoryRepository {
       FROM inventory_batches b
       JOIN products p ON p.id = b.product_id
       JOIN outlets o  ON o.id = b.outlet_id
+      JOIN uoms u     ON u.id = p.uom_id
       WHERE ${whereClause}
-      GROUP BY b.product_id, p.sku, p.name, p.minimum_stock, b.outlet_id, o.name
+      GROUP BY b.product_id, p.sku, p.name, p.minimum_stock, b.outlet_id, o.name, p.uom_id, u.code, u.name
       ${havingClause}
     `;
 
@@ -163,6 +164,9 @@ export class InventoryRepositoryPostgres extends InventoryRepository {
       product_name: string;
       outlet_id: string;
       outlet_name: string;
+      uom_id: string;
+      uom_code: string;
+      uom_name: string;
       qty_available: string;
       minimum_stock: string;
     }>(
@@ -172,6 +176,9 @@ export class InventoryRepositoryPostgres extends InventoryRepository {
          p.name            AS product_name,
          b.outlet_id       AS outlet_id,
          o.name            AS outlet_name,
+         p.uom_id          AS uom_id,
+         u.code            AS uom_code,
+         u.name            AS uom_name,
          SUM(b.qty_available) AS qty_available,
          p.minimum_stock   AS minimum_stock
        ${baseFrom}
@@ -189,6 +196,9 @@ export class InventoryRepositoryPostgres extends InventoryRepository {
         productName: r.product_name,
         outletId: r.outlet_id,
         outletName: r.outlet_name,
+        uomId: r.uom_id,
+        uomCode: r.uom_code,
+        uomName: r.uom_name,
         qtyAvailable: qty,
         minimumStock: min,
         isLow: min > 0 && qty < min,
