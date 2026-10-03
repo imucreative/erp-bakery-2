@@ -10,7 +10,7 @@
 import { computed } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import Badge from '@/components/ui/Badge.vue'
-import { formatDate, formatNumber } from '@/lib/format'
+import { formatDate, formatQtyWithUom } from '@/lib/format'
 import {
   batchStatusLabel,
   expiryStateLabel,
@@ -31,9 +31,19 @@ const props = withDefaults(
     errorMessage?: string | null
     outletNames: Map<string, string>
     productNames: Map<string, ProductDisplay>
+    /** productId → base UOM label, resolved once by the parent ('' = no unit). */
+    productUomLabels: Map<string, string>
   }>(),
   { detail: null, loading: false, errorMessage: null },
 )
+
+/** Base unit of the batch's product; '' when unresolved (qty shown bare). */
+const uomLabel = computed<string>(() => {
+  if (!props.detail) {
+    return ''
+  }
+  return props.productUomLabels.get(props.detail.batch.productId) ?? ''
+})
 
 const emit = defineEmits<{ (event: 'close'): void }>()
 
@@ -151,7 +161,7 @@ function statusColor(status: string): BatchStatusColor {
           <div class="flex flex-col">
             <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">Qty Tersedia</span>
             <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
-              {{ formatNumber(detail.batch.qtyAvailable) }}
+              {{ formatQtyWithUom(detail.batch.qtyAvailable, uomLabel) }}
             </span>
           </div>
           <div class="flex flex-col">

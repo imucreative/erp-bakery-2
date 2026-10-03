@@ -8,6 +8,9 @@ export interface StockOnHandRow {
   productName: string;
   outletId: string;
   outletName: string;
+  uomId: string; // base unit of measure of the product (display only)
+  uomCode: string; // e.g. PCS, KG (display only)
+  uomName: string; // e.g. Pieces, Kilogram (display only)
   qtyAvailable: number; // summed across active batches
   minimumStock: number;
   isLow: boolean; // qtyAvailable < minimumStock (only when minimumStock > 0)

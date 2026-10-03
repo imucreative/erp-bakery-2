@@ -19,6 +19,7 @@ import {
 import { useStockLedger } from '@/composables/useStockLedger'
 import { outletService } from '@/services/outlet.service'
 import { productService } from '@/services/product.service'
+import { uomService } from '@/services/uom.service'
 import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 
 const pageTitle = 'Stock Ledger'
@@ -55,9 +56,17 @@ interface ProductOption {
 const outlets = ref<OutletOption[]>([])
 const products = ref<ProductOption[]>([])
 
-// Lookup maps used by the table to resolve raw IDs → display names.
+// Lookup maps used by the table to resolve raw IDs → display values.
 const outletNames = ref<Map<string, string>>(new Map())
 const productNames = ref<Map<string, { name: string; sku: string }>>(new Map())
+// productId → base UOM label (code preferred, else name), resolved once by
+// joining the product→uomId map with the uomId→name map. Avoids any N+1: both
+// masters are fetched once via fetchAllPaginated.
+const productUomLabels = ref<Map<string, string>>(new Map())
+
+// uomId → short display label, built once. UOM has no code field in the API,
+// so the label is the UOM name.
+const uomNames = ref<Map<string, string>>(new Map())
 
 async function loadOutlets(): Promise<void> {
   try {
@@ -73,6 +82,20 @@ async function loadOutlets(): Promise<void> {
   }
 }
 
+// Fetch all UOMs once and build the uomId → name map used to resolve units.
+async function loadUoms(): Promise<void> {
+  try {
+    const allUoms = await fetchAllPaginated((page) =>
+      uomService.list({ page, limit: PAGE_LIMIT }),
+    )
+    uomNames.value = new Map(allUoms.map((u) => [u.id, u.name]))
+  } catch {
+    // Non-fatal: the ledger simply shows quantities without a unit.
+    uomNames.value = new Map()
+  }
+  rebuildProductUomLabels()
+}
+
 async function loadProducts(): Promise<void> {
   try {
     const allProducts = await fetchAllPaginated((page) =>
@@ -82,16 +105,37 @@ async function loadProducts(): Promise<void> {
     productNames.value = new Map(
       allProducts.map((p) => [p.id, { name: p.name, sku: p.sku }]),
     )
+    // Keep the raw product→uom pairing so the label map can be rebuilt once the
+    // UOM names arrive (whichever fetch finishes last wins).
+    productUomIds.value = new Map(allProducts.map((p) => [p.id, p.uomId]))
   } catch {
     // Non-fatal: dropdown falls back to "Semua Produk"; table shows raw ids.
     products.value = []
     productNames.value = new Map()
+    productUomIds.value = new Map()
   }
+  rebuildProductUomLabels()
+}
+
+// productId → uomId, captured during the product fetch.
+const productUomIds = ref<Map<string, string>>(new Map())
+
+/** Join product→uomId with uomId→name into a single productId → unit map. */
+function rebuildProductUomLabels(): void {
+  const labels = new Map<string, string>()
+  for (const [productId, uomId] of productUomIds.value) {
+    const name = uomNames.value.get(uomId)
+    if (name) {
+      labels.set(productId, name)
+    }
+  }
+  productUomLabels.value = labels
 }
 
 onMounted(() => {
   void loadOutlets()
   void loadProducts()
+  void loadUoms()
   void fetchList()
 })
 </script>
@@ -121,6 +165,7 @@ onMounted(() => {
         :error-message="errorMessage"
         :outlet-names="outletNames"
         :product-names="productNames"
+        :product-uom-labels="productUomLabels"
       />
 
       <!-- Pagination -->
