@@ -4,13 +4,16 @@ import {
   buildOutstandingMap,
   validateItemsAgainstOutstanding,
   validateBatchRequirements,
+  resolveConversionFactor,
   SourcePoItem,
 } from '../../../Domains/goods-receipts/entities/CreateGoodsReceipt';
 import { GoodsReceipt } from '../../../Domains/goods-receipts/entities/GoodsReceipt';
 import { GoodsReceiptRepository } from '../../../Domains/goods-receipts/GoodsReceiptRepository';
 import { PurchaseOrderRepository } from '../../../Domains/purchase-orders/PurchaseOrderRepository';
 import { ProductRepository } from '../../../Domains/products/ProductRepository';
+import { ProductUomConversionRepository } from '../../../Domains/product-uom-conversions/ProductUomConversionRepository';
 import { UomRepository } from '../../../Domains/uoms/UomRepository';
+import { buildConversionContexts } from './CreateGoodsReceiptUseCase';
 
 /**
  * UseCase: UpdateGoodsReceiptUseCase — edit an editable GR (DRAFT only).
@@ -31,6 +34,7 @@ export class UpdateGoodsReceiptUseCase {
     private readonly purchaseOrderRepository: PurchaseOrderRepository,
     private readonly productRepository: ProductRepository,
     private readonly uomRepository: UomRepository,
+    private readonly conversionRepository: ProductUomConversionRepository,
   ) {}
 
   async execute(
@@ -72,6 +76,7 @@ export class UpdateGoodsReceiptUseCase {
               acceptedQuantity: raw.acceptedQuantity,
               rejectedQuantity: raw.rejectedQuantity,
               uomId: raw.uomId,
+              conversionFactor: 1,
               batchNumber: raw.batchNumber,
               lotNumber: raw.lotNumber,
               expiryDate: raw.expiryDate,
@@ -86,6 +91,7 @@ export class UpdateGoodsReceiptUseCase {
               acceptedQuantity: line.outstandingQuantity,
               rejectedQuantity: 0,
               uomId: line.uomId,
+              conversionFactor: 1,
               batchNumber: null,
               lotNumber: null,
               expiryDate: null,
@@ -112,6 +118,24 @@ export class UpdateGoodsReceiptUseCase {
       batchTrackedByProduct.set(product.id, product.isBatchTracked);
     }
     validateBatchRequirements(items, batchTrackedByProduct);
+
+    // UOM Conversion T2 (doc 50 §4/§8, Keputusan #2b SNAPSHOT): re-resolve &
+    // re-snapshot each line's factor from the CURRENT master state on every
+    // draft update (the snapshot tracks the factor at edit time; posting later
+    // uses whatever was last snapshotted). Mirrors CreateGoodsReceiptUseCase.
+    const conversionsByProduct = new Map(
+      await Promise.all(
+        productIds.map(
+          async (pid) =>
+            [pid, await this.conversionRepository.listByProduct(pid, companyId)] as const,
+        ),
+      ),
+    );
+    const conversionContexts = buildConversionContexts(products, conversionsByProduct);
+    for (const item of items) {
+      const context = conversionContexts.get(item.productId);
+      item.conversionFactor = resolveConversionFactor(item.uomId, context!);
+    }
 
     return this.goodsReceiptRepository.updateDraft(id, companyId, userId, {
       purchaseOrderId: draft.purchaseOrderId,

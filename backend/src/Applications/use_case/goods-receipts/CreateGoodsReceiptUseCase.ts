@@ -4,13 +4,45 @@ import {
   buildOutstandingMap,
   validateItemsAgainstOutstanding,
   validateBatchRequirements,
+  resolveConversionFactor,
+  ProductConversionContext,
   SourcePoItem,
 } from '../../../Domains/goods-receipts/entities/CreateGoodsReceipt';
 import { GoodsReceipt } from '../../../Domains/goods-receipts/entities/GoodsReceipt';
 import { GoodsReceiptRepository } from '../../../Domains/goods-receipts/GoodsReceiptRepository';
 import { PurchaseOrderRepository } from '../../../Domains/purchase-orders/PurchaseOrderRepository';
 import { ProductRepository } from '../../../Domains/products/ProductRepository';
+import { ProductUomConversionRepository } from '../../../Domains/product-uom-conversions/ProductUomConversionRepository';
 import { UomRepository } from '../../../Domains/uoms/UomRepository';
+import { Product } from '../../../Domains/products/entities/Product';
+import { ProductUomConversion } from '../../../Domains/product-uom-conversions/entities/ProductUomConversion';
+
+/**
+ * Build the per-product UOM conversion context used to resolve each GR line's
+ * snapshot factor (UOM Conversion T2, doc 50 §4/§8). The product's base unit is
+ * `products.uom_id`; active alternate-unit factors come from
+ * product_uom_conversions (INACTIVE rows excluded — an inactive conversion is
+ * treated as if it did not exist). Keyed by productId.
+ */
+export function buildConversionContexts(
+  products: Product[],
+  conversionsByProduct: Map<string, ProductUomConversion[]>,
+): Map<string, ProductConversionContext> {
+  const contexts = new Map<string, ProductConversionContext>();
+  for (const product of products) {
+    const activeFactorsByUom = new Map<string, number>();
+    for (const conversion of conversionsByProduct.get(product.id) ?? []) {
+      if (conversion.isActive) {
+        activeFactorsByUom.set(conversion.uomId, conversion.factorToBase);
+      }
+    }
+    contexts.set(product.id, {
+      baseUomId: product.uomId,
+      activeFactorsByUom,
+    });
+  }
+  return contexts;
+}
 
 /**
  * UseCase: CreateGoodsReceiptUseCase
@@ -47,6 +79,7 @@ export class CreateGoodsReceiptUseCase {
     private readonly purchaseOrderRepository: PurchaseOrderRepository,
     private readonly productRepository: ProductRepository,
     private readonly uomRepository: UomRepository,
+    private readonly conversionRepository: ProductUomConversionRepository,
   ) {}
 
   async execute(
@@ -76,7 +109,9 @@ export class CreateGoodsReceiptUseCase {
     );
     const outstanding = buildOutstandingMap(sourcePoItems, consumedByPoItem);
 
-    // 5. Resolve items (provided vs prefilled from outstanding).
+    // 5. Resolve items (provided vs prefilled from outstanding). conversionFactor
+    // is a placeholder here (0) and filled in step 6a once the per-product
+    // conversion context is known.
     const poItemById = new Map(po.items.map((i) => [i.id, i]));
     const items: ResolvedGoodsReceiptItem[] =
       draft.items !== null
@@ -91,6 +126,7 @@ export class CreateGoodsReceiptUseCase {
               acceptedQuantity: raw.acceptedQuantity,
               rejectedQuantity: raw.rejectedQuantity,
               uomId: raw.uomId,
+              conversionFactor: 1,
               batchNumber: raw.batchNumber,
               lotNumber: raw.lotNumber,
               expiryDate: raw.expiryDate,
@@ -105,6 +141,7 @@ export class CreateGoodsReceiptUseCase {
               acceptedQuantity: line.outstandingQuantity,
               rejectedQuantity: 0,
               uomId: line.uomId,
+              conversionFactor: 1,
               batchNumber: null,
               lotNumber: null,
               expiryDate: null,
@@ -123,7 +160,8 @@ export class CreateGoodsReceiptUseCase {
     validateItemsAgainstOutstanding(items, outstanding);
 
     // 6. Batch & expiry for accepted batch-tracked products. Resolve products
-    // (company-scoped) once and reuse the records to learn isBatchTracked.
+    // (company-scoped) once and reuse the records to learn isBatchTracked AND
+    // the base unit for conversion.
     const productIds = [...new Set(items.map((i) => i.productId))];
     const uomIds = [...new Set(items.map((i) => i.uomId))];
     const products = await Promise.all(
@@ -136,6 +174,28 @@ export class CreateGoodsReceiptUseCase {
       batchTrackedByProduct.set(product.id, product.isBatchTracked);
     }
     validateBatchRequirements(items, batchTrackedByProduct);
+
+    // 6a. UOM Conversion T2 (doc 50 §4/§8, Keputusan #2b SNAPSHOT): resolve each
+    // line's conversion factor from the product base unit + active alternate
+    // conversions, and SNAPSHOT it onto the item. A line in the base unit gets
+    // factor 1 (identical to pre-T2); a non-base unit with no active conversion
+    // is rejected (GOODS_RECEIPT.MISSING_UOM_CONVERSION) rather than silently
+    // posting an unconverted quantity.
+    const conversionsByProduct = new Map(
+      await Promise.all(
+        productIds.map(
+          async (id) =>
+            [id, await this.conversionRepository.listByProduct(id, companyId)] as const,
+        ),
+      ),
+    );
+    const conversionContexts = buildConversionContexts(products, conversionsByProduct);
+    for (const item of items) {
+      const context = conversionContexts.get(item.productId);
+      // A context always exists: productIds is derived from items. The non-null
+      // assertion is safe; resolveConversionFactor owns the business rules.
+      item.conversionFactor = resolveConversionFactor(item.uomId, context!);
+    }
 
     // 8. Persist DRAFT. supplier/destination inherited from the PO (snapshot).
     return this.goodsReceiptRepository.createDraft(companyId, userId, {

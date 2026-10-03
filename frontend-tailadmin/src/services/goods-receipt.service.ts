@@ -71,6 +71,14 @@ export interface GoodsReceiptItem {
   acceptedQuantity: number
   rejectedQuantity: number
   uomId: string
+  /**
+   * UOM Conversion T2 snapshot (doc 50 §4/§8), server-authoritative: maps the
+   * line's buy/input unit (`uomId`, inherited from the PO) to the product base
+   * unit, so posted stock = `acceptedQuantity × conversionFactor` in base units.
+   * `1` when the line is already in the base unit (identical to pre-T2 posting).
+   * Display-only on the client: the backend owns the actual stock conversion.
+   */
+  conversionFactor: number
   batchNumber: string | null
   lotNumber: string | null
   expiryDate: string | null

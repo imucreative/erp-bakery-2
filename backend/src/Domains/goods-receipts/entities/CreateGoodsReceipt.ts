@@ -212,6 +212,14 @@ export function buildOutstandingMap(
  * A GR line fully resolved by the use case: ordered quantity snapshotted from
  * the PO line, quantities validated, and (for accepted batch-tracked products)
  * batch/expiry present. This is what the repository persists.
+ *
+ * `conversionFactor` is the UOM Conversion T2 snapshot (doc 50 §4/§8): it maps
+ * the line's input unit (uomId, inherited from the PO line) to the product base
+ * unit so that `baseQty = acceptedQuantity * conversionFactor`. The use case
+ * resolves it at create/update time (see resolveConversionFactor); the
+ * repository only persists and later reposts the snapshot. Factor 1 (the
+ * default when the line is already in the base unit) keeps posting identical to
+ * pre-T2 behaviour.
  */
 export interface ResolvedGoodsReceiptItem {
   purchaseOrderItemId: string;
@@ -220,9 +228,57 @@ export interface ResolvedGoodsReceiptItem {
   acceptedQuantity: number;
   rejectedQuantity: number;
   uomId: string;
+  conversionFactor: number;
   batchNumber: string | null;
   lotNumber: string | null;
   expiryDate: string | null;
+}
+
+/**
+ * The minimal per-product conversion context the use case supplies to resolve a
+ * GR line's snapshot factor (UOM Conversion T2, doc 50 §4/§8):
+ *   - baseUomId: the product's base/stock-keeping unit (products.uom_id).
+ *   - activeFactorsByUom: active alternate-unit factors (product_uom_conversions
+ *     rows with is_active = true), keyed by the alternate uom_id. The value is
+ *     `factor_to_base` (1 <alt uom> = factor_to_base <base>). INACTIVE rows must
+ *     be excluded by the caller.
+ */
+export interface ProductConversionContext {
+  baseUomId: string;
+  activeFactorsByUom: Map<string, number>;
+}
+
+/**
+ * Resolve a GR line's snapshot conversion factor (UOM Conversion T2, Keputusan
+ * #2b SNAPSHOT), given the line's input `uomId` and the product's conversion
+ * context:
+ *
+ *   1. uomId === base unit            -> factor 1 (implicit, no conversion row).
+ *   2. an ACTIVE conversion exists     -> factor_to_base from that row.
+ *   3. uomId is NOT the base unit AND  -> HARD ERROR
+ *      no active conversion exists        GOODS_RECEIPT.MISSING_UOM_CONVERSION.
+ *
+ * Case 3 must NEVER silently fall back to 1: a non-base unit without a factor
+ * would post the wrong (unconverted) quantity into stock. Failing loudly keeps
+ * the inventory ledger correct. The default-1 compatibility guarantee only
+ * applies to case 1 (base unit) — exactly the pre-T2 behaviour.
+ */
+export function resolveConversionFactor(
+  uomId: string,
+  context: ProductConversionContext,
+): number {
+  if (uomId === context.baseUomId) {
+    return 1;
+  }
+  const factor = context.activeFactorsByUom.get(uomId);
+  if (factor === undefined) {
+    throw new Error('GOODS_RECEIPT.MISSING_UOM_CONVERSION');
+  }
+  if (!(factor > 0)) {
+    // Defensive: the master CHECK (> 0) should already guarantee this.
+    throw new Error('GOODS_RECEIPT.INVALID_UOM_CONVERSION_FACTOR');
+  }
+  return factor;
 }
 
 /**

@@ -59,6 +59,8 @@ const productNames = ref<Map<string, string>>(new Map())
 const uomNames = ref<Map<string, string>>(new Map())
 const supplierNames = ref<Map<string, string>>(new Map())
 const poNumbers = ref<Map<string, string>>(new Map())
+// product id → its base-unit UOM id (for the UOM Conversion T2 stock hint).
+const productBaseUomIds = ref<Map<string, string>>(new Map())
 
 function outletName(id: string): string {
   return outletNames.value.get(id) ?? id
@@ -74,6 +76,18 @@ function supplierName(id: string): string {
 }
 function poNumber(id: string): string {
   return poNumbers.value.get(id) ?? id
+}
+/**
+ * Resolve a product's base-unit UOM name for the GR items table conversion
+ * hint. Returns null when the base unit is unknown or identical to nothing
+ * useful — the table then simply omits the hint.
+ */
+function baseUomName(productId: string): string | null {
+  const baseUomId = productBaseUomIds.value.get(productId)
+  if (!baseUomId) {
+    return null
+  }
+  return uomNames.value.get(baseUomId) ?? null
 }
 
 // ── Permission + status → available actions ──────────────────────────
@@ -100,6 +114,7 @@ async function loadLookups(): Promise<void> {
   ])
   outletNames.value = new Map(allOutlets.map((o) => [o.id, o.name]))
   productNames.value = new Map(allProducts.map((p) => [p.id, `${p.name} (${p.sku})`]))
+  productBaseUomIds.value = new Map(allProducts.map((p) => [p.id, p.uomId]))
   uomNames.value = new Map(allUoms.map((u) => [u.id, u.name]))
   supplierNames.value = new Map(allSuppliers.map((s) => [s.id, s.name]))
   poNumbers.value = new Map(allOrders.map((po) => [po.id, po.poNumber]))
@@ -235,6 +250,7 @@ async function onConfirmAction(note: string): Promise<void> {
                 :gr="gr"
                 :product-name="productName"
                 :uom-name="uomName"
+                :base-uom-name="baseUomName"
               />
             </div>
 

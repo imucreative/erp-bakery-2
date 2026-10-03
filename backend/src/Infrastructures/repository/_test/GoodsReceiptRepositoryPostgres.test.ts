@@ -48,6 +48,7 @@ function itemRow(over: Record<string, unknown> = {}) {
     accepted_quantity: '6',
     rejected_quantity: '1',
     uom_id: 'uom1',
+    conversion_factor: '1',
     batch_number: 'B-001',
     lot_number: null,
     expiry_date: new Date('2026-12-31'),
@@ -240,6 +241,96 @@ describe('GoodsReceiptRepositoryPostgres.complete', () => {
     const params = movementInsert![1] as unknown[];
     expect(params).toContain(4); // before_qty
     expect(params).toContain(10); // after_qty
+  });
+
+  // --- UOM Conversion T2 (doc 50 §4/§8): posting converts accepted → baseQty ---
+
+  it('posts baseQty = accepted * snapshot factor (factor 25000) into a reused batch', async () => {
+    // 2 karung accepted, snapshot factor 25000 → baseQty 50000; batch had 0.
+    client.query
+      .mockResolvedValueOnce(undefined) // BEGIN
+      .mockResolvedValueOnce(undefined) // SET ISOLATION
+      .mockResolvedValueOnce({ rows: [headerRow()], rowCount: 1 }) // header
+      .mockResolvedValueOnce({
+        rows: [itemRow({ accepted_quantity: '2', conversion_factor: '25000' })],
+        rowCount: 1,
+      }) // _loadItems
+      .mockResolvedValueOnce({ rows: [{ id: 'b1', qty_available: '0' }], rowCount: 1 }) // SELECT batch -> found
+      .mockResolvedValueOnce({ rowCount: 1 }) // UPDATE batch
+      .mockResolvedValueOnce({ rows: [{ id: 'm1' }], rowCount: 1 }) // INSERT movement
+      .mockResolvedValueOnce({ rows: [headerRow({ status: 'COMPLETED' })], rowCount: 1 }) // UPDATE header
+      .mockResolvedValueOnce(undefined) // INSERT log
+      .mockResolvedValueOnce({ rows: [itemRow()], rowCount: 1 }) // _loadItems final
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // _loadLogs final
+      .mockResolvedValueOnce(undefined); // COMMIT
+
+    await repo.complete('gr1', 'c1', 'u1', null);
+
+    const movementInsert = client.query.mock.calls.find((c) =>
+      String(c[0]).includes('INSERT INTO inventory_movements'),
+    );
+    const params = movementInsert![1] as unknown[];
+    // qty, before_qty, after_qty all in the BASE unit.
+    expect(params).toContain(50000); // qty = 2 * 25000
+    expect(params).toContain(0); // before_qty
+    expect(params).toContain(50000); // after_qty = 0 + 50000
+  });
+
+  it('REGRESSION: factor 1 posts accepted unchanged (identical to pre-T2)', async () => {
+    client.query
+      .mockResolvedValueOnce(undefined) // BEGIN
+      .mockResolvedValueOnce(undefined) // SET ISOLATION
+      .mockResolvedValueOnce({ rows: [headerRow()], rowCount: 1 }) // header
+      .mockResolvedValueOnce({
+        rows: [itemRow({ accepted_quantity: '6', conversion_factor: '1' })],
+        rowCount: 1,
+      }) // _loadItems
+      .mockResolvedValueOnce({ rows: [{ id: 'b1', qty_available: '4' }], rowCount: 1 }) // SELECT batch
+      .mockResolvedValueOnce({ rowCount: 1 }) // UPDATE batch
+      .mockResolvedValueOnce({ rows: [{ id: 'm1' }], rowCount: 1 }) // INSERT movement
+      .mockResolvedValueOnce({ rows: [headerRow({ status: 'COMPLETED' })], rowCount: 1 }) // UPDATE header
+      .mockResolvedValueOnce(undefined) // INSERT log
+      .mockResolvedValueOnce({ rows: [itemRow()], rowCount: 1 }) // _loadItems final
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // _loadLogs final
+      .mockResolvedValueOnce(undefined); // COMMIT
+
+    await repo.complete('gr1', 'c1', 'u1', null);
+
+    const movementInsert = client.query.mock.calls.find((c) =>
+      String(c[0]).includes('INSERT INTO inventory_movements'),
+    );
+    const params = movementInsert![1] as unknown[];
+    expect(params).toContain(6); // qty == accepted (factor 1)
+    expect(params).toContain(4); // before_qty
+    expect(params).toContain(10); // after_qty = 4 + 6
+  });
+
+  it('rounds baseQty to NUMERIC(18,3) stock precision (0.333333 factor)', async () => {
+    // accepted 10, factor 0.333333 → 3.33333 → rounded to 3.333 (3 decimals).
+    client.query
+      .mockResolvedValueOnce(undefined) // BEGIN
+      .mockResolvedValueOnce(undefined) // SET ISOLATION
+      .mockResolvedValueOnce({ rows: [headerRow()], rowCount: 1 }) // header
+      .mockResolvedValueOnce({
+        rows: [itemRow({ accepted_quantity: '10', conversion_factor: '0.333333' })],
+        rowCount: 1,
+      }) // _loadItems
+      .mockResolvedValueOnce({ rows: [{ id: 'b1', qty_available: '0' }], rowCount: 1 }) // SELECT batch
+      .mockResolvedValueOnce({ rowCount: 1 }) // UPDATE batch
+      .mockResolvedValueOnce({ rows: [{ id: 'm1' }], rowCount: 1 }) // INSERT movement
+      .mockResolvedValueOnce({ rows: [headerRow({ status: 'COMPLETED' })], rowCount: 1 }) // UPDATE header
+      .mockResolvedValueOnce(undefined) // INSERT log
+      .mockResolvedValueOnce({ rows: [itemRow()], rowCount: 1 }) // _loadItems final
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // _loadLogs final
+      .mockResolvedValueOnce(undefined); // COMMIT
+
+    await repo.complete('gr1', 'c1', 'u1', null);
+
+    const movementInsert = client.query.mock.calls.find((c) =>
+      String(c[0]).includes('INSERT INTO inventory_movements'),
+    );
+    const params = movementInsert![1] as unknown[];
+    expect(params).toContain(3.333); // round(10 * 0.333333, 3)
   });
 
   it('rolls back and surfaces DUPLICATE_MOVEMENT_SOURCE on a double-post (atomicity)', async () => {

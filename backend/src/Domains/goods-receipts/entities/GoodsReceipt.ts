@@ -9,6 +9,11 @@ export interface GoodsReceiptItem {
   acceptedQuantity: number;
   rejectedQuantity: number;
   uomId: string;
+  /**
+   * UOM Conversion T2 snapshot (doc 50 §4/§8): baseQty = acceptedQuantity *
+   * conversionFactor. 1 when the line is already in the product base unit.
+   */
+  conversionFactor: number;
   batchNumber: string | null;
   lotNumber: string | null;
   expiryDate: Date | null;

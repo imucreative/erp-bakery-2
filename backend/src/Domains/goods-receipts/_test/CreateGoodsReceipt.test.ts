@@ -3,6 +3,8 @@ import {
   buildOutstandingMap,
   validateItemsAgainstOutstanding,
   validateBatchRequirements,
+  resolveConversionFactor,
+  ProductConversionContext,
   ResolvedGoodsReceiptItem,
   SourcePoItem,
   OutstandingPoItem,
@@ -152,6 +154,7 @@ describe('validateItemsAgainstOutstanding', () => {
       acceptedQuantity: 3,
       rejectedQuantity: 1,
       uomId: 'uom-1',
+      conversionFactor: 1,
       batchNumber: null,
       lotNumber: null,
       expiryDate: null,
@@ -209,6 +212,7 @@ describe('validateBatchRequirements', () => {
       acceptedQuantity: 3,
       rejectedQuantity: 0,
       uomId: 'uom-1',
+      conversionFactor: 1,
       batchNumber: null,
       lotNumber: null,
       expiryDate: null,
@@ -253,5 +257,38 @@ describe('validateBatchRequirements', () => {
         new Map([['prod-1', true]]),
       ),
     ).not.toThrow();
+  });
+});
+
+describe('resolveConversionFactor (UOM Conversion T2)', () => {
+  function context(over: Partial<ProductConversionContext> = {}): ProductConversionContext {
+    return {
+      baseUomId: 'uom-base',
+      activeFactorsByUom: new Map<string, number>(),
+      ...over,
+    };
+  }
+
+  it('returns 1 when the line uom IS the product base unit (no row needed)', () => {
+    expect(resolveConversionFactor('uom-base', context())).toBe(1);
+  });
+
+  it('returns factor_to_base for an active alternate unit', () => {
+    const ctx = context({
+      activeFactorsByUom: new Map([['uom-karung', 25000]]),
+    });
+    expect(resolveConversionFactor('uom-karung', ctx)).toBe(25000);
+  });
+
+  it('throws MISSING_UOM_CONVERSION for a non-base unit with no active factor', () => {
+    expect(() => resolveConversionFactor('uom-karung', context())).toThrow(
+      'GOODS_RECEIPT.MISSING_UOM_CONVERSION',
+    );
+  });
+
+  it('preserves the pre-T2 identity: factor 1 ⇒ baseQty == inputQty', () => {
+    const factor = resolveConversionFactor('uom-base', context());
+    const inputQty = 7.5;
+    expect(inputQty * factor).toBe(inputQty);
   });
 });

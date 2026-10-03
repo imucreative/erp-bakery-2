@@ -58,6 +58,7 @@ interface ItemRow {
   accepted_quantity: string;
   rejected_quantity: string;
   uom_id: string;
+  conversion_factor: string;
   batch_number: string | null;
   lot_number: string | null;
   expiry_date: Date | null;
@@ -97,7 +98,8 @@ const HEADER_COLUMNS = `id, company_id, gr_number, purchase_order_id, supplier_i
   destination_outlet_id, receive_date, status, inventory_posted_at, notes,
   approved_by, approved_at, created_by, updated_by, created_at, updated_at`;
 const ITEM_COLUMNS = `id, purchase_order_item_id, product_id, ordered_quantity,
-  accepted_quantity, rejected_quantity, uom_id, batch_number, lot_number, expiry_date`;
+  accepted_quantity, rejected_quantity, uom_id, conversion_factor, batch_number,
+  lot_number, expiry_date`;
 
 /**
  * Status-log columns with the actor name resolved via LEFT JOIN to users.
@@ -119,6 +121,19 @@ const ATTACHMENT_SELECT = `SELECT a.id, a.original_name, a.stored_path, a.mime_t
     a.size_bytes, a.uploaded_by, uploader_users.name AS uploaded_by_name, a.created_at
   FROM goods_receipt_attachments a
   LEFT JOIN users uploader_users ON uploader_users.id = a.uploaded_by`;
+
+/**
+ * Round a converted quantity to the inventory stock precision NUMERIC(18,3)
+ * (doc 50 §5.1/§8). The master factor is NUMERIC(18,6) but every stored stock
+ * quantity (inventory_batches.qty_available, inventory_movements.qty) is (18,3),
+ * so the posted base quantity is rounded to 3 decimals BEFORE it enters the
+ * ledger — keeping the application-level value consistent with what the DB
+ * persists. Factor 1 is exact (round(accepted, 3) === accepted for stock-grade
+ * inputs), preserving the pre-T2 identity.
+ */
+function roundToStockPrecision(value: number): number {
+  return Math.round(value * 1000) / 1000;
+}
 
 /**
  * Concrete PostgreSQL implementation of GoodsReceiptRepository.
@@ -143,6 +158,7 @@ export class GoodsReceiptRepositoryPostgres extends GoodsReceiptRepository {
       acceptedQuantity: Number(row.accepted_quantity),
       rejectedQuantity: Number(row.rejected_quantity),
       uomId: row.uom_id,
+      conversionFactor: Number(row.conversion_factor),
       batchNumber: row.batch_number,
       lotNumber: row.lot_number,
       expiryDate: row.expiry_date,
@@ -268,8 +284,9 @@ export class GoodsReceiptRepositoryPostgres extends GoodsReceiptRepository {
       await client.query(
         `INSERT INTO goods_receipt_items
            (goods_receipt_id, purchase_order_item_id, product_id, ordered_quantity,
-            accepted_quantity, rejected_quantity, uom_id, batch_number, lot_number, expiry_date)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date)`,
+            accepted_quantity, rejected_quantity, uom_id, conversion_factor,
+            batch_number, lot_number, expiry_date)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::date)`,
         [
           grId,
           item.purchaseOrderItemId,
@@ -278,6 +295,9 @@ export class GoodsReceiptRepositoryPostgres extends GoodsReceiptRepository {
           item.acceptedQuantity,
           item.rejectedQuantity,
           item.uomId,
+          // UOM Conversion T2 snapshot (doc 50 §4/§8): persisted at create/
+          // update time; posting reposts THIS value, never a re-resolved one.
+          item.conversionFactor,
           item.batchNumber,
           item.lotNumber,
           item.expiryDate,
@@ -622,6 +642,17 @@ export class GoodsReceiptRepositoryPostgres extends GoodsReceiptRepository {
           continue;
         }
 
+        // UOM Conversion T2 (doc 50 §4/§8, Keputusan #2/#4): convert the
+        // ACCEPTED quantity (expressed in the line's input/purchase unit) into
+        // the product BASE unit before posting. The factor is the SNAPSHOT
+        // captured on the GR line at create/update time — never re-resolved
+        // here. Stock/ledger/FEFO remain in the base unit; this single posting
+        // step is the only conversion point. Rounded to NUMERIC(18,3) to match
+        // the inventory schema precision. A snapshot factor of 1 (base-unit
+        // lines, incl. all pre-T2 data) yields baseQty === accepted, so posting
+        // is byte-for-byte identical to the previous behaviour.
+        const baseQty = roundToStockPrecision(accepted * Number(item.conversion_factor));
+
         // batchNumber present ⟺ batch-tracked line (enforced upstream by
         // validateBatchRequirements). A null batchNumber is a non-batch product:
         // store a synthetic row with the '' sentinel and null expiry.
@@ -645,7 +676,7 @@ export class GoodsReceiptRepositoryPostgres extends GoodsReceiptRepository {
             batchId: resolved.batchId,
             productId: item.product_id,
             movementType: 'PURCHASE',
-            qty: accepted,
+            qty: baseQty,
             sourceDocumentType: 'GOODS_RECEIPT',
             sourceDocumentId: id,
             sourceDocumentItemId: item.id,

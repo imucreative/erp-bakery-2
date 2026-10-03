@@ -10,6 +10,7 @@ import { GoodsReceiptRepository } from '../../../../Domains/goods-receipts/Goods
 import { PurchaseOrderRepository } from '../../../../Domains/purchase-orders/PurchaseOrderRepository';
 import { ProductRepository } from '../../../../Domains/products/ProductRepository';
 import { UomRepository } from '../../../../Domains/uoms/UomRepository';
+import { ProductUomConversionRepository } from '../../../../Domains/product-uom-conversions/ProductUomConversionRepository';
 
 const grRepo: jest.Mocked<GoodsReceiptRepository> = {
   createDraft: jest.fn(),
@@ -36,6 +37,23 @@ const uomRepo: jest.Mocked<UomRepository> = {
   getUomById: jest.fn(),
 } as unknown as jest.Mocked<UomRepository>;
 
+const conversionRepo: jest.Mocked<ProductUomConversionRepository> = {
+  listByProduct: jest.fn(),
+} as unknown as jest.Mocked<ProductUomConversionRepository>;
+
+/**
+ * Build a product UOM conversion row (UOM Conversion T2). `factorToBase` relates
+ * the alternate uom to the base: 1 <uomId> = factorToBase <base>.
+ */
+function conversion(
+  productId: string,
+  uomId: string,
+  factorToBase: number,
+  isActive = true,
+) {
+  return { productId, uomId, factorToBase, isActive };
+}
+
 /** An APPROVED PO with two lines, used as the valid source for GR creation. */
 function approvedPo(over: Record<string, unknown> = {}) {
   return {
@@ -52,9 +70,12 @@ function approvedPo(over: Record<string, unknown> = {}) {
   };
 }
 
-/** A non-batch product by default. */
-function product(id: string, isBatchTracked = false) {
-  return { id, isBatchTracked };
+/**
+ * A non-batch product by default. uomId defaults to 'uom-1' so a GR line in
+ * 'uom-1' is in the product base unit (conversion factor 1 — pre-T2 identity).
+ */
+function product(id: string, isBatchTracked = false, uomId = 'uom-1') {
+  return { id, isBatchTracked, uomId };
 }
 
 const basePayload = {
@@ -75,15 +96,17 @@ beforeEach(() => {
   jest.clearAllMocks();
   // Default: no sibling GR consumption → outstanding == full PO quantity.
   grRepo.getConsumedQtyByPoItem.mockResolvedValue(new Map<string, number>());
-  // Default products are non-batch.
+  // Default products are non-batch, base unit 'uom-1'.
   productRepo.getProductById.mockImplementation((id: string) =>
     Promise.resolve(product(id) as never),
   );
   uomRepo.getUomById.mockResolvedValue({ id: 'uom' } as never);
+  // Default: no alternate conversions → every base-unit line resolves factor 1.
+  conversionRepo.listByProduct.mockResolvedValue([]);
 });
 
 function createUseCase() {
-  return new CreateGoodsReceiptUseCase(grRepo, poRepo, productRepo, uomRepo);
+  return new CreateGoodsReceiptUseCase(grRepo, poRepo, productRepo, uomRepo, conversionRepo);
 }
 
 describe('CreateGoodsReceiptUseCase', () => {
@@ -284,11 +307,129 @@ describe('CreateGoodsReceiptUseCase', () => {
     );
     expect(grRepo.createDraft).not.toHaveBeenCalled();
   });
+
+  // --- UOM Conversion T2 (doc 50 §4/§8) — snapshot factor on create ---
+
+  it('snapshots conversionFactor = 1 when the line uom IS the product base unit', async () => {
+    poRepo.getById.mockResolvedValue(approvedPo() as never);
+    grRepo.createDraft.mockResolvedValue({ id: 'gr1' } as never);
+    // basePayload line uom 'uom-1' == product base 'uom-1' → factor 1.
+
+    await createUseCase().execute(basePayload, 'c1', 'u1');
+
+    const arg = grRepo.createDraft.mock.calls[0][2];
+    expect(arg.items[0].conversionFactor).toBe(1);
+    // A base-unit line never needs to consult the conversion master.
+    expect(conversionRepo.listByProduct).toHaveBeenCalledWith('prod-1', 'c1');
+  });
+
+  it('snapshots factor_to_base when the line uom is an active alternate unit', async () => {
+    // PO/GR line in 'uom-karung'; product base is 'uom-gram'; 1 karung = 25000 g.
+    poRepo.getById.mockResolvedValue(
+      approvedPo({
+        items: [{ id: 'poi-1', productId: 'prod-1', quantity: 10, uomId: 'uom-karung' }],
+      }) as never,
+    );
+    productRepo.getProductById.mockImplementation((id: string) =>
+      Promise.resolve(product(id, false, 'uom-gram') as never),
+    );
+    conversionRepo.listByProduct.mockResolvedValue([
+      conversion('prod-1', 'uom-karung', 25000) as never,
+    ]);
+    grRepo.createDraft.mockResolvedValue({ id: 'gr1' } as never);
+
+    await createUseCase().execute(
+      {
+        ...basePayload,
+        items: [
+          {
+            purchaseOrderItemId: 'poi-1',
+            productId: 'prod-1',
+            acceptedQuantity: 6,
+            rejectedQuantity: 1,
+            uomId: 'uom-karung',
+          },
+        ],
+      },
+      'c1',
+      'u1',
+    );
+
+    const arg = grRepo.createDraft.mock.calls[0][2];
+    expect(arg.items[0].conversionFactor).toBe(25000);
+  });
+
+  it('rejects a non-base line uom with no active conversion (MISSING_UOM_CONVERSION)', async () => {
+    poRepo.getById.mockResolvedValue(
+      approvedPo({
+        items: [{ id: 'poi-1', productId: 'prod-1', quantity: 10, uomId: 'uom-karung' }],
+      }) as never,
+    );
+    productRepo.getProductById.mockImplementation((id: string) =>
+      Promise.resolve(product(id, false, 'uom-gram') as never),
+    );
+    // No conversion row for (prod-1, uom-karung).
+    conversionRepo.listByProduct.mockResolvedValue([]);
+
+    await expect(
+      createUseCase().execute(
+        {
+          ...basePayload,
+          items: [
+            {
+              purchaseOrderItemId: 'poi-1',
+              productId: 'prod-1',
+              acceptedQuantity: 6,
+              rejectedQuantity: 1,
+              uomId: 'uom-karung',
+            },
+          ],
+        },
+        'c1',
+        'u1',
+      ),
+    ).rejects.toThrow('GOODS_RECEIPT.MISSING_UOM_CONVERSION');
+    expect(grRepo.createDraft).not.toHaveBeenCalled();
+  });
+
+  it('treats an INACTIVE conversion as missing (MISSING_UOM_CONVERSION)', async () => {
+    poRepo.getById.mockResolvedValue(
+      approvedPo({
+        items: [{ id: 'poi-1', productId: 'prod-1', quantity: 10, uomId: 'uom-karung' }],
+      }) as never,
+    );
+    productRepo.getProductById.mockImplementation((id: string) =>
+      Promise.resolve(product(id, false, 'uom-gram') as never),
+    );
+    conversionRepo.listByProduct.mockResolvedValue([
+      conversion('prod-1', 'uom-karung', 25000, false) as never,
+    ]);
+
+    await expect(
+      createUseCase().execute(
+        {
+          ...basePayload,
+          items: [
+            {
+              purchaseOrderItemId: 'poi-1',
+              productId: 'prod-1',
+              acceptedQuantity: 6,
+              rejectedQuantity: 1,
+              uomId: 'uom-karung',
+            },
+          ],
+        },
+        'c1',
+        'u1',
+      ),
+    ).rejects.toThrow('GOODS_RECEIPT.MISSING_UOM_CONVERSION');
+    expect(grRepo.createDraft).not.toHaveBeenCalled();
+  });
 });
 
 describe('UpdateGoodsReceiptUseCase', () => {
   function updateUseCase() {
-    return new UpdateGoodsReceiptUseCase(grRepo, poRepo, productRepo, uomRepo);
+    return new UpdateGoodsReceiptUseCase(grRepo, poRepo, productRepo, uomRepo, conversionRepo);
   }
 
   it('excludes the edited GR from outstanding and delegates to updateDraft', async () => {
@@ -324,6 +465,75 @@ describe('UpdateGoodsReceiptUseCase', () => {
     await expect(updateUseCase().execute('gr1', basePayload, 'c1', 'u1')).rejects.toThrow(
       'GOODS_RECEIPT.QTY_EXCEEDS_OUTSTANDING',
     );
+    expect(grRepo.updateDraft).not.toHaveBeenCalled();
+  });
+
+  it('re-snapshots conversionFactor from current master on update (alternate unit)', async () => {
+    poRepo.getById.mockResolvedValue(
+      approvedPo({
+        items: [{ id: 'poi-1', productId: 'prod-1', quantity: 10, uomId: 'uom-karung' }],
+      }) as never,
+    );
+    productRepo.getProductById.mockImplementation((id: string) =>
+      Promise.resolve(product(id, false, 'uom-gram') as never),
+    );
+    conversionRepo.listByProduct.mockResolvedValue([
+      conversion('prod-1', 'uom-karung', 25000) as never,
+    ]);
+    grRepo.updateDraft.mockResolvedValue({ id: 'gr1' } as never);
+
+    await updateUseCase().execute(
+      'gr1',
+      {
+        ...basePayload,
+        items: [
+          {
+            purchaseOrderItemId: 'poi-1',
+            productId: 'prod-1',
+            acceptedQuantity: 6,
+            rejectedQuantity: 1,
+            uomId: 'uom-karung',
+          },
+        ],
+      },
+      'c1',
+      'u1',
+    );
+
+    const arg = grRepo.updateDraft.mock.calls[0][3];
+    expect(arg.items[0].conversionFactor).toBe(25000);
+  });
+
+  it('rejects an update whose line uom has no active conversion', async () => {
+    poRepo.getById.mockResolvedValue(
+      approvedPo({
+        items: [{ id: 'poi-1', productId: 'prod-1', quantity: 10, uomId: 'uom-karung' }],
+      }) as never,
+    );
+    productRepo.getProductById.mockImplementation((id: string) =>
+      Promise.resolve(product(id, false, 'uom-gram') as never),
+    );
+    conversionRepo.listByProduct.mockResolvedValue([]);
+
+    await expect(
+      updateUseCase().execute(
+        'gr1',
+        {
+          ...basePayload,
+          items: [
+            {
+              purchaseOrderItemId: 'poi-1',
+              productId: 'prod-1',
+              acceptedQuantity: 6,
+              rejectedQuantity: 1,
+              uomId: 'uom-karung',
+            },
+          ],
+        },
+        'c1',
+        'u1',
+      ),
+    ).rejects.toThrow('GOODS_RECEIPT.MISSING_UOM_CONVERSION');
     expect(grRepo.updateDraft).not.toHaveBeenCalled();
   });
 });
