@@ -286,6 +286,42 @@ const router = createRouter({
       },
     },
     {
+      path: '/inventory/transfers',
+      name: 'InventoryStockTransfers',
+      component: () => import('../views/Inventory/StockTransferList.vue'),
+      meta: {
+        title: 'Stock Transfer',
+        permission: 'inventory.transfer.read',
+      },
+    },
+    {
+      path: '/inventory/transfers/create',
+      name: 'InventoryStockTransferCreate',
+      component: () => import('../views/Inventory/StockTransferForm.vue'),
+      meta: {
+        title: 'Buat Transfer Stok',
+        permission: 'inventory.transfer.create',
+      },
+    },
+    {
+      path: '/inventory/transfers/:id',
+      name: 'InventoryStockTransferDetail',
+      component: () => import('../views/Inventory/StockTransferDetail.vue'),
+      meta: {
+        title: 'Detail Transfer Stok',
+        permission: 'inventory.transfer.read',
+      },
+    },
+    {
+      path: '/inventory/transfers/:id/edit',
+      name: 'InventoryStockTransferEdit',
+      component: () => import('../views/Inventory/StockTransferForm.vue'),
+      meta: {
+        title: 'Edit Transfer Stok',
+        permission: 'inventory.transfer.create',
+      },
+    },
+    {
       path: '/production/recipes',
       name: 'ProductionRecipes',
       component: () => import('../views/Production/RecipeList.vue'),

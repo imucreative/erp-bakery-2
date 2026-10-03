@@ -440,8 +440,8 @@ const menuGroups: MenuGroup[] = [
       {
         icon: ArrowLeftRight,
         name: 'Stock Transfer',
-        path: '/error-404',
-        soon: true,
+        path: '/inventory/transfers',
+        permission: 'inventory.transfer.read',
       },
     ],
   },

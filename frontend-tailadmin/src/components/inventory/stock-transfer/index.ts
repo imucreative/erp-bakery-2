@@ -1,0 +1,11 @@
+/** Barrel exports for the Stock Transfer feature components. */
+export { default as StockTransferFilterBar } from './StockTransferFilterBar.vue'
+export { default as StockTransferTable } from './StockTransferTable.vue'
+export { default as StockTransferHeaderFields } from './StockTransferHeaderFields.vue'
+export { default as StockTransferItemsEditor } from './StockTransferItemsEditor.vue'
+export { default as StockTransferSummary } from './StockTransferSummary.vue'
+export { default as StockTransferItemsTable } from './StockTransferItemsTable.vue'
+export { default as StockTransferActionBar } from './StockTransferActionBar.vue'
+export { default as StockTransferActionModals } from './StockTransferActionModals.vue'
+export type { EditorItemRow } from './StockTransferItemsEditor.vue'
+export type { StockTransferAction } from './StockTransferActionModals.vue'
