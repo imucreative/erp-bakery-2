@@ -13,7 +13,7 @@
  * yield UOM required; at least one ingredient; each ingredient needs a product,
  * a positive qty, a UOM, and a lossPercentage within 0..100. On success → detail.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ChevronLeft } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
@@ -41,6 +41,9 @@ const route = useRoute()
 const router = useRouter()
 const { consumeDraft } = useRecipeDraft()
 
+const PRODUCT_SEARCH_LIMIT = 10
+const PRODUCT_SEARCH_DEBOUNCE_MS = 300
+
 const editId = computed<string | null>(() => {
   const id = route.params.id
   return typeof id === 'string' && id.length > 0 ? id : null
@@ -65,6 +68,17 @@ const yieldUomId = ref<string>('')
 const instructions = ref<string>('')
 const items = ref<RecipeEditorItemRow[]>([])
 
+// ── Finished-product autocomplete (server-side) ──────────────────────
+// The finished-product picker is a server-side autocomplete (mirrors the
+// production form) instead of loading every product: typing debounces into
+// productService.list({ search, productType: FINISHED_GOODS, isActive }).
+// `productSelectedLabel` keeps the chosen product's "name (sku)" so the chip
+// stays correct even though search results come and go.
+const productResults = ref<Product[]>([])
+const productSearching = ref<boolean>(false)
+const productSelectedLabel = ref<string>('')
+let productSearchTimer: ReturnType<typeof setTimeout> | undefined
+
 // ── Load / lifecycle ─────────────────────────────────────────────────
 const loading = ref<boolean>(true)
 const loadError = ref<string | null>(null)
@@ -83,6 +97,47 @@ const productMap = computed<Map<string, Product>>(
 function productLabel(id: string): string {
   const product = productMap.value.get(id)
   return product ? `${product.name} (${product.sku})` : id
+}
+
+// ── Finished-product autocomplete handlers ───────────────────────────
+function onProductSearch(query: string): void {
+  if (productSearchTimer) {
+    clearTimeout(productSearchTimer)
+  }
+  if (query.length === 0) {
+    productResults.value = []
+    productSearching.value = false
+    return
+  }
+  productSearching.value = true
+  productSearchTimer = setTimeout(async () => {
+    try {
+      const result = await productService.list({
+        page: 1,
+        limit: PRODUCT_SEARCH_LIMIT,
+        search: query,
+        productType: 'FINISHED_GOODS',
+        isActive: 'true',
+      })
+      productResults.value = result.items
+    } catch {
+      productResults.value = []
+    } finally {
+      productSearching.value = false
+    }
+  }, PRODUCT_SEARCH_DEBOUNCE_MS)
+}
+
+function onProductSelect(product: Product): void {
+  // productId + yield-UOM auto-fill are handled by HeaderFields via v-model; here
+  // we only remember the chosen label for the chip and clear the result list.
+  productSelectedLabel.value = `${product.name} (${product.sku})`
+  productResults.value = []
+}
+
+function onProductClear(): void {
+  productSelectedLabel.value = ''
+  productResults.value = []
 }
 
 async function loadSupportingData(): Promise<void> {
@@ -144,6 +199,9 @@ async function loadExisting(id: string): Promise<void> {
   loadedStatus.value = recipe.status
   name.value = recipe.name
   productId.value = recipe.productId
+  // Edit mode: keep the finished product shown as a chip. Resolve its label from
+  // the loaded product masters (fall back to the id if unavailable).
+  productSelectedLabel.value = productLabel(recipe.productId)
   yieldQty.value = recipe.yieldQty
   yieldUomId.value = recipe.yieldUomId
   instructions.value = recipe.instructions ?? ''
@@ -172,6 +230,12 @@ onMounted(async () => {
     loadError.value = toMessage(error)
   } finally {
     loading.value = false
+  }
+})
+
+onBeforeUnmount(() => {
+  if (productSearchTimer) {
+    clearTimeout(productSearchTimer)
   }
 })
 
@@ -307,10 +371,15 @@ function onCancel(): void {
           v-model:yield-qty="yieldQty"
           v-model:yield-uom-id="yieldUomId"
           v-model:instructions="instructions"
-          :products="products"
           :uoms="uoms"
+          :product-label="productSelectedLabel"
+          :product-results="productResults"
+          :product-searching="productSearching"
           :blocked-product-ids="blockedProductIds"
           :disabled="isReadOnly"
+          @product-search="onProductSearch"
+          @product-select="onProductSelect"
+          @product-clear="onProductClear"
         />
 
         <!-- Ingredient items -->
