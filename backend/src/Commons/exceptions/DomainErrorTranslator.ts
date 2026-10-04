@@ -999,6 +999,70 @@ const DomainErrorTranslator = {
       'Transisi status shift tidak diperbolehkan',
     ),
     'SHIFT.INVALID_STATUS': new InvariantError('Status shift tidak valid'),
+    'SHIFT.NOT_OPEN': new InvariantError(
+      'Tidak ada shift kasir yang terbuka untuk transaksi ini; buka shift terlebih dahulu',
+    ),
+
+    // ── Sales Order (POS / Sales Fase 2, doc 51 §7/§10) ──────────
+    'SALES_ORDER.NOT_FOUND': new NotFoundError('Sales order tidak ditemukan'),
+    'CREATE_SALES_ORDER.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data sales order tidak lengkap',
+    ),
+    'CREATE_SALES_ORDER.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Tipe data sales order tidak sesuai',
+    ),
+    'CREATE_SALES_ORDER.ITEMS_REQUIRED': new InvariantError(
+      'Sales order harus memiliki minimal satu item',
+    ),
+    'CREATE_SALES_ORDER.ITEM_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Format item sales order tidak valid',
+    ),
+    'CREATE_SALES_ORDER.ITEM_PRODUCT_REQUIRED': new InvariantError(
+      'Setiap item sales order harus menyertakan produk',
+    ),
+    'CREATE_SALES_ORDER.ITEM_QTY_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Jumlah item sales order harus berupa angka',
+    ),
+    'CREATE_SALES_ORDER.ITEM_QTY_MUST_BE_POSITIVE': new InvariantError(
+      'Jumlah item sales order harus lebih dari nol',
+    ),
+    'CREATE_SALES_ORDER.DISCOUNT_MUST_BE_NON_NEGATIVE': new InvariantError(
+      'Diskon tidak boleh negatif',
+    ),
+    'CREATE_SALES_ORDER.TOPPING_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Format topping sales order tidak valid',
+    ),
+    'CREATE_SALES_ORDER.TOPPING_PRODUCT_REQUIRED': new InvariantError(
+      'Setiap topping harus menyertakan produk topping',
+    ),
+    'PAY_SALES_ORDER.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data pembayaran tidak lengkap',
+    ),
+    'PAY_SALES_ORDER.PAYMENTS_REQUIRED': new InvariantError(
+      'Pembayaran harus memiliki minimal satu metode',
+    ),
+    'PAY_SALES_ORDER.PAYMENT_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Format pembayaran tidak valid',
+    ),
+    'PAY_SALES_ORDER.INVALID_PAYMENT_METHOD': new InvariantError(
+      'Metode pembayaran tidak valid',
+    ),
+    'PAY_SALES_ORDER.AMOUNT_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Nominal pembayaran harus berupa angka',
+    ),
+    'PAY_SALES_ORDER.AMOUNT_MUST_BE_POSITIVE': new InvariantError(
+      'Nominal pembayaran harus lebih dari nol',
+    ),
+    'TOPPING.NOT_ALLOWED': new InvariantError(
+      'Topping tidak diizinkan: tidak terdaftar untuk produk ini atau produk dijual mode stok',
+    ),
+    'PAYMENT.AMOUNT_MISMATCH': new InvariantError(
+      'Total pembayaran tidak sama dengan grand total order',
+    ),
+    'SALES_ORDER.ALREADY_PAID': new ConflictError('Sales order sudah dibayar'),
+    'SALES_ORDER.INVALID_STATUS_TRANSITION': new InvariantError(
+      'Transisi status sales order tidak diperbolehkan',
+    ),
 
     // ── Conflict ─────────────────────────────────────────────────
     'USER.EMAIL_ALREADY_USED': new ConflictError(
@@ -1037,6 +1101,9 @@ const DomainErrorTranslator = {
     ),
     'GOODS_RECEIPT.NUMBER_ALREADY_USED': new ConflictError(
       'Nomor goods receipt sudah digunakan; coba lagi',
+    ),
+    'SALES_ORDER.NUMBER_CONFLICT': new InvariantError(
+      'Nomor invoice sudah digunakan; coba lagi',
     ),
   } as ErrorMap,
 };

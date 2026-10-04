@@ -71,17 +71,20 @@ describe('ShiftRepositoryPostgres', () => {
   });
 
   describe('closeShift', () => {
-    it('should close an OPEN shift and compute expected_cash + discrepancy', async () => {
+    it('should close an OPEN shift and compute expected_cash + discrepancy (CASH payments)', async () => {
+      // Fase 2: expected_cash = opening_cash + Σ(CASH payment). Here opening
+      // 500000 + 100000 CASH = 600000; actual 580000 → discrepancy -20000.
       client.query
         .mockResolvedValueOnce(undefined) // BEGIN
         .mockResolvedValueOnce({ rows: [header({ status: 'OPEN', opening_cash: '500000.00' })], rowCount: 1 }) // lock row
+        .mockResolvedValueOnce({ rows: [{ cash_total: '100000.00' }], rowCount: 1 }) // CASH sum
         .mockResolvedValueOnce({
           rows: [
             header({
               status: 'CLOSED',
               closed_at: new Date(),
-              expected_cash: '500000.00',
-              actual_cash: '480000.00',
+              expected_cash: '600000.00',
+              actual_cash: '580000.00',
               discrepancy: '-20000.00',
             }),
           ],
@@ -89,13 +92,40 @@ describe('ShiftRepositoryPostgres', () => {
         }) // update
         .mockResolvedValueOnce(undefined); // COMMIT
 
-      const result = await repo.closeShift('s1', 'c1', 'u1', { actualCash: 480000, notes: null });
+      const result = await repo.closeShift('s1', 'c1', 'u1', { actualCash: 580000, notes: null });
 
       expect(result.status).toBe('CLOSED');
-      expect(result.expectedCash).toBe(500000);
-      expect(result.actualCash).toBe(480000);
+      expect(result.expectedCash).toBe(600000);
+      expect(result.actualCash).toBe(580000);
       expect(result.discrepancy).toBe(-20000);
+      // The CASH-sum query must only count CASH payments on PAID orders.
+      const cashCall = client.query.mock.calls[2];
+      expect(cashCall[0]).toContain("payment_method = 'CASH'");
+      expect(cashCall[0]).toContain("status = 'PAID'");
       expect(client.query).toHaveBeenCalledWith('COMMIT');
+    });
+
+    it('expected_cash equals opening_cash when there are no CASH payments', async () => {
+      client.query
+        .mockResolvedValueOnce(undefined) // BEGIN
+        .mockResolvedValueOnce({ rows: [header({ status: 'OPEN', opening_cash: '500000.00' })], rowCount: 1 }) // lock row
+        .mockResolvedValueOnce({ rows: [{ cash_total: '0' }], rowCount: 1 }) // CASH sum (none)
+        .mockResolvedValueOnce({
+          rows: [
+            header({
+              status: 'CLOSED',
+              expected_cash: '500000.00',
+              actual_cash: '500000.00',
+              discrepancy: '0.00',
+            }),
+          ],
+          rowCount: 1,
+        }) // update
+        .mockResolvedValueOnce(undefined); // COMMIT
+
+      const result = await repo.closeShift('s1', 'c1', 'u1', { actualCash: 500000, notes: null });
+      expect(result.expectedCash).toBe(500000);
+      expect(result.discrepancy).toBe(0);
     });
 
     it('should reject closing a shift that is already CLOSED', async () => {

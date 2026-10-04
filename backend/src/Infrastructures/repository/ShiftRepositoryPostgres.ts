@@ -115,12 +115,24 @@ export class ShiftRepositoryPostgres extends ShiftRepository {
         throw new InvariantError('SHIFT.INVALID_STATUS_TRANSITION');
       }
 
-      // Fase 1: no sales/payment tables yet, so there is no CASH flow to add.
-      // expected_cash = opening_cash. Discrepancy = actual_cash - expected_cash.
-      //   >> Fase 2 (doc 51 §4.2, OQ-8): expected_cash becomes
-      //      opening_cash + Σ(payment CASH) - Σ(refund CASH); non-cash methods
-      //      never affect the drawer. This computation will move here then.
-      const expectedCash = Number(header.opening_cash);
+      // Fase 2 (doc 51 §4.2, OQ-8): expected_cash =
+      //   opening_cash + Σ(CASH payment on this shift) - Σ(CASH refund).
+      // ONLY CASH payments feed the physical drawer; CARD / QRIS / BANK_TRANSFER
+      // are recorded for reporting but never affect reconciliation.
+      //   >> Fase 3 (refund / SALE_RETURN): the CASH refund component is still 0
+      //      here because sales_returns do not exist yet. When Fase 3 lands, add
+      //      "- Σ(CASH refund on this shift's orders)" to this computation.
+      const cashSumResult = await client.query<{ cash_total: string }>(
+        `SELECT COALESCE(SUM(sp.amount), 0) AS cash_total
+         FROM sales_payments sp
+         JOIN sales_orders so ON so.id = sp.sales_order_id
+         WHERE so.shift_id = $1 AND so.company_id = $2
+           AND so.status = 'PAID' AND sp.payment_method = 'CASH'`,
+        [id, companyId],
+      );
+      const cashPayments = Number(cashSumResult.rows[0].cash_total);
+      const cashRefunds = 0; // Fase 3 will subtract CASH refunds here.
+      const expectedCash = Number(header.opening_cash) + cashPayments - cashRefunds;
       const discrepancy = data.actualCash - expectedCash;
 
       const updated = await client.query<HeaderRow>(

@@ -18,6 +18,7 @@ import { StockAdjustmentModule } from './Interfaces/http/api/stock-adjustments/s
 import { StockTransferModule } from './Interfaces/http/api/stock-transfers/stock-transfer.module';
 import { StockOpnameModule } from './Interfaces/http/api/stock-opnames/stock-opname.module';
 import { ShiftModule } from './Interfaces/http/api/shifts/shift.module';
+import { SalesOrderModule } from './Interfaces/http/api/sales/sales-order.module';
 import { RecipeModule } from './Interfaces/http/api/recipes/recipe.module';
 import { ProductionOrderModule } from './Interfaces/http/api/production/production-order.module';
 import { PurchaseRequestModule } from './Interfaces/http/api/purchase-requests/purchase-request.module';
@@ -60,6 +61,7 @@ import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
     StockTransferModule,
     StockOpnameModule,
     ShiftModule,
+    SalesOrderModule,
     RecipeModule,
     ProductionOrderModule,
     PurchaseRequestModule,

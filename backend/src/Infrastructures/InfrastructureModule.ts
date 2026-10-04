@@ -21,6 +21,7 @@ import { StockAdjustmentRepository } from '../Domains/stock-adjustments/StockAdj
 import { StockTransferRepository } from '../Domains/stock-transfers/StockTransferRepository';
 import { StockOpnameRepository } from '../Domains/stock-opnames/StockOpnameRepository';
 import { ShiftRepository } from '../Domains/shifts/ShiftRepository';
+import { SalesOrderRepository } from '../Domains/sales/SalesOrderRepository';
 import { RecipeRepository } from '../Domains/recipes/RecipeRepository';
 import { ProductionOrderRepository } from '../Domains/production/ProductionOrderRepository';
 import { PurchaseRequestRepository } from '../Domains/purchase-requests/PurchaseRequestRepository';
@@ -53,6 +54,7 @@ import { StockAdjustmentRepositoryPostgres } from './repository/StockAdjustmentR
 import { StockTransferRepositoryPostgres } from './repository/StockTransferRepositoryPostgres';
 import { StockOpnameRepositoryPostgres } from './repository/StockOpnameRepositoryPostgres';
 import { ShiftRepositoryPostgres } from './repository/ShiftRepositoryPostgres';
+import { SalesOrderRepositoryPostgres } from './repository/SalesOrderRepositoryPostgres';
 import { RecipeRepositoryPostgres } from './repository/RecipeRepositoryPostgres';
 import { ProductionOrderRepositoryPostgres } from './repository/ProductionOrderRepositoryPostgres';
 import { PurchaseRequestRepositoryPostgres } from './repository/PurchaseRequestRepositoryPostgres';
@@ -126,6 +128,10 @@ import { GetStockOpnamesUseCase } from '../Applications/use_case/stock-opnames/G
 import { OpenShiftUseCase } from '../Applications/use_case/shifts/OpenShiftUseCase';
 import { CloseShiftUseCase } from '../Applications/use_case/shifts/CloseShiftUseCase';
 import { GetShiftsUseCase } from '../Applications/use_case/shifts/GetShiftsUseCase';
+import { CreateSalesOrderUseCase } from '../Applications/use_case/sales/CreateSalesOrderUseCase';
+import { PaySalesOrderUseCase } from '../Applications/use_case/sales/PaySalesOrderUseCase';
+import { VoidSalesOrderUseCase } from '../Applications/use_case/sales/VoidSalesOrderUseCase';
+import { GetSalesOrdersUseCase } from '../Applications/use_case/sales/GetSalesOrdersUseCase';
 import { GetInventoryDashboardUseCase } from '../Applications/use_case/inventory/GetInventoryDashboardUseCase';
 import { CreateRecipeUseCase } from '../Applications/use_case/recipes/CreateRecipeUseCase';
 import { UpdateRecipeUseCase } from '../Applications/use_case/recipes/UpdateRecipeUseCase';
@@ -291,6 +297,10 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     {
       provide: ShiftRepository,
       useFactory: () => new ShiftRepositoryPostgres(pool),
+    },
+    {
+      provide: SalesOrderRepository,
+      useFactory: () => new SalesOrderRepositoryPostgres(pool),
     },
     {
       provide: RecipeRepository,
@@ -729,6 +739,30 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
       provide: GetShiftsUseCase,
       useFactory: (shiftRepo: ShiftRepository) => new GetShiftsUseCase(shiftRepo),
       inject: [ShiftRepository],
+    },
+    {
+      provide: CreateSalesOrderUseCase,
+      useFactory: (
+        salesRepo: SalesOrderRepository,
+        shiftRepo: ShiftRepository,
+        outletRepo: OutletRepository,
+      ) => new CreateSalesOrderUseCase(salesRepo, shiftRepo, outletRepo),
+      inject: [SalesOrderRepository, ShiftRepository, OutletRepository],
+    },
+    {
+      provide: PaySalesOrderUseCase,
+      useFactory: (salesRepo: SalesOrderRepository) => new PaySalesOrderUseCase(salesRepo),
+      inject: [SalesOrderRepository],
+    },
+    {
+      provide: VoidSalesOrderUseCase,
+      useFactory: (salesRepo: SalesOrderRepository) => new VoidSalesOrderUseCase(salesRepo),
+      inject: [SalesOrderRepository],
+    },
+    {
+      provide: GetSalesOrdersUseCase,
+      useFactory: (salesRepo: SalesOrderRepository) => new GetSalesOrdersUseCase(salesRepo),
+      inject: [SalesOrderRepository],
     },
     {
       provide: GetInventoryDashboardUseCase,
@@ -1222,6 +1256,7 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     StockTransferRepository,
     StockOpnameRepository,
     ShiftRepository,
+    SalesOrderRepository,
     RecipeRepository,
     ProductionOrderRepository,
     PurchaseRequestRepository,
@@ -1290,6 +1325,10 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     OpenShiftUseCase,
     CloseShiftUseCase,
     GetShiftsUseCase,
+    CreateSalesOrderUseCase,
+    PaySalesOrderUseCase,
+    VoidSalesOrderUseCase,
+    GetSalesOrdersUseCase,
     GetInventoryDashboardUseCase,
     CreateRecipeUseCase,
     UpdateRecipeUseCase,
