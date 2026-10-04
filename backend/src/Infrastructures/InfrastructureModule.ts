@@ -20,6 +20,7 @@ import { InventoryRepository } from '../Domains/inventory/InventoryRepository';
 import { StockAdjustmentRepository } from '../Domains/stock-adjustments/StockAdjustmentRepository';
 import { StockTransferRepository } from '../Domains/stock-transfers/StockTransferRepository';
 import { StockOpnameRepository } from '../Domains/stock-opnames/StockOpnameRepository';
+import { ShiftRepository } from '../Domains/shifts/ShiftRepository';
 import { RecipeRepository } from '../Domains/recipes/RecipeRepository';
 import { ProductionOrderRepository } from '../Domains/production/ProductionOrderRepository';
 import { PurchaseRequestRepository } from '../Domains/purchase-requests/PurchaseRequestRepository';
@@ -51,6 +52,7 @@ import { InventoryRepositoryPostgres } from './repository/InventoryRepositoryPos
 import { StockAdjustmentRepositoryPostgres } from './repository/StockAdjustmentRepositoryPostgres';
 import { StockTransferRepositoryPostgres } from './repository/StockTransferRepositoryPostgres';
 import { StockOpnameRepositoryPostgres } from './repository/StockOpnameRepositoryPostgres';
+import { ShiftRepositoryPostgres } from './repository/ShiftRepositoryPostgres';
 import { RecipeRepositoryPostgres } from './repository/RecipeRepositoryPostgres';
 import { ProductionOrderRepositoryPostgres } from './repository/ProductionOrderRepositoryPostgres';
 import { PurchaseRequestRepositoryPostgres } from './repository/PurchaseRequestRepositoryPostgres';
@@ -121,6 +123,9 @@ import { ApproveStockOpnameUseCase } from '../Applications/use_case/stock-opname
 import { CompleteStockOpnameUseCase } from '../Applications/use_case/stock-opnames/CompleteStockOpnameUseCase';
 import { CancelStockOpnameUseCase } from '../Applications/use_case/stock-opnames/CancelStockOpnameUseCase';
 import { GetStockOpnamesUseCase } from '../Applications/use_case/stock-opnames/GetStockOpnamesUseCase';
+import { OpenShiftUseCase } from '../Applications/use_case/shifts/OpenShiftUseCase';
+import { CloseShiftUseCase } from '../Applications/use_case/shifts/CloseShiftUseCase';
+import { GetShiftsUseCase } from '../Applications/use_case/shifts/GetShiftsUseCase';
 import { GetInventoryDashboardUseCase } from '../Applications/use_case/inventory/GetInventoryDashboardUseCase';
 import { CreateRecipeUseCase } from '../Applications/use_case/recipes/CreateRecipeUseCase';
 import { UpdateRecipeUseCase } from '../Applications/use_case/recipes/UpdateRecipeUseCase';
@@ -282,6 +287,10 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     {
       provide: StockOpnameRepository,
       useFactory: () => new StockOpnameRepositoryPostgres(pool),
+    },
+    {
+      provide: ShiftRepository,
+      useFactory: () => new ShiftRepositoryPostgres(pool),
     },
     {
       provide: RecipeRepository,
@@ -704,6 +713,22 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
       provide: GetStockOpnamesUseCase,
       useFactory: (opnRepo: StockOpnameRepository) => new GetStockOpnamesUseCase(opnRepo),
       inject: [StockOpnameRepository],
+    },
+    {
+      provide: OpenShiftUseCase,
+      useFactory: (shiftRepo: ShiftRepository, outletRepo: OutletRepository) =>
+        new OpenShiftUseCase(shiftRepo, outletRepo),
+      inject: [ShiftRepository, OutletRepository],
+    },
+    {
+      provide: CloseShiftUseCase,
+      useFactory: (shiftRepo: ShiftRepository) => new CloseShiftUseCase(shiftRepo),
+      inject: [ShiftRepository],
+    },
+    {
+      provide: GetShiftsUseCase,
+      useFactory: (shiftRepo: ShiftRepository) => new GetShiftsUseCase(shiftRepo),
+      inject: [ShiftRepository],
     },
     {
       provide: GetInventoryDashboardUseCase,
@@ -1196,6 +1221,7 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     StockAdjustmentRepository,
     StockTransferRepository,
     StockOpnameRepository,
+    ShiftRepository,
     RecipeRepository,
     ProductionOrderRepository,
     PurchaseRequestRepository,
@@ -1261,6 +1287,9 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     CompleteStockOpnameUseCase,
     CancelStockOpnameUseCase,
     GetStockOpnamesUseCase,
+    OpenShiftUseCase,
+    CloseShiftUseCase,
+    GetShiftsUseCase,
     GetInventoryDashboardUseCase,
     CreateRecipeUseCase,
     UpdateRecipeUseCase,

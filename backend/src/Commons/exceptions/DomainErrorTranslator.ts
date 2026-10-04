@@ -971,6 +971,35 @@ const DomainErrorTranslator = {
     ),
     'GOODS_RECEIPT.INVALID_STATUS': new InvariantError('Status goods receipt tidak valid'),
 
+    // ── Shift (POS / Sales Fase 1, doc 51 §4.2/§6.2) ─────────────
+    'SHIFT.NOT_FOUND': new NotFoundError('Shift tidak ditemukan'),
+    'OPEN_SHIFT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data buka shift tidak lengkap',
+    ),
+    'OPEN_SHIFT.CASH_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Kas awal (opening cash) harus berupa angka',
+    ),
+    'OPEN_SHIFT.CASH_MUST_BE_NON_NEGATIVE': new InvariantError(
+      'Kas awal (opening cash) tidak boleh negatif',
+    ),
+    'CLOSE_SHIFT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data tutup shift tidak lengkap',
+    ),
+    'CLOSE_SHIFT.CASH_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Kas aktual (actual cash) harus berupa angka',
+    ),
+    'CLOSE_SHIFT.CASH_MUST_BE_NON_NEGATIVE': new InvariantError(
+      'Kas aktual (actual cash) tidak boleh negatif',
+    ),
+    'SHIFT.ALREADY_OPEN': new ConflictError(
+      'Masih ada shift yang terbuka untuk kasir dan outlet ini; tutup shift sebelumnya terlebih dahulu',
+    ),
+    'SHIFT.ALREADY_CLOSED': new InvariantError('Shift sudah ditutup'),
+    'SHIFT.INVALID_STATUS_TRANSITION': new InvariantError(
+      'Transisi status shift tidak diperbolehkan',
+    ),
+    'SHIFT.INVALID_STATUS': new InvariantError('Status shift tidak valid'),
+
     // ── Conflict ─────────────────────────────────────────────────
     'USER.EMAIL_ALREADY_USED': new ConflictError(
       'Email sudah digunakan oleh akun lain',
