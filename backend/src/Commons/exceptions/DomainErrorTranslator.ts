@@ -346,6 +346,57 @@ const DomainErrorTranslator = {
       'Konversi UOM untuk satuan ini sudah terdaftar pada produk tersebut',
     ),
 
+    // ── ProductTopping (POS Fase 2 — allowed toppings per produk jual) ──
+    'CREATE_PRODUCT_TOPPING.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal menambah topping: properti yang dibutuhkan tidak ada',
+    ),
+    'CREATE_PRODUCT_TOPPING.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal menambah topping: tipe data tidak sesuai',
+    ),
+    'CREATE_PRODUCT_TOPPING.QTY_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal menambah topping: qty harus berupa angka',
+    ),
+    'CREATE_PRODUCT_TOPPING.QTY_MUST_BE_POSITIVE': new InvariantError(
+      'Gagal menambah topping: qty per item harus lebih dari nol',
+    ),
+    'CREATE_PRODUCT_TOPPING.EXTRA_PRICE_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal menambah topping: harga tambahan harus berupa angka',
+    ),
+    'CREATE_PRODUCT_TOPPING.EXTRA_PRICE_MUST_BE_NON_NEGATIVE': new InvariantError(
+      'Gagal menambah topping: harga tambahan tidak boleh negatif',
+    ),
+    'UPDATE_PRODUCT_TOPPING.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal memperbarui topping: tidak ada field yang dikirimkan',
+    ),
+    'UPDATE_PRODUCT_TOPPING.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal memperbarui topping: tipe data tidak sesuai',
+    ),
+    'UPDATE_PRODUCT_TOPPING.QTY_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal memperbarui topping: qty harus berupa angka',
+    ),
+    'UPDATE_PRODUCT_TOPPING.QTY_MUST_BE_POSITIVE': new InvariantError(
+      'Gagal memperbarui topping: qty per item harus lebih dari nol',
+    ),
+    'UPDATE_PRODUCT_TOPPING.EXTRA_PRICE_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal memperbarui topping: harga tambahan harus berupa angka',
+    ),
+    'UPDATE_PRODUCT_TOPPING.EXTRA_PRICE_MUST_BE_NON_NEGATIVE': new InvariantError(
+      'Gagal memperbarui topping: harga tambahan tidak boleh negatif',
+    ),
+    'PRODUCT_TOPPING.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data topping tidak lengkap',
+    ),
+    'PRODUCT_TOPPING.NOT_FOUND': new NotFoundError('Topping tidak ditemukan'),
+    'PRODUCT_TOPPING.DUPLICATE': new ConflictError(
+      'Topping ini sudah terdaftar pada produk tersebut',
+    ),
+    'PRODUCT_TOPPING.INVALID_TOPPING_TYPE': new InvariantError(
+      'Produk topping harus bertipe bahan baku (RAW_MATERIAL) atau setengah jadi (SEMI_FINISHED)',
+    ),
+    'PRODUCT_TOPPING.SELF_TOPPING': new InvariantError(
+      'Produk tidak boleh menjadi topping untuk dirinya sendiri',
+    ),
+
     // ── CreateUser / UpdateUser ──────────────────────────────────
     'CREATE_USER.ROLE_REQUIRED': new InvariantError(
       'Gagal membuat user: role wajib dipilih',

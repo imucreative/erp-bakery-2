@@ -16,6 +16,7 @@ import { PaymentTermRepository } from '../Domains/payment-terms/PaymentTermRepos
 import { CategoryRepository } from '../Domains/categories/CategoryRepository';
 import { ProductRepository } from '../Domains/products/ProductRepository';
 import { ProductUomConversionRepository } from '../Domains/product-uom-conversions/ProductUomConversionRepository';
+import { ProductToppingRepository } from '../Domains/product-toppings/ProductToppingRepository';
 import { InventoryRepository } from '../Domains/inventory/InventoryRepository';
 import { StockAdjustmentRepository } from '../Domains/stock-adjustments/StockAdjustmentRepository';
 import { StockTransferRepository } from '../Domains/stock-transfers/StockTransferRepository';
@@ -49,6 +50,7 @@ import { PaymentTermRepositoryPostgres } from './repository/PaymentTermRepositor
 import { CategoryRepositoryPostgres } from './repository/CategoryRepositoryPostgres';
 import { ProductRepositoryPostgres } from './repository/ProductRepositoryPostgres';
 import { ProductUomConversionRepositoryPostgres } from './repository/ProductUomConversionRepositoryPostgres';
+import { ProductToppingRepositoryPostgres } from './repository/ProductToppingRepositoryPostgres';
 import { InventoryRepositoryPostgres } from './repository/InventoryRepositoryPostgres';
 import { StockAdjustmentRepositoryPostgres } from './repository/StockAdjustmentRepositoryPostgres';
 import { StockTransferRepositoryPostgres } from './repository/StockTransferRepositoryPostgres';
@@ -99,6 +101,10 @@ import { ListProductUomConversionsUseCase } from '../Applications/use_case/produ
 import { CreateProductUomConversionUseCase } from '../Applications/use_case/product-uom-conversions/CreateProductUomConversionUseCase';
 import { UpdateProductUomConversionUseCase } from '../Applications/use_case/product-uom-conversions/UpdateProductUomConversionUseCase';
 import { DeleteProductUomConversionUseCase } from '../Applications/use_case/product-uom-conversions/DeleteProductUomConversionUseCase';
+import { ListProductToppingsUseCase } from '../Applications/use_case/product-toppings/ListProductToppingsUseCase';
+import { CreateProductToppingUseCase } from '../Applications/use_case/product-toppings/CreateProductToppingUseCase';
+import { UpdateProductToppingUseCase } from '../Applications/use_case/product-toppings/UpdateProductToppingUseCase';
+import { DeleteProductToppingUseCase } from '../Applications/use_case/product-toppings/DeleteProductToppingUseCase';
 import { GetStockOnHandUseCase } from '../Applications/use_case/inventory/GetStockOnHandUseCase';
 import { GetStockLedgerUseCase } from '../Applications/use_case/inventory/GetStockLedgerUseCase';
 import { GetBatchesUseCase } from '../Applications/use_case/inventory/GetBatchesUseCase';
@@ -278,6 +284,10 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     {
       provide: ProductUomConversionRepository,
       useFactory: () => new ProductUomConversionRepositoryPostgres(pool),
+    },
+    {
+      provide: ProductToppingRepository,
+      useFactory: () => new ProductToppingRepositoryPostgres(pool),
     },
     {
       provide: InventoryRepository,
@@ -582,6 +592,38 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
         productRepo: ProductRepository,
       ) => new DeleteProductUomConversionUseCase(conversionRepo, productRepo),
       inject: [ProductUomConversionRepository, ProductRepository],
+    },
+    {
+      provide: ListProductToppingsUseCase,
+      useFactory: (
+        toppingRepo: ProductToppingRepository,
+        productRepo: ProductRepository,
+      ) => new ListProductToppingsUseCase(toppingRepo, productRepo),
+      inject: [ProductToppingRepository, ProductRepository],
+    },
+    {
+      provide: CreateProductToppingUseCase,
+      useFactory: (
+        toppingRepo: ProductToppingRepository,
+        productRepo: ProductRepository,
+      ) => new CreateProductToppingUseCase(toppingRepo, productRepo),
+      inject: [ProductToppingRepository, ProductRepository],
+    },
+    {
+      provide: UpdateProductToppingUseCase,
+      useFactory: (
+        toppingRepo: ProductToppingRepository,
+        productRepo: ProductRepository,
+      ) => new UpdateProductToppingUseCase(toppingRepo, productRepo),
+      inject: [ProductToppingRepository, ProductRepository],
+    },
+    {
+      provide: DeleteProductToppingUseCase,
+      useFactory: (
+        toppingRepo: ProductToppingRepository,
+        productRepo: ProductRepository,
+      ) => new DeleteProductToppingUseCase(toppingRepo, productRepo),
+      inject: [ProductToppingRepository, ProductRepository],
     },
     {
       provide: GetStockOnHandUseCase,
@@ -1257,6 +1299,7 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     CategoryRepository,
     ProductRepository,
     ProductUomConversionRepository,
+    ProductToppingRepository,
     InventoryRepository,
     StockAdjustmentRepository,
     StockTransferRepository,
@@ -1302,6 +1345,10 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     CreateProductUomConversionUseCase,
     UpdateProductUomConversionUseCase,
     DeleteProductUomConversionUseCase,
+    ListProductToppingsUseCase,
+    CreateProductToppingUseCase,
+    UpdateProductToppingUseCase,
+    DeleteProductToppingUseCase,
     GetStockOnHandUseCase,
     GetStockLedgerUseCase,
     GetBatchesUseCase,
