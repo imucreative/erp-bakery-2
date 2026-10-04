@@ -72,6 +72,7 @@ export class ToppingController {
       toppingSku: topping.toppingSku,
       uomId: topping.uomId,
       uomCode: topping.uomCode,
+      uomName: topping.uomName,
       defaultQtyPerItem: topping.defaultQtyPerItem,
       extraPrice: topping.extraPrice,
       sortOrder: topping.sortOrder,

@@ -29,6 +29,7 @@ export class Topping {
   public readonly toppingSku: string | null;
   public readonly uomId: string | null;
   public readonly uomCode: string | null;
+  public readonly uomName: string | null;
 
   constructor(payload: {
     id: string;
@@ -44,6 +45,7 @@ export class Topping {
     toppingSku?: string | null;
     uomId?: string | null;
     uomCode?: string | null;
+    uomName?: string | null;
   }) {
     const {
       id,
@@ -59,6 +61,7 @@ export class Topping {
       toppingSku,
       uomId,
       uomCode,
+      uomName,
     } = payload;
 
     if (!id || !companyId || !toppingProductId) {
@@ -78,5 +81,6 @@ export class Topping {
     this.toppingSku = toppingSku ?? null;
     this.uomId = uomId ?? null;
     this.uomCode = uomCode ?? null;
+    this.uomName = uomName ?? null;
   }
 }

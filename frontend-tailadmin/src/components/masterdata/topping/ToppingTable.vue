@@ -90,7 +90,7 @@ defineEmits<{
               </p>
             </td>
             <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
-              {{ formatQtyWithUom(topping.defaultQtyPerItem, topping.uomCode) }}
+              {{ formatQtyWithUom(topping.defaultQtyPerItem, topping.uomName) }}
             </td>
             <td class="px-5 py-4 text-end text-theme-sm text-gray-800 dark:text-white/90">
               {{ topping.extraPrice > 0 ? formatRupiah(topping.extraPrice) : 'Gratis' }}

@@ -42,6 +42,7 @@ export interface Topping {
   toppingSku: string
   uomId: string
   uomCode: string
+  uomName: string
   defaultQtyPerItem: number
   extraPrice: number
   sortOrder: number

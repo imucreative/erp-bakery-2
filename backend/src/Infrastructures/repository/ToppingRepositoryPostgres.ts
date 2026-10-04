@@ -19,6 +19,7 @@ interface ToppingRow {
   topping_sku: string | null;
   uom_id: string | null;
   uom_code: string | null;
+  uom_name: string | null;
 }
 
 /**
@@ -31,7 +32,7 @@ const SELECT_WITH_JOINS = `
   t.default_qty_per_item, t.extra_price, t.sort_order, t.is_active,
   t.created_at, t.updated_at,
   tp.name AS topping_name, tp.sku AS topping_sku,
-  tp.uom_id AS uom_id, u.code AS uom_code
+  tp.uom_id AS uom_id, u.code AS uom_code, u.name AS uom_name
 `;
 
 /**
@@ -58,6 +59,7 @@ export class ToppingRepositoryPostgres extends ToppingRepository {
       toppingSku: row.topping_sku,
       uomId: row.uom_id,
       uomCode: row.uom_code,
+      uomName: row.uom_name,
     });
   }
 
