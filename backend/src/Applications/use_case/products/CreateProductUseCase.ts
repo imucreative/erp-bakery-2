@@ -81,6 +81,7 @@ export class CreateProductUseCase {
         minimumStock: createProduct.minimumStock,
         shelfLifeDays: createProduct.shelfLifeDays,
         isBatchTracked: createProduct.isBatchTracked,
+        hasToppings: createProduct.hasToppings,
       },
       companyId,
     );

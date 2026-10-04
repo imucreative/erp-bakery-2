@@ -22,6 +22,7 @@ const productRow = {
   minimum_stock: '10',
   shelf_life_days: 3,
   is_batch_tracked: true,
+  has_toppings: false,
   is_active: true,
   created_at: new Date(),
   updated_at: new Date(),
@@ -41,6 +42,7 @@ const newData = {
   minimumStock: 10,
   shelfLifeDays: 3,
   isBatchTracked: true,
+  hasToppings: false,
 };
 
 describe('ProductRepositoryPostgres', () => {

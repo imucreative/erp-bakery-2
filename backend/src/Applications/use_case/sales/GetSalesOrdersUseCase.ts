@@ -13,7 +13,7 @@ import { SalesReturn } from '../../../Domains/sales/entities/SalesReturn';
  * UseCase: GetSalesOrdersUseCase — read side of the Sales module.
  *
  * list/detail of sales orders, plus the POS product grid (sellable products +
- * resolved mode + available toppings, doc 51 §10) and per-product topping
+ * resolved mode + hasToppings flag, doc 51 §10) and the GLOBAL topping catalog
  * lookup used by the POS modifier panel.
  */
 export class GetSalesOrdersUseCase {
@@ -35,7 +35,7 @@ export class GetSalesOrdersUseCase {
     return this.salesOrderRepository.listPosProducts(companyId, filter);
   }
 
-  async productToppings(productId: string, companyId: string): Promise<PosToppingOption[]> {
-    return this.salesOrderRepository.listProductToppings(productId, companyId);
+  async activeToppings(companyId: string): Promise<PosToppingOption[]> {
+    return this.salesOrderRepository.listActiveToppings(companyId);
   }
 }

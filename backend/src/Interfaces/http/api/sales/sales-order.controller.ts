@@ -38,8 +38,8 @@ import { PosProductQueryDto } from './dto/pos-product-query.dto';
  * POST /sales/orders/:id/returns  PAID -> REFUNDED (full-order, SALE_RETURN)
  * GET  /sales/orders              list
  * GET  /sales/orders/:id          detail
- * GET  /sales/pos/products        POS product grid (mode + toppings)
- * GET  /sales/pos/products/:id/toppings  toppings for a product
+ * GET  /sales/pos/products        POS product grid (mode + hasToppings flag)
+ * GET  /sales/pos/toppings        global topping catalog (active) for modifiers
  */
 @ApiTags('Sales')
 @ApiBearerAuth()
@@ -169,7 +169,7 @@ export class SalesOrderController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission('sales.manage')
   @ApiOperation({
-    summary: 'POS product grid — sellable products + resolved mode + available toppings',
+    summary: 'POS product grid — sellable products + resolved mode + hasToppings flag',
   })
   @ApiResponse({ status: 200, description: 'Paginated POS products' })
   async posProducts(@Query() query: PosProductQueryDto, @GetUser() user: JwtAccessPayload) {
@@ -182,15 +182,15 @@ export class SalesOrderController {
     return listResponse(rows, total, page, limit);
   }
 
-  @Get('pos/products/:id/toppings')
+  @Get('pos/toppings')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('sales.manage')
-  @ApiOperation({ summary: 'Toppings offered on a sellable product' })
-  @ApiParam({ name: 'id', description: 'Product UUID' })
-  @ApiResponse({ status: 200, description: 'Available toppings' })
-  @ApiResponse({ status: 404, description: 'Product not found' })
-  async productToppings(@Param('id') id: string, @GetUser() user: JwtAccessPayload) {
-    const toppings = await this.getUseCase.productToppings(id, this._companyId(user));
+  @ApiOperation({
+    summary: 'Active global topping catalog for the POS modifier panel (model global)',
+  })
+  @ApiResponse({ status: 200, description: 'Active global toppings' })
+  async posToppings(@GetUser() user: JwtAccessPayload) {
+    const toppings = await this.getUseCase.activeToppings(this._companyId(user));
     return successResponse(toppings);
   }
 }

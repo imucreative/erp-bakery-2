@@ -2,9 +2,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsBoolean, IsInt, IsNumber, IsOptional, IsPositive, Min } from 'class-validator';
 
-export class UpdateProductToppingDto {
+export class UpdateToppingDto {
   @ApiProperty({
-    example: 1.5,
+    example: 30,
     required: false,
     description: 'Default consumed qty per sold item, in the topping product UOM. Must be > 0.',
     minimum: 0,

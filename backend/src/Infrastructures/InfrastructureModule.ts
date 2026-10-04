@@ -16,7 +16,7 @@ import { PaymentTermRepository } from '../Domains/payment-terms/PaymentTermRepos
 import { CategoryRepository } from '../Domains/categories/CategoryRepository';
 import { ProductRepository } from '../Domains/products/ProductRepository';
 import { ProductUomConversionRepository } from '../Domains/product-uom-conversions/ProductUomConversionRepository';
-import { ProductToppingRepository } from '../Domains/product-toppings/ProductToppingRepository';
+import { ToppingRepository } from '../Domains/toppings/ToppingRepository';
 import { InventoryRepository } from '../Domains/inventory/InventoryRepository';
 import { StockAdjustmentRepository } from '../Domains/stock-adjustments/StockAdjustmentRepository';
 import { StockTransferRepository } from '../Domains/stock-transfers/StockTransferRepository';
@@ -50,7 +50,7 @@ import { PaymentTermRepositoryPostgres } from './repository/PaymentTermRepositor
 import { CategoryRepositoryPostgres } from './repository/CategoryRepositoryPostgres';
 import { ProductRepositoryPostgres } from './repository/ProductRepositoryPostgres';
 import { ProductUomConversionRepositoryPostgres } from './repository/ProductUomConversionRepositoryPostgres';
-import { ProductToppingRepositoryPostgres } from './repository/ProductToppingRepositoryPostgres';
+import { ToppingRepositoryPostgres } from './repository/ToppingRepositoryPostgres';
 import { InventoryRepositoryPostgres } from './repository/InventoryRepositoryPostgres';
 import { StockAdjustmentRepositoryPostgres } from './repository/StockAdjustmentRepositoryPostgres';
 import { StockTransferRepositoryPostgres } from './repository/StockTransferRepositoryPostgres';
@@ -101,10 +101,10 @@ import { ListProductUomConversionsUseCase } from '../Applications/use_case/produ
 import { CreateProductUomConversionUseCase } from '../Applications/use_case/product-uom-conversions/CreateProductUomConversionUseCase';
 import { UpdateProductUomConversionUseCase } from '../Applications/use_case/product-uom-conversions/UpdateProductUomConversionUseCase';
 import { DeleteProductUomConversionUseCase } from '../Applications/use_case/product-uom-conversions/DeleteProductUomConversionUseCase';
-import { ListProductToppingsUseCase } from '../Applications/use_case/product-toppings/ListProductToppingsUseCase';
-import { CreateProductToppingUseCase } from '../Applications/use_case/product-toppings/CreateProductToppingUseCase';
-import { UpdateProductToppingUseCase } from '../Applications/use_case/product-toppings/UpdateProductToppingUseCase';
-import { DeleteProductToppingUseCase } from '../Applications/use_case/product-toppings/DeleteProductToppingUseCase';
+import { GetToppingsUseCase } from '../Applications/use_case/toppings/GetToppingsUseCase';
+import { CreateToppingUseCase } from '../Applications/use_case/toppings/CreateToppingUseCase';
+import { UpdateToppingUseCase } from '../Applications/use_case/toppings/UpdateToppingUseCase';
+import { DeleteToppingUseCase } from '../Applications/use_case/toppings/DeleteToppingUseCase';
 import { GetStockOnHandUseCase } from '../Applications/use_case/inventory/GetStockOnHandUseCase';
 import { GetStockLedgerUseCase } from '../Applications/use_case/inventory/GetStockLedgerUseCase';
 import { GetBatchesUseCase } from '../Applications/use_case/inventory/GetBatchesUseCase';
@@ -286,8 +286,8 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
       useFactory: () => new ProductUomConversionRepositoryPostgres(pool),
     },
     {
-      provide: ProductToppingRepository,
-      useFactory: () => new ProductToppingRepositoryPostgres(pool),
+      provide: ToppingRepository,
+      useFactory: () => new ToppingRepositoryPostgres(pool),
     },
     {
       provide: InventoryRepository,
@@ -594,36 +594,27 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
       inject: [ProductUomConversionRepository, ProductRepository],
     },
     {
-      provide: ListProductToppingsUseCase,
-      useFactory: (
-        toppingRepo: ProductToppingRepository,
-        productRepo: ProductRepository,
-      ) => new ListProductToppingsUseCase(toppingRepo, productRepo),
-      inject: [ProductToppingRepository, ProductRepository],
+      provide: GetToppingsUseCase,
+      useFactory: (toppingRepo: ToppingRepository) => new GetToppingsUseCase(toppingRepo),
+      inject: [ToppingRepository],
     },
     {
-      provide: CreateProductToppingUseCase,
+      provide: CreateToppingUseCase,
       useFactory: (
-        toppingRepo: ProductToppingRepository,
+        toppingRepo: ToppingRepository,
         productRepo: ProductRepository,
-      ) => new CreateProductToppingUseCase(toppingRepo, productRepo),
-      inject: [ProductToppingRepository, ProductRepository],
+      ) => new CreateToppingUseCase(toppingRepo, productRepo),
+      inject: [ToppingRepository, ProductRepository],
     },
     {
-      provide: UpdateProductToppingUseCase,
-      useFactory: (
-        toppingRepo: ProductToppingRepository,
-        productRepo: ProductRepository,
-      ) => new UpdateProductToppingUseCase(toppingRepo, productRepo),
-      inject: [ProductToppingRepository, ProductRepository],
+      provide: UpdateToppingUseCase,
+      useFactory: (toppingRepo: ToppingRepository) => new UpdateToppingUseCase(toppingRepo),
+      inject: [ToppingRepository],
     },
     {
-      provide: DeleteProductToppingUseCase,
-      useFactory: (
-        toppingRepo: ProductToppingRepository,
-        productRepo: ProductRepository,
-      ) => new DeleteProductToppingUseCase(toppingRepo, productRepo),
-      inject: [ProductToppingRepository, ProductRepository],
+      provide: DeleteToppingUseCase,
+      useFactory: (toppingRepo: ToppingRepository) => new DeleteToppingUseCase(toppingRepo),
+      inject: [ToppingRepository],
     },
     {
       provide: GetStockOnHandUseCase,
@@ -1299,7 +1290,7 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     CategoryRepository,
     ProductRepository,
     ProductUomConversionRepository,
-    ProductToppingRepository,
+    ToppingRepository,
     InventoryRepository,
     StockAdjustmentRepository,
     StockTransferRepository,
@@ -1345,10 +1336,10 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     CreateProductUomConversionUseCase,
     UpdateProductUomConversionUseCase,
     DeleteProductUomConversionUseCase,
-    ListProductToppingsUseCase,
-    CreateProductToppingUseCase,
-    UpdateProductToppingUseCase,
-    DeleteProductToppingUseCase,
+    GetToppingsUseCase,
+    CreateToppingUseCase,
+    UpdateToppingUseCase,
+    DeleteToppingUseCase,
     GetStockOnHandUseCase,
     GetStockLedgerUseCase,
     GetBatchesUseCase,

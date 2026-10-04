@@ -2,16 +2,16 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsBoolean, IsInt, IsNumber, IsOptional, IsPositive, IsUUID, Min } from 'class-validator';
 
-export class CreateProductToppingDto {
+export class CreateToppingDto {
   @ApiProperty({
     example: 'd3a7...uuid',
-    description: 'Topping stock product UUID (must be RAW_MATERIAL or SEMI_FINISHED, and ≠ owning product)',
+    description: 'Topping stock product UUID (must be RAW_MATERIAL or SEMI_FINISHED)',
   })
   @IsUUID('4')
   toppingProductId!: string;
 
   @ApiProperty({
-    example: 1,
+    example: 25,
     description: 'Default consumed qty per sold item, in the topping product UOM. Must be > 0.',
     minimum: 0,
   })

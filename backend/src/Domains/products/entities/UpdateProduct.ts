@@ -17,6 +17,7 @@ export interface UpdateProductFields {
   minimumStock?: number;
   shelfLifeDays?: number;
   isBatchTracked?: boolean;
+  hasToppings?: boolean;
   isActive?: boolean;
 }
 
@@ -29,6 +30,7 @@ const UPDATABLE_KEYS: (keyof UpdateProductFields)[] = [
   'minimumStock',
   'shelfLifeDays',
   'isBatchTracked',
+  'hasToppings',
   'isActive',
 ];
 
@@ -51,6 +53,7 @@ export class UpdateProduct {
     if (p.minimumStock !== undefined) fields.minimumStock = Number(p.minimumStock);
     if (p.shelfLifeDays !== undefined) fields.shelfLifeDays = Number(p.shelfLifeDays);
     if (p.isBatchTracked !== undefined) fields.isBatchTracked = Boolean(p.isBatchTracked);
+    if (p.hasToppings !== undefined) fields.hasToppings = Boolean(p.hasToppings);
     if (p.isActive !== undefined) fields.isActive = Boolean(p.isActive);
 
     this.fields = fields;
@@ -106,6 +109,9 @@ export class UpdateProduct {
     }
 
     if (p.isBatchTracked !== undefined && typeof p.isBatchTracked !== 'boolean') {
+      throw new Error('UPDATE_PRODUCT.NOT_MEET_DATA_TYPE_SPECIFICATION');
+    }
+    if (p.hasToppings !== undefined && typeof p.hasToppings !== 'boolean') {
       throw new Error('UPDATE_PRODUCT.NOT_MEET_DATA_TYPE_SPECIFICATION');
     }
     if (p.isActive !== undefined && typeof p.isActive !== 'boolean') {

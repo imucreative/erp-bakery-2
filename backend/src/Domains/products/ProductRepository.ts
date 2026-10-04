@@ -31,6 +31,7 @@ export interface NewProductData {
   minimumStock: number;
   shelfLifeDays: number;
   isBatchTracked: boolean;
+  hasToppings: boolean;
 }
 
 /**
