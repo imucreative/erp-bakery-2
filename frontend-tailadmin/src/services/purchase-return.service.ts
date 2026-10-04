@@ -10,7 +10,8 @@
  *               search? (returnNumber / notes)
  *      Guard `procurement.return.read`. Each row carries items[] + statusLogs[].
  *  - GET    /purchase-returns/returnable?goodsReceiptId=<uuid>
- *      → { success, data: ReturnableLine[] }. Guard `procurement.return.create`.
+ *      → { success, data: { goodsReceiptId, items: ReturnableLine[] } }.
+ *      Guard `procurement.return.create`.
  *      The returnable lines of a COMPLETED Goods Receipt: for each posted GR
  *      line it reports postedAcceptedQuantity, how much is already returned
  *      (completedReturnQuantity + submittedReturnQuantity), and the remaining
@@ -340,13 +341,17 @@ export const purchaseReturnService = {
    * (`returnableQuantity`) and the snapshot fields carried into the payload.
    *
    *   GET /purchase-returns/returnable?goodsReceiptId=<uuid>
+   *
+   * The backend wraps the result as `{ goodsReceiptId, items: ReturnableLine[] }`
+   * (the echoed `goodsReceiptId` carries source context). This method unwraps
+   * and returns the `items` array so callers get a plain `ReturnableLine[]`;
+   * when `items` is absent it falls back to `[]`.
    */
   async getReturnable(goodsReceiptId: string): Promise<ReturnableLine[]> {
-    const response = await httpClient.get<ApiSuccess<ReturnableLine[]>>(
-      '/purchase-returns/returnable',
-      { params: { goodsReceiptId } },
-    )
-    return response.data.data
+    const response = await httpClient.get<
+      ApiSuccess<{ goodsReceiptId: string; items: ReturnableLine[] }>
+    >('/purchase-returns/returnable', { params: { goodsReceiptId } })
+    return response.data.data?.items ?? []
   },
 
   async create(payload: SavePurchaseReturnPayload): Promise<PurchaseReturn> {
