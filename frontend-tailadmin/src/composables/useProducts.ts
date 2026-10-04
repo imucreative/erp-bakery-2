@@ -17,6 +17,7 @@ import { productGroupService, type ProductGroup } from '@/services/product-group
 import { categoryService, type Category } from '@/services/category.service'
 import { uomService, type Uom } from '@/services/uom.service'
 import { supplierService, type Supplier } from '@/services/supplier.service'
+import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 
 const DEFAULT_LIMIT = 10
 const SEARCH_DEBOUNCE_MS = 350
@@ -61,6 +62,11 @@ export function useProducts() {
   const uoms = ref<Uom[]>([])
   const suppliers = ref<Supplier[]>([])
   const optionsLoaded = ref<boolean>(false)
+
+  // Topping-eligible products (RAW_MATERIAL + SEMI_FINISHED), loaded lazily once
+  // for the "Kelola Topping" modal dropdown. The backend rejects other types.
+  const toppingProducts = ref<Product[]>([])
+  const toppingProductsLoaded = ref<boolean>(false)
 
   const groupNameById = computed(() => nameMap(groups.value))
   const categoryNameById = computed(() => nameMap(categories.value))
@@ -110,6 +116,43 @@ export function useProducts() {
       optionsLoaded.value = true
     } catch {
       // Non-fatal: dropdowns will be empty; table will fall back to ids.
+    }
+  }
+
+  /**
+   * Loads all active topping-eligible products (RAW_MATERIAL + SEMI_FINISHED)
+   * once, for the "Kelola Topping" dropdown. Uses full pagination since the
+   * dropdown needs the complete set, not just the first page.
+   */
+  async function ensureToppingProducts(): Promise<void> {
+    if (toppingProductsLoaded.value) {
+      return
+    }
+    try {
+      const [raw, semi] = await Promise.all([
+        fetchAllPaginated<Product>(async (p) => {
+          const result = await productService.list({
+            page: p,
+            limit: PAGE_LIMIT,
+            productType: 'RAW_MATERIAL',
+            isActive: 'true',
+          })
+          return { items: result.items, meta: result.meta }
+        }),
+        fetchAllPaginated<Product>(async (p) => {
+          const result = await productService.list({
+            page: p,
+            limit: PAGE_LIMIT,
+            productType: 'SEMI_FINISHED',
+            isActive: 'true',
+          })
+          return { items: result.items, meta: result.meta }
+        }),
+      ])
+      toppingProducts.value = [...raw, ...semi]
+      toppingProductsLoaded.value = true
+    } catch {
+      // Non-fatal: dropdown will be empty.
     }
   }
 
@@ -182,7 +225,9 @@ export function useProducts() {
     categoryNameById,
     uomNameById,
     supplierNameById,
+    toppingProducts,
     ensureOptions,
+    ensureToppingProducts,
     categoriesForGroup,
     fetchList,
     prevPage,
