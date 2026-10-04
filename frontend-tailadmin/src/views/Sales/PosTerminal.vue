@@ -36,6 +36,7 @@ import {
 } from '@/components/sales/pos'
 import { usePosCart } from '@/composables/usePosCart'
 import { useShifts } from '@/composables/useShifts'
+import { usePermission } from '@/composables/usePermission'
 import { useAuthStore } from '@/stores/auth'
 import { outletService, type Outlet } from '@/services/outlet.service'
 import { userService } from '@/services/user.service'
@@ -52,6 +53,7 @@ import {
 const pageTitle = 'Point of Sale'
 const auth = useAuthStore()
 const { findOpenShift, toMessage } = useShifts()
+const { can } = usePermission()
 const cart = usePosCart()
 
 // ── Outlet + shift context ────────────────────────────────────────────
@@ -331,7 +333,9 @@ function onReceiptDone(): void {
   void loadProducts()
 }
 
-const canManage = computed<boolean>(() => true)
+// Sales actions (checkout/pay) require sales.manage; shift open/close requires shift.manage.
+const canManage = computed<boolean>(() => can('sales.manage'))
+const canManageShift = computed<boolean>(() => can('shift.manage'))
 
 onMounted(() => {
   void bootstrap()
@@ -396,7 +400,7 @@ onMounted(() => {
             :shift="activeShift"
             :outlet-name="selectedOutletName"
             :cashier-name="cashierName(activeShift.cashierUserId)"
-            :can-manage="canManage"
+            :can-manage="canManageShift"
             @close-shift="openCloseShiftModal"
           />
         </div>
@@ -411,6 +415,7 @@ onMounted(() => {
               Buka shift untuk mulai menerima transaksi di outlet {{ selectedOutletName }}.
             </p>
             <button
+              v-if="canManageShift"
               type="button"
               class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-5 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600"
               @click="openOpenShiftModal"
@@ -464,6 +469,7 @@ onMounted(() => {
               :customer-name="cart.customerName.value"
               :line-total="cart.lineTotal"
               :is-empty="cart.isEmpty.value"
+              :can-manage="canManage"
               @update:order-discount="(v) => (cart.orderDiscount.value = v >= 0 ? v : 0)"
               @update:customer-name="(v) => (cart.customerName.value = v)"
               @set-qty="cart.setQty"

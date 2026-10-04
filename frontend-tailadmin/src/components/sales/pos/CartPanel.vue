@@ -18,6 +18,7 @@ const props = defineProps<{
   customerName: string
   lineTotal: (line: CartLine) => number
   isEmpty: boolean
+  canManage: boolean
 }>()
 
 const emit = defineEmits<{
@@ -162,6 +163,7 @@ const emit = defineEmits<{
         <span class="text-brand-600 dark:text-brand-400">{{ formatRupiah(props.grandTotal) }}</span>
       </div>
       <button
+        v-if="props.canManage"
         type="button"
         :disabled="props.isEmpty"
         class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
