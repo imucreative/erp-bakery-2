@@ -7,6 +7,7 @@ import {
   PosProductResult,
   PosToppingOption,
 } from '../../../Domains/sales/SalesOrderRepository';
+import { SalesReturn } from '../../../Domains/sales/entities/SalesReturn';
 
 /**
  * UseCase: GetSalesOrdersUseCase — read side of the Sales module.
@@ -24,6 +25,10 @@ export class GetSalesOrdersUseCase {
 
   async detail(id: string, companyId: string): Promise<SalesOrder> {
     return this.salesOrderRepository.getById(id, companyId);
+  }
+
+  async returnByOrderId(orderId: string, companyId: string): Promise<SalesReturn | null> {
+    return this.salesOrderRepository.getReturnByOrderId(orderId, companyId);
   }
 
   async posProducts(filter: PosProductFilter, companyId: string): Promise<PosProductResult> {

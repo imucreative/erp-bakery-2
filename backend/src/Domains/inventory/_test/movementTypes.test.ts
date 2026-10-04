@@ -25,6 +25,17 @@ describe('isInboundMovement / isOutboundMovement', () => {
     expect(isInboundMovement('PRODUCTION_RESULT')).toBe(true);
     expect(isInboundMovement('TRANSFER_IN')).toBe(true);
     expect(isInboundMovement('ADJUSTMENT_IN')).toBe(true);
+    // POS refund reversal (doc 51 §8 / OQ-5) is INBOUND.
+    expect(isInboundMovement('SALE_RETURN')).toBe(true);
+  });
+
+  it('classifies SALE_RETURN as inbound and NOT outbound (distinct from RETURN)', () => {
+    expect(isMovementType('SALE_RETURN')).toBe(true);
+    expect(isInboundMovement('SALE_RETURN')).toBe(true);
+    expect(isOutboundMovement('SALE_RETURN')).toBe(false);
+    // The legacy RETURN remains outbound (Purchase Return).
+    expect(isOutboundMovement('RETURN')).toBe(true);
+    expect(isInboundMovement('RETURN')).toBe(false);
   });
 
   it('should classify outbound types correctly', () => {

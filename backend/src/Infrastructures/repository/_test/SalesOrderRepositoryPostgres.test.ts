@@ -495,6 +495,169 @@ describe('SalesOrderRepositoryPostgres', () => {
     });
   });
 
+  // ── Refund (PAID -> REFUNDED, full-order) ────────────────────────────────
+  describe('refund', () => {
+    function orderItemRow(over: Record<string, unknown> = {}) {
+      return {
+        id: 'it1',
+        product_id: 'p2',
+        sale_mode: 'STOCK',
+        recipe_id: null,
+        product_name_snapshot: 'Air Mineral',
+        unit_price_snapshot: '5000.00',
+        qty: '3.000',
+        item_discount: '0.00',
+        toppings_price: '0.00',
+        line_total: '15000.00',
+        ...over,
+      };
+    }
+    function returnHeaderRow(over: Record<string, unknown> = {}) {
+      return {
+        id: 'ret1',
+        company_id: 'c1',
+        outlet_id: 'out1',
+        sales_order_id: 'so1',
+        reason: null,
+        refund_amount: '15000.00',
+        status: 'COMPLETED',
+        returned_by: 'u1',
+        created_at: new Date(),
+        updated_at: new Date(),
+        ...over,
+      };
+    }
+
+    it('returns consumed stock to the ORIGINAL batch via SALE_RETURN and flips to REFUNDED', async () => {
+      client.query
+        .mockResolvedValueOnce(undefined) // BEGIN
+        .mockResolvedValueOnce(undefined) // SET ISOLATION
+        .mockResolvedValueOnce({ rows: [header({ status: 'PAID', grand_total: '15000.00' })], rowCount: 1 }) // lock order (PAID)
+        .mockResolvedValueOnce({ rows: [returnHeaderRow()], rowCount: 1 }) // insert sales_returns
+        .mockResolvedValueOnce({ rows: [orderItemRow()], rowCount: 1 }) // load order items
+        .mockResolvedValueOnce({ rows: [{ id: 'rit1' }], rowCount: 1 }) // insert sales_return_items
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 'sc1',
+              sales_order_item_id: 'it1',
+              product_id: 'p2',
+              batch_id: 'b1',
+              qty_consumed: '3.000',
+            },
+          ],
+        }) // load consumptions
+        .mockResolvedValueOnce({ rows: [{ qty_available: '0.000' }], rowCount: 1 }) // reload batch (was CONSUMED)
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // update batch (reactivate)
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // insert SALE_RETURN movement
+        .mockResolvedValueOnce({ rows: [header({ status: 'REFUNDED' })], rowCount: 1 }) // update order
+        .mockResolvedValueOnce({ rows: [{ id: 'rit1', sales_order_item_id: 'it1', qty_returned: '3.000', refund_line_amount: '15000.00' }] }) // _loadReturnItems
+        .mockResolvedValueOnce({ rows: [] }) // _loadItems items
+        .mockResolvedValueOnce({ rows: [] }) // _loadPayments
+        .mockResolvedValueOnce(undefined); // COMMIT
+
+      const { order, salesReturn } = await repo.refund('so1', 'c1', 'u1', null);
+
+      expect(order.status).toBe('REFUNDED');
+      expect(salesReturn.refundAmount).toBe(15000);
+      expect(salesReturn.status).toBe('COMPLETED');
+
+      // SALE_RETURN inbound movement posted to the original batch, qty 3.
+      const movementCall = client.query.mock.calls.find(
+        (c) => typeof c[0] === 'string' && c[0].includes("'SALE_RETURN'"),
+      );
+      expect(movementCall).toBeDefined();
+      expect(movementCall![0]).toContain("'SALES_RETURN'");
+      // before 0 + 3 = after 3 (batch_id b1, qty 3).
+      expect(movementCall![1][2]).toBe('b1'); // batch_id
+      expect(Number(movementCall![1][4])).toBeCloseTo(3); // qty
+      expect(Number(movementCall![1][6])).toBeCloseTo(3); // after_qty
+
+      // Batch update reactivates a CONSUMED batch when qty becomes > 0.
+      const batchUpdate = client.query.mock.calls.find(
+        (c) => typeof c[0] === 'string' && c[0].includes('UPDATE inventory_batches'),
+      );
+      expect(batchUpdate![0]).toContain("status = CASE WHEN status = 'CONSUMED'");
+      expect(Number(batchUpdate![1][0])).toBeCloseTo(3);
+
+      expect(client.query).toHaveBeenCalledWith('COMMIT');
+    });
+
+    it('rejects refunding an order that is not PAID (SALES_ORDER.NOT_PAID)', async () => {
+      client.query
+        .mockResolvedValueOnce(undefined) // BEGIN
+        .mockResolvedValueOnce(undefined) // SET ISOLATION
+        .mockResolvedValueOnce({ rows: [header({ status: 'PENDING_PAYMENT' })], rowCount: 1 }) // lock → not PAID
+        .mockResolvedValueOnce(undefined); // ROLLBACK
+
+      await expect(repo.refund('so1', 'c1', 'u1', null)).rejects.toThrow('SALES_ORDER.NOT_PAID');
+      expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+    });
+
+    it('rejects double refund (SALES_ORDER.ALREADY_REFUNDED)', async () => {
+      client.query
+        .mockResolvedValueOnce(undefined) // BEGIN
+        .mockResolvedValueOnce(undefined) // SET ISOLATION
+        .mockResolvedValueOnce({ rows: [header({ status: 'REFUNDED' })], rowCount: 1 }) // lock → already REFUNDED
+        .mockResolvedValueOnce(undefined); // ROLLBACK
+
+      await expect(repo.refund('so1', 'c1', 'u1', null)).rejects.toBeInstanceOf(ConflictError);
+      expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+    });
+
+    it('throws SALES_ORDER.NOT_FOUND when the order is missing', async () => {
+      client.query
+        .mockResolvedValueOnce(undefined) // BEGIN
+        .mockResolvedValueOnce(undefined) // SET ISOLATION
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // lock → none
+        .mockResolvedValueOnce(undefined); // ROLLBACK
+
+      await expect(repo.refund('x', 'c1', 'u1', null)).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    it('maps a duplicate SALE_RETURN source key 23505 to INVENTORY.DUPLICATE_MOVEMENT_SOURCE', async () => {
+      client.query
+        .mockResolvedValueOnce(undefined) // BEGIN
+        .mockResolvedValueOnce(undefined) // SET ISOLATION
+        .mockResolvedValueOnce({ rows: [header({ status: 'PAID', grand_total: '15000.00' })], rowCount: 1 }) // lock
+        .mockResolvedValueOnce({ rows: [returnHeaderRow()], rowCount: 1 }) // insert sales_returns
+        .mockResolvedValueOnce({ rows: [orderItemRow()], rowCount: 1 }) // load order items
+        .mockResolvedValueOnce({ rows: [{ id: 'rit1' }], rowCount: 1 }) // insert return item
+        .mockResolvedValueOnce({
+          rows: [
+            { id: 'sc1', sales_order_item_id: 'it1', product_id: 'p2', batch_id: 'b1', qty_consumed: '3.000' },
+          ],
+        }) // consumptions
+        .mockResolvedValueOnce({ rows: [{ qty_available: '0.000' }], rowCount: 1 }) // reload batch
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // update batch
+        .mockRejectedValueOnce({ code: '23505' }) // SALE_RETURN movement collides
+        .mockResolvedValueOnce(undefined); // ROLLBACK
+
+      await expect(repo.refund('so1', 'c1', 'u1', null)).rejects.toThrow(
+        'INVENTORY.DUPLICATE_MOVEMENT_SOURCE',
+      );
+    });
+
+    it('getReturnByOrderId returns null when there is no refund', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      const result = await repo.getReturnByOrderId('so1', 'c1');
+      expect(result).toBeNull();
+    });
+
+    it('getReturnByOrderId returns the latest refund with its items', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [returnHeaderRow()], rowCount: 1 }) // header
+        .mockResolvedValueOnce({
+          rows: [{ id: 'rit1', sales_order_item_id: 'it1', qty_returned: '3.000', refund_line_amount: '15000.00' }],
+        }); // items
+      const result = await repo.getReturnByOrderId('so1', 'c1');
+      expect(result).not.toBeNull();
+      expect(result!.refundAmount).toBe(15000);
+      expect(result!.items).toHaveLength(1);
+      expect(result!.items[0].qtyReturned).toBe(3);
+    });
+  });
+
   it('InvariantError is thrown via the right type for insufficient stock', () => {
     expect(new InvariantError('INVENTORY.INSUFFICIENT_STOCK')).toBeInstanceOf(InvariantError);
   });

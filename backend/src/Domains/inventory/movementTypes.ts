@@ -12,6 +12,7 @@ export const MOVEMENT_TYPES = [
   'PRODUCTION_RESULT',
   'SALE',
   'RETURN',
+  'SALE_RETURN', // POS refund reversal (INBOUND) — doc 51 §8 / OQ-5
   'TRANSFER_OUT',
   'TRANSFER_IN',
   'ADJUSTMENT_IN',
@@ -29,6 +30,7 @@ export type MovementType = (typeof MOVEMENT_TYPES)[number];
 export const INBOUND_MOVEMENT_TYPES: readonly MovementType[] = [
   'PURCHASE',
   'PRODUCTION_RESULT',
+  'SALE_RETURN', // POS refund returns stock to its original batch — doc 51 §8
   'TRANSFER_IN',
   'ADJUSTMENT_IN',
 ];

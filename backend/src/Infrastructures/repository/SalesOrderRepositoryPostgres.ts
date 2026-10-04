@@ -13,6 +13,7 @@ import {
   PosProductResult,
   PosProduct,
   PosToppingOption,
+  SalesRefundResult,
 } from '../../Domains/sales/SalesOrderRepository';
 import {
   SalesOrder,
@@ -20,6 +21,11 @@ import {
   SalesOrderItemTopping,
   SalesPayment,
 } from '../../Domains/sales/entities/SalesOrder';
+import {
+  SalesReturn,
+  SalesReturnItem,
+  SalesReturnStatus,
+} from '../../Domains/sales/entities/SalesReturn';
 import { SalesOrderStatus } from '../../Domains/sales/salesOrderStatus';
 import { SaleMode } from '../../Domains/sales/saleMode';
 import { PaymentMethod } from '../../Domains/sales/paymentMethod';
@@ -88,6 +94,37 @@ interface BatchRow {
   id: string;
   qty_available: string;
 }
+
+interface SalesConsumptionRow {
+  id: string;
+  sales_order_item_id: string;
+  product_id: string;
+  batch_id: string;
+  qty_consumed: string;
+}
+
+interface SalesReturnHeaderRow {
+  id: string;
+  company_id: string;
+  outlet_id: string;
+  sales_order_id: string;
+  reason: string | null;
+  refund_amount: string;
+  status: string;
+  returned_by: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface SalesReturnItemRow {
+  id: string;
+  sales_order_item_id: string;
+  qty_returned: string;
+  refund_line_amount: string;
+}
+
+const RETURN_HEADER_COLUMNS = `id, company_id, outlet_id, sales_order_id, reason,
+  refund_amount, status, returned_by, created_at, updated_at`;
 
 const HEADER_COLUMNS = `id, company_id, outlet_id, shift_id, invoice_number, customer_name,
   order_date, status, item_count, subtotal, order_discount, tax, grand_total,
@@ -744,6 +781,236 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
     } finally {
       client.release();
     }
+  }
+
+  // ── Refund (PAID -> REFUNDED, full-order) — atomic ────────────────────────
+
+  private _toReturn(
+    header: SalesReturnHeaderRow,
+    items: SalesReturnItem[] = [],
+  ): SalesReturn {
+    return new SalesReturn({
+      id: header.id,
+      companyId: header.company_id,
+      outletId: header.outlet_id,
+      salesOrderId: header.sales_order_id,
+      reason: header.reason,
+      refundAmount: Number(header.refund_amount),
+      status: header.status as SalesReturnStatus,
+      returnedBy: header.returned_by,
+      items,
+      createdAt: header.created_at,
+      updatedAt: header.updated_at,
+    });
+  }
+
+  private _toReturnItem(row: SalesReturnItemRow): SalesReturnItem {
+    return {
+      id: row.id,
+      salesOrderItemId: row.sales_order_item_id,
+      qtyReturned: Number(row.qty_returned),
+      refundLineAmount: Number(row.refund_line_amount),
+    };
+  }
+
+  async refund(
+    orderId: string,
+    companyId: string,
+    userId: string | null,
+    reason: string | null,
+  ): Promise<SalesRefundResult> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
+
+      // 1. Lock the order; assert PAID (idempotency: reject already REFUNDED).
+      const headerResult = await client.query<HeaderRow>(
+        `SELECT ${HEADER_COLUMNS} FROM sales_orders
+         WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL
+         FOR UPDATE`,
+        [orderId, companyId],
+      );
+      if (!headerResult.rowCount) {
+        throw new NotFoundError('SALES_ORDER.NOT_FOUND');
+      }
+      const header = headerResult.rows[0];
+      if (header.status === 'REFUNDED') {
+        throw new ConflictError('SALES_ORDER.ALREADY_REFUNDED');
+      }
+      if (header.status !== 'PAID') {
+        throw new InvariantError('SALES_ORDER.NOT_PAID');
+      }
+
+      const outletId = header.outlet_id;
+      const grandTotal = Number(header.grand_total);
+
+      // 2. Insert the sales_returns header (COMPLETED, refund = grand_total).
+      const returnResult = await client.query<SalesReturnHeaderRow>(
+        `INSERT INTO sales_returns
+           (company_id, outlet_id, sales_order_id, reason, refund_amount,
+            status, returned_by, created_by)
+         VALUES ($1,$2,$3,$4,$5,'COMPLETED',$6,$6)
+         RETURNING ${RETURN_HEADER_COLUMNS}`,
+        [companyId, outletId, orderId, reason, grandTotal, userId],
+      );
+      const returnHeader = returnResult.rows[0];
+      const salesReturnId = returnHeader.id;
+
+      // 3. One sales_return_item per order item: qty_returned = item qty,
+      //    refund_line_amount = item line_total (full-order refund).
+      const orderItems = await client.query<ItemRow>(
+        `SELECT id, product_id, sale_mode, recipe_id, product_name_snapshot,
+                unit_price_snapshot, qty, item_discount, toppings_price, line_total
+         FROM sales_order_items
+         WHERE sales_order_id = $1
+         ORDER BY created_at ASC`,
+        [orderId],
+      );
+      // Map each order item to the sales_return_item that reverses it, so the
+      // inbound SALE_RETURN movement can carry a deterministic, unique source
+      // key (source_document_item_id = sales_return_item id).
+      const returnItemByOrderItemId = new Map<string, string>();
+      for (const item of orderItems.rows) {
+        const returnItemResult = await client.query<{ id: string }>(
+          `INSERT INTO sales_return_items
+             (sales_return_id, sales_order_item_id, qty_returned, refund_line_amount)
+           VALUES ($1,$2,$3,$4)
+           RETURNING id`,
+          [salesReturnId, item.id, Number(item.qty), Number(item.line_total)],
+        );
+        returnItemByOrderItemId.set(item.id, returnItemResult.rows[0].id);
+      }
+
+      // 4. Return ALL consumed stock to its ORIGINAL batch. The reversal derives
+      //    from posted SALE consumptions (sales_consumptions), not item
+      //    snapshots (doc 35 §8).
+      const consumptions = await client.query<SalesConsumptionRow>(
+        `SELECT id, sales_order_item_id, product_id, batch_id, qty_consumed
+         FROM sales_consumptions
+         WHERE sales_order_id = $1 AND company_id = $2
+         ORDER BY created_at ASC`,
+        [orderId, companyId],
+      );
+
+      for (const consumption of consumptions.rows) {
+        const qty = Number(consumption.qty_consumed);
+        const returnItemId =
+          returnItemByOrderItemId.get(consumption.sales_order_item_id) ?? null;
+
+        // Reload the source batch FOR UPDATE; add qty back; reactivate if it was
+        // CONSUMED (its qty fell to 0 at pay time).
+        const batchResult = await client.query<{ qty_available: string }>(
+          `SELECT qty_available FROM inventory_batches
+           WHERE id = $1 AND company_id = $2 FOR UPDATE`,
+          [consumption.batch_id, companyId],
+        );
+        if (!batchResult.rowCount) {
+          throw new NotFoundError('INVENTORY_BATCH.NOT_FOUND');
+        }
+        const beforeQty = Number(batchResult.rows[0].qty_available);
+        const afterQty = beforeQty + qty;
+
+        await client.query(
+          `UPDATE inventory_batches
+           SET qty_available = $1::numeric,
+               status = CASE WHEN status = 'CONSUMED' AND $1::numeric > 0
+                             THEN 'ACTIVE' ELSE status END,
+               updated_at = NOW()
+           WHERE id = $2 AND company_id = $3`,
+          [afterQty, consumption.batch_id, companyId],
+        );
+
+        // Ledger append: SALE_RETURN (INBOUND). Source key =
+        // SALES_RETURN + sales_return_item + batch, unique → double-refund guard.
+        await client.query(
+          `INSERT INTO inventory_movements
+             (company_id, outlet_id, batch_id, product_id, movement_type,
+              qty, before_qty, after_qty,
+              source_document_type, source_document_id,
+              source_document_item_id, source_document_allocation_id, user_id)
+           VALUES ($1,$2,$3,$4,'SALE_RETURN',$5,$6,$7,'SALES_RETURN',$8,$9,$10,$11)`,
+          [
+            companyId,
+            outletId,
+            consumption.batch_id,
+            consumption.product_id,
+            qty,
+            beforeQty,
+            afterQty,
+            salesReturnId,
+            returnItemId,
+            consumption.batch_id,
+            userId,
+          ],
+        );
+      }
+
+      // 5. Flip the order to REFUNDED.
+      const updated = await client.query<HeaderRow>(
+        `UPDATE sales_orders
+         SET status = 'REFUNDED', updated_by = $1, updated_at = NOW()
+         WHERE id = $2 AND company_id = $3
+         RETURNING ${HEADER_COLUMNS}`,
+        [userId, orderId, companyId],
+      );
+
+      const returnItems = await this._loadReturnItems(client, salesReturnId);
+      const orderItemVos = await this._loadItems(client, orderId);
+      const paymentRows = await this._loadPayments(client, orderId);
+
+      await client.query('COMMIT');
+      return {
+        order: this._toOrder(updated.rows[0], orderItemVos, paymentRows),
+        salesReturn: this._toReturn(returnHeader, returnItems),
+      };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      if (
+        err &&
+        typeof err === 'object' &&
+        'code' in err &&
+        (err as { code: string }).code === '23505'
+      ) {
+        // Duplicate SALE_RETURN source key / return row → refund already posted.
+        throw new ConflictError('INVENTORY.DUPLICATE_MOVEMENT_SOURCE');
+      }
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async _loadReturnItems(
+    client: PoolClient | Pool,
+    salesReturnId: string,
+  ): Promise<SalesReturnItem[]> {
+    const result = await client.query<SalesReturnItemRow>(
+      `SELECT id, sales_order_item_id, qty_returned, refund_line_amount
+       FROM sales_return_items
+       WHERE sales_return_id = $1
+       ORDER BY created_at ASC`,
+      [salesReturnId],
+    );
+    return result.rows.map((r) => this._toReturnItem(r));
+  }
+
+  async getReturnByOrderId(
+    orderId: string,
+    companyId: string,
+  ): Promise<SalesReturn | null> {
+    const headerResult = await this.pool.query<SalesReturnHeaderRow>(
+      `SELECT ${RETURN_HEADER_COLUMNS} FROM sales_returns
+       WHERE sales_order_id = $1 AND company_id = $2 AND deleted_at IS NULL
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [orderId, companyId],
+    );
+    if (!headerResult.rowCount) {
+      return null;
+    }
+    const items = await this._loadReturnItems(this.pool, headerResult.rows[0].id);
+    return this._toReturn(headerResult.rows[0], items);
   }
 
   // ── Reads ──────────────────────────────────────────────────────────────

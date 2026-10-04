@@ -131,6 +131,7 @@ import { GetShiftsUseCase } from '../Applications/use_case/shifts/GetShiftsUseCa
 import { CreateSalesOrderUseCase } from '../Applications/use_case/sales/CreateSalesOrderUseCase';
 import { PaySalesOrderUseCase } from '../Applications/use_case/sales/PaySalesOrderUseCase';
 import { VoidSalesOrderUseCase } from '../Applications/use_case/sales/VoidSalesOrderUseCase';
+import { RefundSalesOrderUseCase } from '../Applications/use_case/sales/RefundSalesOrderUseCase';
 import { GetSalesOrdersUseCase } from '../Applications/use_case/sales/GetSalesOrdersUseCase';
 import { GetInventoryDashboardUseCase } from '../Applications/use_case/inventory/GetInventoryDashboardUseCase';
 import { CreateRecipeUseCase } from '../Applications/use_case/recipes/CreateRecipeUseCase';
@@ -760,6 +761,11 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
       inject: [SalesOrderRepository],
     },
     {
+      provide: RefundSalesOrderUseCase,
+      useFactory: (salesRepo: SalesOrderRepository) => new RefundSalesOrderUseCase(salesRepo),
+      inject: [SalesOrderRepository],
+    },
+    {
       provide: GetSalesOrdersUseCase,
       useFactory: (salesRepo: SalesOrderRepository) => new GetSalesOrdersUseCase(salesRepo),
       inject: [SalesOrderRepository],
@@ -1328,6 +1334,7 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     CreateSalesOrderUseCase,
     PaySalesOrderUseCase,
     VoidSalesOrderUseCase,
+    RefundSalesOrderUseCase,
     GetSalesOrdersUseCase,
     GetInventoryDashboardUseCase,
     CreateRecipeUseCase,

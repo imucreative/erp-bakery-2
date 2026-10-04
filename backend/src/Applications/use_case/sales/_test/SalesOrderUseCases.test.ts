@@ -1,6 +1,7 @@
 import { CreateSalesOrderUseCase } from '../CreateSalesOrderUseCase';
 import { PaySalesOrderUseCase } from '../PaySalesOrderUseCase';
 import { VoidSalesOrderUseCase } from '../VoidSalesOrderUseCase';
+import { RefundSalesOrderUseCase } from '../RefundSalesOrderUseCase';
 import { GetSalesOrdersUseCase } from '../GetSalesOrdersUseCase';
 import { SalesOrderRepository } from '../../../../Domains/sales/SalesOrderRepository';
 import { ShiftRepository } from '../../../../Domains/shifts/ShiftRepository';
@@ -12,7 +13,9 @@ const salesRepo: jest.Mocked<SalesOrderRepository> = {
   createOrder: jest.fn(),
   pay: jest.fn(),
   void: jest.fn(),
+  refund: jest.fn(),
   getById: jest.fn(),
+  getReturnByOrderId: jest.fn(),
   list: jest.fn(),
   listPosProducts: jest.fn(),
   listProductToppings: jest.fn(),
@@ -208,21 +211,53 @@ describe('VoidSalesOrderUseCase', () => {
   });
 });
 
+describe('RefundSalesOrderUseCase', () => {
+  it('should delegate full-order refund to repo.refund with the reason', async () => {
+    salesRepo.refund.mockResolvedValue({
+      order: { id: 'so1', status: 'REFUNDED' },
+      salesReturn: { id: 'ret1', refundAmount: 15000 },
+    } as never);
+
+    const result = await new RefundSalesOrderUseCase(salesRepo).execute(
+      'so1',
+      'Produk rusak',
+      'c1',
+      'u1',
+    );
+
+    expect(salesRepo.refund).toHaveBeenCalledWith('so1', 'c1', 'u1', 'Produk rusak');
+    expect(result.order.status).toBe('REFUNDED');
+    expect(result.salesReturn.refundAmount).toBe(15000);
+  });
+
+  it('should pass a null reason through to the repo', async () => {
+    salesRepo.refund.mockResolvedValue({
+      order: { id: 'so1', status: 'REFUNDED' },
+      salesReturn: { id: 'ret1' },
+    } as never);
+    await new RefundSalesOrderUseCase(salesRepo).execute('so1', null, 'c1', 'u1');
+    expect(salesRepo.refund).toHaveBeenCalledWith('so1', 'c1', 'u1', null);
+  });
+});
+
 describe('GetSalesOrdersUseCase', () => {
   it('should list, detail, posProducts and productToppings via repo', async () => {
     salesRepo.list.mockResolvedValue({ rows: [], total: 0 });
     salesRepo.getById.mockResolvedValue({ id: 'so1' } as never);
+    salesRepo.getReturnByOrderId.mockResolvedValue(null);
     salesRepo.listPosProducts.mockResolvedValue({ rows: [], total: 0 });
     salesRepo.listProductToppings.mockResolvedValue([]);
 
     const uc = new GetSalesOrdersUseCase(salesRepo);
     await uc.list({ limit: 10, offset: 0 }, 'c1');
     await uc.detail('so1', 'c1');
+    await uc.returnByOrderId('so1', 'c1');
     await uc.posProducts({ limit: 50, offset: 0 }, 'c1');
     await uc.productToppings('p1', 'c1');
 
     expect(salesRepo.list).toHaveBeenCalled();
     expect(salesRepo.getById).toHaveBeenCalledWith('so1', 'c1');
+    expect(salesRepo.getReturnByOrderId).toHaveBeenCalledWith('so1', 'c1');
     expect(salesRepo.listPosProducts).toHaveBeenCalled();
     expect(salesRepo.listProductToppings).toHaveBeenCalledWith('p1', 'c1');
   });

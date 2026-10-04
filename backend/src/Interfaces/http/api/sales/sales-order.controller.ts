@@ -12,6 +12,7 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@ne
 import { CreateSalesOrderUseCase } from '../../../../Applications/use_case/sales/CreateSalesOrderUseCase';
 import { PaySalesOrderUseCase } from '../../../../Applications/use_case/sales/PaySalesOrderUseCase';
 import { VoidSalesOrderUseCase } from '../../../../Applications/use_case/sales/VoidSalesOrderUseCase';
+import { RefundSalesOrderUseCase } from '../../../../Applications/use_case/sales/RefundSalesOrderUseCase';
 import { GetSalesOrdersUseCase } from '../../../../Applications/use_case/sales/GetSalesOrdersUseCase';
 import { JwtAccessPayload } from '../../../../Applications/security/TokenManager';
 import { AuthorizationError } from '../../../../Commons/exceptions/AuthorizationError';
@@ -21,6 +22,7 @@ import { GetUser } from '../../decorators/get-user.decorator';
 import { RequirePermission } from '../../decorators/require-permission.decorator';
 import { CreateSalesOrderDto } from './dto/create-sales-order.dto';
 import { PaySalesOrderDto } from './dto/pay-sales-order.dto';
+import { RefundSalesOrderDto } from './dto/refund-sales-order.dto';
 import { SalesOrderQueryDto } from './dto/sales-order-query.dto';
 import { PosProductQueryDto } from './dto/pos-product-query.dto';
 
@@ -33,6 +35,7 @@ import { PosProductQueryDto } from './dto/pos-product-query.dto';
  * POST /sales/orders              checkout -> PENDING_PAYMENT (no stock)
  * POST /sales/orders/:id/pay      pay + FEFO deduct (two modes), atomic
  * POST /sales/orders/:id/void     PENDING_PAYMENT -> CANCELLED
+ * POST /sales/orders/:id/returns  PAID -> REFUNDED (full-order, SALE_RETURN)
  * GET  /sales/orders              list
  * GET  /sales/orders/:id          detail
  * GET  /sales/pos/products        POS product grid (mode + toppings)
@@ -46,6 +49,7 @@ export class SalesOrderController {
     private readonly createUseCase: CreateSalesOrderUseCase,
     private readonly payUseCase: PaySalesOrderUseCase,
     private readonly voidUseCase: VoidSalesOrderUseCase,
+    private readonly refundUseCase: RefundSalesOrderUseCase,
     private readonly getUseCase: GetSalesOrdersUseCase,
   ) {}
 
@@ -98,6 +102,32 @@ export class SalesOrderController {
     return successResponse(order);
   }
 
+  @Post('orders/:id/returns')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('sales.manage')
+  @ApiOperation({
+    summary: 'Refund a paid sales order (full-order, PAID -> REFUNDED; SALE_RETURN reversal)',
+  })
+  @ApiParam({ name: 'id', description: 'Sales order UUID' })
+  @ApiResponse({ status: 200, description: 'Refunded; stock returned to original batches' })
+  @ApiResponse({ status: 400, description: 'Order is not PAID' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
+  @ApiResponse({ status: 409, description: 'Order already refunded' })
+  async refund(
+    @Param('id') id: string,
+    @Body() dto: RefundSalesOrderDto,
+    @GetUser() user: JwtAccessPayload,
+  ) {
+    const { order, salesReturn } = await this.refundUseCase.execute(
+      id,
+      dto.reason ?? null,
+      this._companyId(user),
+      user.sub,
+    );
+    // Response = the REFUNDED order plus the created return (doc 51 §8/§10).
+    return successResponse({ ...order, salesReturn });
+  }
+
   @Get('orders')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('sales.read')
@@ -128,8 +158,11 @@ export class SalesOrderController {
   @ApiResponse({ status: 200, description: 'Sales order detail' })
   @ApiResponse({ status: 404, description: 'Order not found' })
   async detail(@Param('id') id: string, @GetUser() user: JwtAccessPayload) {
-    const order = await this.getUseCase.detail(id, this._companyId(user));
-    return successResponse(order);
+    const companyId = this._companyId(user);
+    const order = await this.getUseCase.detail(id, companyId);
+    // Surface the refund record on the order detail (null unless REFUNDED).
+    const salesReturn = await this.getUseCase.returnByOrderId(id, companyId);
+    return successResponse({ ...order, salesReturn });
   }
 
   @Get('pos/products')

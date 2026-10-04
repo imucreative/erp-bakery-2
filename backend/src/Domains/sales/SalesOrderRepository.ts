@@ -1,4 +1,5 @@
 import { SalesOrder } from './entities/SalesOrder';
+import { SalesReturn } from './entities/SalesReturn';
 import { SaleMode } from './saleMode';
 
 /** Resolved item (mode + snapshots + validated toppings) ready to persist. */
@@ -64,6 +65,12 @@ export interface CheckoutItemRequest {
  */
 export interface ResolveCheckoutResult {
   items: ResolvedSalesOrderItem[];
+}
+
+/** Result of a full-order refund: the REFUNDED order + the created return. */
+export interface SalesRefundResult {
+  order: SalesOrder;
+  salesReturn: SalesReturn;
 }
 
 export interface SalesOrderListFilter {
@@ -156,7 +163,30 @@ export abstract class SalesOrderRepository {
   /** Void — PENDING_PAYMENT -> CANCELLED (no stock). */
   abstract void(orderId: string, companyId: string, userId: string | null): Promise<SalesOrder>;
 
+  /**
+   * Refund — PAID -> REFUNDED, full-order (doc 51 §8, OQ-4/OQ-5). ATOMIC
+   * (SERIALIZABLE): lock the order, assert PAID (idempotency: an already
+   * REFUNDED order is rejected), read every sales_consumptions row, return each
+   * consumed qty to its ORIGINAL batch (reactivating CONSUMED batches), post a
+   * SALE_RETURN inbound movement per slice, insert the sales_returns header +
+   * items (refund_amount = grand_total), and flip the order to REFUNDED. A
+   * duplicate SALE_RETURN source key (double refund) maps to
+   * INVENTORY.DUPLICATE_MOVEMENT_SOURCE.
+   */
+  abstract refund(
+    orderId: string,
+    companyId: string,
+    userId: string | null,
+    reason: string | null,
+  ): Promise<SalesRefundResult>;
+
   abstract getById(id: string, companyId: string): Promise<SalesOrder>;
+
+  /** Latest sales return for an order (null if none), for order-detail display. */
+  abstract getReturnByOrderId(
+    orderId: string,
+    companyId: string,
+  ): Promise<SalesReturn | null>;
 
   abstract list(
     companyId: string,

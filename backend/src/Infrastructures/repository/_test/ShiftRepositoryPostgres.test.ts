@@ -72,12 +72,14 @@ describe('ShiftRepositoryPostgres', () => {
 
   describe('closeShift', () => {
     it('should close an OPEN shift and compute expected_cash + discrepancy (CASH payments)', async () => {
-      // Fase 2: expected_cash = opening_cash + Σ(CASH payment). Here opening
-      // 500000 + 100000 CASH = 600000; actual 580000 → discrepancy -20000.
+      // expected_cash = opening_cash + Σ(CASH payment) - Σ(CASH refund). Here
+      // opening 500000 + 100000 CASH - 0 refund = 600000; actual 580000 →
+      // discrepancy -20000.
       client.query
         .mockResolvedValueOnce(undefined) // BEGIN
         .mockResolvedValueOnce({ rows: [header({ status: 'OPEN', opening_cash: '500000.00' })], rowCount: 1 }) // lock row
         .mockResolvedValueOnce({ rows: [{ cash_total: '100000.00' }], rowCount: 1 }) // CASH sum
+        .mockResolvedValueOnce({ rows: [{ refund_total: '0' }], rowCount: 1 }) // CASH refund sum
         .mockResolvedValueOnce({
           rows: [
             header({
@@ -98,10 +100,14 @@ describe('ShiftRepositoryPostgres', () => {
       expect(result.expectedCash).toBe(600000);
       expect(result.actualCash).toBe(580000);
       expect(result.discrepancy).toBe(-20000);
-      // The CASH-sum query must only count CASH payments on PAID orders.
+      // The CASH-sum query counts CASH payments on PAID or REFUNDED orders.
       const cashCall = client.query.mock.calls[2];
       expect(cashCall[0]).toContain("payment_method = 'CASH'");
-      expect(cashCall[0]).toContain("status = 'PAID'");
+      expect(cashCall[0]).toContain("status IN ('PAID','REFUNDED')");
+      // The refund-sum query sums refund_amount from sales_returns.
+      const refundCall = client.query.mock.calls[3];
+      expect(refundCall[0]).toContain('sales_returns');
+      expect(refundCall[0]).toContain('refund_amount');
       expect(client.query).toHaveBeenCalledWith('COMMIT');
     });
 
@@ -110,6 +116,7 @@ describe('ShiftRepositoryPostgres', () => {
         .mockResolvedValueOnce(undefined) // BEGIN
         .mockResolvedValueOnce({ rows: [header({ status: 'OPEN', opening_cash: '500000.00' })], rowCount: 1 }) // lock row
         .mockResolvedValueOnce({ rows: [{ cash_total: '0' }], rowCount: 1 }) // CASH sum (none)
+        .mockResolvedValueOnce({ rows: [{ refund_total: '0' }], rowCount: 1 }) // CASH refund sum (none)
         .mockResolvedValueOnce({
           rows: [
             header({
@@ -125,6 +132,34 @@ describe('ShiftRepositoryPostgres', () => {
 
       const result = await repo.closeShift('s1', 'c1', 'u1', { actualCash: 500000, notes: null });
       expect(result.expectedCash).toBe(500000);
+      expect(result.discrepancy).toBe(0);
+    });
+
+    it('subtracts CASH refunds from expected_cash (doc 51 §4.2 / OQ-8)', async () => {
+      // opening 500000 + 150000 CASH payments - 50000 CASH refund = 600000.
+      client.query
+        .mockResolvedValueOnce(undefined) // BEGIN
+        .mockResolvedValueOnce({ rows: [header({ status: 'OPEN', opening_cash: '500000.00' })], rowCount: 1 }) // lock row
+        .mockResolvedValueOnce({ rows: [{ cash_total: '150000.00' }], rowCount: 1 }) // CASH sum
+        .mockResolvedValueOnce({ rows: [{ refund_total: '50000.00' }], rowCount: 1 }) // CASH refund sum
+        .mockResolvedValueOnce({
+          rows: [
+            header({
+              status: 'CLOSED',
+              expected_cash: '600000.00',
+              actual_cash: '600000.00',
+              discrepancy: '0.00',
+            }),
+          ],
+          rowCount: 1,
+        }) // update
+        .mockResolvedValueOnce(undefined); // COMMIT
+
+      const result = await repo.closeShift('s1', 'c1', 'u1', { actualCash: 600000, notes: null });
+      // The UPDATE must have received expected_cash = 600000 (500000+150000-50000).
+      const updateCall = client.query.mock.calls[4];
+      expect(Number(updateCall[1][0])).toBeCloseTo(600000);
+      expect(result.expectedCash).toBe(600000);
       expect(result.discrepancy).toBe(0);
     });
 

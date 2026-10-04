@@ -1060,6 +1060,10 @@ const DomainErrorTranslator = {
       'Total pembayaran tidak sama dengan grand total order',
     ),
     'SALES_ORDER.ALREADY_PAID': new ConflictError('Sales order sudah dibayar'),
+    'SALES_ORDER.NOT_PAID': new InvariantError(
+      'Sales order hanya dapat di-refund setelah berstatus PAID',
+    ),
+    'SALES_ORDER.ALREADY_REFUNDED': new ConflictError('Sales order sudah di-refund'),
     'SALES_ORDER.INVALID_STATUS_TRANSITION': new InvariantError(
       'Transisi status sales order tidak diperbolehkan',
     ),

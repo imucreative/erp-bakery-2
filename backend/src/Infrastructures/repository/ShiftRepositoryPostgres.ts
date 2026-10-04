@@ -115,23 +115,42 @@ export class ShiftRepositoryPostgres extends ShiftRepository {
         throw new InvariantError('SHIFT.INVALID_STATUS_TRANSITION');
       }
 
-      // Fase 2 (doc 51 §4.2, OQ-8): expected_cash =
-      //   opening_cash + Σ(CASH payment on this shift) - Σ(CASH refund).
+      // doc 51 §4.2 / OQ-8: expected_cash =
+      //   opening_cash + Σ(CASH payment on this shift) - Σ(CASH refund on this shift).
       // ONLY CASH payments feed the physical drawer; CARD / QRIS / BANK_TRANSFER
       // are recorded for reporting but never affect reconciliation.
-      //   >> Fase 3 (refund / SALE_RETURN): the CASH refund component is still 0
-      //      here because sales_returns do not exist yet. When Fase 3 lands, add
-      //      "- Σ(CASH refund on this shift's orders)" to this computation.
+      //
+      // CASH payments: a sale on this shift keeps its CASH payment in the drawer
+      // whether it is still PAID or later REFUNDED, so this sum intentionally
+      // counts PAID + REFUNDED orders — the refund side is subtracted separately.
       const cashSumResult = await client.query<{ cash_total: string }>(
         `SELECT COALESCE(SUM(sp.amount), 0) AS cash_total
          FROM sales_payments sp
          JOIN sales_orders so ON so.id = sp.sales_order_id
          WHERE so.shift_id = $1 AND so.company_id = $2
-           AND so.status = 'PAID' AND sp.payment_method = 'CASH'`,
+           AND so.status IN ('PAID','REFUNDED') AND sp.payment_method = 'CASH'`,
         [id, companyId],
       );
       const cashPayments = Number(cashSumResult.rows[0].cash_total);
-      const cashRefunds = 0; // Fase 3 will subtract CASH refunds here.
+
+      // CASH refunds (Fase 3, doc 51 §8): a refund takes money back out of the
+      // drawer. "Refund on this shift" = a REFUNDED order that BELONGS to this
+      // shift AND whose original payment was CASH (deterministic & simple: the
+      // cash physically left this shift's drawer). refund_amount = grand_total
+      // (full-order). Non-cash orders never touch the drawer, so they are
+      // excluded from the refund deduction as well.
+      const refundSumResult = await client.query<{ refund_total: string }>(
+        `SELECT COALESCE(SUM(sr.refund_amount), 0) AS refund_total
+         FROM sales_returns sr
+         JOIN sales_orders so ON so.id = sr.sales_order_id
+         WHERE so.shift_id = $1 AND sr.company_id = $2
+           AND EXISTS (
+             SELECT 1 FROM sales_payments sp
+             WHERE sp.sales_order_id = so.id AND sp.payment_method = 'CASH'
+           )`,
+        [id, companyId],
+      );
+      const cashRefunds = Number(refundSumResult.rows[0].refund_total);
       const expectedCash = Number(header.opening_cash) + cashPayments - cashRefunds;
       const discrepancy = data.actualCash - expectedCash;
 
