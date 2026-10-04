@@ -13,7 +13,6 @@ import ProductTable from '@/components/masterdata/product/ProductTable.vue'
 import ProductFormModal from '@/components/masterdata/product/ProductFormModal.vue'
 import ProductDeleteModal from '@/components/masterdata/product/ProductDeleteModal.vue'
 import ProductUomConversionModal from '@/components/masterdata/product/ProductUomConversionModal.vue'
-import ProductToppingModal from '@/components/masterdata/product/ProductToppingModal.vue'
 import { usePermission } from '@/composables/usePermission'
 import { useProducts } from '@/composables/useProducts'
 import type {
@@ -41,9 +40,7 @@ const {
   uoms,
   suppliers,
   uomNameById,
-  toppingProducts,
   ensureOptions,
-  ensureToppingProducts,
   fetchList,
   prevPage,
   nextPage,
@@ -90,6 +87,7 @@ async function onSubmitCreate(payload: {
   minimumStock: number
   shelfLifeDays: number
   isBatchTracked: boolean
+  hasToppings: boolean
 }): Promise<void> {
   submitting.value = true
   formError.value = null
@@ -108,6 +106,7 @@ async function onSubmitCreate(payload: {
       minimumStock: payload.minimumStock,
       shelfLifeDays: payload.shelfLifeDays,
       isBatchTracked: payload.isBatchTracked,
+      hasToppings: payload.hasToppings,
     })
     formOpen.value = false
   } catch (error) {
@@ -126,6 +125,7 @@ async function onSubmitEdit(payload: {
   minimumStock: number
   shelfLifeDays: number
   isBatchTracked: boolean
+  hasToppings: boolean
   isActive: boolean
 }): Promise<void> {
   if (!editing.value) {
@@ -143,6 +143,7 @@ async function onSubmitEdit(payload: {
       minimumStock: payload.minimumStock,
       shelfLifeDays: payload.shelfLifeDays,
       isBatchTracked: payload.isBatchTracked,
+      hasToppings: payload.hasToppings,
       isActive: payload.isActive,
     })
     formOpen.value = false
@@ -192,16 +193,6 @@ async function openConversions(product: Product): Promise<void> {
   conversionOpen.value = true
 }
 
-// ── Topping modal ────────────────────────────────────────────────────
-const toppingOpen = ref<boolean>(false)
-const toppingTarget = ref<Product | null>(null)
-
-async function openToppings(product: Product): Promise<void> {
-  await ensureToppingProducts()
-  toppingTarget.value = product
-  toppingOpen.value = true
-}
-
 onMounted(() => {
   void fetchList()
   void ensureOptions()
@@ -237,7 +228,6 @@ onMounted(() => {
         @edit="openEdit"
         @delete="openDelete"
         @conversions="openConversions"
-        @toppings="openToppings"
       />
 
       <!-- Pagination -->
@@ -293,14 +283,6 @@ onMounted(() => {
       :uom-name-by-id="uomNameById"
       :can-manage="canManage"
       @close="conversionOpen = false"
-    />
-
-    <ProductToppingModal
-      :open="toppingOpen"
-      :product="toppingTarget"
-      :topping-products="toppingProducts"
-      :can-manage="canManage"
-      @close="toppingOpen = false"
     />
   </AdminLayout>
 </template>

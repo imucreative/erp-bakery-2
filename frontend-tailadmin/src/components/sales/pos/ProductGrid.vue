@@ -2,9 +2,11 @@
 /**
  * ProductGrid — POS product grid (left column). Renders a quick-search box and
  * product cards (name + price + sale-mode badge). Clicking a MADE_TO_ORDER
- * product emits `select` (parent opens the modifier panel); a STOCK product
- * emits `add` (straight to cart, no toppings). Stateless: the parent owns the
- * product list, loading/error, and the search string (v-model:search).
+ * product that `hasToppings` emits `select` (parent opens the modifier panel
+ * backed by the GLOBAL topping catalog); any other product (STOCK, or
+ * made-to-order without toppings) emits `add` (straight to cart, no toppings).
+ * Stateless: the parent owns the product list, loading/error, and the search
+ * string (v-model:search).
  */
 import { Search, Plus } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
@@ -29,7 +31,7 @@ const emit = defineEmits<{
 }>()
 
 function onCardClick(product: PosProduct): void {
-  if (product.saleMode === 'MADE_TO_ORDER') {
+  if (product.saleMode === 'MADE_TO_ORDER' && product.hasToppings) {
     emit('select', product)
   } else {
     emit('add', product)

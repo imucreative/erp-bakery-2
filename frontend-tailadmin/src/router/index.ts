@@ -88,6 +88,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/master/toppings',
+      name: 'Toppings',
+      component: () => import('../views/MasterData/ToppingList.vue'),
+      meta: {
+        title: 'Toppings',
+        permission: 'product.read',
+      },
+    },
+    {
       path: '/procurement/purchase-requests',
       name: 'PurchaseRequests',
       component: () => import('../views/Procurement/PurchaseRequestList.vue'),

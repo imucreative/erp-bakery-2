@@ -7,9 +7,9 @@
  *  - GET    /products/:id  → { success, data: Product }
  *  - POST   /products      → { sku, name, productGroupId, categoryId, uomId, supplierId,
  *                              productType, barcode?, purchasePrice?, sellingPrice?,
- *                              minimumStock?, shelfLifeDays?, isBatchTracked? }
+ *                              minimumStock?, shelfLifeDays?, isBatchTracked?, hasToppings? }
  *  - PUT    /products/:id  → { name?, barcode?, productType?, purchasePrice?, sellingPrice?,
- *                              minimumStock?, shelfLifeDays?, isBatchTracked?, isActive? }
+ *                              minimumStock?, shelfLifeDays?, isBatchTracked?, hasToppings?, isActive? }
  *      (sku + relations group/category/uom/supplier are NOT changeable on update)
  *  - DELETE /products/:id  → soft-delete (409 when in use)
  */
@@ -66,6 +66,7 @@ export interface Product {
   minimumStock: number
   shelfLifeDays: number
   isBatchTracked: boolean
+  hasToppings: boolean
   isActive: boolean
   createdAt?: string
   updatedAt?: string
@@ -101,6 +102,7 @@ export interface CreateProductPayload {
   minimumStock?: number
   shelfLifeDays?: number
   isBatchTracked?: boolean
+  hasToppings?: boolean
 }
 
 export interface UpdateProductPayload {
@@ -112,6 +114,7 @@ export interface UpdateProductPayload {
   minimumStock?: number
   shelfLifeDays?: number
   isBatchTracked?: boolean
+  hasToppings?: boolean
   isActive?: boolean
 }
 

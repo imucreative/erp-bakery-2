@@ -3,8 +3,10 @@
  * PosTerminal — the Point-of-Sale screen (doc 51 §11). It resolves the cashier's
  * accessible outlets, finds the OPEN shift for the chosen outlet, and either
  * blocks the terminal with a "Buka Shift" CTA or shows the three-area layout:
- * ProductGrid (left), ModifierPanel (center, MADE_TO_ORDER only), CartPanel
- * (right). Payment uses a TWO-STEP checkout→pay flow:
+ * ProductGrid (left), ModifierPanel (center, MADE_TO_ORDER + hasToppings only),
+ * CartPanel (right). The modifier panel is backed by the GLOBAL topping catalog
+ * (GET /sales/pos/toppings, loaded once on bootstrap) — not per-product
+ * toppings (doc 51 Fase 6b). Payment uses a TWO-STEP checkout→pay flow:
  *
  *   1. POST /sales/orders (checkout) → PENDING_PAYMENT order; use the server
  *      `grandTotal` as the authoritative total shown in the drawer.
@@ -81,6 +83,7 @@ async function bootstrap(): Promise<void> {
     const [accessible, allUsers] = await Promise.all([
       outletService.getAccessible(),
       fetchAllPaginated((p) => userService.list({ page: p, limit: PAGE_LIMIT })).catch(() => []),
+      ensurePosToppings(),
     ])
     outlets.value = accessible
     cashierNames.value = new Map(allUsers.map((u) => [u.id, u.name]))
@@ -127,6 +130,23 @@ const productsError = ref<string | null>(null)
 const productSearch = ref<string>('')
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 
+// GLOBAL topping catalog (active-only) — the single source for the modifier
+// panel, fetched once on bootstrap (doc 51 Fase 6b).
+const posToppings = ref<PosToppingOption[]>([])
+let posToppingsLoaded = false
+
+async function ensurePosToppings(): Promise<void> {
+  if (posToppingsLoaded) {
+    return
+  }
+  try {
+    posToppings.value = await salesService.pos.toppings()
+    posToppingsLoaded = true
+  } catch {
+    // Non-fatal: the modifier panel renders an empty-toppings state.
+  }
+}
+
 async function loadProducts(): Promise<void> {
   if (!selectedOutletId.value) {
     products.value = []
@@ -164,12 +184,12 @@ function onSearchChange(value: string): void {
 const selectedProduct = ref<PosProduct | null>(null)
 
 function onSelectProduct(product: PosProduct): void {
-  // MADE_TO_ORDER → open the modifier panel.
+  // MADE_TO_ORDER + hasToppings → open the modifier panel (global toppings).
   selectedProduct.value = product
 }
 
-function onAddStockProduct(product: PosProduct): void {
-  // STOCK → straight to cart, no toppings.
+function onAddDirect(product: PosProduct): void {
+  // STOCK, or made-to-order without toppings → straight to cart, no toppings.
   cart.addItem(product, [])
 }
 
@@ -439,7 +459,7 @@ onMounted(() => {
               :search="productSearch"
               @update:search="onSearchChange"
               @select="onSelectProduct"
-              @add="onAddStockProduct"
+              @add="onAddDirect"
             />
           </div>
 
@@ -448,6 +468,7 @@ onMounted(() => {
             <ModifierPanel
               v-if="selectedProduct"
               :product="selectedProduct"
+              :toppings="posToppings"
               @add="onAddFromModifier"
               @cancel="selectedProduct = null"
             />

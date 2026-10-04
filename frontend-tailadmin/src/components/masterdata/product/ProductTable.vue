@@ -4,7 +4,7 @@
  * via `uomNameById` and formats price/type. Compact icon-only row actions per
  * the master-module UI standard. Emits edit/delete; loading/error/empty states.
  */
-import { Pencil, Trash2, Ruler, Layers } from 'lucide-vue-next'
+import { Pencil, Trash2, Ruler } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
 import { PRODUCT_TYPE_LABELS, type Product } from '@/services/product.service'
 
@@ -20,7 +20,6 @@ defineEmits<{
   (event: 'edit', product: Product): void
   (event: 'delete', product: Product): void
   (event: 'conversions', product: Product): void
-  (event: 'toppings', product: Product): void
 }>()
 
 function formatIdr(value: number): string {
@@ -116,15 +115,6 @@ function formatIdr(value: number): string {
                   @click="$emit('conversions', product)"
                 >
                   <Ruler class="h-4 w-4" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Kelola Topping"
-                  title="Kelola Topping"
-                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
-                  @click="$emit('toppings', product)"
-                >
-                  <Layers class="h-4 w-4" aria-hidden="true" />
                 </button>
                 <button
                   v-if="canManage"
