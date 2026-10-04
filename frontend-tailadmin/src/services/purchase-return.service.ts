@@ -20,16 +20,19 @@
  *      Guard `procurement.return.read`.
  *  - POST   /purchase-returns             → 201 DRAFT. Guard `procurement.return.create`.
  *      body: { goodsReceiptId (required UUID), returnDate? "YYYY-MM-DD", notes?,
- *              items[>=1]{ goodsReceiptItemId, sourceBatchId, sourceMovementId,
- *                productId, productSku, productName, uomId, uomCode,
- *                batchNumber?, lotNumber?, expiredDate?, postedAcceptedQuantity,
- *                previouslyReturnedQuantity, returnQuantity (>0), reason,
+ *              items[>=1]{ goodsReceiptItemId, returnQuantity (>0), reason,
  *                reasonDescription? } }
  *      supplier/outlet are INHERITED from the source GR by the backend — never
- *      sent. The item snapshot fields (sku/name/uom/batch/sourceBatchId/
- *      sourceMovementId/postedAcceptedQuantity/previouslyReturnedQuantity) come
- *      straight from the matching ReturnableLine. `reasonDescription` is
- *      REQUIRED when `reason === 'OTHER'` (backend validates 400; mirrored here).
+ *      sent. The backend's create/update DTO uses `forbidNonWhitelisted` and
+ *      accepts ONLY those 4 fields per item: `goodsReceiptItemId`,
+ *      `returnQuantity`, `reason`, and `reasonDescription?`. Every snapshot
+ *      field (sourceBatchId, sourceMovementId, productId, productSku,
+ *      productName, uomId, uomCode, batchNumber, lotNumber, expiredDate,
+ *      postedAcceptedQuantity, previouslyReturnedQuantity) is DERIVED
+ *      SERVER-SIDE from the returnable set (anti-tamper) and is REJECTED (400)
+ *      if sent by the client — so the payload must never include them.
+ *      `reasonDescription` is REQUIRED when `reason === 'OTHER'` (backend
+ *      validates 400; mirrored here).
  *  - PUT    /purchase-returns/:id         → update (DRAFT only; same body)
  *      Guard `procurement.return.update`.
  *  - POST   /purchase-returns/:id/submit  → DRAFT → SUBMITTED. Guard `.create`. body { note? }
@@ -260,21 +263,16 @@ export interface ReturnableLine {
   returnableQuantity: number
 }
 
-/** A single line item in the create/update payload. */
+/**
+ * A single line item in the create/update payload.
+ *
+ * The backend DTO (`forbidNonWhitelisted: true`) accepts ONLY these four
+ * fields. All snapshot fields are derived server-side from the returnable set
+ * and are rejected if sent — do not add them here. `reasonDescription` is
+ * required when `reason === 'OTHER'`.
+ */
 export interface PurchaseReturnItemPayload {
   goodsReceiptItemId: string
-  sourceBatchId: string
-  sourceMovementId: string
-  productId: string
-  productSku: string
-  productName: string
-  uomId: string
-  uomCode: string
-  batchNumber?: string
-  lotNumber?: string
-  expiredDate?: string
-  postedAcceptedQuantity: number
-  previouslyReturnedQuantity: number
   returnQuantity: number
   reason: PurchaseReturnReason
   reasonDescription?: string

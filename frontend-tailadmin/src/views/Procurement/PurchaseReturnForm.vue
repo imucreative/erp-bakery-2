@@ -306,28 +306,18 @@ async function onSubmit(): Promise<void> {
   formError.value = null
   submitting.value = true
   try {
+    // Send ONLY the 4 fields the backend DTO accepts (forbidNonWhitelisted).
+    // All snapshot fields on the editor row are display/validation-only and are
+    // derived server-side — including them would trigger a 400.
     const mappedItems: PurchaseReturnItemPayload[] = items.value
       .filter((row) => row.included)
       .map((row) => {
         const description = row.reasonDescription.trim()
         return {
           goodsReceiptItemId: row.goodsReceiptItemId,
-          sourceBatchId: row.sourceBatchId,
-          sourceMovementId: row.sourceMovementId,
-          productId: row.productId,
-          productSku: row.productSku,
-          productName: row.productName,
-          uomId: row.uomId,
-          uomCode: row.uomCode,
-          batchNumber: row.batchNumber ?? undefined,
-          lotNumber: row.lotNumber ?? undefined,
-          expiredDate: row.expiredDate ?? undefined,
-          postedAcceptedQuantity: row.postedAcceptedQuantity,
-          previouslyReturnedQuantity: row.previouslyReturnedQuantity,
           returnQuantity: Number(row.returnQuantity) || 0,
           reason: row.reason as PurchaseReturnReason,
-          reasonDescription:
-            row.reason === 'OTHER' ? description : description || undefined,
+          reasonDescription: row.reason === 'OTHER' ? description : undefined,
         }
       })
     const payload: SavePurchaseReturnPayload = {
