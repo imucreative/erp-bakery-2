@@ -67,6 +67,7 @@ interface ItemRow {
   product_name: string;
   uom_id: string;
   uom_code: string;
+  uom_name: string | null;
   batch_number: string | null;
   lot_number: string | null;
   expired_date: Date | null;
@@ -92,7 +93,7 @@ const HEADER_COLUMNS = `id, company_id, return_number, goods_receipt_id, purchas
   return_date, status, notes, created_by, updated_by, submitted_by, completed_by,
   cancelled_by, submitted_at, completed_at, cancelled_at, created_at, updated_at`;
 const ITEM_COLUMNS = `id, goods_receipt_item_id, source_batch_id, source_movement_id,
-  product_id, product_sku, product_name, uom_id, uom_code, batch_number, lot_number,
+  product_id, product_sku, product_name, uom_id, uom_code, uom_name, batch_number, lot_number,
   expired_date, posted_accepted_quantity, previously_returned_quantity, return_quantity,
   reason, reason_description`;
 
@@ -165,6 +166,7 @@ export class PurchaseReturnRepositoryPostgres extends PurchaseReturnRepository {
       productName: row.product_name,
       uomId: row.uom_id,
       uomCode: row.uom_code,
+      uomName: row.uom_name ?? '',
       batchNumber: row.batch_number,
       lotNumber: row.lot_number,
       expiredDate: row.expired_date,
@@ -303,10 +305,10 @@ export class PurchaseReturnRepositoryPostgres extends PurchaseReturnRepository {
       await client.query(
         `INSERT INTO purchase_return_items
            (purchase_return_id, goods_receipt_item_id, source_batch_id, source_movement_id,
-            product_id, product_sku, product_name, uom_id, uom_code, batch_number,
+            product_id, product_sku, product_name, uom_id, uom_code, uom_name, batch_number,
             lot_number, expired_date, posted_accepted_quantity, previously_returned_quantity,
             return_quantity, reason, reason_description)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::date,$13,$14,$15,$16,$17)`,
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::date,$14,$15,$16,$17,$18)`,
         [
           returnId,
           item.goodsReceiptItemId,
@@ -317,6 +319,7 @@ export class PurchaseReturnRepositoryPostgres extends PurchaseReturnRepository {
           item.productName,
           item.uomId,
           item.uomCode,
+          item.uomName,
           item.batchNumber,
           item.lotNumber,
           item.expiredDate,
@@ -617,6 +620,7 @@ export class PurchaseReturnRepositoryPostgres extends PurchaseReturnRepository {
       product_name: string;
       uom_id: string;
       uom_code: string;
+      uom_name: string;
       batch_number: string | null;
       lot_number: string | null;
       expired_date: Date | null;
@@ -625,7 +629,7 @@ export class PurchaseReturnRepositoryPostgres extends PurchaseReturnRepository {
               m.source_document_item_id AS goods_receipt_item_id,
               m.product_id AS product_id,
               p.sku AS product_sku, p.name AS product_name,
-              u.id AS uom_id, u.code AS uom_code,
+              u.id AS uom_id, u.code AS uom_code, u.name AS uom_name,
               b.batch_number AS batch_number, b.lot_number AS lot_number,
               b.expired_date AS expired_date
        FROM inventory_movements m
@@ -673,6 +677,7 @@ export class PurchaseReturnRepositoryPostgres extends PurchaseReturnRepository {
         productName: row.product_name,
         uomId: row.uom_id,
         uomCode: row.uom_code,
+        uomName: row.uom_name,
         batchNumber: row.batch_number,
         lotNumber: row.lot_number,
         expiredDate: row.expired_date,

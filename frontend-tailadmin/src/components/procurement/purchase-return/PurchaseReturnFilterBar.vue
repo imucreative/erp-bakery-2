@@ -33,7 +33,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
     <div class="relative w-full sm:max-w-xs">
       <input
         :value="search"

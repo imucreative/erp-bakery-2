@@ -52,6 +52,7 @@ function returnableLine(over: Partial<ReturnableLine> = {}): ReturnableLine {
     productName: 'Flour',
     uomId: 'uom1',
     uomCode: 'KG',
+    uomName: 'Kilogram',
     batchNumber: 'B-001',
     lotNumber: null,
     expiredDate: new Date('2026-12-31'),
@@ -110,6 +111,8 @@ describe('CreatePurchaseReturnUseCase', () => {
     expect(data.items[0].sourceBatchId).toBe('batch1');
     expect(data.items[0].postedAcceptedQuantity).toBe(10);
     expect(data.items[0].returnQuantity).toBe(4);
+    expect(data.items[0].uomCode).toBe('KG');
+    expect(data.items[0].uomName).toBe('Kilogram');
   });
 
   it('rejects reason OTHER without a description (payload validation)', async () => {

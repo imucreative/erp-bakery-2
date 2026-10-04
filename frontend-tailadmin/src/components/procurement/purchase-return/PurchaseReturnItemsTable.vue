@@ -71,7 +71,7 @@ const props = defineProps<{
             {{ item.returnQuantity }}
           </td>
           <td class="px-4 py-3 text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ item.uomCode || props.uomName(item.uomId) }}
+            {{ item.uomName || item.uomCode || props.uomName(item.uomId) }}
           </td>
           <td class="px-4 py-3 text-theme-sm text-gray-600 dark:text-gray-300">
             {{ PURCHASE_RETURN_REASON_LABELS[item.reason] }}

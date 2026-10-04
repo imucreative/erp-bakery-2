@@ -61,6 +61,7 @@ function itemRow(over: Record<string, unknown> = {}) {
     product_name: 'Flour',
     uom_id: 'uom1',
     uom_code: 'KG',
+    uom_name: 'Kilogram',
     batch_number: 'B-001',
     lot_number: null,
     expired_date: new Date('2026-12-31'),
@@ -94,6 +95,7 @@ const newData: NewPurchaseReturnData = {
       productName: 'Flour',
       uomId: 'uom1',
       uomCode: 'KG',
+      uomName: 'Kilogram',
       batchNumber: 'B-001',
       lotNumber: null,
       expiredDate: '2026-12-31',
@@ -169,6 +171,7 @@ describe('PurchaseReturnRepositoryPostgres', () => {
               product_name: 'Flour',
               uom_id: 'uom1',
               uom_code: 'KG',
+              uom_name: 'Kilogram',
               batch_number: 'B-001',
               lot_number: null,
               expired_date: new Date('2026-12-31'),
@@ -190,6 +193,8 @@ describe('PurchaseReturnRepositoryPostgres', () => {
       expect(lines[0].returnableQuantity).toBe(5); // 10 - 3 - 2
       expect(lines[0].sourceMovementId).toBe('mov1');
       expect(lines[0].sourceBatchId).toBe('batch1');
+      expect(lines[0].uomCode).toBe('KG');
+      expect(lines[0].uomName).toBe('Kilogram');
     });
 
     it('throws NotFoundError when the GR is missing/foreign', async () => {

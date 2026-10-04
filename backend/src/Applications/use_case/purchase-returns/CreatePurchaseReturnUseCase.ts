@@ -61,6 +61,7 @@ export function resolveReturnItems(
       productName: line.productName,
       uomId: line.uomId,
       uomCode: line.uomCode,
+      uomName: line.uomName,
       batchNumber: line.batchNumber,
       lotNumber: line.lotNumber,
       expiredDate: line.expiredDate ? line.expiredDate.toISOString().slice(0, 10) : null,

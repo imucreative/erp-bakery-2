@@ -19,6 +19,7 @@ export interface PurchaseReturnItem {
   productName: string;
   uomId: string;
   uomCode: string;
+  uomName: string;
   batchNumber: string | null;
   lotNumber: string | null;
   expiredDate: Date | null;

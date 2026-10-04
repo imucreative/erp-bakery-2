@@ -128,6 +128,7 @@ function toEditorRow(line: ReturnableLine, returnableQuantity: number): EditorRe
     productName: line.productName,
     uomId: line.uomId,
     uomCode: line.uomCode,
+    uomName: line.uomName,
     batchNumber: line.batchNumber,
     lotNumber: line.lotNumber,
     expiredDate: line.expiredDate,
@@ -206,6 +207,7 @@ async function loadExisting(id: string): Promise<void> {
       productName: item.productName,
       uomId: item.uomId,
       uomCode: item.uomCode,
+      uomName: item.uomName,
       batchNumber: item.batchNumber,
       lotNumber: item.lotNumber,
       expiredDate: item.expiredDate,
@@ -317,7 +319,7 @@ async function onSubmit(): Promise<void> {
           goodsReceiptItemId: row.goodsReceiptItemId,
           returnQuantity: Number(row.returnQuantity) || 0,
           reason: row.reason as PurchaseReturnReason,
-          reasonDescription: row.reason === 'OTHER' ? description : undefined,
+          reasonDescription: description || undefined,
         }
       })
     const payload: SavePurchaseReturnPayload = {

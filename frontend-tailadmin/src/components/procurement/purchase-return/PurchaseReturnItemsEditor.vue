@@ -39,6 +39,7 @@ export interface EditorReturnRow {
   productName: string
   uomId: string
   uomCode: string
+  uomName: string
   batchNumber: string | null
   lotNumber: string | null
   expiredDate: string | null
@@ -177,7 +178,7 @@ function updateRow(index: number, patch: Partial<EditorReturnRow>): void {
             </td>
             <!-- UOM (read-only) -->
             <td class="px-4 py-3 align-middle text-theme-sm text-gray-600 dark:text-gray-300">
-              {{ row.uomCode }}
+              {{ row.uomName }}
             </td>
             <!-- Posted accepted (read-only) -->
             <td class="px-4 py-3 text-end align-middle text-theme-sm text-gray-600 dark:text-gray-300">
