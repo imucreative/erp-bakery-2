@@ -1,0 +1,11 @@
+/** Barrel exports for the Sales (shift + sales order) feature components. */
+export { default as ShiftTable } from './ShiftTable.vue'
+export { default as ShiftFilterBar } from './ShiftFilterBar.vue'
+export { default as SalesOrderTable } from './SalesOrderTable.vue'
+export { default as SalesOrderFilterBar } from './SalesOrderFilterBar.vue'
+export { default as SalesOrderSummary } from './SalesOrderSummary.vue'
+export { default as SalesOrderItemsTable } from './SalesOrderItemsTable.vue'
+export { default as SalesOrderPaymentsTable } from './SalesOrderPaymentsTable.vue'
+export { default as SalesOrderActionBar } from './SalesOrderActionBar.vue'
+export { default as SalesOrderActionModals } from './SalesOrderActionModals.vue'
+export type { SalesOrderAction } from './SalesOrderActionModals.vue'
