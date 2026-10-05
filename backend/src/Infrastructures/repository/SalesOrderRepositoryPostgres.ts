@@ -293,8 +293,9 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
         name: string;
         product_type: string;
         selling_price: string;
+        has_toppings: boolean;
       }>(
-        `SELECT id, name, product_type, selling_price
+        `SELECT id, name, product_type, selling_price, has_toppings
          FROM products
          WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL`,
         [req.productId, companyId],
@@ -323,43 +324,47 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
         throw new NotFoundError('RECIPE.NO_ACTIVE_RECIPE');
       }
 
-      // Validate + snapshot toppings per mode.
+      // Validate + snapshot toppings against the GLOBAL catalog (model global,
+      // doc 51 §2.1/§3.4/§7.1). Toppings are only allowed when the product is
+      // MADE_TO_ORDER AND has_toppings=true; otherwise reject TOPPING.NOT_ALLOWED.
       const resolvedToppings: ResolvedSalesOrderItemTopping[] = [];
       let toppingsPrice = 0;
 
-      if (req.toppings.length > 0 && saleMode !== 'MADE_TO_ORDER') {
-        // STOCK products are sold as-is — toppings are not allowed (§3.4).
-        throw new InvariantError('TOPPING.NOT_ALLOWED');
+      if (req.toppings.length > 0) {
+        // STOCK products are sold as-is; has_toppings=false products accept none.
+        if (saleMode !== 'MADE_TO_ORDER' || !product.has_toppings) {
+          throw new InvariantError('TOPPING.NOT_ALLOWED');
+        }
       }
 
       for (const t of req.toppings) {
-        const joinResult = await this.pool.query<{
+        const catalogResult = await this.pool.query<{
           topping_product_id: string;
           topping_name: string;
           default_qty_per_item: string;
           extra_price: string;
         }>(
-          `SELECT pt.topping_product_id,
+          `SELECT tg.topping_product_id,
                   tp.name AS topping_name,
-                  pt.default_qty_per_item,
-                  pt.extra_price
-           FROM product_toppings pt
-           JOIN products tp ON tp.id = pt.topping_product_id
-           WHERE pt.company_id = $1 AND pt.product_id = $2
-             AND pt.topping_product_id = $3 AND pt.is_active = TRUE`,
-          [companyId, req.productId, t.toppingProductId],
+                  tg.default_qty_per_item,
+                  tg.extra_price
+           FROM toppings tg
+           JOIN products tp ON tp.id = tg.topping_product_id
+           WHERE tg.company_id = $1 AND tg.topping_product_id = $2
+             AND tg.is_active = TRUE AND tg.deleted_at IS NULL`,
+          [companyId, t.toppingProductId],
         );
-        if (!joinResult.rowCount) {
-          // Topping not registered/active for this product (§7.1).
+        if (!catalogResult.rowCount) {
+          // Topping not registered/active in the global catalog (§7.1).
           throw new InvariantError('TOPPING.NOT_ALLOWED');
         }
-        const join = joinResult.rows[0];
-        const extraPrice = Number(join.extra_price);
+        const entry = catalogResult.rows[0];
+        const extraPrice = Number(entry.extra_price);
         toppingsPrice += extraPrice;
         resolvedToppings.push({
-          toppingProductId: join.topping_product_id,
-          toppingNameSnapshot: join.topping_name,
-          qtyPerItem: Number(join.default_qty_per_item),
+          toppingProductId: entry.topping_product_id,
+          toppingNameSnapshot: entry.topping_name,
+          qtyPerItem: Number(entry.default_qty_per_item),
           extraPriceSnapshot: extraPrice,
         });
       }
@@ -1113,9 +1118,10 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
       name: string;
       product_type: string;
       selling_price: string;
+      has_toppings: boolean;
       recipe_id: string | null;
     }>(
-      `SELECT p.id, p.sku, p.name, p.product_type, p.selling_price,
+      `SELECT p.id, p.sku, p.name, p.product_type, p.selling_price, p.has_toppings,
               (SELECT r.id FROM recipes r
                WHERE r.company_id = p.company_id AND r.product_id = p.id
                  AND r.status = 'ACTIVE' AND r.deleted_at IS NULL
@@ -1127,47 +1133,8 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
       params,
     );
 
-    if (rowsResult.rows.length === 0) {
-      return { rows: [], total };
-    }
-
-    // Resolve mode + fetch toppings for the MADE_TO_ORDER products in one query.
-    const madeToOrderIds = rowsResult.rows
-      .filter((r) => r.recipe_id !== null)
-      .map((r) => r.id);
-
-    const toppingsByProduct = new Map<string, PosToppingOption[]>();
-    if (madeToOrderIds.length > 0) {
-      const toppingResult = await this.pool.query<{
-        product_id: string;
-        topping_product_id: string;
-        topping_name: string;
-        default_qty_per_item: string;
-        extra_price: string;
-        sort_order: number;
-      }>(
-        `SELECT pt.product_id, pt.topping_product_id, tp.name AS topping_name,
-                pt.default_qty_per_item, pt.extra_price, pt.sort_order
-         FROM product_toppings pt
-         JOIN products tp ON tp.id = pt.topping_product_id
-         WHERE pt.company_id = $1 AND pt.is_active = TRUE
-           AND pt.product_id = ANY($2::uuid[])
-         ORDER BY pt.sort_order ASC, tp.name ASC`,
-        [companyId, madeToOrderIds],
-      );
-      for (const row of toppingResult.rows) {
-        const list = toppingsByProduct.get(row.product_id) ?? [];
-        list.push({
-          toppingProductId: row.topping_product_id,
-          toppingName: row.topping_name,
-          defaultQtyPerItem: Number(row.default_qty_per_item),
-          extraPrice: Number(row.extra_price),
-          sortOrder: Number(row.sort_order),
-        });
-        toppingsByProduct.set(row.product_id, list);
-      }
-    }
-
+    // Each product carries a hasToppings flag (model global, doc 51 §2.1); the
+    // topping LIST is global and fetched separately via listActiveToppings.
     const rows: PosProduct[] = rowsResult.rows.map((r) => {
       const saleMode: SaleMode = r.recipe_id !== null ? 'MADE_TO_ORDER' : 'STOCK';
       return {
@@ -1178,27 +1145,15 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
         sellingPrice: Number(r.selling_price),
         saleMode,
         recipeId: r.recipe_id,
-        toppings: saleMode === 'MADE_TO_ORDER' ? toppingsByProduct.get(r.id) ?? [] : [],
+        hasToppings: r.has_toppings,
       };
     });
 
     return { rows, total };
   }
 
-  async listProductToppings(
-    productId: string,
-    companyId: string,
-  ): Promise<PosToppingOption[]> {
-    // Ensure the product exists in the company (throws if not).
-    const productResult = await this.pool.query<{ id: string }>(
-      `SELECT id FROM products
-       WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL`,
-      [productId, companyId],
-    );
-    if (!productResult.rowCount) {
-      throw new NotFoundError('PRODUCT.NOT_FOUND');
-    }
-
+  async listActiveToppings(companyId: string): Promise<PosToppingOption[]> {
+    // Active entries of the GLOBAL topping catalog (shared by all products).
     const result = await this.pool.query<{
       topping_product_id: string;
       topping_name: string;
@@ -1206,13 +1161,13 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
       extra_price: string;
       sort_order: number;
     }>(
-      `SELECT pt.topping_product_id, tp.name AS topping_name,
-              pt.default_qty_per_item, pt.extra_price, pt.sort_order
-       FROM product_toppings pt
-       JOIN products tp ON tp.id = pt.topping_product_id
-       WHERE pt.company_id = $1 AND pt.product_id = $2 AND pt.is_active = TRUE
-       ORDER BY pt.sort_order ASC, tp.name ASC`,
-      [companyId, productId],
+      `SELECT tg.topping_product_id, tp.name AS topping_name,
+              tg.default_qty_per_item, tg.extra_price, tg.sort_order
+       FROM toppings tg
+       JOIN products tp ON tp.id = tg.topping_product_id
+       WHERE tg.company_id = $1 AND tg.is_active = TRUE AND tg.deleted_at IS NULL
+       ORDER BY tg.sort_order ASC, tp.name ASC`,
+      [companyId],
     );
 
     return result.rows.map((row) => ({

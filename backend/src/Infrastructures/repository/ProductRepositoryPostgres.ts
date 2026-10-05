@@ -26,12 +26,13 @@ interface ProductRow {
   minimum_stock: string;
   shelf_life_days: number;
   is_batch_tracked: boolean;
+  has_toppings: boolean;
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
 }
 
-const SELECT_COLUMNS = `id, company_id, sku, barcode, name, product_group_id, category_id, uom_id, supplier_id, product_type, purchase_price, selling_price, minimum_stock, shelf_life_days, is_batch_tracked, is_active, created_at, updated_at`;
+const SELECT_COLUMNS = `id, company_id, sku, barcode, name, product_group_id, category_id, uom_id, supplier_id, product_type, purchase_price, selling_price, minimum_stock, shelf_life_days, is_batch_tracked, has_toppings, is_active, created_at, updated_at`;
 
 /**
  * Concrete PostgreSQL implementation of ProductRepository.
@@ -59,6 +60,7 @@ export class ProductRepositoryPostgres extends ProductRepository {
       minimumStock: row.minimum_stock,
       shelfLifeDays: row.shelf_life_days,
       isBatchTracked: row.is_batch_tracked,
+      hasToppings: row.has_toppings,
       isActive: row.is_active,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
@@ -69,9 +71,10 @@ export class ProductRepositoryPostgres extends ProductRepository {
     const result = await this.pool.query<ProductRow>(
       `INSERT INTO products (
          company_id, sku, barcode, name, product_group_id, category_id, uom_id, supplier_id,
-         product_type, purchase_price, selling_price, minimum_stock, shelf_life_days, is_batch_tracked
+         product_type, purchase_price, selling_price, minimum_stock, shelf_life_days, is_batch_tracked,
+         has_toppings
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        RETURNING ${SELECT_COLUMNS}`,
       [
         companyId,
@@ -88,6 +91,7 @@ export class ProductRepositoryPostgres extends ProductRepository {
         data.minimumStock,
         data.shelfLifeDays,
         data.isBatchTracked,
+        data.hasToppings,
       ],
     );
 
@@ -183,6 +187,7 @@ export class ProductRepositoryPostgres extends ProductRepository {
       minimumStock: 'minimum_stock',
       shelfLifeDays: 'shelf_life_days',
       isBatchTracked: 'is_batch_tracked',
+      hasToppings: 'has_toppings',
       isActive: 'is_active',
     };
 

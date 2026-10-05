@@ -13,6 +13,7 @@ import { SupplierModule } from './Interfaces/http/api/suppliers/supplier.module'
 import { PaymentTermModule } from './Interfaces/http/api/payment-terms/payment-term.module';
 import { CategoryModule } from './Interfaces/http/api/categories/category.module';
 import { ProductModule } from './Interfaces/http/api/products/product.module';
+import { ToppingModule } from './Interfaces/http/api/toppings/topping.module';
 import { InventoryModule } from './Interfaces/http/api/inventory/inventory.module';
 import { StockAdjustmentModule } from './Interfaces/http/api/stock-adjustments/stock-adjustment.module';
 import { StockTransferModule } from './Interfaces/http/api/stock-transfers/stock-transfer.module';
@@ -56,6 +57,7 @@ import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
     PaymentTermModule,
     CategoryModule,
     ProductModule,
+    ToppingModule,
     InventoryModule,
     StockAdjustmentModule,
     StockTransferModule,

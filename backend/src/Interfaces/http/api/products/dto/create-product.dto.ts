@@ -85,4 +85,14 @@ export class CreateProductDto {
   @IsBoolean()
   @IsOptional()
   isBatchTracked?: boolean;
+
+  @ApiProperty({
+    example: false,
+    required: false,
+    default: false,
+    description: 'When true + sold MADE_TO_ORDER, POS shows the global topping catalog',
+  })
+  @IsBoolean()
+  @IsOptional()
+  hasToppings?: boolean;
 }

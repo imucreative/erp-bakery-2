@@ -21,6 +21,7 @@ const newData: NewProductData = {
   minimumStock: 0,
   shelfLifeDays: 0,
   isBatchTracked: true,
+  hasToppings: false,
 };
 
 describe('ProductRepository (abstract contract)', () => {

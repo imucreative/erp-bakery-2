@@ -87,6 +87,7 @@ async function onSubmitCreate(payload: {
   minimumStock: number
   shelfLifeDays: number
   isBatchTracked: boolean
+  hasToppings: boolean
 }): Promise<void> {
   submitting.value = true
   formError.value = null
@@ -105,6 +106,7 @@ async function onSubmitCreate(payload: {
       minimumStock: payload.minimumStock,
       shelfLifeDays: payload.shelfLifeDays,
       isBatchTracked: payload.isBatchTracked,
+      hasToppings: payload.hasToppings,
     })
     formOpen.value = false
   } catch (error) {
@@ -123,6 +125,7 @@ async function onSubmitEdit(payload: {
   minimumStock: number
   shelfLifeDays: number
   isBatchTracked: boolean
+  hasToppings: boolean
   isActive: boolean
 }): Promise<void> {
   if (!editing.value) {
@@ -140,6 +143,7 @@ async function onSubmitEdit(payload: {
       minimumStock: payload.minimumStock,
       shelfLifeDays: payload.shelfLifeDays,
       isBatchTracked: payload.isBatchTracked,
+      hasToppings: payload.hasToppings,
       isActive: payload.isActive,
     })
     formOpen.value = false

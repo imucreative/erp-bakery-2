@@ -14,12 +14,14 @@
  *      filters: page, limit, status?('OPEN'|'CLOSED'), outletId?, cashierUserId?
  *  - GET  /sales/shifts/:id         → { success, data: Shift }   guard: shift.read
  *
- * ── POS products & toppings ──────────────────────────────────────────
+ * ── POS products & toppings (GLOBAL topping model, doc 51 Fase 6b) ─────
  *  - GET  /sales/pos/products       → { success, data: PosProduct[], meta }  guard: sales.manage
  *      filters: page, limit, outletId?, search?
- *      PosProduct carries `saleMode` ('MADE_TO_ORDER'|'STOCK') and inline
- *      `toppings` (empty for STOCK products / when none configured).
- *  - GET  /sales/pos/products/:id/toppings → { success, data: PosToppingOption[] }  guard: sales.manage
+ *      PosProduct carries `saleMode` ('MADE_TO_ORDER'|'STOCK') and `hasToppings`
+ *      (boolean). Toppings are NO LONGER inlined per product.
+ *  - GET  /sales/pos/toppings       → { success, data: PosToppingOption[] }  guard: sales.manage
+ *      Daftar topping GLOBAL yang AKTIF — satu sumber untuk panel modifier POS,
+ *      ditampilkan untuk produk MADE_TO_ORDER yang `hasToppings === true`.
  *
  * ── Sales Order ──────────────────────────────────────────────────────
  *  - POST /sales/orders             → 201 SalesOrder (PENDING_PAYMENT)  guard: sales.manage
@@ -145,7 +147,7 @@ export interface PosProduct {
   sellingPrice: number
   saleMode: SaleMode
   recipeId: string | null
-  toppings: PosToppingOption[]
+  hasToppings: boolean
 }
 
 export interface SalesOrderItemTopping {
@@ -396,9 +398,10 @@ export const salesService = {
       return { items: response.data.data, meta: response.data.meta }
     },
 
-    async productToppings(id: string): Promise<PosToppingOption[]> {
+    /** GLOBAL active topping options — the single source for the POS modifier panel. */
+    async toppings(): Promise<PosToppingOption[]> {
       const response = await httpClient.get<ApiSuccess<PosToppingOption[]>>(
-        `/sales/pos/products/${id}/toppings`,
+        '/sales/pos/toppings',
       )
       return response.data.data
     },

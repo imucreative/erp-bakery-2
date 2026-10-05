@@ -93,7 +93,15 @@ describe('SalesOrderRepositoryPostgres', () => {
     it('rejects TOPPING.NOT_ALLOWED when a STOCK product carries toppings', async () => {
       (mockPool.query as jest.Mock)
         .mockResolvedValueOnce({
-          rows: [{ id: 'p2', name: 'Air Mineral', product_type: 'FINISHED_GOODS', selling_price: '5000.00' }],
+          rows: [
+            {
+              id: 'p2',
+              name: 'Air Mineral',
+              product_type: 'FINISHED_GOODS',
+              selling_price: '5000.00',
+              has_toppings: false,
+            },
+          ],
           rowCount: 1,
         })
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // no recipe → STOCK
@@ -105,14 +113,21 @@ describe('SalesOrderRepositoryPostgres', () => {
       ).rejects.toThrow('TOPPING.NOT_ALLOWED');
     });
 
-    it('rejects TOPPING.NOT_ALLOWED when a topping is not registered/active for the product', async () => {
+    it('rejects TOPPING.NOT_ALLOWED when a MADE_TO_ORDER product has has_toppings=false', async () => {
       (mockPool.query as jest.Mock)
         .mockResolvedValueOnce({
-          rows: [{ id: 'p1', name: 'Waffle', product_type: 'SEMI_FINISHED', selling_price: '8000.00' }],
+          rows: [
+            {
+              id: 'p1',
+              name: 'Waffle',
+              product_type: 'SEMI_FINISHED',
+              selling_price: '8000.00',
+              has_toppings: false,
+            },
+          ],
           rowCount: 1,
         })
-        .mockResolvedValueOnce({ rows: [{ id: 'r1' }], rowCount: 1 }) // ACTIVE recipe → MADE_TO_ORDER
-        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // topping not in product_toppings
+        .mockResolvedValueOnce({ rows: [{ id: 'r1' }], rowCount: 1 }); // ACTIVE recipe → MADE_TO_ORDER
 
       await expect(
         repo.resolveCheckoutItems('c1', [
@@ -121,10 +136,42 @@ describe('SalesOrderRepositoryPostgres', () => {
       ).rejects.toThrow('TOPPING.NOT_ALLOWED');
     });
 
-    it('snapshots allowed topping price into the line total (MADE_TO_ORDER)', async () => {
+    it('rejects TOPPING.NOT_ALLOWED when a topping is not in the active global catalog', async () => {
       (mockPool.query as jest.Mock)
         .mockResolvedValueOnce({
-          rows: [{ id: 'p1', name: 'Waffle', product_type: 'SEMI_FINISHED', selling_price: '8000.00' }],
+          rows: [
+            {
+              id: 'p1',
+              name: 'Waffle',
+              product_type: 'SEMI_FINISHED',
+              selling_price: '8000.00',
+              has_toppings: true,
+            },
+          ],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({ rows: [{ id: 'r1' }], rowCount: 1 }) // ACTIVE recipe → MADE_TO_ORDER
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // topping not in global catalog
+
+      await expect(
+        repo.resolveCheckoutItems('c1', [
+          { productId: 'p1', qty: 1, itemDiscount: 0, toppings: [{ toppingProductId: 'tX' }] },
+        ]),
+      ).rejects.toThrow('TOPPING.NOT_ALLOWED');
+    });
+
+    it('snapshots global topping price into the line total (MADE_TO_ORDER + has_toppings)', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 'p1',
+              name: 'Waffle',
+              product_type: 'SEMI_FINISHED',
+              selling_price: '8000.00',
+              has_toppings: true,
+            },
+          ],
           rowCount: 1,
         })
         .mockResolvedValueOnce({ rows: [{ id: 'r1' }], rowCount: 1 })
@@ -480,9 +527,23 @@ describe('SalesOrderRepositoryPostgres', () => {
       expect(rows).toHaveLength(1);
     });
 
-    it('listProductToppings throws PRODUCT.NOT_FOUND for a missing product', async () => {
-      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: [], rowCount: 0 });
-      await expect(repo.listProductToppings('x', 'c1')).rejects.toThrow('PRODUCT.NOT_FOUND');
+    it('listActiveToppings maps the active global catalog rows', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({
+        rows: [
+          {
+            topping_product_id: 't1',
+            topping_name: 'Selai',
+            default_qty_per_item: '25.000',
+            extra_price: '2000.00',
+            sort_order: 0,
+          },
+        ],
+      });
+      const toppings = await repo.listActiveToppings('c1');
+      expect(toppings).toHaveLength(1);
+      expect(toppings[0].toppingProductId).toBe('t1');
+      expect(toppings[0].defaultQtyPerItem).toBe(25);
+      expect(toppings[0].extraPrice).toBe(2000);
     });
 
     it('listPosProducts returns 0 rows gracefully', async () => {

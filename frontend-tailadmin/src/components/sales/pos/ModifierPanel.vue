@@ -1,8 +1,10 @@
 <script setup lang="ts">
 /**
- * ModifierPanel — center column shown when a MADE_TO_ORDER product is selected.
- * Lists the product's available toppings (`product.toppings`) as ToggleSwitch
- * rows with their extra price + default qty; "Tambah ke Cart" emits the chosen
+ * ModifierPanel — center column shown when a MADE_TO_ORDER product with
+ * `hasToppings === true` is selected. The topping list is the GLOBAL catalog
+ * (`toppings` prop, loaded once from GET /sales/pos/toppings by the parent) —
+ * NOT per-product anymore (doc 51 Fase 6b). Each topping is a ToggleSwitch row
+ * with its extra price + default qty; "Tambah ke Cart" emits the chosen
  * toppings to the parent. Works fine with zero toppings (plain add). Stateless:
  * the parent owns the selected product; local state is only the toggle set,
  * reset whenever the product changes.
@@ -15,6 +17,7 @@ import type { PosProduct, PosToppingOption } from '@/services/sales.service'
 
 const props = defineProps<{
   product: PosProduct
+  toppings: PosToppingOption[]
 }>()
 
 const emit = defineEmits<{
@@ -48,9 +51,7 @@ function setSelected(topping: PosToppingOption, value: boolean): void {
 }
 
 function onAdd(): void {
-  const chosen = props.product.toppings.filter((t) =>
-    selectedIds.value.has(t.toppingProductId),
-  )
+  const chosen = props.toppings.filter((t) => selectedIds.value.has(t.toppingProductId))
   emit('add', chosen)
 }
 </script>
@@ -83,15 +84,15 @@ function onAdd(): void {
 
     <div class="flex-1 overflow-y-auto">
       <div
-        v-if="props.product.toppings.length === 0"
+        v-if="props.toppings.length === 0"
         class="rounded-lg border border-dashed border-gray-200 py-6 text-center text-theme-sm text-gray-400 dark:border-gray-700 dark:text-gray-500"
       >
-        Tidak ada topping untuk produk ini.
+        Belum ada topping aktif yang tersedia.
       </div>
 
       <div v-else class="space-y-2">
         <div
-          v-for="topping in props.product.toppings"
+          v-for="topping in props.toppings"
           :key="topping.toppingProductId"
           class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2.5 dark:border-gray-800"
         >

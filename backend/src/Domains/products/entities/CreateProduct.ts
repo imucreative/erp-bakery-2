@@ -22,6 +22,7 @@ export class CreateProduct {
   public readonly minimumStock: number;
   public readonly shelfLifeDays: number;
   public readonly isBatchTracked: boolean;
+  public readonly hasToppings: boolean;
 
   constructor(payload: unknown) {
     this._verifyPayload(payload);
@@ -41,6 +42,7 @@ export class CreateProduct {
     this.minimumStock = this._toNumber(p.minimumStock);
     this.shelfLifeDays = this._toInt(p.shelfLifeDays);
     this.isBatchTracked = p.isBatchTracked === undefined ? true : Boolean(p.isBatchTracked);
+    this.hasToppings = p.hasToppings === undefined ? false : Boolean(p.hasToppings);
   }
 
   private _toNumber(value: unknown): number {
@@ -120,6 +122,14 @@ export class CreateProduct {
       p.isBatchTracked !== undefined &&
       p.isBatchTracked !== null &&
       typeof p.isBatchTracked !== 'boolean'
+    ) {
+      throw new Error('CREATE_PRODUCT.NOT_MEET_DATA_TYPE_SPECIFICATION');
+    }
+
+    if (
+      p.hasToppings !== undefined &&
+      p.hasToppings !== null &&
+      typeof p.hasToppings !== 'boolean'
     ) {
       throw new Error('CREATE_PRODUCT.NOT_MEET_DATA_TYPE_SPECIFICATION');
     }

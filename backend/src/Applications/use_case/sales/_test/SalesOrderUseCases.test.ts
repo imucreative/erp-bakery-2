@@ -18,7 +18,7 @@ const salesRepo: jest.Mocked<SalesOrderRepository> = {
   getReturnByOrderId: jest.fn(),
   list: jest.fn(),
   listPosProducts: jest.fn(),
-  listProductToppings: jest.fn(),
+  listActiveToppings: jest.fn(),
 } as unknown as jest.Mocked<SalesOrderRepository>;
 
 const shiftRepo: jest.Mocked<ShiftRepository> = {
@@ -241,24 +241,24 @@ describe('RefundSalesOrderUseCase', () => {
 });
 
 describe('GetSalesOrdersUseCase', () => {
-  it('should list, detail, posProducts and productToppings via repo', async () => {
+  it('should list, detail, posProducts and activeToppings via repo', async () => {
     salesRepo.list.mockResolvedValue({ rows: [], total: 0 });
     salesRepo.getById.mockResolvedValue({ id: 'so1' } as never);
     salesRepo.getReturnByOrderId.mockResolvedValue(null);
     salesRepo.listPosProducts.mockResolvedValue({ rows: [], total: 0 });
-    salesRepo.listProductToppings.mockResolvedValue([]);
+    salesRepo.listActiveToppings.mockResolvedValue([]);
 
     const uc = new GetSalesOrdersUseCase(salesRepo);
     await uc.list({ limit: 10, offset: 0 }, 'c1');
     await uc.detail('so1', 'c1');
     await uc.returnByOrderId('so1', 'c1');
     await uc.posProducts({ limit: 50, offset: 0 }, 'c1');
-    await uc.productToppings('p1', 'c1');
+    await uc.activeToppings('c1');
 
     expect(salesRepo.list).toHaveBeenCalled();
     expect(salesRepo.getById).toHaveBeenCalledWith('so1', 'c1');
     expect(salesRepo.getReturnByOrderId).toHaveBeenCalledWith('so1', 'c1');
     expect(salesRepo.listPosProducts).toHaveBeenCalled();
-    expect(salesRepo.listProductToppings).toHaveBeenCalledWith('p1', 'c1');
+    expect(salesRepo.listActiveToppings).toHaveBeenCalledWith('c1');
   });
 });

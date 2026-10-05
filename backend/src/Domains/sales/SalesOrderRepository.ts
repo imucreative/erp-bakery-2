@@ -96,7 +96,12 @@ export interface PosToppingOption {
   sortOrder: number;
 }
 
-/** A sellable product row for the POS grid, with its resolved mode + toppings. */
+/**
+ * A sellable product row for the POS grid, with its resolved mode + a boolean
+ * hasToppings flag. The topping LIST is global (doc 51 §2.1): the FE loads it
+ * once via GET /sales/pos/toppings and shows the modifier panel when
+ * `hasToppings && saleMode === 'MADE_TO_ORDER'`.
+ */
 export interface PosProduct {
   productId: string;
   sku: string;
@@ -105,7 +110,7 @@ export interface PosProduct {
   sellingPrice: number;
   saleMode: SaleMode;
   recipeId: string | null;
-  toppings: PosToppingOption[];
+  hasToppings: boolean;
 }
 
 export interface PosProductFilter {
@@ -134,9 +139,10 @@ export abstract class SalesOrderRepository {
    *   ACTIVE recipe -> MADE_TO_ORDER (snapshot recipe_id);
    *   else FINISHED_GOODS -> STOCK;
    *   else reject RECIPE.NO_ACTIVE_RECIPE.
-   * Validates toppings per mode (TOPPING.NOT_ALLOWED), snapshots prices from
-   * products.selling_price + product_toppings.extra_price (anti-tamper), and
-   * computes each line_total. Pure resolution: no stock touched, no persist.
+   * Validates toppings per mode against the GLOBAL topping catalog + the
+   * product's has_toppings flag (TOPPING.NOT_ALLOWED), snapshots prices from
+   * products.selling_price + toppings.extra_price (anti-tamper), and computes
+   * each line_total. Pure resolution: no stock touched, no persist.
    */
   abstract resolveCheckoutItems(
     companyId: string,
@@ -193,15 +199,16 @@ export abstract class SalesOrderRepository {
     filter: SalesOrderListFilter,
   ): Promise<SalesOrderListResult>;
 
-  /** POS product grid — sellable products + resolved mode + available toppings. */
+  /** POS product grid — sellable products + resolved mode + hasToppings flag. */
   abstract listPosProducts(
     companyId: string,
     filter: PosProductFilter,
   ): Promise<PosProductResult>;
 
-  /** Toppings offered on a sellable product (active rows only). */
-  abstract listProductToppings(
-    productId: string,
-    companyId: string,
-  ): Promise<PosToppingOption[]>;
+  /**
+   * Active entries of the GLOBAL topping catalog for the POS modifier panel
+   * (doc 51 §10 — GET /sales/pos/toppings). A single list shared by every
+   * has_toppings product; no per-product scoping.
+   */
+  abstract listActiveToppings(companyId: string): Promise<PosToppingOption[]>;
 }

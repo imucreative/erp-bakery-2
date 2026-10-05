@@ -19,6 +19,7 @@ export class Product {
   public readonly minimumStock: number;
   public readonly shelfLifeDays: number;
   public readonly isBatchTracked: boolean;
+  public readonly hasToppings: boolean;
   public readonly isActive: boolean;
   public readonly createdAt: Date;
   public readonly updatedAt: Date;
@@ -39,6 +40,7 @@ export class Product {
     minimumStock: number | string;
     shelfLifeDays: number | string;
     isBatchTracked: boolean;
+    hasToppings?: boolean;
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -59,6 +61,7 @@ export class Product {
       minimumStock,
       shelfLifeDays,
       isBatchTracked,
+      hasToppings,
       isActive,
       createdAt,
       updatedAt,
@@ -83,6 +86,7 @@ export class Product {
     this.minimumStock = Number(minimumStock);
     this.shelfLifeDays = Number(shelfLifeDays);
     this.isBatchTracked = isBatchTracked;
+    this.hasToppings = hasToppings ?? false;
     this.isActive = isActive;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;

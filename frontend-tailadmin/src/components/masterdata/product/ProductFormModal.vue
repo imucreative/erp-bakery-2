@@ -61,6 +61,7 @@ interface CreatePayload {
   minimumStock: number
   shelfLifeDays: number
   isBatchTracked: boolean
+  hasToppings: boolean
 }
 interface EditPayload {
   name: string
@@ -71,6 +72,7 @@ interface EditPayload {
   minimumStock: number
   shelfLifeDays: number
   isBatchTracked: boolean
+  hasToppings: boolean
   isActive: boolean
 }
 
@@ -89,6 +91,7 @@ const sellingPrice = ref<number>(0)
 const minimumStock = ref<number>(0)
 const shelfLifeDays = ref<number>(0)
 const isBatchTracked = ref<boolean>(true)
+const hasToppings = ref<boolean>(false)
 const isActive = ref<boolean>(true)
 const localError = ref<string | null>(null)
 
@@ -127,6 +130,7 @@ watch(
       minimumStock.value = p?.minimumStock ?? 0
       shelfLifeDays.value = p?.shelfLifeDays ?? 0
       isBatchTracked.value = p?.isBatchTracked ?? true
+      hasToppings.value = p?.hasToppings ?? false
       isActive.value = p?.isActive ?? true
       localError.value = null
     }
@@ -156,6 +160,7 @@ function onSubmit(): void {
       minimumStock: Number(minimumStock.value) || 0,
       shelfLifeDays: Number(shelfLifeDays.value) || 0,
       isBatchTracked: isBatchTracked.value,
+      hasToppings: hasToppings.value,
       isActive: isActive.value,
     })
     return
@@ -189,6 +194,7 @@ function onSubmit(): void {
     minimumStock: Number(minimumStock.value) || 0,
     shelfLifeDays: Number(shelfLifeDays.value) || 0,
     isBatchTracked: isBatchTracked.value,
+    hasToppings: hasToppings.value,
   })
 }
 </script>
@@ -318,8 +324,9 @@ function onSubmit(): void {
             <label :class="labelClass">Masa Simpan (hari)</label>
             <input v-model.number="shelfLifeDays" type="number" min="0" :class="inputClass" />
           </div>
-          <div class="flex items-end gap-6">
+          <div class="flex flex-wrap items-end gap-6">
             <ToggleSwitch v-model="isBatchTracked" label="Lacak batch" />
+            <ToggleSwitch v-model="hasToppings" label="Punya Topping" />
             <ToggleSwitch v-if="isEdit" v-model="isActive" label="Aktif" />
           </div>
         </div>
