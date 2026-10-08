@@ -10,8 +10,9 @@
  * `destinationOutletLabel`. `disabled` renders the read-only mode and
  * `poLocked` locks the PO select (edit mode — the source PO can't change).
  */
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
 import type { PurchaseOrder } from '@/services/purchase-order.service'
+import { computed } from 'vue'
+import EntityCombobox from '@/components/ui/EntityCombobox.vue'
 
 const props = defineProps<{
   purchaseOrderId: string
@@ -34,6 +35,13 @@ const emit = defineEmits<{
 const inputClass =
   'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
 const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
+
+const selectedPoLabel = computed<string>(() =>
+  props.purchaseOrderId ? props.poNumber(props.purchaseOrderId) : '',
+)
+
+/** Either read-only flag locks the PR picker; the supplier picker only honours `disabled`. */
+const poPickerDisabled = computed<boolean>(() => props.disabled || props.poLocked)
 </script>
 
 <template>
@@ -42,22 +50,20 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
       <!-- Source Purchase Order -->
       <div>
         <label :class="labelClass">PO Sumber<span class="text-error-500">*</span></label>
-        <div class="relative">
-          <select
-            :value="props.purchaseOrderId"
-            :disabled="props.disabled || props.poLocked"
-            :class="[inputClass, 'appearance-none pe-10']"
-            @change="emit('update:purchaseOrderId', ($event.target as HTMLSelectElement).value)"
-          >
-            <option value="" disabled>Pilih PO (status disetujui)</option>
-            <option v-for="po in props.approvedOrders" :key="po.id" :value="po.id">
-              {{ po.poNumber }}
-            </option>
-          </select>
-          <ChevronDownIcon
-            class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-          />
-        </div>
+        <EntityCombobox
+          :model-value="props.purchaseOrderId"
+          :selected-label="selectedPoLabel"
+          :items="props.approvedOrders"
+          :item-id="(po) => po.id"
+          :item-label="(po) => po.poNumber"
+          mode="client"
+          placeholder="Ketik nomor PO..."
+          empty-text="PO disetujui tidak ditemukan."
+          aria-label="Purchase Order sumber"
+          :disabled="poPickerDisabled"
+          @update:model-value="emit('update:purchaseOrderId', $event)"
+        />
+
         <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
           Hanya PO berstatus disetujui yang dapat diterima.
         </p>

@@ -108,9 +108,15 @@ async function ensureMastersLoaded(): Promise<void> {
   if (!mastersPromise) {
     mastersPromise = (async () => {
       const [allProducts, allUoms] = await Promise.all([
-        fetchAllPaginated<Product>((page) =>
-          productService.list({ page, limit: RESOLVE_PAGE_LIMIT }),
-        ),
+        fetchAllPaginated<Product>(async (p) => {
+          const result = await productService.list({
+            page: p,
+            limit: RESOLVE_PAGE_LIMIT,
+            productType: 'RAW_MATERIAL',
+            isActive: 'true',
+          })
+          return { items: result.items, meta: result.meta }
+        }),
         fetchAllPaginated<Uom>((page) => uomService.list({ page, limit: RESOLVE_PAGE_LIMIT })),
       ])
       productNames.value = new Map(allProducts.map((p) => [p.id, `${p.name} (${p.sku})`]))

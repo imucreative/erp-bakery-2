@@ -152,6 +152,11 @@ export const productService = {
     return { items: response.data.data, meta: response.data.meta }
   },
 
+  async getById(id: string): Promise<Product> {
+    const response = await httpClient.get<ApiSuccess<Product>>(`/products/${id}`)
+    return response.data.data
+  },
+
   async create(payload: CreateProductPayload): Promise<Product> {
     const response = await httpClient.post<ApiSuccess<Product>>('/products', payload)
     return response.data.data
