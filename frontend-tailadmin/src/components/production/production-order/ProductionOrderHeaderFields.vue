@@ -18,9 +18,8 @@
  * list and `outletLocked` so the field renders read-only; otherwise a native
  * picker lists only the accessible outlets.
  */
-import { nextTick, onBeforeUnmount, ref } from 'vue'
 import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
-import { Search, X } from 'lucide-vue-next'
+import EntityCombobox from '@/components/ui/EntityCombobox.vue'
 import type { Outlet } from '@/services/outlet.service'
 import type { Product } from '@/services/product.service'
 
@@ -66,71 +65,11 @@ const inputClass =
   'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
 const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
 
-// ── Product autocomplete (presentation + keyboard nav only) ───────────
-const query = ref<string>('')
-const showResults = ref<boolean>(false)
-const highlighted = ref<number>(-1)
-let blurTimer: ReturnType<typeof setTimeout> | undefined
-
-function onQueryInput(event: Event): void {
-  const value = (event.target as HTMLInputElement).value
-  query.value = value
-  showResults.value = true
-  highlighted.value = -1
-  emit('product-search', value.trim())
-}
-
+// ── Product autocomplete ─────────────────────────────────────────────
+// The interaction (chip, search input, dropdown, keyboard nav, aria) is the
+// shared `EntityCombobox`; this file only wires the parent's server-side search.
 function selectProduct(product: Product): void {
   emit('product-select', product)
-  query.value = ''
-  showResults.value = false
-  highlighted.value = -1
-}
-
-function clearProduct(): void {
-  emit('product-clear')
-  query.value = ''
-  showResults.value = false
-  highlighted.value = -1
-  void nextTick()
-}
-
-function onFocus(): void {
-  if (query.value.trim().length > 0) {
-    showResults.value = true
-  }
-}
-
-function onBlur(): void {
-  // Delay so a mousedown on an option still registers before close.
-  blurTimer = setTimeout(() => {
-    showResults.value = false
-  }, 150)
-}
-
-function onKeydown(event: KeyboardEvent): void {
-  if (!showResults.value || props.productResults.length === 0) {
-    return
-  }
-  if (event.key === 'ArrowDown') {
-    event.preventDefault()
-    highlighted.value = (highlighted.value + 1) % props.productResults.length
-  } else if (event.key === 'ArrowUp') {
-    event.preventDefault()
-    highlighted.value =
-      highlighted.value <= 0 ? props.productResults.length - 1 : highlighted.value - 1
-  } else if (event.key === 'Enter') {
-    if (highlighted.value >= 0) {
-      event.preventDefault()
-      const picked = props.productResults[highlighted.value]
-      if (picked) {
-        selectProduct(picked)
-      }
-    }
-  } else if (event.key === 'Escape') {
-    showResults.value = false
-    highlighted.value = -1
-  }
 }
 
 function onQtyInput(event: Event, field: 'scheduledQty' | 'actualQty' | 'wasteQty'): void {
@@ -144,12 +83,6 @@ function onQtyInput(event: Event, field: 'scheduledQty' | 'actualQty' | 'wasteQt
     emit('update:wasteQty', value)
   }
 }
-
-onBeforeUnmount(() => {
-  if (blurTimer) {
-    clearTimeout(blurTimer)
-  }
-})
 </script>
 
 <template>
@@ -189,82 +122,22 @@ onBeforeUnmount(() => {
       <div>
         <label :class="labelClass">Produk Jadi<span class="text-error-500">*</span></label>
 
-        <!-- Chosen product chip -->
-        <div
-          v-if="props.productId"
-          class="flex h-11 items-center justify-between gap-2 rounded-lg border border-gray-300 bg-gray-50 px-4 text-sm text-gray-800 dark:border-gray-700 dark:bg-white/[0.03] dark:text-white/90"
-        >
-          <span class="truncate">{{ props.productLabel }}</span>
-          <button
-            type="button"
-            aria-label="Hapus produk terpilih"
-            title="Ganti produk"
-            :disabled="props.disabled"
-            class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-200 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-white/[0.06] dark:hover:text-gray-200"
-            @click="clearProduct"
-          >
-            <X class="h-4 w-4" aria-hidden="true" />
-          </button>
-        </div>
-
-        <!-- Search input + results -->
-        <div v-else class="relative">
-          <div class="relative">
-            <span
-              class="pointer-events-none absolute inset-y-0 start-3 my-auto flex h-5 w-5 items-center text-gray-400"
-            >
-              <Search class="h-4 w-4" aria-hidden="true" />
-            </span>
-            <input
-              :value="query"
-              type="text"
-              placeholder="Ketik untuk mencari produk jadi..."
-              :disabled="props.disabled"
-              :class="[inputClass, 'ps-10']"
-              role="combobox"
-              :aria-expanded="showResults"
-              aria-autocomplete="list"
-              @input="onQueryInput"
-              @focus="onFocus"
-              @blur="onBlur"
-              @keydown="onKeydown"
-            />
-          </div>
-
-          <div
-            v-if="showResults && query.trim().length > 0"
-            class="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-200 bg-white py-1 shadow-theme-lg dark:border-gray-700 dark:bg-gray-900"
-          >
-            <p
-              v-if="props.productSearching"
-              class="px-4 py-2 text-theme-sm text-gray-500 dark:text-gray-400"
-            >
-              Mencari...
-            </p>
-            <p
-              v-else-if="props.productResults.length === 0"
-              class="px-4 py-2 text-theme-sm text-gray-500 dark:text-gray-400"
-            >
-              Produk tidak ditemukan.
-            </p>
-            <ul v-else>
-              <li
-                v-for="(product, index) in props.productResults"
-                :key="product.id"
-                :class="[
-                  'cursor-pointer px-4 py-2 text-theme-sm text-gray-700 dark:text-gray-300',
-                  index === highlighted
-                    ? 'bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400'
-                    : 'hover:bg-gray-50 dark:hover:bg-white/[0.03]',
-                ]"
-                @mousedown.prevent="selectProduct(product)"
-                @mousemove="highlighted = index"
-              >
-                {{ product.name }} <span class="text-gray-400">({{ product.sku }})</span>
-              </li>
-            </ul>
-          </div>
-        </div>
+        <EntityCombobox
+          :model-value="props.productId"
+          :selected-label="props.productLabel"
+          :items="props.productResults"
+          :item-id="(product) => product.id"
+          :item-label="(product) => `${product.name} (${product.sku})`"
+          :searching="props.productSearching"
+          searching-text="Mencari..."
+          empty-text="Produk tidak ditemukan."
+          placeholder="Ketik untuk mencari produk jadi..."
+          aria-label="Produk jadi untuk produksi"
+          :disabled="props.disabled"
+          @search="emit('product-search', $event)"
+          @select="selectProduct"
+          @clear="emit('product-clear')"
+        />
 
         <p
           v-if="props.recipeMissing"
@@ -274,11 +147,10 @@ onBeforeUnmount(() => {
         </p>
         <p v-else class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
           <template v-if="props.recipeInfo">
-            Resep aktif: <span class="text-gray-600 dark:text-gray-300">{{ props.recipeInfo }}</span>
+            Resep aktif:
+            <span class="text-gray-600 dark:text-gray-300">{{ props.recipeInfo }}</span>
           </template>
-          <template v-else>
-            Pilih produk jadi yang memiliki resep aktif.
-          </template>
+          <template v-else> Pilih produk jadi yang memiliki resep aktif. </template>
         </p>
       </div>
 

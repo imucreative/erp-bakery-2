@@ -73,7 +73,15 @@ const isReadOnly = computed<boolean>(
 async function loadSupportingData(): Promise<void> {
   const [allOutlets, allProducts, allUoms] = await Promise.all([
     fetchAllPaginated((page) => outletService.list({ page, limit: PAGE_LIMIT, isActive: 'true' })),
-    fetchAllPaginated((page) => productService.list({ page, limit: PAGE_LIMIT, isActive: 'true' })),
+    fetchAllPaginated<Product>(async (p) => {
+      const result = await productService.list({
+        page: p,
+        limit: PAGE_LIMIT,
+        productType: 'RAW_MATERIAL',
+        isActive: 'true',
+      })
+      return { items: result.items, meta: result.meta }
+    }),
     fetchAllPaginated((page) => uomService.list({ page, limit: PAGE_LIMIT, isActive: 'true' })),
   ])
   outlets.value = allOutlets
