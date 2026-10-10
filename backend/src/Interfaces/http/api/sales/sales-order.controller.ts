@@ -38,7 +38,7 @@ import { PosProductQueryDto } from './dto/pos-product-query.dto';
  * POST /sales/orders/:id/returns  PAID -> REFUNDED (full-order, SALE_RETURN)
  * GET  /sales/orders              list
  * GET  /sales/orders/:id          detail
- * GET  /sales/pos/products        POS product grid (mode + hasToppings flag)
+ * GET  /sales/pos/products        POS grid (topping capability + stock figures)
  * GET  /sales/pos/toppings        global topping catalog (active) for modifiers
  */
 @ApiTags('Sales')
@@ -169,15 +169,22 @@ export class SalesOrderController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission('sales.manage')
   @ApiOperation({
-    summary: 'POS product grid — sellable products + resolved mode + hasToppings flag',
+    summary: 'POS product grid — sellable products + topping capability + stock figures',
+    description:
+      'Returns the per-outlet availableQty/expiredQty of every sellable product, so an ' +
+      'explicit outletId is asserted against the caller accessible outlets (403 when not).',
   })
   @ApiResponse({ status: 200, description: 'Paginated POS products' })
+  @ApiResponse({ status: 403, description: 'The requested outlet is not accessible' })
   async posProducts(@Query() query: PosProductQueryDto, @GetUser() user: JwtAccessPayload) {
     const companyId = this._companyId(user);
     const { page, limit, offset } = parsePagination(query);
     const { rows, total } = await this.getUseCase.posProducts(
       { limit, offset, outletId: query.outletId, search: query.search },
       companyId,
+      // Same derivation as GET /outlets/accessible: OWNER/super-admin cover
+      // every outlet of the company, everyone else their assigned outlets.
+      { userId: user.sub, allOutlets: user.isSuperAdmin || user.roleCode === 'OWNER' },
     );
     return listResponse(rows, total, page, limit);
   }

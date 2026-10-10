@@ -282,6 +282,7 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
 
   async resolveCheckoutItems(
     companyId: string,
+    outletId: string,
     items: CheckoutItemRequest[],
   ): Promise<ResolveCheckoutResult> {
     const resolved: ResolvedSalesOrderItem[] = [];
@@ -291,11 +292,10 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
       const productResult = await this.pool.query<{
         id: string;
         name: string;
-        product_type: string;
         selling_price: string;
         has_toppings: boolean;
       }>(
-        `SELECT id, name, product_type, selling_price, has_toppings
+        `SELECT id, name, selling_price, has_toppings
          FROM products
          WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL`,
         [req.productId, companyId],
@@ -305,36 +305,65 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
       }
       const product = productResult.rows[0];
 
-      // Resolve the mode deterministically: ACTIVE recipe wins (MADE_TO_ORDER).
-      const recipeResult = await this.pool.query<{ id: string }>(
-        `SELECT id FROM recipes
-         WHERE company_id = $1 AND product_id = $2 AND status = 'ACTIVE' AND deleted_at IS NULL`,
-        [companyId, req.productId],
+      // Mode resolution — ONE stock-first rule for EVERY line, topped or not.
+      // POS never backflushes raw materials: backflush only happens through a
+      // Production Order, so a line is either served from the sellable
+      // finished-goods stock at the outlet or rejected outright. Toppings no
+      // longer change this: a topped line is cut from the SAME finished-goods
+      // batch as an untopped one, and pay() consumes the toppings on top.
+      //
+      // Two independent sums over the product's batches at this outlet (same
+      // source as Stock On Hand). Both filters require qty_available > 0,
+      // otherwise an expired batch that has already been fully consumed would
+      // inflate expiredQty with a meaningless number.
+      const stockResult = await this.pool.query<{
+        sellable_qty: string;
+        expired_qty: string;
+      }>(
+        `SELECT COALESCE(SUM(qty_available) FILTER (
+                  WHERE status = 'ACTIVE' AND qty_available > 0
+                    AND (expired_date IS NULL OR expired_date >= CURRENT_DATE)
+              ), 0) AS sellable_qty,
+                COALESCE(SUM(qty_available) FILTER (
+                  WHERE status = 'ACTIVE' AND qty_available > 0
+                    AND expired_date IS NOT NULL AND expired_date < CURRENT_DATE
+              ), 0) AS expired_qty
+         FROM inventory_batches
+         WHERE company_id = $1 AND outlet_id = $2 AND product_id = $3`,
+        [companyId, outletId, req.productId],
       );
+      const sellableQty = Number(stockResult.rows[0]?.sellable_qty ?? 0);
+      const expiredQty = Number(stockResult.rows[0]?.expired_qty ?? 0);
 
       let saleMode: SaleMode;
-      let recipeId: string | null = null;
-      if (recipeResult.rowCount) {
-        saleMode = 'MADE_TO_ORDER';
-        recipeId = recipeResult.rows[0].id;
-      } else if (product.product_type === 'FINISHED_GOODS') {
+      // No resolver decision ever snapshots a recipe: stock-first has no
+      // recipe fallback. The column stays (pay() still serves orders already
+      // persisted as MADE_TO_ORDER, and refund() reads it back) but it is
+      // always null on a freshly resolved line.
+      const recipeId: string | null = null;
+
+      if (sellableQty >= req.qty && req.qty > 0) {
+        // Sellable stock covers the line → cut the finished batch at pay().
         saleMode = 'STOCK';
+      } else if (expiredQty > 0) {
+        // Stock exists but none of it is sellable anymore. Say so instead of
+        // reporting a plain shortage: the fix is a new Production Order.
+        throw new InvariantError('SALES_ORDER.STOCK_EXPIRED');
       } else {
-        // No ACTIVE recipe and not a stockable finished good → ineligible.
-        throw new NotFoundError('RECIPE.NO_ACTIVE_RECIPE');
+        // Nothing on hand (or qty = 0). POS never backflushes, so there is no
+        // recipe fallback — reject with the existing shortage code.
+        throw new InvariantError('INVENTORY.INSUFFICIENT_STOCK');
       }
 
       // Validate + snapshot toppings against the GLOBAL catalog (model global,
-      // doc 51 §2.1/§3.4/§7.1). Toppings are only allowed when the product is
-      // MADE_TO_ORDER AND has_toppings=true; otherwise reject TOPPING.NOT_ALLOWED.
+      // doc 51 §2.1/§3.4/§7.1). Toppings are allowed on EVERY sale mode — the
+      // only product-side gate is the has_toppings flag; a product that does
+      // not accept toppings rejects TOPPING.NOT_ALLOWED whatever the mode is.
       const resolvedToppings: ResolvedSalesOrderItemTopping[] = [];
       let toppingsPrice = 0;
 
-      if (req.toppings.length > 0) {
-        // STOCK products are sold as-is; has_toppings=false products accept none.
-        if (saleMode !== 'MADE_TO_ORDER' || !product.has_toppings) {
-          throw new InvariantError('TOPPING.NOT_ALLOWED');
-        }
+      if (req.toppings.length > 0 && !product.has_toppings) {
+        throw new InvariantError('TOPPING.NOT_ALLOWED');
       }
 
       for (const t of req.toppings) {
@@ -571,24 +600,27 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
               targets.push({ productId: ri.ingredient_product_id, requiredQty });
             }
           }
-
-          // Topping consumption: qty_per_item * item.qty, per selected topping.
-          const toppingRows = await client.query<ItemToppingRow>(
-            `SELECT id, sales_order_item_id, topping_product_id, topping_name_snapshot,
-                    qty_per_item, extra_price_snapshot
-             FROM sales_order_item_toppings
-             WHERE sales_order_item_id = $1`,
-            [itemId],
-          );
-          for (const t of toppingRows.rows) {
-            const requiredQty = Number(t.qty_per_item) * itemQty;
-            if (requiredQty > 0) {
-              targets.push({ productId: t.topping_product_id, requiredQty });
-            }
-          }
         } else {
           // STOCK: cut the sellable product's own finished-goods stock.
           targets.push({ productId: item.product_id, requiredQty: itemQty });
+        }
+
+        // Topping consumption — OUTSIDE the mode branch, because a topping is
+        // consumed in BOTH modes (qty_per_item * item.qty per selected
+        // topping). Made-to-order backflushes recipe ingredients + toppings;
+        // stock cuts the finished product + toppings.
+        const toppingRows = await client.query<ItemToppingRow>(
+          `SELECT id, sales_order_item_id, topping_product_id, topping_name_snapshot,
+                  qty_per_item, extra_price_snapshot
+           FROM sales_order_item_toppings
+           WHERE sales_order_item_id = $1`,
+          [itemId],
+        );
+        for (const t of toppingRows.rows) {
+          const requiredQty = Number(t.qty_per_item) * itemQty;
+          if (requiredQty > 0) {
+            targets.push({ productId: t.topping_product_id, requiredQty });
+          }
         }
 
         // 4-6. FEFO-cut each target across batches; post SALE + snapshot.
@@ -1082,8 +1114,10 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
     companyId: string,
     filter: PosProductFilter,
   ): Promise<PosProductResult> {
-    // Sellable products: active, non-deleted. A product is sellable when it has
-    // an ACTIVE recipe (MADE_TO_ORDER) OR is FINISHED_GOODS (STOCK).
+    // Sellable products: active, non-deleted. A product is listed when it has an
+    // ACTIVE recipe (i.e. it is backflushable) OR is FINISHED_GOODS (sold from
+    // its own stock). This is the GRID's sellability rule, independent of the
+    // per-line checkout resolution in resolveCheckoutItems.
     const conditions: string[] = ['p.company_id = $1', 'p.deleted_at IS NULL', 'p.is_active = TRUE'];
     const params: unknown[] = [companyId];
 
@@ -1112,6 +1146,16 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
     const total = parseInt(countResult.rows[0].count, 10);
 
     params.push(filter.limit, filter.offset);
+    // Two finished-goods figures per product, both scoped to the requested
+    // outlet and both derived from the same source as Stock On Hand (ACTIVE
+    // batches with qty_available > 0):
+    //   available_qty — not expired yet (NULL expiry counts as sellable)
+    //   expired_qty   — already past CURRENT_DATE
+    // The qty_available > 0 guard is mandatory on BOTH: an expired batch that
+    // has already been fully consumed would otherwise inflate expired_qty with
+    // a meaningless figure and hide the real reason a line was rejected.
+    // Without an outletId the param is NULL, so both sums collapse to 0.
+    const outletParam = `$${params.length + 1}`;
     const rowsResult = await this.pool.query<{
       id: string;
       sku: string;
@@ -1120,22 +1164,42 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
       selling_price: string;
       has_toppings: boolean;
       recipe_id: string | null;
+      available_qty: string | null;
+      expired_qty: string | null;
     }>(
       `SELECT p.id, p.sku, p.name, p.product_type, p.selling_price, p.has_toppings,
               (SELECT r.id FROM recipes r
                WHERE r.company_id = p.company_id AND r.product_id = p.id
                  AND r.status = 'ACTIVE' AND r.deleted_at IS NULL
-               LIMIT 1) AS recipe_id
+               LIMIT 1) AS recipe_id,
+              (SELECT COALESCE(SUM(ib.qty_available), 0)
+               FROM inventory_batches ib
+               WHERE ib.company_id = p.company_id AND ib.product_id = p.id
+                 AND ib.outlet_id = ${outletParam}::uuid
+                 AND ib.status = 'ACTIVE' AND ib.qty_available > 0
+                 AND (ib.expired_date IS NULL OR ib.expired_date >= CURRENT_DATE)
+              ) AS available_qty,
+              (SELECT COALESCE(SUM(ib.qty_available), 0)
+               FROM inventory_batches ib
+               WHERE ib.company_id = p.company_id AND ib.product_id = p.id
+                 AND ib.outlet_id = ${outletParam}::uuid
+                 AND ib.status = 'ACTIVE' AND ib.qty_available > 0
+                 AND ib.expired_date IS NOT NULL AND ib.expired_date < CURRENT_DATE
+              ) AS expired_qty
        FROM products p
        WHERE ${whereClause}
        ORDER BY p.name ASC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
-      params,
+      [...params, filter.outletId ?? null],
     );
 
     // Each product carries a hasToppings flag (model global, doc 51 §2.1); the
     // topping LIST is global and fetched separately via listActiveToppings.
     const rows: PosProduct[] = rowsResult.rows.map((r) => {
+      // CAPABILITY, not the checkout mode: this only reports whether the
+      // product has an ACTIVE recipe (so the FE knows a modifier panel is
+      // worth opening). The sale mode actually used is resolved per line from
+      // the outlet's sellable stock in resolveCheckoutItems.
       const saleMode: SaleMode = r.recipe_id !== null ? 'MADE_TO_ORDER' : 'STOCK';
       return {
         productId: r.id,
@@ -1146,6 +1210,8 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
         saleMode,
         recipeId: r.recipe_id,
         hasToppings: r.has_toppings,
+        availableQty: Number(r.available_qty ?? 0),
+        expiredQty: Number(r.expired_qty ?? 0),
       };
     });
 

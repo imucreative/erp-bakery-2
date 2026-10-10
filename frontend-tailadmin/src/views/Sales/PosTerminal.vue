@@ -17,6 +17,13 @@
  * order id is kept so a retry pays the SAME order (no double checkout). On PAID
  * the ReceiptDialog shows the invoice/items/totals/payment + CASH change.
  *
+ * A rejected checkout NEVER clears the cart — the failure is surfaced through
+ * the existing `payError` → `PaymentDrawer` alert and the basket stays intact so
+ * the cashier can adjust the qty, drop the offending line, or retry. Stock
+ * rejections are given an explicit instruction for the cashier (POS never
+ * backflushes: the only way to get stock is a Production Order); see
+ * `toCheckoutErrorMessage`.
+ *
  * All cart state lives in `usePosCart`; this view owns the terminal flow,
  * mutation submitting flags, and surfaces backend errors via `toMessage`.
  */
@@ -40,6 +47,7 @@ import { usePosCart } from '@/composables/usePosCart'
 import { useShifts } from '@/composables/useShifts'
 import { usePermission } from '@/composables/usePermission'
 import { useAuthStore } from '@/stores/auth'
+import { ApiClientError } from '@/services/http'
 import { outletService, type Outlet } from '@/services/outlet.service'
 import { userService } from '@/services/user.service'
 import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
@@ -245,10 +253,7 @@ function openCloseShiftModal(): void {
   closeShiftModalOpen.value = true
 }
 
-async function onConfirmCloseShift(payload: {
-  actualCash: number
-  notes: string
-}): Promise<void> {
+async function onConfirmCloseShift(payload: { actualCash: number; notes: string }): Promise<void> {
   if (!activeShift.value) {
     return
   }
@@ -289,6 +294,53 @@ const pendingOrder = ref<SalesOrder | null>(null)
 const receiptOpen = ref<boolean>(false)
 const paidOrder = ref<SalesOrder | null>(null)
 const receiptChange = ref<number>(0)
+
+/**
+ * Cashier instructions appended to the two stock rejections POS can raise.
+ *
+ * The backend error envelope (`AllExceptionsFilter`) sends only a translated
+ * `message` — the domain code itself (`SALES_ORDER.STOCK_EXPIRED`,
+ * `INVENTORY.INSUFFICIENT_STOCK`) never reaches the browser — so these are
+ * matched against the exact strings `DomainErrorTranslator` produces for them.
+ * Anything else (topping not allowed, amount mismatch, …) passes through
+ * `toMessage` untouched.
+ *
+ * The hint exists because POS never backflushes: the cashier cannot "let the
+ * system make it", the only way to get sellable stock is a new Production Order
+ * (or reducing the quantity in the basket).
+ */
+const CHECKOUT_STOCK_HINTS: ReadonlyArray<{ backendMessage: string; hint: string }> = [
+  {
+    backendMessage:
+      'Stok produk sudah kedaluwarsa sehingga tidak bisa dijual; shortfall ini harus dipenuhi dengan membuat produksi baru lewat Production Order',
+    hint: 'Buat Production Order untuk mengisi stok baru, atau kurangi jumlah di keranjang.',
+  },
+  {
+    backendMessage: 'Stok tidak mencukupi untuk memenuhi jumlah yang diminta',
+    hint: 'Kurangi jumlah di keranjang, atau buat Production Order untuk menambah stok.',
+  },
+]
+
+interface CheckoutError {
+  /** Message shown in the payment drawer. */
+  message: string
+  /** True for the two stock rejections — the grid is then reloaded so the
+   *  availability badges reflect what the server actually has on hand. */
+  isStockRejection: boolean
+}
+
+/** Normalize a checkout/pay failure into the message shown in the payment drawer. */
+function toCheckoutError(error: unknown): CheckoutError {
+  const message = toMessage(error)
+  if (!(error instanceof ApiClientError)) {
+    return { message, isStockRejection: false }
+  }
+  const hint = CHECKOUT_STOCK_HINTS.find((entry) => message.startsWith(entry.backendMessage))
+  if (!hint) {
+    return { message, isStockRejection: false }
+  }
+  return { message: `${message} — ${hint.hint}`, isStockRejection: true }
+}
 
 function openPaymentDrawer(): void {
   if (cart.isEmpty.value) {
@@ -337,7 +389,16 @@ async function onConfirmPayment(payment: SalesPaymentInput): Promise<void> {
     pendingOrder.value = null
     receiptOpen.value = true
   } catch (error) {
-    payError.value = toMessage(error)
+    // The basket is deliberately NOT cleared: the cashier keeps every line so
+    // they can lower a quantity, drop the offending product, or retry. The
+    // error goes through the existing `payError` → PaymentDrawer alert.
+    const checkoutError = toCheckoutError(error)
+    payError.value = checkoutError.message
+    if (checkoutError.isStockRejection) {
+      // Server-side availability differs from what the grid last showed, so
+      // reload it to keep the disabled/reason badges honest.
+      void loadProducts()
+    }
   } finally {
     paySubmitting.value = false
   }

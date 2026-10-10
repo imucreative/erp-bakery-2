@@ -1,21 +1,33 @@
 <script setup lang="ts">
 /**
  * ProductGrid — POS product grid (left column). Renders a quick-search box and
- * product cards (name + price + sale-mode badge). Clicking a MADE_TO_ORDER
- * product that `hasToppings` emits `select` (parent opens the modifier panel
- * backed by the GLOBAL topping catalog); any other product (STOCK, or
- * made-to-order without toppings) emits `add` (straight to cart, no toppings).
- * Stateless: the parent owns the product list, loading/error, and the search
- * string (v-model:search).
+ * product cards (name + price + availability). Clicking a sellable card whose
+ * product accepts toppings emits `select` (parent opens the modifier panel
+ * backed by the GLOBAL topping catalog); any other sellable card emits `add`
+ * (straight to cart, no toppings). Stateless: the parent owns the product list,
+ * loading/error, and the search string (v-model:search).
+ *
+ * `saleMode` is a CAPABILITY, not a fulfilment promise: it only says the product
+ * has an ACTIVE recipe, which is what allows the topping panel to open. Checkout
+ * resolves fulfilment per line (stock-first). The grid therefore never labels a
+ * product as "sold from stock" vs "made to order" — it states the two facts the
+ * cashier actually acts on: is there sellable stock, and does it take toppings.
+ *
+ * POS never backflushes ingredients by itself — stock only exists because a
+ * Production Order / Goods Receipt put it there. So a card is sellable when
+ * `availableQty > 0`, or when the product takes toppings (a topped line is
+ * always made fresh from its recipe). Every other card is disabled and says
+ * why, in words, so the state never depends on colour alone:
+ *   - `availableQty === 0 && expiredQty > 0` → "Kedaluwarsa — tidak bisa dijual"
+ *   - `availableQty === 0 && expiredQty === 0` → "Stok habis"
+ * The backend rejects those lines with SALES_ORDER.STOCK_EXPIRED /
+ * INVENTORY.INSUFFICIENT_STOCK as the safety net behind this grid rule.
  */
+import { computed } from 'vue'
 import { Search, Plus } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
 import { formatRupiah } from '@/lib/format'
-import {
-  SALE_MODE_LABELS,
-  saleModeBadgeColor,
-  type PosProduct,
-} from '@/services/sales.service'
+import type { PosProduct } from '@/services/sales.service'
 
 const props = defineProps<{
   products: PosProduct[]
@@ -30,8 +42,63 @@ const emit = defineEmits<{
   (event: 'add', product: PosProduct): void
 }>()
 
+/** Why a card cannot be sold. `null` when it can. */
+type UnsellableReason = 'EXPIRED' | 'OUT_OF_STOCK'
+
+const REASON_LABELS: Record<UnsellableReason, string> = {
+  EXPIRED: 'Kedaluwarsa — tidak bisa dijual',
+  OUT_OF_STOCK: 'Stok habis',
+}
+
+/** A product accepts toppings → its topped lines are always made fresh. */
+function acceptsToppings(product: PosProduct): boolean {
+  return product.saleMode === 'MADE_TO_ORDER' && product.hasToppings
+}
+
+/** Sellable stock on hand, or a recipe that can be built fresh (topped lines). */
+function isSellable(product: PosProduct): boolean {
+  return product.availableQty > 0 || acceptsToppings(product)
+}
+
+/**
+ * `null` when the card is sellable; otherwise the reason it is disabled.
+ * A backend that has not shipped `expiredQty` yet yields `undefined > 0 ===
+ * false`, which degrades to "Stok habis" — never to a falsely sellable card.
+ */
+function unsellableReason(product: PosProduct): UnsellableReason | null {
+  if (isSellable(product)) {
+    return null
+  }
+  return product.expiredQty > 0 ? 'EXPIRED' : 'OUT_OF_STOCK'
+}
+
+/** Product + its resolved availability, computed once per render. */
+interface ProductCard {
+  product: PosProduct
+  sellable: boolean
+  reason: UnsellableReason | null
+  reasonLabel: string | null
+}
+
+const cards = computed<ProductCard[]>(() =>
+  props.products.map((product) => {
+    const reason = unsellableReason(product)
+    return {
+      product,
+      sellable: reason === null,
+      reason,
+      reasonLabel: reason ? REASON_LABELS[reason] : null,
+    }
+  }),
+)
+
 function onCardClick(product: PosProduct): void {
-  if (product.saleMode === 'MADE_TO_ORDER' && product.hasToppings) {
+  // Guard kept even though the button is disabled: `disabled` blocks pointer
+  // events, but keyboard/programmatic paths must not bypass the rule either.
+  if (!isSellable(product)) {
+    return
+  }
+  if (acceptsToppings(product)) {
     emit('select', product)
   } else {
     emit('add', product)
@@ -77,34 +144,53 @@ function onCardClick(product: PosProduct): void {
       </p>
     </div>
 
-    <div
-      v-else
-      class="grid grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 xl:grid-cols-4"
-    >
+    <div v-else class="grid grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 xl:grid-cols-4">
       <button
-        v-for="product in props.products"
-        :key="product.productId"
+        v-for="card in cards"
+        :key="card.product.productId"
         type="button"
-        class="group flex flex-col rounded-2xl border border-gray-200 bg-white p-4 text-start transition hover:border-brand-300 hover:shadow-theme-sm dark:border-gray-800 dark:bg-white/[0.03] dark:hover:border-brand-500/50"
-        @click="onCardClick(product)"
+        :disabled="!card.sellable"
+        :aria-disabled="!card.sellable"
+        :title="card.reasonLabel ?? undefined"
+        class="group flex flex-col rounded-2xl border border-gray-200 bg-white p-4 text-start transition hover:border-brand-300 hover:shadow-theme-sm disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:shadow-none disabled:hover:border-gray-200 disabled:hover:shadow-none dark:border-gray-800 dark:bg-white/[0.03] dark:hover:border-brand-500/50 dark:disabled:border-gray-800 dark:disabled:bg-gray-900/40 dark:disabled:hover:border-gray-800 dark:disabled:hover:shadow-none"
+        @click="onCardClick(card.product)"
       >
         <div class="mb-2 flex items-start justify-between gap-2">
-          <Badge size="sm" :color="saleModeBadgeColor(product.saleMode)">
-            {{ SALE_MODE_LABELS[product.saleMode] }}
+          <Badge v-if="acceptsToppings(card.product)" size="sm" color="info">
+            Bisa ditambah topping
           </Badge>
           <span
+            v-if="card.sellable"
             class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-brand-50 text-brand-500 opacity-0 transition group-hover:opacity-100 dark:bg-brand-500/15 dark:text-brand-400"
           >
             <Plus class="h-4 w-4" aria-hidden="true" />
           </span>
         </div>
         <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
-          {{ product.name }}
+          {{ card.product.name }}
         </span>
-        <span class="mt-0.5 text-theme-xs text-gray-400 dark:text-gray-500">{{ product.sku }}</span>
+        <span class="mt-0.5 text-theme-xs text-gray-400 dark:text-gray-500">{{
+          card.product.sku
+        }}</span>
         <span class="mt-2 text-base font-semibold text-brand-600 dark:text-brand-400">
-          {{ formatRupiah(product.sellingPrice) }}
+          {{ formatRupiah(card.product.sellingPrice) }}
         </span>
+
+        <!-- Availability: sellable stock, or the reason the card is disabled.
+             Every state is spelled out in text — colour is only a reinforcement. -->
+        <span
+          v-if="card.product.availableQty > 0"
+          class="mt-1 text-theme-xs text-success-600 dark:text-success-500"
+        >
+          Stok: {{ card.product.availableQty }}
+        </span>
+        <Badge
+          v-else-if="card.reason"
+          size="sm"
+          :color="card.reason === 'EXPIRED' ? 'error' : 'light'"
+        >
+          {{ card.reasonLabel }}
+        </Badge>
       </button>
     </div>
   </div>

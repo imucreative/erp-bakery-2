@@ -1102,7 +1102,7 @@ const DomainErrorTranslator = {
       'Nominal pembayaran harus lebih dari nol',
     ),
     'TOPPING.NOT_ALLOWED': new InvariantError(
-      'Topping tidak diizinkan: tidak terdaftar/aktif di katalog topping, produk tidak menerima topping, atau produk dijual mode stok',
+      'Topping tidak diizinkan: topping tidak terdaftar/aktif di katalog topping, atau produk tidak menerima topping',
     ),
     'PAYMENT.AMOUNT_MISMATCH': new InvariantError(
       'Total pembayaran tidak sama dengan grand total order',
@@ -1114,6 +1114,9 @@ const DomainErrorTranslator = {
     'SALES_ORDER.ALREADY_REFUNDED': new ConflictError('Sales order sudah di-refund'),
     'SALES_ORDER.INVALID_STATUS_TRANSITION': new InvariantError(
       'Transisi status sales order tidak diperbolehkan',
+    ),
+    'SALES_ORDER.STOCK_EXPIRED': new InvariantError(
+      'Stok produk sudah kedaluwarsa sehingga tidak bisa dijual; shortfall ini harus dipenuhi dengan membuat produksi baru lewat Production Order',
     ),
 
     // ── Conflict ─────────────────────────────────────────────────
