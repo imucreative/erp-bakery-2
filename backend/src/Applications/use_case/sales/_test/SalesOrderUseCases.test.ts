@@ -263,7 +263,85 @@ describe('GetSalesOrdersUseCase', () => {
     expect(salesRepo.getById).toHaveBeenCalledWith('so1', 'c1');
     expect(salesRepo.getReturnByOrderId).toHaveBeenCalledWith('so1', 'c1');
     expect(salesRepo.listPosProducts).toHaveBeenCalled();
-    expect(salesRepo.listActiveToppings).toHaveBeenCalledWith('c1');
+    // Without an outletId the catalog is requested with a null outlet (no stock).
+    expect(salesRepo.listActiveToppings).toHaveBeenCalledWith('c1', null);
+  });
+
+  // SEC: with an outletId the topping catalog carries per-outlet
+  // availableQty/expiredQty, so the outletId must be authorized (doc 24 §10.9)
+  // before the repository runs — same contract as posProducts.
+  describe('activeToppings — outlet authorization', () => {
+    it('should not resolve outlets when no outletId is supplied (unchanged behaviour, null outlet)', async () => {
+      salesRepo.listActiveToppings.mockResolvedValue([]);
+
+      await new GetSalesOrdersUseCase(salesRepo, outletRepo).activeToppings(
+        'c1',
+        undefined,
+        OWNER_SCOPE,
+      );
+
+      expect(outletRepo.findAccessibleByUser).not.toHaveBeenCalled();
+      expect(salesRepo.listActiveToppings).toHaveBeenCalledWith('c1', null);
+    });
+
+    it('should forward an accessible outlet to the repository', async () => {
+      outletRepo.findAccessibleByUser.mockResolvedValue([{ id: 'out1' }, { id: 'out2' }] as never);
+      salesRepo.listActiveToppings.mockResolvedValue([]);
+
+      await new GetSalesOrdersUseCase(salesRepo, outletRepo).activeToppings('c1', 'out2', {
+        userId: 'u1',
+        allOutlets: false,
+      });
+
+      expect(outletRepo.findAccessibleByUser).toHaveBeenCalledWith('u1', 'c1', false);
+      expect(salesRepo.listActiveToppings).toHaveBeenCalledWith('c1', 'out2');
+    });
+
+    it('should reject an outlet the caller cannot access with AUTHORIZATION.ACCESS_DENIED', async () => {
+      outletRepo.findAccessibleByUser.mockResolvedValue([{ id: 'out1' }] as never);
+
+      await expect(
+        new GetSalesOrdersUseCase(salesRepo, outletRepo).activeToppings('c1', 'outX', {
+          userId: 'u1',
+          allOutlets: false,
+        }),
+      ).rejects.toThrow('AUTHORIZATION.ACCESS_DENIED');
+      // Never fall through to the repository — no stock figures leak.
+      expect(salesRepo.listActiveToppings).not.toHaveBeenCalled();
+    });
+
+    it('should reject with AuthorizationError (403), not a silent empty list', async () => {
+      outletRepo.findAccessibleByUser.mockResolvedValue([] as never);
+
+      await expect(
+        new GetSalesOrdersUseCase(salesRepo, outletRepo).activeToppings('c1', 'out1', {
+          userId: 'u1',
+          allOutlets: false,
+        }),
+      ).rejects.toBeInstanceOf(AuthorizationError);
+    });
+
+    it('should pass allOutlets=true for OWNER so every company outlet is covered', async () => {
+      outletRepo.findAccessibleByUser.mockResolvedValue([{ id: 'out1' }] as never);
+      salesRepo.listActiveToppings.mockResolvedValue([]);
+
+      await new GetSalesOrdersUseCase(salesRepo, outletRepo).activeToppings(
+        'c1',
+        'out1',
+        OWNER_SCOPE,
+      );
+
+      expect(outletRepo.findAccessibleByUser).toHaveBeenCalledWith('u1', 'c1', true);
+    });
+
+    it('should skip authorization when outletId is given but no scope (defensive, repo still null-safe)', async () => {
+      salesRepo.listActiveToppings.mockResolvedValue([]);
+
+      await new GetSalesOrdersUseCase(salesRepo, outletRepo).activeToppings('c1', 'out1');
+
+      expect(outletRepo.findAccessibleByUser).not.toHaveBeenCalled();
+      expect(salesRepo.listActiveToppings).toHaveBeenCalledWith('c1', 'out1');
+    });
   });
 
   // SEC: the grid returns per-outlet availableQty/expiredQty, so an explicit

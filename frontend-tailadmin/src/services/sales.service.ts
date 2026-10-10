@@ -27,8 +27,11 @@
  *      ingredients on its own, so an untopped line with `availableQty === 0`
  *      is rejected by the backend — the grid disables those cards up-front.
  *  - GET  /sales/pos/toppings       → { success, data: PosToppingOption[] }  guard: sales.manage
+ *      filters: outletId? (scopes per-outlet topping stock)
  *      Daftar topping GLOBAL yang AKTIF — satu sumber untuk panel modifier POS,
- *      ditampilkan untuk produk MADE_TO_ORDER yang `hasToppings === true`.
+ *      ditampilkan untuk produk MADE_TO_ORDER yang `hasToppings === true`. Setiap
+ *      topping membawa `availableQty`/`expiredQty` (opsional, degradasi aman):
+ *      topping dengan `availableQty === 0` tidak bisa dipakai (checkout menolak).
  *
  * ── Sales Order ──────────────────────────────────────────────────────
  *  - POST /sales/orders             → 201 SalesOrder (PENDING_PAYMENT)  guard: sales.manage
@@ -139,6 +142,22 @@ export interface PosToppingOption {
   defaultQtyPerItem: number
   extraPrice: number
   sortOrder: number
+  /**
+   * Sellable topping stock on hand at the POS outlet: ACTIVE batches with
+   * `qty_available > 0` and `expired_date` NULL or >= today. A topping with
+   * `availableQty === 0` CANNOT be used (checkout rejects it). Optional for
+   * safe degradation: when the backend has not shipped it yet the value is
+   * `undefined`, which the modifier panel treats as "available" so toppings are
+   * never hidden — checkout stays the final guard.
+   */
+  availableQty?: number
+  /**
+   * Topping stock on hand that CANNOT be sold: ACTIVE batches with
+   * `qty_available > 0` and `expired_date` < today. Used only to explain WHY a
+   * topping is unusable (expired vs. out of stock). Optional for the same
+   * safe-degradation reason as `availableQty`.
+   */
+  expiredQty?: number
 }
 
 export interface PosProduct {
@@ -402,9 +421,16 @@ export const salesService = {
       return { items: response.data.data, meta: response.data.meta }
     },
 
-    /** GLOBAL active topping options — the single source for the POS modifier panel. */
-    async toppings(): Promise<PosToppingOption[]> {
-      const response = await httpClient.get<ApiSuccess<PosToppingOption[]>>('/sales/pos/toppings')
+    /**
+     * GLOBAL active topping options — the single source for the POS modifier
+     * panel. `outletId` scopes the per-outlet topping stock (`availableQty` /
+     * `expiredQty`) the backend resolves; omit it only when no outlet context
+     * is known yet.
+     */
+    async toppings(outletId?: string): Promise<PosToppingOption[]> {
+      const response = await httpClient.get<ApiSuccess<PosToppingOption[]>>('/sales/pos/toppings', {
+        params: outletId ? { outletId } : undefined,
+      })
       return response.data.data
     },
   },

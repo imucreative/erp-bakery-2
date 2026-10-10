@@ -1218,22 +1218,51 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
     return { rows, total };
   }
 
-  async listActiveToppings(companyId: string): Promise<PosToppingOption[]> {
+  async listActiveToppings(
+    companyId: string,
+    outletId?: string | null,
+  ): Promise<PosToppingOption[]> {
     // Active entries of the GLOBAL topping catalog (shared by all products).
+    // Two per-outlet stock figures per topping product, both scoped to the
+    // requested outlet and both derived from the same source as Stock On Hand
+    // (ACTIVE batches with qty_available > 0) — the IDENTICAL pattern used by
+    // listPosProducts/resolveCheckoutItems:
+    //   available_qty — not expired yet (NULL expiry counts as sellable)
+    //   expired_qty   — already past CURRENT_DATE
+    // The qty_available > 0 guard is mandatory on BOTH: an expired batch that
+    // has been fully consumed would otherwise inflate expired_qty with a
+    // meaningless figure. Without an outletId the param is NULL, so both sums
+    // collapse to 0 (safe degradation; checkout/pay() stay the final guard).
     const result = await this.pool.query<{
       topping_product_id: string;
       topping_name: string;
       default_qty_per_item: string;
       extra_price: string;
       sort_order: number;
+      available_qty: string | null;
+      expired_qty: string | null;
     }>(
       `SELECT tg.topping_product_id, tp.name AS topping_name,
-              tg.default_qty_per_item, tg.extra_price, tg.sort_order
+              tg.default_qty_per_item, tg.extra_price, tg.sort_order,
+              (SELECT COALESCE(SUM(ib.qty_available), 0)
+               FROM inventory_batches ib
+               WHERE ib.company_id = tg.company_id AND ib.product_id = tg.topping_product_id
+                 AND ib.outlet_id = $2::uuid
+                 AND ib.status = 'ACTIVE' AND ib.qty_available > 0
+                 AND (ib.expired_date IS NULL OR ib.expired_date >= CURRENT_DATE)
+              ) AS available_qty,
+              (SELECT COALESCE(SUM(ib.qty_available), 0)
+               FROM inventory_batches ib
+               WHERE ib.company_id = tg.company_id AND ib.product_id = tg.topping_product_id
+                 AND ib.outlet_id = $2::uuid
+                 AND ib.status = 'ACTIVE' AND ib.qty_available > 0
+                 AND ib.expired_date IS NOT NULL AND ib.expired_date < CURRENT_DATE
+              ) AS expired_qty
        FROM toppings tg
        JOIN products tp ON tp.id = tg.topping_product_id
        WHERE tg.company_id = $1 AND tg.is_active = TRUE AND tg.deleted_at IS NULL
        ORDER BY tg.sort_order ASC, tp.name ASC`,
-      [companyId],
+      [companyId, outletId ?? null],
     );
 
     return result.rows.map((row) => ({
@@ -1242,6 +1271,8 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
       defaultQtyPerItem: Number(row.default_qty_per_item),
       extraPrice: Number(row.extra_price),
       sortOrder: Number(row.sort_order),
+      availableQty: Number(row.available_qty ?? 0),
+      expiredQty: Number(row.expired_qty ?? 0),
     }));
   }
 }

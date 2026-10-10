@@ -81,7 +81,35 @@ export class GetSalesOrdersUseCase {
     return this.salesOrderRepository.listPosProducts(companyId, filter);
   }
 
-  async activeToppings(companyId: string): Promise<PosToppingOption[]> {
-    return this.salesOrderRepository.listActiveToppings(companyId);
+  /**
+   * GLOBAL topping catalog for the POS modifier panel. Like posProducts, an
+   * explicit outletId makes each entry carry per-outlet stock figures
+   * (availableQty / expiredQty) so the FE can warn the cashier early that a
+   * topping is out of stock or expired — therefore the outletId is an
+   * authorization subject, not just a filter (doc 24 §10.9): it is asserted
+   * against the backend-derived accessible outlet set before the repository
+   * runs, and a foreign outlet is rejected with AUTHORIZATION.ACCESS_DENIED.
+   *
+   * When no outletId is supplied there is no outlet to authorize, so the
+   * behaviour is unchanged (no scope lookup; the repository collapses both
+   * figures to 0).
+   */
+  async activeToppings(
+    companyId: string,
+    outletId?: string | null,
+    scope?: OutletReadScope,
+  ): Promise<PosToppingOption[]> {
+    if (outletId && scope) {
+      const accessible = await this.outletRepository.findAccessibleByUser(
+        scope.userId,
+        companyId,
+        scope.allOutlets,
+      );
+      if (!accessible.some((outlet) => outlet.id === outletId)) {
+        throw new AuthorizationError('AUTHORIZATION.ACCESS_DENIED');
+      }
+    }
+
+    return this.salesOrderRepository.listActiveToppings(companyId, outletId ?? null);
   }
 }

@@ -742,7 +742,7 @@ describe('SalesOrderRepositoryPostgres', () => {
       expect(rows).toHaveLength(1);
     });
 
-    it('listActiveToppings maps the active global catalog rows', async () => {
+    it('listActiveToppings maps the active global catalog rows + per-outlet stock figures', async () => {
       (mockPool.query as jest.Mock).mockResolvedValueOnce({
         rows: [
           {
@@ -751,14 +751,83 @@ describe('SalesOrderRepositoryPostgres', () => {
             default_qty_per_item: '25.000',
             extra_price: '2000.00',
             sort_order: 0,
+            available_qty: '30',
+            expired_qty: '5',
           },
         ],
       });
-      const toppings = await repo.listActiveToppings('c1');
+      const toppings = await repo.listActiveToppings('c1', 'o1');
       expect(toppings).toHaveLength(1);
       expect(toppings[0].toppingProductId).toBe('t1');
       expect(toppings[0].defaultQtyPerItem).toBe(25);
       expect(toppings[0].extraPrice).toBe(2000);
+      // Non-expired stock surfaces as availableQty, expired as expiredQty.
+      expect(toppings[0].availableQty).toBe(30);
+      expect(toppings[0].expiredQty).toBe(5);
+      // The outlet is forwarded as the 2nd parameter to the stock subqueries.
+      expect((mockPool.query as jest.Mock).mock.calls[0][1]).toEqual(['c1', 'o1']);
+    });
+
+    it('listActiveToppings defaults stock figures to 0 when the SUMs come back null', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({
+        rows: [
+          {
+            topping_product_id: 't1',
+            topping_name: 'Selai',
+            default_qty_per_item: '25.000',
+            extra_price: '2000.00',
+            sort_order: 0,
+            available_qty: null,
+            expired_qty: null,
+          },
+        ],
+      });
+      const toppings = await repo.listActiveToppings('c1', 'o1');
+      expect(toppings[0].availableQty).toBe(0);
+      expect(toppings[0].expiredQty).toBe(0);
+    });
+
+    it('listActiveToppings passes outletId = null when absent (safe degradation, no stock)', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({
+        rows: [
+          {
+            topping_product_id: 't1',
+            topping_name: 'Selai',
+            default_qty_per_item: '25.000',
+            extra_price: '2000.00',
+            sort_order: 0,
+            available_qty: '0',
+            expired_qty: '0',
+          },
+        ],
+      });
+      const toppings = await repo.listActiveToppings('c1');
+      expect(toppings[0].availableQty).toBe(0);
+      expect(toppings[0].expiredQty).toBe(0);
+      // No outlet → the stock param is NULL so both correlated SUMs collapse.
+      expect((mockPool.query as jest.Mock).mock.calls[0][1]).toEqual(['c1', null]);
+    });
+
+    it('listActiveToppings reuses the same batch filters/outlet param as the product grid', async () => {
+      (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: [] });
+
+      await repo.listActiveToppings('c1', 'o1');
+
+      const sql = (mockPool.query as jest.Mock).mock.calls[0][0] as string;
+      // Same trap as the product grid: BOTH correlated sums need the
+      // qty_available > 0 + ACTIVE guards, and both must point at the single
+      // $2::uuid outlet placeholder.
+      const guardCount = (needle: string) => sql.split(needle).length - 1;
+      expect(guardCount('ib.qty_available > 0')).toBe(2);
+      expect(guardCount("ib.status = 'ACTIVE'")).toBe(2);
+      expect(sql).toContain('AS available_qty');
+      expect(sql).toContain('AS expired_qty');
+      expect(sql).toContain('ib.expired_date >= CURRENT_DATE');
+      expect(sql).toContain('ib.expired_date IS NOT NULL AND ib.expired_date < CURRENT_DATE');
+      const placeholders = sql.match(/\$\d+::uuid/g) as string[];
+      expect(placeholders).toHaveLength(2);
+      expect(placeholders[0]).toBe('$2::uuid');
+      expect(placeholders[1]).toBe('$2::uuid');
     });
 
     it('listPosProducts returns 0 rows gracefully', async () => {

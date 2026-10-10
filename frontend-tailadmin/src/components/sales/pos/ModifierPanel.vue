@@ -12,6 +12,7 @@
 import { ref, watch } from 'vue'
 import { Plus, X } from 'lucide-vue-next'
 import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
+import Badge from '@/components/ui/Badge.vue'
 import { formatRupiah, formatNumber } from '@/lib/format'
 import type { PosProduct, PosToppingOption } from '@/services/sales.service'
 
@@ -36,11 +37,37 @@ watch(
   { immediate: true },
 )
 
+/** Why a topping cannot be used. `null` when it can. */
+type ToppingBlockReason = 'EXPIRED' | 'OUT_OF_STOCK'
+
+const TOPPING_BLOCK_LABELS: Record<ToppingBlockReason, string> = {
+  EXPIRED: 'Kedaluwarsa',
+  OUT_OF_STOCK: 'Stok habis',
+}
+
+/**
+ * `null` when the topping can be used; otherwise the reason it is disabled.
+ * `availableQty` is OPTIONAL (safe degradation): a backend that has not shipped
+ * the field yet yields `undefined`, which is NOT `=== 0`, so the topping stays
+ * usable and checkout remains the final guard — toppings are never hidden.
+ */
+function blockReason(topping: PosToppingOption): ToppingBlockReason | null {
+  if (topping.availableQty !== 0) {
+    return null
+  }
+  return (topping.expiredQty ?? 0) > 0 ? 'EXPIRED' : 'OUT_OF_STOCK'
+}
+
 function isSelected(id: string): boolean {
   return selectedIds.value.has(id)
 }
 
 function setSelected(topping: PosToppingOption, value: boolean): void {
+  // An unusable topping can never be toggled on, even if a stale selection
+  // survived a refresh of its stock.
+  if (value && blockReason(topping) !== null) {
+    return
+  }
   const next = new Set(selectedIds.value)
   if (value) {
     next.add(topping.toppingProductId)
@@ -51,7 +78,11 @@ function setSelected(topping: PosToppingOption, value: boolean): void {
 }
 
 function onAdd(): void {
-  const chosen = props.toppings.filter((t) => selectedIds.value.has(t.toppingProductId))
+  // Only usable, selected toppings leave the panel — a blocked topping never
+  // reaches the cart through any path.
+  const chosen = props.toppings.filter(
+    (t) => selectedIds.value.has(t.toppingProductId) && blockReason(t) === null,
+  )
   emit('add', chosen)
 }
 </script>
@@ -80,7 +111,10 @@ function onAdd(): void {
       </button>
     </div>
 
-    <p class="mb-2 text-theme-xs uppercase text-gray-400 dark:text-gray-500">Topping</p>
+    <div class="mb-2 flex items-center justify-between gap-2">
+      <p class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Topping</p>
+      <span class="text-theme-xs text-gray-400 dark:text-gray-500">Opsional</span>
+    </div>
 
     <div class="flex-1 overflow-y-auto">
       <div
@@ -94,13 +128,28 @@ function onAdd(): void {
         <div
           v-for="topping in props.toppings"
           :key="topping.toppingProductId"
-          class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2.5 dark:border-gray-800"
+          class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5"
+          :class="
+            blockReason(topping)
+              ? 'border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/40'
+              : 'border-gray-200 dark:border-gray-800'
+          "
         >
-          <ToggleSwitch
-            :model-value="isSelected(topping.toppingProductId)"
-            :label="topping.toppingName"
-            @update:model-value="(v) => setSelected(topping, v)"
-          />
+          <div class="flex min-w-0 flex-col gap-1">
+            <ToggleSwitch
+              :model-value="isSelected(topping.toppingProductId)"
+              :label="topping.toppingName"
+              :disabled="blockReason(topping) !== null"
+              @update:model-value="(v) => setSelected(topping, v)"
+            />
+            <Badge
+              v-if="blockReason(topping)"
+              size="sm"
+              :color="blockReason(topping) === 'EXPIRED' ? 'error' : 'light'"
+            >
+              {{ TOPPING_BLOCK_LABELS[blockReason(topping)!] }} — tidak bisa dipakai
+            </Badge>
+          </div>
           <div class="text-end">
             <p class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
               {{ topping.extraPrice > 0 ? `+ ${formatRupiah(topping.extraPrice)}` : 'Gratis' }}
@@ -113,9 +162,13 @@ function onAdd(): void {
       </div>
     </div>
 
+    <p class="mt-3 text-theme-xs text-gray-400 dark:text-gray-500">
+      Topping opsional — bisa langsung tambah ke cart tanpa memilih topping.
+    </p>
+
     <button
       type="button"
-      class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600"
+      class="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600"
       @click="onAdd"
     >
       <Plus class="h-4 w-4" aria-hidden="true" />

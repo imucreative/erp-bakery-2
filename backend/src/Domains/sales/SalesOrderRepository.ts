@@ -87,13 +87,26 @@ export interface SalesOrderListResult {
   total: number;
 }
 
-/** A topping offered on a sellable product (POS grid / modifier panel). */
+/**
+ * A topping offered on a sellable product (POS grid / modifier panel).
+ *
+ * `availableQty` is the sellable topping stock on hand at the requested outlet
+ * (sum of ACTIVE, qty > 0, non-expired batch balances; 0 when outletId is
+ * absent or there is no stock). `expiredQty` is the ACTIVE, qty > 0 topping
+ * stock whose expired_date is already past. Both use the exact same batch
+ * filters and outlet scope as `listPosProducts`/`resolveCheckoutItems`, so the
+ * modifier panel can warn the cashier *early* that a topping is out of stock or
+ * expired — pay() stays the final guard via _consumeFefo. Without an outletId
+ * both collapse to 0 (safe degradation; no stock computed).
+ */
 export interface PosToppingOption {
   toppingProductId: string;
   toppingName: string;
   defaultQtyPerItem: number;
   extraPrice: number;
   sortOrder: number;
+  availableQty: number;
+  expiredQty: number;
 }
 
 /**
@@ -243,6 +256,14 @@ export abstract class SalesOrderRepository {
    * Active entries of the GLOBAL topping catalog for the POS modifier panel
    * (doc 51 §10 — GET /sales/pos/toppings). A single list shared by every
    * has_toppings product; no per-product scoping.
+   *
+   * When `outletId` is given, each entry carries the per-outlet topping stock
+   * (availableQty / expiredQty) so the FE can warn the cashier early. When
+   * `outletId` is null/absent both figures collapse to 0 (safe degradation; no
+   * stock is computed) — checkout/pay() remain the final guard.
    */
-  abstract listActiveToppings(companyId: string): Promise<PosToppingOption[]>;
+  abstract listActiveToppings(
+    companyId: string,
+    outletId?: string | null,
+  ): Promise<PosToppingOption[]>;
 }

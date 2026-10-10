@@ -14,10 +14,13 @@
  * cashier actually acts on: is there sellable stock, and does it take toppings.
  *
  * POS never backflushes ingredients by itself — stock only exists because a
- * Production Order / Goods Receipt put it there. So a card is sellable when
- * `availableQty > 0`, or when the product takes toppings (a topped line is
- * always made fresh from its recipe). Every other card is disabled and says
- * why, in words, so the state never depends on colour alone:
+ * Production Order / Goods Receipt put it there. Under the stock-first rule a
+ * product can ONLY be sold when it has sellable stock (`availableQty > 0`) —
+ * this now INCLUDES topped (MADE_TO_ORDER + hasToppings) products, which can no
+ * longer open the topping panel on empty stock. An unsellable card is NOT
+ * silently disabled: it stays clickable and, when clicked, emits `blocked`
+ * (never `add`/`select`) so the parent can raise an alert telling the cashier
+ * exactly what to do. It never enters the cart through any path:
  *   - `availableQty === 0 && expiredQty > 0` → "Kedaluwarsa — tidak bisa dijual"
  *   - `availableQty === 0 && expiredQty === 0` → "Stok habis"
  * The backend rejects those lines with SALES_ORDER.STOCK_EXPIRED /
@@ -40,6 +43,7 @@ const emit = defineEmits<{
   (event: 'update:search', value: string): void
   (event: 'select', product: PosProduct): void
   (event: 'add', product: PosProduct): void
+  (event: 'blocked', payload: { product: PosProduct; reason: UnsellableReason }): void
 }>()
 
 /** Why a card cannot be sold. `null` when it can. */
@@ -50,18 +54,22 @@ const REASON_LABELS: Record<UnsellableReason, string> = {
   OUT_OF_STOCK: 'Stok habis',
 }
 
-/** A product accepts toppings → its topped lines are always made fresh. */
+/** A product accepts toppings → its topped lines open the modifier panel. */
 function acceptsToppings(product: PosProduct): boolean {
   return product.saleMode === 'MADE_TO_ORDER' && product.hasToppings
 }
 
-/** Sellable stock on hand, or a recipe that can be built fresh (topped lines). */
+/**
+ * Stock-first: a product is sellable ONLY when it has sellable stock on hand.
+ * This now INCLUDES topped products — POS never backflushes, so a topped line
+ * also needs stock put there by a Production Order first.
+ */
 function isSellable(product: PosProduct): boolean {
-  return product.availableQty > 0 || acceptsToppings(product)
+  return product.availableQty > 0
 }
 
 /**
- * `null` when the card is sellable; otherwise the reason it is disabled.
+ * `null` when the card is sellable; otherwise the reason it is blocked.
  * A backend that has not shipped `expiredQty` yet yields `undefined > 0 ===
  * false`, which degrades to "Stok habis" — never to a falsely sellable card.
  */
@@ -93,9 +101,12 @@ const cards = computed<ProductCard[]>(() =>
 )
 
 function onCardClick(product: PosProduct): void {
-  // Guard kept even though the button is disabled: `disabled` blocks pointer
-  // events, but keyboard/programmatic paths must not bypass the rule either.
-  if (!isSellable(product)) {
+  const reason = unsellableReason(product)
+  if (reason !== null) {
+    // Unsellable cards are clickable so the cashier gets an explicit alert, but
+    // they NEVER enter the cart or open the topping panel. This guard is the
+    // single enforcement point for mouse, keyboard, and programmatic clicks.
+    emit('blocked', { product, reason })
     return
   }
   if (acceptsToppings(product)) {
@@ -149,10 +160,13 @@ function onCardClick(product: PosProduct): void {
         v-for="card in cards"
         :key="card.product.productId"
         type="button"
-        :disabled="!card.sellable"
-        :aria-disabled="!card.sellable"
         :title="card.reasonLabel ?? undefined"
-        class="group flex flex-col rounded-2xl border border-gray-200 bg-white p-4 text-start transition hover:border-brand-300 hover:shadow-theme-sm disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:shadow-none disabled:hover:border-gray-200 disabled:hover:shadow-none dark:border-gray-800 dark:bg-white/[0.03] dark:hover:border-brand-500/50 dark:disabled:border-gray-800 dark:disabled:bg-gray-900/40 dark:disabled:hover:border-gray-800 dark:disabled:hover:shadow-none"
+        class="group flex flex-col rounded-2xl border p-4 text-start transition"
+        :class="
+          card.sellable
+            ? 'border-gray-200 bg-white hover:border-brand-300 hover:shadow-theme-sm dark:border-gray-800 dark:bg-white/[0.03] dark:hover:border-brand-500/50'
+            : 'cursor-pointer border-gray-200 bg-gray-50 hover:border-error-300 dark:border-gray-800 dark:bg-gray-900/40 dark:hover:border-error-500/40'
+        "
         @click="onCardClick(card.product)"
       >
         <div class="mb-2 flex items-start justify-between gap-2">
