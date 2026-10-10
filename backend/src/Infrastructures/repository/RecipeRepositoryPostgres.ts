@@ -285,9 +285,9 @@ export class RecipeRepositoryPostgres extends RecipeRepository {
       let updated: HeaderRow;
       try {
         const updatedResult = await client.query<HeaderRow>(
-          `UPDATE recipes SET status = 'ACTIVE', updated_at = NOW()
-           WHERE id = $1 AND company_id = $2
-           RETURNING ${HEADER_COLUMNS}`,
+          `UPDATE recipes SET status = 'ACTIVE', version = version + 1, updated_at = NOW() 
+            WHERE id = $1 AND company_id = $2
+            RETURNING ${HEADER_COLUMNS}`,
           [id, companyId],
         );
         updated = updatedResult.rows[0];
