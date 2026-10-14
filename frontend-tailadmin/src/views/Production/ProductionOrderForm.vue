@@ -112,7 +112,7 @@ async function ensureMastersLoaded(): Promise<void> {
           const result = await productService.list({
             page: p,
             limit: RESOLVE_PAGE_LIMIT,
-            productType: 'RAW_MATERIAL',
+            //productType: 'RAW_MATERIAL',
             isActive: 'true',
           })
           return { items: result.items, meta: result.meta }

@@ -29,6 +29,7 @@ import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import { toMessage } from '@/composables/usePurchaseRequests'
 import { outletService, type Outlet } from '@/services/outlet.service'
 import { productService, type Product } from '@/services/product.service'
+import { PURCHASABLE_PRODUCT_TYPES } from '@/lib/constants'
 import { uomService, type Uom } from '@/services/uom.service'
 import {
   purchaseRequestService,
@@ -77,7 +78,7 @@ async function loadSupportingData(): Promise<void> {
       const result = await productService.list({
         page: p,
         limit: PAGE_LIMIT,
-        productType: 'RAW_MATERIAL',
+        //productType: 'RAW_MATERIAL',
         isActive: 'true',
       })
       return { items: result.items, meta: result.meta }
@@ -85,7 +86,9 @@ async function loadSupportingData(): Promise<void> {
     fetchAllPaginated((page) => uomService.list({ page, limit: PAGE_LIMIT, isActive: 'true' })),
   ])
   outlets.value = allOutlets
-  products.value = allProducts
+  // Keep only purchasable product types (raw material, packaging, etc.)
+  products.value = allProducts.filter(p => PURCHASABLE_PRODUCT_TYPES.includes(p.productType as any))
+  
   uoms.value = allUoms
 }
 
