@@ -800,8 +800,9 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     },
     {
       provide: GetSalesOrdersUseCase,
-      useFactory: (salesRepo: SalesOrderRepository) => new GetSalesOrdersUseCase(salesRepo),
-      inject: [SalesOrderRepository],
+      useFactory: (salesRepo: SalesOrderRepository, outletRepo: OutletRepository) =>
+        new GetSalesOrdersUseCase(salesRepo, outletRepo),
+      inject: [SalesOrderRepository, OutletRepository],
     },
     {
       provide: GetInventoryDashboardUseCase,

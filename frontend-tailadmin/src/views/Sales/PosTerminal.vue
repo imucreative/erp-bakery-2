@@ -17,11 +17,18 @@
  * order id is kept so a retry pays the SAME order (no double checkout). On PAID
  * the ReceiptDialog shows the invoice/items/totals/payment + CASH change.
  *
+ * A rejected checkout NEVER clears the cart — the failure is surfaced through
+ * the existing `payError` → `PaymentDrawer` alert and the basket stays intact so
+ * the cashier can adjust the qty, drop the offending line, or retry. Stock
+ * rejections are given an explicit instruction for the cashier (POS never
+ * backflushes: the only way to get stock is a Production Order); see
+ * `toCheckoutErrorMessage`.
+ *
  * All cart state lives in `usePosCart`; this view owns the terminal flow,
  * mutation submitting flags, and surfaces backend errors via `toMessage`.
  */
 import { computed, onMounted, ref } from 'vue'
-import { DoorOpen } from 'lucide-vue-next'
+import { DoorOpen, X } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
@@ -40,6 +47,7 @@ import { usePosCart } from '@/composables/usePosCart'
 import { useShifts } from '@/composables/useShifts'
 import { usePermission } from '@/composables/usePermission'
 import { useAuthStore } from '@/stores/auth'
+import { ApiClientError } from '@/services/http'
 import { outletService, type Outlet } from '@/services/outlet.service'
 import { userService } from '@/services/user.service'
 import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
@@ -83,7 +91,6 @@ async function bootstrap(): Promise<void> {
     const [accessible, allUsers] = await Promise.all([
       outletService.getAccessible(),
       fetchAllPaginated((p) => userService.list({ page: p, limit: PAGE_LIMIT })).catch(() => []),
-      ensurePosToppings(),
     ])
     outlets.value = accessible
     cashierNames.value = new Map(allUsers.map((u) => [u.id, u.name]))
@@ -115,6 +122,7 @@ async function onOutletChange(outletId: string): Promise<void> {
   selectedOutletId.value = outletId
   cart.clear()
   selectedProduct.value = null
+  blockedAlert.value = null
   bootstrapError.value = null
   try {
     await resolveShift()
@@ -128,22 +136,28 @@ const products = ref<PosProduct[]>([])
 const productsLoading = ref<boolean>(false)
 const productsError = ref<string | null>(null)
 const productSearch = ref<string>('')
+// Dismissible alert raised when the cashier clicks an unsellable card (declared
+// here so the earlier outlet-change handler can reset it).
+const blockedAlert = ref<string | null>(null)
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 
 // GLOBAL topping catalog (active-only) — the single source for the modifier
-// panel, fetched once on bootstrap (doc 51 Fase 6b).
+// panel (doc 51 Fase 6b). Loaded per OUTLET so each topping carries the correct
+// per-outlet stock (`availableQty`/`expiredQty`); reloaded whenever the active
+// outlet changes so a sold-out/expired topping is flagged against the right
+// outlet's inventory.
 const posToppings = ref<PosToppingOption[]>([])
-let posToppingsLoaded = false
 
-async function ensurePosToppings(): Promise<void> {
-  if (posToppingsLoaded) {
+async function loadPosToppings(): Promise<void> {
+  if (!selectedOutletId.value) {
+    posToppings.value = []
     return
   }
   try {
-    posToppings.value = await salesService.pos.toppings()
-    posToppingsLoaded = true
+    posToppings.value = await salesService.pos.toppings(selectedOutletId.value)
   } catch {
     // Non-fatal: the modifier panel renders an empty-toppings state.
+    posToppings.value = []
   }
 }
 
@@ -155,12 +169,16 @@ async function loadProducts(): Promise<void> {
   productsLoading.value = true
   productsError.value = null
   try {
-    const result = await salesService.pos.products({
-      page: 1,
-      limit: PAGE_LIMIT,
-      outletId: selectedOutletId.value,
-      search: productSearch.value.trim() || undefined,
-    })
+    // Products and the per-outlet topping catalog share the same outlet context.
+    const [result] = await Promise.all([
+      salesService.pos.products({
+        page: 1,
+        limit: PAGE_LIMIT,
+        outletId: selectedOutletId.value,
+        search: productSearch.value.trim() || undefined,
+      }),
+      loadPosToppings(),
+    ])
     products.value = result.items
   } catch (error) {
     productsError.value = toMessage(error)
@@ -198,6 +216,23 @@ function onAddFromModifier(toppings: PosToppingOption[]): void {
     cart.addItem(selectedProduct.value, toppings)
     selectedProduct.value = null
   }
+}
+
+// ── Blocked (unsellable) product alert ────────────────────────────────
+// A click on an expired/out-of-stock card never reaches the cart (ProductGrid
+// emits `blocked` instead of `add`/`select`); it surfaces here as a dismissible
+// alert that reuses the view's existing error-banner style (`blockedAlert`
+// declared above with the product state). The cart is never cleared and no
+// panel is opened.
+function onProductBlocked(payload: {
+  product: PosProduct
+  reason: 'EXPIRED' | 'OUT_OF_STOCK'
+}): void {
+  const name = payload.product.name
+  blockedAlert.value =
+    payload.reason === 'EXPIRED'
+      ? `Stok ${name} sudah kedaluwarsa. Buat Production Order dulu untuk bisa menjual.`
+      : `Stok ${name} habis. Terima barang (GR) atau buat Production Order dulu.`
 }
 
 // ── Open / close shift ────────────────────────────────────────────────
@@ -245,10 +280,7 @@ function openCloseShiftModal(): void {
   closeShiftModalOpen.value = true
 }
 
-async function onConfirmCloseShift(payload: {
-  actualCash: number
-  notes: string
-}): Promise<void> {
+async function onConfirmCloseShift(payload: { actualCash: number; notes: string }): Promise<void> {
   if (!activeShift.value) {
     return
   }
@@ -289,6 +321,53 @@ const pendingOrder = ref<SalesOrder | null>(null)
 const receiptOpen = ref<boolean>(false)
 const paidOrder = ref<SalesOrder | null>(null)
 const receiptChange = ref<number>(0)
+
+/**
+ * Cashier instructions appended to the two stock rejections POS can raise.
+ *
+ * The backend error envelope (`AllExceptionsFilter`) sends only a translated
+ * `message` — the domain code itself (`SALES_ORDER.STOCK_EXPIRED`,
+ * `INVENTORY.INSUFFICIENT_STOCK`) never reaches the browser — so these are
+ * matched against the exact strings `DomainErrorTranslator` produces for them.
+ * Anything else (topping not allowed, amount mismatch, …) passes through
+ * `toMessage` untouched.
+ *
+ * The hint exists because POS never backflushes: the cashier cannot "let the
+ * system make it", the only way to get sellable stock is a new Production Order
+ * (or reducing the quantity in the basket).
+ */
+const CHECKOUT_STOCK_HINTS: ReadonlyArray<{ backendMessage: string; hint: string }> = [
+  {
+    backendMessage:
+      'Stok produk sudah kedaluwarsa sehingga tidak bisa dijual; shortfall ini harus dipenuhi dengan membuat produksi baru lewat Production Order',
+    hint: 'Buat Production Order untuk mengisi stok baru, atau kurangi jumlah di keranjang.',
+  },
+  {
+    backendMessage: 'Stok tidak mencukupi untuk memenuhi jumlah yang diminta',
+    hint: 'Kurangi jumlah di keranjang, atau buat Production Order untuk menambah stok.',
+  },
+]
+
+interface CheckoutError {
+  /** Message shown in the payment drawer. */
+  message: string
+  /** True for the two stock rejections — the grid is then reloaded so the
+   *  availability badges reflect what the server actually has on hand. */
+  isStockRejection: boolean
+}
+
+/** Normalize a checkout/pay failure into the message shown in the payment drawer. */
+function toCheckoutError(error: unknown): CheckoutError {
+  const message = toMessage(error)
+  if (!(error instanceof ApiClientError)) {
+    return { message, isStockRejection: false }
+  }
+  const hint = CHECKOUT_STOCK_HINTS.find((entry) => message.startsWith(entry.backendMessage))
+  if (!hint) {
+    return { message, isStockRejection: false }
+  }
+  return { message: `${message} — ${hint.hint}`, isStockRejection: true }
+}
 
 function openPaymentDrawer(): void {
   if (cart.isEmpty.value) {
@@ -337,7 +416,16 @@ async function onConfirmPayment(payment: SalesPaymentInput): Promise<void> {
     pendingOrder.value = null
     receiptOpen.value = true
   } catch (error) {
-    payError.value = toMessage(error)
+    // The basket is deliberately NOT cleared: the cashier keeps every line so
+    // they can lower a quantity, drop the offending product, or retry. The
+    // error goes through the existing `payError` → PaymentDrawer alert.
+    const checkoutError = toCheckoutError(error)
+    payError.value = checkoutError.message
+    if (checkoutError.isStockRejection) {
+      // Server-side availability differs from what the grid last showed, so
+      // reload it to keep the disabled/reason badges honest.
+      void loadProducts()
+    }
   } finally {
     paySubmitting.value = false
   }
@@ -452,6 +540,25 @@ onMounted(() => {
           <div
             class="rounded-2xl border border-gray-200 bg-white p-4 lg:col-span-7 dark:border-gray-800 dark:bg-white/[0.03]"
           >
+            <!-- Blocked (expired / out-of-stock) product alert — dismissible,
+                 never clears the cart. Reuses the view's error-banner style. -->
+            <div
+              v-if="blockedAlert"
+              class="mb-4 flex items-start justify-between gap-3 rounded-lg border border-warning-500/40 bg-warning-50 px-4 py-3 text-sm text-warning-700 dark:bg-warning-500/10 dark:text-warning-400"
+              role="alert"
+            >
+              <span>{{ blockedAlert }}</span>
+              <button
+                type="button"
+                aria-label="Tutup peringatan"
+                title="Tutup peringatan"
+                class="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md text-warning-600 transition hover:bg-warning-100 dark:text-warning-400 dark:hover:bg-warning-500/20"
+                @click="blockedAlert = null"
+              >
+                <X class="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+
             <ProductGrid
               :products="products"
               :loading="productsLoading"
@@ -460,6 +567,7 @@ onMounted(() => {
               @update:search="onSearchChange"
               @select="onSelectProduct"
               @add="onAddDirect"
+              @blocked="onProductBlocked"
             />
           </div>
 

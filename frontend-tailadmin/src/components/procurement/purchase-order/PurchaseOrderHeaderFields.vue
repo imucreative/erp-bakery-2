@@ -11,8 +11,20 @@
  * and the estimated due date are backend-authoritative; `duePreview` is a
  * read-only UI hint computed by the parent (orderDate + dueDays). `disabled`
  * renders the read-only mode.
+ *
+ * "PR Sumber" and "Vendor" are `EntityCombobox` text autocompletes rather than
+ * native <select>s: both candidate lists are already loaded and pre-filtered by
+ * the parent, so they run in `mode="client"` and filter locally. The payment-term
+ * field stays a native <select> on purpose — it has a meaningful EMPTY option
+ * ("Tanpa termin / default vendor"), which a chip-style combobox cannot express.
+ *
+ * Both fields only emit their `update:*` event: the parent owns the side effects
+ * (auto-defaulting the payment term from the supplier, syncing the destination
+ * outlet from the PR) through its own watchers, so those keep working unchanged.
  */
+import { computed } from 'vue'
 import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
+import EntityCombobox from '@/components/ui/EntityCombobox.vue'
 import type { PurchaseRequest } from '@/services/purchase-request.service'
 import type { Supplier } from '@/services/supplier.service'
 import type { PaymentTerm } from '@/services/payment-term.service'
@@ -44,30 +56,50 @@ const emit = defineEmits<{
 const inputClass =
   'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
 const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
+
+// ── Chip labels for the two comboboxes ────────────────────────────────
+// The lists are already loaded by the parent, so the chosen item is resolved
+// locally. Both fall back to the raw id, matching the previous <select> behaviour
+// (see the parent's `prNumber` fallback) so an unresolvable id stays visible
+// rather than rendering a blank chip.
+const supplierMap = computed<Map<string, Supplier>>(
+  () => new Map(props.suppliers.map((s) => [s.id, s])),
+)
+
+const selectedPrLabel = computed<string>(() =>
+  props.purchaseRequestId ? props.prNumber(props.purchaseRequestId) : '',
+)
+
+const selectedSupplierLabel = computed<string>(() => {
+  if (!props.supplierId) {
+    return ''
+  }
+  return supplierMap.value.get(props.supplierId)?.name ?? props.supplierId
+})
+
+/** Either read-only flag locks the PR picker; the supplier picker only honours `disabled`. */
+const prPickerDisabled = computed<boolean>(() => props.disabled || props.prLocked)
 </script>
 
 <template>
   <div class="space-y-6">
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <!-- Source Purchase Request -->
+      <!-- Source Purchase Request — text autocomplete over the pre-filtered list -->
       <div>
         <label :class="labelClass">PR Sumber<span class="text-error-500">*</span></label>
-        <div class="relative">
-          <select
-            :value="props.purchaseRequestId"
-            :disabled="props.disabled || props.prLocked"
-            :class="[inputClass, 'appearance-none pe-10']"
-            @change="emit('update:purchaseRequestId', ($event.target as HTMLSelectElement).value)"
-          >
-            <option value="" disabled>Pilih PR (status disetujui)</option>
-            <option v-for="pr in props.approvedRequests" :key="pr.id" :value="pr.id">
-              {{ pr.prNumber }}
-            </option>
-          </select>
-          <ChevronDownIcon
-            class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-          />
-        </div>
+        <EntityCombobox
+          :model-value="props.purchaseRequestId"
+          :selected-label="selectedPrLabel"
+          :items="props.approvedRequests"
+          :item-id="(pr) => pr.id"
+          :item-label="(pr) => pr.prNumber"
+          mode="client"
+          placeholder="Ketik nomor PR..."
+          empty-text="PR disetujui tidak ditemukan."
+          aria-label="Purchase Request sumber"
+          :disabled="prPickerDisabled"
+          @update:model-value="emit('update:purchaseRequestId', $event)"
+        />
         <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
           Hanya PR berstatus disetujui yang dapat dijadikan sumber PO.
         </p>
@@ -86,23 +118,22 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
         </p>
       </div>
 
-      <!-- Supplier / Vendor -->
+      <!-- Supplier / Vendor — text autocomplete -->
       <div>
         <label :class="labelClass">Vendor<span class="text-error-500">*</span></label>
-        <div class="relative">
-          <select
-            :value="props.supplierId"
-            :disabled="props.disabled"
-            :class="[inputClass, 'appearance-none pe-10']"
-            @change="emit('update:supplierId', ($event.target as HTMLSelectElement).value)"
-          >
-            <option value="" disabled>Pilih vendor</option>
-            <option v-for="s in props.suppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
-          </select>
-          <ChevronDownIcon
-            class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-          />
-        </div>
+        <EntityCombobox
+          :model-value="props.supplierId"
+          :selected-label="selectedSupplierLabel"
+          :items="props.suppliers"
+          :item-id="(supplier) => supplier.id"
+          :item-label="(supplier) => supplier.name"
+          mode="client"
+          placeholder="Ketik untuk mencari vendor..."
+          empty-text="Vendor tidak ditemukan."
+          aria-label="Vendor purchase order"
+          :disabled="props.disabled"
+          @update:model-value="emit('update:supplierId', $event)"
+        />
       </div>
 
       <!-- Order Date -->

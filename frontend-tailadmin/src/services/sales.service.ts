@@ -19,9 +19,19 @@
  *      filters: page, limit, outletId?, search?
  *      PosProduct carries `saleMode` ('MADE_TO_ORDER'|'STOCK') and `hasToppings`
  *      (boolean). Toppings are NO LONGER inlined per product.
+ *      Stock is returned as TWO numbers so the grid can tell "kosong" from
+ *      "ada tapi kedaluwarsa": `availableQty` = stock that CAN be sold
+ *      (status ACTIVE, qty_available > 0, expired_date NULL or >= today) and
+ *      `expiredQty` = stock that CANNOT be sold (status ACTIVE,
+ *      qty_available > 0, expired_date < today). POS never backflushes
+ *      ingredients on its own, so an untopped line with `availableQty === 0`
+ *      is rejected by the backend — the grid disables those cards up-front.
  *  - GET  /sales/pos/toppings       → { success, data: PosToppingOption[] }  guard: sales.manage
+ *      filters: outletId? (scopes per-outlet topping stock)
  *      Daftar topping GLOBAL yang AKTIF — satu sumber untuk panel modifier POS,
- *      ditampilkan untuk produk MADE_TO_ORDER yang `hasToppings === true`.
+ *      ditampilkan untuk produk MADE_TO_ORDER yang `hasToppings === true`. Setiap
+ *      topping membawa `availableQty`/`expiredQty` (opsional, degradasi aman):
+ *      topping dengan `availableQty === 0` tidak bisa dipakai (checkout menolak).
  *
  * ── Sales Order ──────────────────────────────────────────────────────
  *  - POST /sales/orders             → 201 SalesOrder (PENDING_PAYMENT)  guard: sales.manage
@@ -70,12 +80,7 @@ interface ApiListResponse<T> {
 // ── Status / enum constants + labels (Indonesian) ─────────────────────
 
 /** Sales order lifecycle statuses (doc 51 §6.1). */
-export const SALES_ORDER_STATUSES = [
-  'PENDING_PAYMENT',
-  'PAID',
-  'CANCELLED',
-  'REFUNDED',
-] as const
+export const SALES_ORDER_STATUSES = ['PENDING_PAYMENT', 'PAID', 'CANCELLED', 'REFUNDED'] as const
 export type SalesOrderStatus = (typeof SALES_ORDER_STATUSES)[number]
 
 export const SALES_ORDER_STATUS_LABELS: Record<SalesOrderStatus, string> = {
@@ -137,6 +142,22 @@ export interface PosToppingOption {
   defaultQtyPerItem: number
   extraPrice: number
   sortOrder: number
+  /**
+   * Sellable topping stock on hand at the POS outlet: ACTIVE batches with
+   * `qty_available > 0` and `expired_date` NULL or >= today. A topping with
+   * `availableQty === 0` CANNOT be used (checkout rejects it). Optional for
+   * safe degradation: when the backend has not shipped it yet the value is
+   * `undefined`, which the modifier panel treats as "available" so toppings are
+   * never hidden — checkout stays the final guard.
+   */
+  availableQty?: number
+  /**
+   * Topping stock on hand that CANNOT be sold: ACTIVE batches with
+   * `qty_available > 0` and `expired_date` < today. Used only to explain WHY a
+   * topping is unusable (expired vs. out of stock). Optional for the same
+   * safe-degradation reason as `availableQty`.
+   */
+  expiredQty?: number
 }
 
 export interface PosProduct {
@@ -148,6 +169,19 @@ export interface PosProduct {
   saleMode: SaleMode
   recipeId: string | null
   hasToppings: boolean
+  /**
+   * Finished-goods stock on hand at the POS outlet that CAN be sold: ACTIVE
+   * batches with `qty_available > 0` and `expired_date` NULL or >= today.
+   * 0 when no outlet is given, no stock exists, or all stock is expired.
+   */
+  availableQty: number
+  /**
+   * Finished-goods stock on hand at the POS outlet that CANNOT be sold: ACTIVE
+   * batches with `qty_available > 0` and `expired_date` < today. Used only to
+   * explain WHY a product is unsellable (expired vs. out of stock); it is never
+   * sellable and never contributes to `availableQty`.
+   */
+  expiredQty: number
 }
 
 export interface SalesOrderItemTopping {
@@ -317,9 +351,7 @@ function toShiftQuery(params: ShiftListParams): Record<string, string | number> 
   return query
 }
 
-function toPosProductQuery(
-  params: PosProductListParams,
-): Record<string, string | number> {
+function toPosProductQuery(params: PosProductListParams): Record<string, string | number> {
   const query: Record<string, string | number> = {
     page: params.page,
     limit: params.limit,
@@ -333,9 +365,7 @@ function toPosProductQuery(
   return query
 }
 
-function toSalesOrderQuery(
-  params: SalesOrderListParams,
-): Record<string, string | number> {
+function toSalesOrderQuery(params: SalesOrderListParams): Record<string, string | number> {
   const query: Record<string, string | number> = {
     page: params.page,
     limit: params.limit,
@@ -358,10 +388,7 @@ function toSalesOrderQuery(
 export const salesService = {
   shifts: {
     async open(payload: OpenShiftPayload): Promise<Shift> {
-      const response = await httpClient.post<ApiSuccess<Shift>>(
-        '/sales/shifts/open',
-        payload,
-      )
+      const response = await httpClient.post<ApiSuccess<Shift>>('/sales/shifts/open', payload)
       return response.data.data
     },
 
@@ -374,45 +401,43 @@ export const salesService = {
     },
 
     async list(params: ShiftListParams): Promise<ShiftListResult> {
-      const response = await httpClient.get<ApiListResponse<Shift>>(
-        '/sales/shifts',
-        { params: toShiftQuery(params) },
-      )
+      const response = await httpClient.get<ApiListResponse<Shift>>('/sales/shifts', {
+        params: toShiftQuery(params),
+      })
       return { items: response.data.data, meta: response.data.meta }
     },
 
     async getById(id: string): Promise<Shift> {
-      const response = await httpClient.get<ApiSuccess<Shift>>(
-        `/sales/shifts/${id}`,
-      )
+      const response = await httpClient.get<ApiSuccess<Shift>>(`/sales/shifts/${id}`)
       return response.data.data
     },
   },
 
   pos: {
     async products(params: PosProductListParams): Promise<PosProductListResult> {
-      const response = await httpClient.get<ApiListResponse<PosProduct>>(
-        '/sales/pos/products',
-        { params: toPosProductQuery(params) },
-      )
+      const response = await httpClient.get<ApiListResponse<PosProduct>>('/sales/pos/products', {
+        params: toPosProductQuery(params),
+      })
       return { items: response.data.data, meta: response.data.meta }
     },
 
-    /** GLOBAL active topping options — the single source for the POS modifier panel. */
-    async toppings(): Promise<PosToppingOption[]> {
-      const response = await httpClient.get<ApiSuccess<PosToppingOption[]>>(
-        '/sales/pos/toppings',
-      )
+    /**
+     * GLOBAL active topping options — the single source for the POS modifier
+     * panel. `outletId` scopes the per-outlet topping stock (`availableQty` /
+     * `expiredQty`) the backend resolves; omit it only when no outlet context
+     * is known yet.
+     */
+    async toppings(outletId?: string): Promise<PosToppingOption[]> {
+      const response = await httpClient.get<ApiSuccess<PosToppingOption[]>>('/sales/pos/toppings', {
+        params: outletId ? { outletId } : undefined,
+      })
       return response.data.data
     },
   },
 
   orders: {
     async checkout(payload: CheckoutPayload): Promise<SalesOrder> {
-      const response = await httpClient.post<ApiSuccess<SalesOrder>>(
-        '/sales/orders',
-        payload,
-      )
+      const response = await httpClient.post<ApiSuccess<SalesOrder>>('/sales/orders', payload)
       return response.data.data
     },
 
@@ -425,9 +450,7 @@ export const salesService = {
     },
 
     async void(id: string): Promise<SalesOrder> {
-      const response = await httpClient.post<ApiSuccess<SalesOrder>>(
-        `/sales/orders/${id}/void`,
-      )
+      const response = await httpClient.post<ApiSuccess<SalesOrder>>(`/sales/orders/${id}/void`)
       return response.data.data
     },
 
@@ -440,17 +463,14 @@ export const salesService = {
     },
 
     async list(params: SalesOrderListParams): Promise<SalesOrderListResult> {
-      const response = await httpClient.get<ApiListResponse<SalesOrder>>(
-        '/sales/orders',
-        { params: toSalesOrderQuery(params) },
-      )
+      const response = await httpClient.get<ApiListResponse<SalesOrder>>('/sales/orders', {
+        params: toSalesOrderQuery(params),
+      })
       return { items: response.data.data, meta: response.data.meta }
     },
 
     async getById(id: string): Promise<SalesOrder> {
-      const response = await httpClient.get<ApiSuccess<SalesOrder>>(
-        `/sales/orders/${id}`,
-      )
+      const response = await httpClient.get<ApiSuccess<SalesOrder>>(`/sales/orders/${id}`)
       return response.data.data
     },
   },
@@ -475,9 +495,7 @@ export function salesOrderStatusBadgeColor(
 }
 
 /** Badge color mapping for a shift status. */
-export function shiftStatusBadgeColor(
-  status: ShiftStatus,
-): 'success' | 'light' {
+export function shiftStatusBadgeColor(status: ShiftStatus): 'success' | 'light' {
   return status === 'OPEN' ? 'success' : 'light'
 }
 

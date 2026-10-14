@@ -244,5 +244,14 @@ describe('DomainErrorTranslator', () => {
       const result = DomainErrorTranslator.translate(new Error('RECIPE.ACTIVE_ALREADY_EXISTS'));
       expect(result).toBeInstanceOf(ConflictError);
     });
+
+    it('should translate SALES_ORDER.STOCK_EXPIRED to InvariantError with a production hint', () => {
+      const result = DomainErrorTranslator.translate(new Error('SALES_ORDER.STOCK_EXPIRED'));
+
+      expect(result).toBeInstanceOf(InvariantError);
+      expect((result as InvariantError).statusCode).toBe(400);
+      expect(result.message).toContain('kedaluwarsa');
+      expect(result.message).toContain('Production Order');
+    });
   });
 });

@@ -99,6 +99,22 @@ function productLabel(id: string): string {
   return product ? `${product.name} (${product.sku})` : id
 }
 
+/**
+ * Resolve a finished product's "name (sku)" for display when the id is NOT in the
+ * loaded RAW_MATERIAL list (edit mode: the recipe's finished product is
+ * FINISHED_GOODS, so `productMap` never holds it and the chip would render a raw
+ * UUID). Fetches that single product via GET /products/:id; falls back to the id
+ * when the product was deleted or the lookup fails.
+ */
+async function resolveProductLabel(id: string): Promise<string> {
+  try {
+    const product = await productService.getById(id)
+    return `${product.name} (${product.sku})`
+  } catch {
+    return id
+  }
+}
+
 // ── Finished-product autocomplete handlers ───────────────────────────
 function onProductSearch(query: string): void {
   if (productSearchTimer) {
@@ -142,7 +158,15 @@ function onProductClear(): void {
 
 async function loadSupportingData(): Promise<void> {
   const [allProducts, allUoms] = await Promise.all([
-    fetchAllPaginated<Product>((page) => productService.list({ page, limit: PAGE_LIMIT })),
+    fetchAllPaginated<Product>(async (p) => {
+      const result = await productService.list({
+        page: p,
+        limit: PAGE_LIMIT,
+        //productType: 'RAW_MATERIAL',
+        isActive: 'true',
+      })
+      return { items: result.items, meta: result.meta }
+    }),
     fetchAllPaginated<Uom>((page) => uomService.list({ page, limit: PAGE_LIMIT })),
   ])
   products.value = allProducts
@@ -199,9 +223,10 @@ async function loadExisting(id: string): Promise<void> {
   loadedStatus.value = recipe.status
   name.value = recipe.name
   productId.value = recipe.productId
-  // Edit mode: keep the finished product shown as a chip. Resolve its label from
-  // the loaded product masters (fall back to the id if unavailable).
-  productSelectedLabel.value = productLabel(recipe.productId)
+  // Edit mode: keep the finished product shown as a chip. Its label must come
+  // from a direct lookup — the loaded masters are RAW_MATERIAL only, so this
+  // FINISHED_GOODS product is never in `productMap`.
+  productSelectedLabel.value = await resolveProductLabel(recipe.productId)
   yieldQty.value = recipe.yieldQty
   yieldUomId.value = recipe.yieldUomId
   instructions.value = recipe.instructions ?? ''
@@ -360,8 +385,8 @@ function onCancel(): void {
           v-if="isReadOnly"
           class="rounded-lg border border-warning-500/40 bg-warning-50 px-4 py-3 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
         >
-          Resep ini tidak dapat diedit pada status saat ini. Untuk versi baru,
-          arsipkan resep lalu buat resep baru. Ditampilkan sebagai baca-saja.
+          Resep ini tidak dapat diedit pada status saat ini. Untuk versi baru, arsipkan resep lalu
+          buat resep baru. Ditampilkan sebagai baca-saja.
         </p>
 
         <!-- Header -->

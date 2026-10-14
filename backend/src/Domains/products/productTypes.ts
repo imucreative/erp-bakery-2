@@ -7,6 +7,7 @@ export const PRODUCT_TYPES = [
   'FINISHED_GOODS',
   'SEMI_FINISHED',
   'PACKAGING',
+  'BEVERAGE'
 ] as const;
 
 export type ProductType = (typeof PRODUCT_TYPES)[number];

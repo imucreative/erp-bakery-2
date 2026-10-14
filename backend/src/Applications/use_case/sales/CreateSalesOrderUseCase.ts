@@ -13,9 +13,12 @@ import { InvariantError } from '../../../Commons/exceptions/InvariantError';
  *  2. Company-scope guard: outlet belongs to the company.
  *  3. Validate the shift is OPEN and belongs to the cashier + outlet
  *     (else SHIFT.NOT_OPEN).
- *  4. Resolve items deterministically via the repository (mode + topping
- *     allow-list + price snapshots + per-line total). Throws
- *     RECIPE.NO_ACTIVE_RECIPE / TOPPING.NOT_ALLOWED.
+ *  4. Resolve items deterministically via the repository (stock-first mode +
+ *     topping allow-list + price snapshots + per-line total). The outlet's
+ *     sellable finished-goods stock must cover the line, else it is rejected
+ *     (SALES_ORDER.STOCK_EXPIRED / INVENTORY.INSUFFICIENT_STOCK) — there is
+ *     no recipe fallback. Toppings are allowed on any line whose product has
+ *     has_toppings=true; throws TOPPING.NOT_ALLOWED otherwise.
  *  5. Compute header totals SERVER-SIDE (tax = 0; order discount capped to
  *     subtotal so grand_total never goes negative).
  *  6. Persist header + items + toppings as PENDING_PAYMENT (no stock touched).
@@ -47,9 +50,11 @@ export class CreateSalesOrderUseCase {
       throw new InvariantError('SHIFT.NOT_OPEN');
     }
 
-    // Deterministic resolution (mode, toppings, price snapshots, line totals).
+    // Deterministic resolution (stock-first mode, toppings, price snapshots,
+    // line totals). Stock is outlet-scoped, so the outlet rides along.
     const { items } = await this.salesOrderRepository.resolveCheckoutItems(
       companyId,
+      data.outletId,
       data.items,
     );
 

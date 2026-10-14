@@ -1,15 +1,30 @@
 /**
  * Sale mode per sold item (POS / Sales — doc 51 §3, OQ-3).
  *
- *   MADE_TO_ORDER — the sellable product has an ACTIVE recipe; at PAID the
- *                   backflush consumes its ingredients (+ selected toppings)
- *                   via FEFO. Toppings only apply to this mode (§3.4).
- *   STOCK         — a FINISHED_GOODS product with stock and no ACTIVE recipe;
- *                   at PAID the product's own finished-goods stock is cut via
- *                   FEFO. No toppings.
+ *   MADE_TO_ORDER — the line is fulfilled by BACKFLUSHING the recipe: at PAID
+ *                   the recipe's ingredients are consumed via FEFO (producing
+ *                   the item at the moment of sale). POS itself never decides
+ *                   this from the product merely HAVING a recipe: since
+ *                   checkout became stock-first, the resolver (which has no
+ *                   recipe fallback) only produces STOCK, or rejects the line.
+ *                   The mode therefore remains meaningful for orders already
+ *                   persisted with it — the snapshot is what pay() reads back
+ *                   to rebuild the consumption plan (and what refund() and
+ *                   reporting rely on).
+ *   STOCK         — the line is cut from the sellable finished-goods stock at
+ *                   the outlet: at PAID the product's own stock is consumed via
+ *                   FEFO. A line that stock cannot cover is rejected at
+ *                   checkout (SALES_ORDER.STOCK_EXPIRED when the only stock is
+ *                   expired, else INVENTORY.INSUFFICIENT_STOCK), never
+ *                   downgraded to MADE_TO_ORDER.
  *
- * The mode is resolved deterministically from data at checkout (§3.0) and
- * snapshotted on the sales order item (sale_mode) for reproducibility.
+ * Toppings are INDEPENDENT of the mode: they are consumed in BOTH modes at
+ * pay() (qty_per_item × item.qty per selected topping). Whether a product
+ * accepts toppings at all is the separate has_toppings capability flag
+ * (see Products), not a property of the mode.
+ *
+ * The mode is snapshotted on the sales order item (sale_mode) so the
+ * consumption plan is reproducible and refund can reverse it exactly.
  */
 export const SALE_MODES = ['MADE_TO_ORDER', 'STOCK'] as const;
 

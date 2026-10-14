@@ -21,6 +21,7 @@ import { computed, onMounted, watch } from 'vue'
 import { Trash2 } from 'lucide-vue-next'
 import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
 import { PlusIcon } from '@/icons'
+import EntityCombobox from '@/components/ui/EntityCombobox.vue'
 import { formatRupiah } from '@/lib/format'
 import type { Product } from '@/services/product.service'
 import type { Uom } from '@/services/uom.service'
@@ -123,24 +124,30 @@ function updateRow(index: number, patch: Partial<EditorItemRow>): void {
   emitRows(next)
 }
 
-function onProductChange(index: number, productId: string): void {
-  const product = productMap.value.get(productId)
+/**
+ * Product picked in this row's combobox. Carries over every behaviour the old
+ * native <select> had:
+ *   - load the newly chosen product's valid UOMs (base + active conversions)
+ *   - derive uomId from the selected product
+ *   - pre-fill the estimated price when the row has none yet
+ * `EntityCombobox` also emits `update:modelValue`, but this component is a
+ * controlled child that persists rows through the single `update:modelValue`
+ * emit, so the row is written here instead.
+ */
+function onProductSelect(index: number, product: Product): void {
   const current = props.modelValue[index]
-  // Load the newly chosen product's valid UOMs (base + active conversions).
-  void validUoms.ensureLoaded(productId)
+  void validUoms.ensureLoaded(product.id)
   // Always derive uomId from the selected product. A product always carries a
   // uomId in the contract, so we set it unconditionally (even when it points to
   // a now-inactive UOM absent from the loaded list — the value is still a valid
-  // UUID and stays visible via the synthetic option). If the product can't be
-  // resolved, blank the uomId so validation blocks submit rather than sending a
-  // stale value from a previously-selected product.
+  // UUID and stays visible via the synthetic option).
   const patch: Partial<EditorItemRow> = {
-    productId,
-    uomId: product?.uomId ?? '',
+    productId: product.id,
+    uomId: product.uomId ?? '',
   }
   // Pre-fill estimated price from the product's purchase price only when the
   // row's price hasn't been set yet (don't clobber a user-entered value).
-  if (product && (!current || Number(current.estimatedPrice) === 0)) {
+  if (!current || Number(current.estimatedPrice) === 0) {
     patch.estimatedPrice = product.purchasePrice ?? 0
   }
   updateRow(index, patch)
@@ -153,11 +160,58 @@ function addRow(): void {
 function removeRow(index: number): void {
   emitRows(props.modelValue.filter((_, i) => i !== index))
 }
+
+/** Ids picked by any row; a row's own id is excluded by the adapter below. */
+const usedProductIds = computed<Set<string>>(
+  () => new Set(props.modelValue.map((row) => row.productId).filter(Boolean)),
+)
+
+/**
+ * An item is blocked when another row already picked the same product. Comparing
+ * against the row's own id keeps the current choice re-selectable.
+ */
+function makeBlockedTest(index: number): (product: Product) => boolean {
+  const ownId = props.modelValue[index]?.productId
+  const used = usedProductIds.value
+  return (product: Product) => product.id !== ownId && used.has(product.id)
+}
+
+const sortedProducts = computed<Product[]>(() =>
+  [...props.products].sort((a, b) => a.name.localeCompare(b.name)),
+)
+
+/**
+ * Clear the product. The row's UOM is reset ONLY when it still equals the removed
+ * product's base UOM (i.e. it was the auto-default) — a UOM the user picked by
+ * hand is preserved.
+ */
+function clearItemProduct(index: number): void {
+  const row = props.modelValue[index]
+  const previous = row ? productMap.value.get(row.productId) : undefined
+  const patch: Partial<EditorItemRow> = { productId: '' }
+  if (row && row.uomId && previous && row.uomId === previous.uomId) {
+    patch.uomId = ''
+  }
+  updateRow(index, patch)
+}
+
+function labelValue(product: Product): string {
+  return `${product.name} (${product.sku})`
+}
+
+/** Display text of an already-chosen product, falling back to its id. */
+function chosenLabel(row: EditorItemRow): string {
+  const product = productMap.value.get(row.productId)
+  return product ? labelValue(product) : row.productId
+}
 </script>
 
 <template>
   <div class="space-y-3">
-    <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+    <!-- Horizontal scroll only. The height follows the row count, and
+         `overflow-y-hidden` keeps this wrapper from ever becoming a vertical
+         scroll container (CSS computes overflow-y to auto once overflow-x is set). -->
+    <div class="overflow-x-auto overflow-y-hidden rounded-xl border border-gray-200 dark:border-gray-800">
       <table class="min-w-full">
         <thead>
           <tr class="border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]">
@@ -187,24 +241,27 @@ function removeRow(index: number): void {
             :key="index"
             class="border-b border-gray-100 last:border-0 dark:border-gray-800"
           >
-            <!-- Product -->
+            <!-- Product — text autocomplete, client-filtered -->
             <td class="px-4 py-3 align-top">
-              <div class="relative">
-                <select
-                  :value="row.productId"
-                  :disabled="disabled"
-                  :class="[inputClass, 'appearance-none pe-10']"
-                  @change="onProductChange(index, ($event.target as HTMLSelectElement).value)"
-                >
-                  <option value="" disabled>Pilih produk</option>
-                  <option v-for="p in products" :key="p.id" :value="p.id">
-                    {{ p.name }} ({{ p.sku }})
-                  </option>
-                </select>
-                <ChevronDownIcon
-                  class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-                />
-              </div>
+              <EntityCombobox
+                :model-value="row.productId"
+                :selected-label="chosenLabel(row)"
+                :items="sortedProducts"
+                :item-id="(product) => product.id"
+                :item-label="labelValue"
+                :item-disabled="makeBlockedTest(index)"
+                item-disabled-hint="sudah dipakai di baris lain"
+                mode="client"
+                :max-suggestions="50"
+                :visible-item-count="10"
+                placeholder="Ketik untuk mencari produk..."
+                empty-text="Produk tidak ditemukan."
+                :aria-label="`Produk baris ${index + 1}`"
+                :clear-aria-label="`Hapus produk baris ${index + 1}`"
+                :disabled="disabled"
+                @select="onProductSelect(index, $event)"
+                @clear="clearItemProduct(index)"
+              />
             </td>
             <!-- Quantity -->
             <td class="px-4 py-3 align-top">
