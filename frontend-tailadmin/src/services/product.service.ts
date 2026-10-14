@@ -21,6 +21,7 @@ export const PRODUCT_TYPES = [
   'FINISHED_GOODS',
   'SEMI_FINISHED',
   'PACKAGING',
+  'BEVERAGE'
 ] as const
 export type ProductType = (typeof PRODUCT_TYPES)[number]
 
@@ -29,6 +30,7 @@ export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
   FINISHED_GOODS: 'Barang Jadi',
   SEMI_FINISHED: 'Setengah Jadi',
   PACKAGING: 'Kemasan',
+  BEVERAGE: 'Minuman',
 }
 
 interface ApiSuccess<T> {
@@ -59,6 +61,7 @@ export interface Product {
   productGroupId: string
   categoryId: string
   uomId: string
+  uomName?: string | null
   supplierId: string
   productType: ProductType
   purchasePrice: number

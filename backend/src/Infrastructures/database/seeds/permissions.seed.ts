@@ -196,7 +196,7 @@ export const DEFAULT_ROLES = [
     name: 'Kasir',
     description: 'POS cashier — manages sales and shifts',
     permissions: [
-      'product.read', 'payment-term.read', 'procurement.return.read',
+      'product.read', 'uom.read', 'payment-term.read', 'procurement.return.read',
       'sales.manage', 'shift.manage',
     ],
   },

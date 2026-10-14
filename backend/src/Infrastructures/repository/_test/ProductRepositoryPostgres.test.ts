@@ -15,6 +15,7 @@ const productRow = {
   product_group_id: 'pg-uuid',
   category_id: 'cat-uuid',
   uom_id: 'uom-uuid',
+  uom_name: 'Kilogram',
   supplier_id: 'sup-uuid',
   product_type: 'FINISHED_GOODS',
   purchase_price: '5000',
@@ -72,6 +73,9 @@ describe('ProductRepositoryPostgres', () => {
       const result = await repo.getProductsByCompany('company-uuid', { limit: 10, offset: 0 });
       expect(result.total).toBe(1);
       expect(result.rows).toHaveLength(1);
+      expect(result.rows[0].uomName).toBe('Kilogram');
+      const selectSql = (mockPool.query as jest.Mock).mock.calls[1][0] as string;
+      expect(selectSql).toContain('AS uom_name');
     });
 
     it('should apply search, isActive, productType, and FK filters', async () => {
@@ -105,6 +109,7 @@ describe('ProductRepositoryPostgres', () => {
       (mockPool.query as jest.Mock).mockResolvedValue({ rows: [productRow], rowCount: 1 });
       const result = await repo.getProductById('prod-uuid', 'company-uuid');
       expect(result.id).toBe('prod-uuid');
+      expect(result.uomName).toBe('Kilogram');
     });
 
     it('should throw NotFoundError when not found', async () => {

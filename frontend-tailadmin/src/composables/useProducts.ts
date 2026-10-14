@@ -96,21 +96,23 @@ export function useProducts() {
     if (optionsLoaded.value) {
       return
     }
-    try {
-      const [g, c, u, s] = await Promise.all([
-        productGroupService.list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' }),
-        categoryService.list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' }),
-        uomService.list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' }),
-        supplierService.list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' }),
-      ])
-      groups.value = g.items
-      categories.value = c.items
-      uoms.value = u.items
-      suppliers.value = s.items
-      optionsLoaded.value = true
-    } catch {
-      // Non-fatal: dropdowns will be empty; table will fall back to ids.
-    }
+    const [g, c, u, s] = await Promise.all([
+      productGroupService
+        .list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' })
+        .catch(() => null),
+      categoryService
+        .list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' })
+        .catch(() => null),
+      uomService.list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' }).catch(() => null),
+      supplierService
+        .list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' })
+        .catch(() => null),
+    ])
+    if (g) groups.value = g.items
+    if (c) categories.value = c.items
+    if (u) uoms.value = u.items
+    if (s) suppliers.value = s.items
+    optionsLoaded.value = Boolean(g && c && u && s)
   }
 
   /** Categories filtered by the selected product group (for cascading dropdown). */

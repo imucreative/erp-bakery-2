@@ -19,6 +19,7 @@ interface ProductRow {
   product_group_id: string;
   category_id: string;
   uom_id: string;
+  uom_name?: string | null;
   supplier_id: string;
   product_type: string;
   purchase_price: string;
@@ -53,6 +54,7 @@ export class ProductRepositoryPostgres extends ProductRepository {
       productGroupId: row.product_group_id,
       categoryId: row.category_id,
       uomId: row.uom_id,
+      uomName: row.uom_name,
       supplierId: row.supplier_id,
       productType: row.product_type,
       purchasePrice: row.purchase_price,
@@ -143,6 +145,8 @@ export class ProductRepositoryPostgres extends ProductRepository {
     params.push(filter.limit, filter.offset);
     const rowsResult = await this.pool.query<ProductRow>(
       `SELECT ${SELECT_COLUMNS}
+       , (SELECT u.name FROM uoms u
+          WHERE u.id = products.uom_id AND u.company_id = products.company_id) AS uom_name
        FROM products
        WHERE ${whereClause}
        ORDER BY created_at DESC
@@ -155,7 +159,9 @@ export class ProductRepositoryPostgres extends ProductRepository {
 
   async getProductById(id: string, companyId: string): Promise<Product> {
     const result = await this.pool.query<ProductRow>(
-      `SELECT ${SELECT_COLUMNS}
+      `SELECT ${SELECT_COLUMNS},
+              (SELECT u.name FROM uoms u
+               WHERE u.id = products.uom_id AND u.company_id = products.company_id) AS uom_name
        FROM products
        WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL`,
       [id, companyId],

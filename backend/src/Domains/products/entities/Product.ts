@@ -12,6 +12,7 @@ export class Product {
   public readonly productGroupId: string;
   public readonly categoryId: string;
   public readonly uomId: string;
+  public readonly uomName: string | null;
   public readonly supplierId: string;
   public readonly productType: string;
   public readonly purchasePrice: number;
@@ -33,6 +34,7 @@ export class Product {
     productGroupId: string;
     categoryId: string;
     uomId: string;
+    uomName?: string | null;
     supplierId: string;
     productType: string;
     purchasePrice: number | string;
@@ -54,6 +56,7 @@ export class Product {
       productGroupId,
       categoryId,
       uomId,
+      uomName,
       supplierId,
       productType,
       purchasePrice,
@@ -79,6 +82,7 @@ export class Product {
     this.productGroupId = productGroupId;
     this.categoryId = categoryId;
     this.uomId = uomId;
+    this.uomName = uomName ?? null;
     this.supplierId = supplierId;
     this.productType = productType;
     this.purchasePrice = Number(purchasePrice);

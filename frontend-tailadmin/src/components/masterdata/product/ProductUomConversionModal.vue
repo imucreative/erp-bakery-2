@@ -83,7 +83,7 @@ const baseUomName = computed<string>(() => {
   if (!p) {
     return '—'
   }
-  return props.uomNameById[p.uomId] || p.uomId
+  return p.uomName || props.uomNameById[p.uomId] || p.uomId
 })
 
 const uomLabel = (uom: Uom): string => uom.name
