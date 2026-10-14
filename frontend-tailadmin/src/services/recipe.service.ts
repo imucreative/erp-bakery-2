@@ -70,8 +70,10 @@ export const RECIPE_STATUS_LABELS: Record<RecipeStatus, string> = {
 export interface RecipeItem {
   id: string
   ingredientProductId: string
+  ingredientProductName?: string | null
   qty: number
   uomId: string
+  uomName?: string | null
   lossPercentage: number
 }
 
@@ -81,9 +83,11 @@ export interface Recipe {
   recipeNumber: string
   name: string
   productId: string
+  productName?: string | null
   version: number
   yieldQty: number
   yieldUomId: string
+  yieldUomName?: string | null
   instructions: string | null
   status: RecipeStatus
   items: RecipeItem[]

@@ -5,7 +5,9 @@ export interface ProductionMaterial {
   id: string;
   recipeItemId: string | null;
   productId: string;
+  productName?: string | null;
   batchId: string;
+  batchNumber?: string | null;
   plannedQty: number;
   qtyConsumed: number;
 }
@@ -29,9 +31,12 @@ export class ProductionOrder {
   public readonly id: string;
   public readonly companyId: string;
   public readonly outletId: string;
+  public readonly outletName: string | null;
   public readonly productionNumber: string;
   public readonly recipeId: string;
+  public readonly recipeName: string | null;
   public readonly productId: string;
+  public readonly productName: string | null;
   public readonly scaleFactor: number;
   public readonly scheduledQty: number;
   public readonly actualQty: number | null;
@@ -50,9 +55,12 @@ export class ProductionOrder {
     id: string;
     companyId: string;
     outletId: string;
+    outletName?: string | null;
     productionNumber: string;
     recipeId: string;
+    recipeName?: string | null;
     productId: string;
+    productName?: string | null;
     scaleFactor: number;
     scheduledQty: number;
     actualQty: number | null;
@@ -70,9 +78,12 @@ export class ProductionOrder {
     this.id = payload.id;
     this.companyId = payload.companyId;
     this.outletId = payload.outletId;
+    this.outletName = payload.outletName ?? null;
     this.productionNumber = payload.productionNumber;
     this.recipeId = payload.recipeId;
+    this.recipeName = payload.recipeName ?? null;
     this.productId = payload.productId;
+    this.productName = payload.productName ?? null;
     this.scaleFactor = payload.scaleFactor;
     this.scheduledQty = payload.scheduledQty;
     this.actualQty = payload.actualQty;

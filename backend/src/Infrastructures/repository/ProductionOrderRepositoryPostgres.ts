@@ -24,9 +24,13 @@ interface HeaderRow {
   id: string;
   company_id: string;
   outlet_id: string;
+  outlet_name?: string | null;
   production_number: string;
   recipe_id: string;
+  recipe_name?: string | null;
+  recipe_number?: string | null;
   product_id: string;
+  product_name?: string | null;
   scale_factor: string;
   scheduled_qty: string;
   actual_qty: string | null;
@@ -44,7 +48,9 @@ interface MaterialRow {
   id: string;
   recipe_item_id: string | null;
   product_id: string;
+  product_name?: string | null;
   batch_id: string;
+  batch_number?: string | null;
   planned_qty: string;
   qty_consumed: string;
 }
@@ -81,6 +87,13 @@ interface BatchRow {
 }
 
 const HEADER_COLUMNS = `id, company_id, outlet_id, production_number, recipe_id, product_id, scale_factor, scheduled_qty, actual_qty, waste_qty, production_date, result_expired_date, status, notes, result_batch_id, created_at, updated_at`;
+const READ_HEADER_COLUMNS = `${HEADER_COLUMNS},
+  (SELECT o.name FROM outlets o
+   WHERE o.id = production_orders.outlet_id AND o.company_id = production_orders.company_id) AS outlet_name,
+  (SELECT p.name FROM products p
+   WHERE p.id = production_orders.product_id AND p.company_id = production_orders.company_id) AS product_name,
+  (SELECT r.name FROM recipes r
+   WHERE r.id = production_orders.recipe_id AND r.company_id = production_orders.company_id) AS recipe_name`;
 
 /**
  * Concrete PostgreSQL implementation of ProductionOrderRepository.
@@ -105,9 +118,12 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
       id: header.id,
       companyId: header.company_id,
       outletId: header.outlet_id,
+      outletName: header.outlet_name ?? null,
       productionNumber: header.production_number,
       recipeId: header.recipe_id,
+      recipeName: header.recipe_name ?? null,
       productId: header.product_id,
+      productName: header.product_name ?? null,
       scaleFactor: Number(header.scale_factor),
       scheduledQty: Number(header.scheduled_qty),
       actualQty: header.actual_qty === null ? null : Number(header.actual_qty),
@@ -129,7 +145,9 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
       id: row.id,
       recipeItemId: row.recipe_item_id,
       productId: row.product_id,
+      productName: row.product_name ?? null,
       batchId: row.batch_id,
+      batchNumber: row.batch_number ?? null,
       plannedQty: Number(row.planned_qty),
       qtyConsumed: Number(row.qty_consumed),
     };
@@ -160,10 +178,14 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
 
   private async _loadMaterials(client: PoolClient, orderId: string): Promise<MaterialRow[]> {
     const result = await client.query<MaterialRow>(
-      `SELECT id, recipe_item_id, product_id, batch_id, planned_qty, qty_consumed
-       FROM production_order_materials
-       WHERE production_order_id = $1
-       ORDER BY created_at ASC`,
+      `SELECT m.id, m.recipe_item_id, m.product_id, p.name AS product_name,
+              m.batch_id, b.batch_number, m.planned_qty, m.qty_consumed
+       FROM production_order_materials m
+       JOIN production_orders po ON po.id = m.production_order_id
+       LEFT JOIN products p ON p.id = m.product_id AND p.company_id = po.company_id
+       LEFT JOIN inventory_batches b ON b.id = m.batch_id AND b.company_id = po.company_id
+       WHERE m.production_order_id = $1
+       ORDER BY m.created_at ASC`,
       [orderId],
     );
     return result.rows;
@@ -206,7 +228,8 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
       } else {
         const r = await client.query<RecipeHeaderRow>(
           `SELECT id, product_id, yield_qty, status FROM recipes
-           WHERE company_id = $1 AND product_id = $2 AND status = 'ACTIVE' AND deleted_at IS NULL`,
+           WHERE r.company_id = $1 AND r.product_id = $2
+             AND r.status = 'ACTIVE' AND r.deleted_at IS NULL`,
           [companyId, data.productId],
         );
         if (!r.rowCount) {
@@ -426,7 +449,7 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
     const client = await this.pool.connect();
     try {
       const headerResult = await client.query<HeaderRow>(
-        `SELECT ${HEADER_COLUMNS} FROM production_orders
+        `SELECT ${READ_HEADER_COLUMNS} FROM production_orders
          WHERE id = $1 AND company_id = $2`,
         [id, companyId],
       );
@@ -475,7 +498,7 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
 
     params.push(filter.limit, filter.offset);
     const headerResult = await this.pool.query<HeaderRow>(
-      `SELECT ${HEADER_COLUMNS} FROM production_orders
+      `SELECT ${READ_HEADER_COLUMNS} FROM production_orders
        WHERE ${whereClause}
        ORDER BY created_at DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
@@ -500,10 +523,14 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
       name: string;
       yield_qty: string;
       yield_uom_id: string;
+      yield_uom_name: string | null;
     }>(
-      `SELECT id, recipe_number, name, yield_qty, yield_uom_id
-       FROM recipes
-       WHERE company_id = $1 AND product_id = $2 AND status = 'ACTIVE' AND deleted_at IS NULL`,
+      `SELECT r.id, r.recipe_number, r.name, r.yield_qty, r.yield_uom_id,
+              u.name AS yield_uom_name
+       FROM recipes r
+       LEFT JOIN uoms u ON u.id = r.yield_uom_id AND u.company_id = r.company_id
+       WHERE r.company_id = $1 AND r.product_id = $2
+         AND r.status = 'ACTIVE' AND r.deleted_at IS NULL`,
       [companyId, productId],
     );
     if (!recipeResult.rowCount) {
@@ -518,12 +545,20 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
     // Recipe ingredient lines (per-batch base qty + loss% + uom)
     const itemsResult = await this.pool.query<{
       ingredient_product_id: string;
+      ingredient_product_name: string | null;
       qty: string;
       loss_percentage: string;
       uom_id: string;
+      uom_name: string | null;
     }>(
-      `SELECT ingredient_product_id, qty, loss_percentage, uom_id
-       FROM recipe_items WHERE recipe_id = $1`,
+      `SELECT ri.ingredient_product_id, p.name AS ingredient_product_name,
+              ri.qty, ri.loss_percentage, ri.uom_id, u.name AS uom_name
+       FROM recipe_items ri
+       JOIN recipes r ON r.id = ri.recipe_id
+       LEFT JOIN products p
+         ON p.id = ri.ingredient_product_id AND p.company_id = r.company_id
+       LEFT JOIN uoms u ON u.id = ri.uom_id AND u.company_id = r.company_id
+       WHERE ri.recipe_id = $1`,
       [recipeRow.id],
     );
 
@@ -556,7 +591,9 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
       if (!(requiredPerUnit > 0)) {
         items.push({
           ingredientProductId: item.ingredient_product_id,
+          ingredientProductName: item.ingredient_product_name,
           uomId: item.uom_id,
+          uomName: item.uom_name,
           requiredPerUnit: 0,
           availableQty,
           maxUnits: Number.MAX_SAFE_INTEGER,
@@ -571,7 +608,9 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
 
       items.push({
         ingredientProductId: item.ingredient_product_id,
+        ingredientProductName: item.ingredient_product_name,
         uomId: item.uom_id,
+        uomName: item.uom_name,
         requiredPerUnit,
         availableQty,
         maxUnits,
@@ -596,6 +635,7 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
         name: recipeRow.name,
         yieldQty,
         yieldUomId: recipeRow.yield_uom_id,
+        yieldUomName: recipeRow.yield_uom_name,
       },
       producibleQty: finalProducible,
       items,

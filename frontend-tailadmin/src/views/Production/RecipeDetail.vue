@@ -16,8 +16,8 @@
  *
  * The entity exposes no status-log collection, so there is no timeline section.
  * This view owns all state and handlers; presentation is delegated to stateless
- * feature sub-components (summary, items table, action bar, modals). Product and
- * UOM names are resolved via one-time lookup maps (no N+1).
+ * feature sub-components (summary, items table, action bar, modals). Product
+ * and UOM labels are returned with the recipe, without product.read or uom.read.
  */
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -36,15 +36,12 @@ import {
 import { usePermission } from '@/composables/usePermission'
 import { useRecipeDraft } from '@/composables/useRecipeDraft'
 import { toMessage } from '@/composables/useStockLedger'
-import { productService, type Product } from '@/services/product.service'
-import { uomService, type Uom } from '@/services/uom.service'
 import {
   recipeService,
   RECIPE_STATUS_LABELS,
   statusBadgeColor,
   type Recipe,
 } from '@/services/recipe.service'
-import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 
 const route = useRoute()
 const router = useRouter()
@@ -58,15 +55,18 @@ const loading = ref<boolean>(true)
 const loadError = ref<string | null>(null)
 const actionError = ref<string | null>(null)
 
-// Lookup maps for resolving ids → names in the read-only view.
-const productNames = ref<Map<string, string>>(new Map())
-const uomNames = ref<Map<string, string>>(new Map())
-
 function productName(id: string): string {
-  return productNames.value.get(id) ?? id
+  if (recipe.value?.productId === id && recipe.value.productName) {
+    return recipe.value.productName
+  }
+  return recipe.value?.items.find((item) => item.ingredientProductId === id)
+    ?.ingredientProductName ?? id
 }
 function uomName(id: string): string {
-  return uomNames.value.get(id) ?? id
+  if (recipe.value?.yieldUomId === id) {
+    return recipe.value.yieldUomName ?? id
+  }
+  return recipe.value?.items.find((item) => item.uomId === id)?.uomName ?? id
 }
 
 // ── Permission + status → available actions ──────────────────────────
@@ -95,21 +95,11 @@ const hasAnyAction = computed<boolean>(
 )
 
 // ── Load ─────────────────────────────────────────────────────────────
-async function loadLookups(): Promise<void> {
-  const [allProducts, allUoms] = await Promise.all([
-    fetchAllPaginated<Product>((page) => productService.list({ page, limit: PAGE_LIMIT })),
-    fetchAllPaginated<Uom>((page) => uomService.list({ page, limit: PAGE_LIMIT })),
-  ])
-  productNames.value = new Map(allProducts.map((p) => [p.id, `${p.name} (${p.sku})`]))
-  uomNames.value = new Map(allUoms.map((u) => [u.id, u.name]))
-}
-
 async function loadRecipe(): Promise<void> {
   loading.value = true
   loadError.value = null
   try {
-    const [detail] = await Promise.all([recipeService.getById(recipeId.value), loadLookups()])
-    recipe.value = detail
+    recipe.value = await recipeService.getById(recipeId.value)
   } catch (error) {
     loadError.value = toMessage(error)
     recipe.value = null
@@ -144,6 +134,7 @@ async function onConfirmAction(): Promise<void> {
     return
   }
   const id = recipe.value.id
+  const current = recipe.value
   const action = activeAction.value
   actionSubmitting.value = true
   actionError.value = null
@@ -160,7 +151,20 @@ async function onConfirmAction(): Promise<void> {
       action === 'activate'
         ? await recipeService.activate(id)
         : await recipeService.archive(id)
-    recipe.value = updated
+    recipe.value = {
+      ...updated,
+      productName: current.productName,
+      yieldUomName: current.yieldUomName,
+      items: updated.items.map((item) => ({
+        ...item,
+        ingredientProductName: current.items.find(
+          (current) => current.ingredientProductId === item.ingredientProductId,
+        )?.ingredientProductName,
+        uomName: current.items.find(
+          (currentItem) => currentItem.uomId === item.uomId,
+        )?.uomName,
+      })),
+    }
     activeAction.value = null
   } catch (error) {
     actionError.value = toMessage(error)

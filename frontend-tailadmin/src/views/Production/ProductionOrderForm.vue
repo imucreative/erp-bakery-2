@@ -32,11 +32,9 @@ import {
 } from '@/components/production/production-order'
 import { formatNumber, toISODate } from '@/lib/format'
 import { toMessage } from '@/composables/useStockLedger'
-import { fetchAllPaginated } from '@/lib/fetchAll'
 import { ApiClientError } from '@/services/http'
 import { outletService, type Outlet } from '@/services/outlet.service'
 import { productService, type Product } from '@/services/product.service'
-import { uomService, type Uom } from '@/services/uom.service'
 import { recipeService } from '@/services/recipe.service'
 import {
   productionOrderService,
@@ -49,7 +47,6 @@ const pageTitle = 'Produksi'
 const PRODUCT_SEARCH_LIMIT = 10
 const PRODUCT_SEARCH_DEBOUNCE_MS = 300
 const PRODUCIBLE_DEBOUNCE_MS = 250
-const RESOLVE_PAGE_LIMIT = 100
 
 // ── Supporting data ──────────────────────────────────────────────────
 const outlets = ref<Outlet[]>([])
@@ -83,53 +80,6 @@ const producibleError = ref<string | null>(null)
 let producibleTimer: ReturnType<typeof setTimeout> | undefined
 // Monotonic token so a slow earlier request can't overwrite a newer result.
 let producibleRequestId = 0
-
-// Lazy-loaded id→name resolvers for the ingredient table + yield UOM. Both the
-// product and UOM masters are loaded ONCE on first need (not per row) to avoid
-// N+1 — the producible items[] only carry ids. Mirrors RecipeDetail resolution.
-const productNames = ref<Map<string, string>>(new Map())
-const uomNames = ref<Map<string, string>>(new Map())
-const mastersLoaded = ref<boolean>(false)
-let mastersPromise: Promise<void> | null = null
-
-function ingredientName(id: string): string {
-  return productNames.value.get(id) ?? 'Bahan tidak dikenal'
-}
-
-function uomName(id: string): string {
-  return uomNames.value.get(id) ?? ''
-}
-
-/** Load the product + UOM name maps once (idempotent, shared promise). */
-async function ensureMastersLoaded(): Promise<void> {
-  if (mastersLoaded.value) {
-    return
-  }
-  if (!mastersPromise) {
-    mastersPromise = (async () => {
-      const [allProducts, allUoms] = await Promise.all([
-        fetchAllPaginated<Product>(async (p) => {
-          const result = await productService.list({
-            page: p,
-            limit: RESOLVE_PAGE_LIMIT,
-            //productType: 'RAW_MATERIAL',
-            isActive: 'true',
-          })
-          return { items: result.items, meta: result.meta }
-        }),
-        fetchAllPaginated<Uom>((page) => uomService.list({ page, limit: RESOLVE_PAGE_LIMIT })),
-      ])
-      productNames.value = new Map(allProducts.map((p) => [p.id, `${p.name} (${p.sku})`]))
-      uomNames.value = new Map(allUoms.map((u) => [u.id, u.name]))
-      mastersLoaded.value = true
-    })().catch((error) => {
-      // Non-fatal: names fall back to placeholders; reset so a retry can refetch.
-      mastersPromise = null
-      throw error
-    })
-  }
-  await mastersPromise
-}
 
 // ── Load / lifecycle ─────────────────────────────────────────────────
 const loading = ref<boolean>(true)
@@ -221,11 +171,7 @@ async function loadProducible(product: string, outlet: string): Promise<void> {
   producibleError.value = null
   producibleInfo.value = null
   try {
-    // Resolve ingredient/UOM names (once) in parallel with the preview fetch.
-    const [info] = await Promise.all([
-      productionOrderService.getProducible(product, outlet),
-      ensureMastersLoaded().catch(() => undefined),
-    ])
+    const info = await productionOrderService.getProducible(product, outlet)
     if (requestId !== producibleRequestId) {
       return // A newer request superseded this one.
     }
@@ -434,8 +380,6 @@ onBeforeUnmount(() => {
           :loading="producibleLoading"
           :recipe-missing="recipeMissing"
           :error="producibleError"
-          :ingredient-name="ingredientName"
-          :uom-name="uomName"
         />
 
         <p

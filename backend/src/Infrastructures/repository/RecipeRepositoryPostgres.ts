@@ -17,6 +17,8 @@ interface HeaderRow {
   recipe_number: string;
   name: string;
   product_id: string;
+  product_name?: string | null;
+  yield_uom_name?: string | null;
   version: number;
   yield_qty: string;
   yield_uom_id: string;
@@ -29,13 +31,21 @@ interface HeaderRow {
 interface ItemRow {
   id: string;
   ingredient_product_id: string;
+  ingredient_product_name?: string | null;
+  uom_name?: string | null;
   qty: string;
   uom_id: string;
   loss_percentage: string;
 }
 
 const HEADER_COLUMNS = `id, company_id, recipe_number, name, product_id, version, yield_qty, yield_uom_id, instructions, status, created_at, updated_at`;
-const ITEM_COLUMNS = `id, ingredient_product_id, qty, uom_id, loss_percentage`;
+const READ_HEADER_COLUMNS = `${HEADER_COLUMNS},
+  (SELECT p.name FROM products p
+   WHERE p.id = recipes.product_id AND p.company_id = recipes.company_id) AS product_name,
+  (SELECT u.name FROM uoms u
+   WHERE u.id = recipes.yield_uom_id AND u.company_id = recipes.company_id) AS yield_uom_name`;
+const READ_ITEM_COLUMNS = `ri.id, ri.ingredient_product_id, p.name AS ingredient_product_name,
+  ri.qty, ri.uom_id, u.name AS uom_name, ri.loss_percentage`;
 
 /**
  * Concrete PostgreSQL implementation of RecipeRepository.
@@ -50,8 +60,10 @@ export class RecipeRepositoryPostgres extends RecipeRepository {
     return {
       id: row.id,
       ingredientProductId: row.ingredient_product_id,
+      ingredientProductName: row.ingredient_product_name ?? null,
       qty: Number(row.qty),
       uomId: row.uom_id,
+      uomName: row.uom_name ?? null,
       lossPercentage: Number(row.loss_percentage),
     };
   }
@@ -63,9 +75,11 @@ export class RecipeRepositoryPostgres extends RecipeRepository {
       recipeNumber: header.recipe_number,
       name: header.name,
       productId: header.product_id,
+      productName: header.product_name ?? null,
       version: header.version,
       yieldQty: Number(header.yield_qty),
       yieldUomId: header.yield_uom_id,
+      yieldUomName: header.yield_uom_name ?? null,
       instructions: header.instructions,
       status: header.status as RecipeStatus,
       items: items.map((i) => this._toItem(i)),
@@ -88,8 +102,15 @@ export class RecipeRepositoryPostgres extends RecipeRepository {
 
   private async _loadItems(client: PoolClient, recipeId: string): Promise<ItemRow[]> {
     const result = await client.query<ItemRow>(
-      `SELECT ${ITEM_COLUMNS} FROM recipe_items
-       WHERE recipe_id = $1 ORDER BY created_at ASC`,
+      `SELECT ${READ_ITEM_COLUMNS}
+       FROM recipe_items ri
+       JOIN recipes r ON r.id = ri.recipe_id
+       LEFT JOIN products p
+         ON p.id = ri.ingredient_product_id AND p.company_id = r.company_id
+       LEFT JOIN uoms u
+         ON u.id = ri.uom_id AND u.company_id = r.company_id
+       WHERE ri.recipe_id = $1
+       ORDER BY ri.created_at ASC`,
       [recipeId],
     );
     return result.rows;
@@ -193,7 +214,7 @@ export class RecipeRepositoryPostgres extends RecipeRepository {
 
   async getById(id: string, companyId: string): Promise<Recipe> {
     const headerResult = await this.pool.query<HeaderRow>(
-      `SELECT ${HEADER_COLUMNS} FROM recipes
+      `SELECT ${READ_HEADER_COLUMNS} FROM recipes
        WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL`,
       [id, companyId],
     );
@@ -201,7 +222,15 @@ export class RecipeRepositoryPostgres extends RecipeRepository {
       throw new NotFoundError('RECIPE.NOT_FOUND');
     }
     const itemsResult = await this.pool.query<ItemRow>(
-      `SELECT ${ITEM_COLUMNS} FROM recipe_items WHERE recipe_id = $1 ORDER BY created_at ASC`,
+      `SELECT ${READ_ITEM_COLUMNS}
+       FROM recipe_items ri
+       JOIN recipes r ON r.id = ri.recipe_id
+       LEFT JOIN products p
+         ON p.id = ri.ingredient_product_id AND p.company_id = r.company_id
+       LEFT JOIN uoms u
+         ON u.id = ri.uom_id AND u.company_id = r.company_id
+       WHERE ri.recipe_id = $1
+       ORDER BY ri.created_at ASC`,
       [id],
     );
     return this._toRecipe(headerResult.rows[0], itemsResult.rows);
@@ -234,7 +263,7 @@ export class RecipeRepositoryPostgres extends RecipeRepository {
 
     params.push(filter.limit, filter.offset);
     const headerResult = await this.pool.query<HeaderRow>(
-      `SELECT ${HEADER_COLUMNS} FROM recipes
+      `SELECT ${READ_HEADER_COLUMNS} FROM recipes
        WHERE ${whereClause}
        ORDER BY created_at DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
@@ -244,7 +273,15 @@ export class RecipeRepositoryPostgres extends RecipeRepository {
     const rows: Recipe[] = [];
     for (const header of headerResult.rows) {
       const itemsResult = await this.pool.query<ItemRow>(
-        `SELECT ${ITEM_COLUMNS} FROM recipe_items WHERE recipe_id = $1 ORDER BY created_at ASC`,
+        `SELECT ${READ_ITEM_COLUMNS}
+         FROM recipe_items ri
+         JOIN recipes r ON r.id = ri.recipe_id
+         LEFT JOIN products p
+           ON p.id = ri.ingredient_product_id AND p.company_id = r.company_id
+         LEFT JOIN uoms u
+           ON u.id = ri.uom_id AND u.company_id = r.company_id
+         WHERE ri.recipe_id = $1
+         ORDER BY ri.created_at ASC`,
         [header.id],
       );
       rows.push(this._toRecipe(header, itemsResult.rows));
@@ -391,7 +428,15 @@ export class RecipeRepositoryPostgres extends RecipeRepository {
       throw new NotFoundError('RECIPE.NO_ACTIVE_RECIPE');
     }
     const itemsResult = await this.pool.query<ItemRow>(
-      `SELECT ${ITEM_COLUMNS} FROM recipe_items WHERE recipe_id = $1 ORDER BY created_at ASC`,
+      `SELECT ${READ_ITEM_COLUMNS}
+       FROM recipe_items ri
+       JOIN recipes r ON r.id = ri.recipe_id
+       LEFT JOIN products p
+         ON p.id = ri.ingredient_product_id AND p.company_id = r.company_id
+       LEFT JOIN uoms u
+         ON u.id = ri.uom_id AND u.company_id = r.company_id
+       WHERE ri.recipe_id = $1
+       ORDER BY ri.created_at ASC`,
       [headerResult.rows[0].id],
     );
     return this._toRecipe(headerResult.rows[0], itemsResult.rows);

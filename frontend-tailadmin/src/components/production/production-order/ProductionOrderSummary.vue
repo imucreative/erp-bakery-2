@@ -36,19 +36,19 @@ const props = defineProps<{
     <div>
       <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Produk Jadi</dt>
       <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
-        {{ props.productName(props.order.productId) }}
+        {{ props.order.productName || props.productName(props.order.productId) }}
       </dd>
     </div>
     <div>
       <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Resep</dt>
       <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
-        {{ props.recipeName(props.order.recipeId) }}
+        {{ props.order.recipeName || props.recipeName(props.order.recipeId) }}
       </dd>
     </div>
     <div>
       <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Outlet</dt>
       <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
-        {{ props.outletName(props.order.outletId) }}
+        {{ props.order.outletName || props.outletName(props.order.outletId) }}
       </dd>
     </div>
     <div>

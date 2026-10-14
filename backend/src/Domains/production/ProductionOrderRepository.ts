@@ -30,7 +30,9 @@ export interface ProductionOrderListResult {
 /** One ingredient line of a producible-quantity calculation. */
 export interface ProducibleIngredient {
   ingredientProductId: string;
+  ingredientProductName: string | null;
   uomId: string;
+  uomName: string | null;
   /** Ingredient needed to produce exactly ONE finished unit (loss + yield applied). */
   requiredPerUnit: number;
   /** Stock on hand of the ingredient at the outlet (sum of ACTIVE batch balances). */
@@ -49,6 +51,7 @@ export interface ProducibleResult {
     name: string;
     yieldQty: number;
     yieldUomId: string;
+    yieldUomName: string | null;
   };
   /** Max whole finished units producible = MIN(maxUnits) across all ingredients. */
   producibleQty: number;

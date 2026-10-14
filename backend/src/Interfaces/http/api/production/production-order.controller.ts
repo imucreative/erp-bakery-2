@@ -148,7 +148,9 @@ export class ProductionController {
       producibleQty: result.producibleQty,
       items: result.items.map((item) => ({
         ingredientProductId: item.ingredientProductId,
+        ingredientProductName: item.ingredientProductName,
         uomId: item.uomId,
+        uomName: item.uomName,
         requiredPerUnit: item.requiredPerUnit,
         availableQty: item.availableQty,
         isLimiting: item.isLimiting,

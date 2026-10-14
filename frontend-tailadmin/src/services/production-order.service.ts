@@ -62,7 +62,9 @@ export interface ProductionMaterial {
   id: string
   recipeItemId: string | null
   productId: string
+  productName?: string | null
   batchId: string
+  batchNumber?: string | null
   plannedQty: number
   qtyConsumed: number
 }
@@ -81,9 +83,12 @@ export interface ProductionOrder {
   id: string
   companyId: string | null
   outletId: string
+  outletName?: string | null
   productionNumber: string
   recipeId: string
+  recipeName?: string | null
   productId: string
+  productName?: string | null
   scaleFactor: number
   scheduledQty: number
   actualQty: number | null
@@ -123,7 +128,9 @@ export interface ProductionOrderListResult {
  */
 export interface ProducibleIngredient {
   ingredientProductId: string
+  ingredientProductName: string | null
   uomId: string
+  uomName: string | null
   requiredPerUnit: number
   availableQty: number
   isLimiting: boolean
@@ -147,6 +154,7 @@ export interface ProducibleInfo {
     name: string
     yieldQty: number
     yieldUomId: string
+    yieldUomName: string | null
   }
   producibleQty: number
   items: ProducibleIngredient[]

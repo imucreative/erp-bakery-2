@@ -46,7 +46,8 @@ const props = defineProps<{
     <div>
       <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Hasil / Batch</dt>
       <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
-        {{ formatNumber(props.recipe.yieldQty) }} {{ props.uomName(props.recipe.yieldUomId) }}
+        {{ formatNumber(props.recipe.yieldQty) }}
+        {{ props.recipe.yieldUomName || props.uomName(props.recipe.yieldUomId) }}
       </dd>
     </div>
     <div>

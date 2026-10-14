@@ -2,10 +2,8 @@
 /**
  * RecipeTable — presentational table for the Recipe list. Columns: Nomor, Nama,
  * Produk Jadi, Versi, Jumlah Bahan, Status (badge). Row action is icon-only
- * (view/detail). Renders loading / error / empty states. Finished product names
- * are resolved by the parent via an injected resolver callback (fetched once for
- * the whole page). The list rows carry their `items` array, so the ingredient
- * count is shown directly.
+ * (view/detail). Renders loading / error / empty states. Recipe rows include
+ * the finished product name and `items` array.
  */
 import { Eye } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
@@ -19,7 +17,6 @@ defineProps<{
   items: Recipe[]
   loading: boolean
   errorMessage: string | null
-  productName: (id: string) => string
 }>()
 
 defineEmits<{
@@ -88,7 +85,7 @@ defineEmits<{
               {{ recipe.name }}
             </td>
             <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
-              {{ productName(recipe.productId) }}
+              {{ recipe.productName || recipe.productId }}
             </td>
             <td class="px-5 py-4 text-end text-theme-sm text-gray-600 dark:text-gray-300">
               v{{ recipe.version }}

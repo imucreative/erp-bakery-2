@@ -12,10 +12,9 @@
  *  - a small read-only ingredient table: name, required-per-unit, available
  *    stock, and a "pembatas" (limiting) badge on the constraining ingredient(s).
  *
- * Stateless view: all data (loading/error/info + id→name resolvers) flows via
+ * Stateless view: all data (loading/error/info) flows via
  * props so the parent form owns state, fetching and debouncing. Ingredient names
- * are resolved by the parent (one lookup for the whole set, no per-row N+1) via
- * the `ingredientName` callback.
+ * and units are part of the scoped production-capacity response.
  */
 import { computed } from 'vue'
 import { AlertTriangle, PackageCheck } from 'lucide-vue-next'
@@ -32,14 +31,10 @@ const props = defineProps<{
   recipeMissing: boolean
   /** Any other error message surfaced from the preview request. */
   error: string | null
-  /** Resolve an ingredient productId → display name (parent-provided). */
-  ingredientName: (id: string) => string
-  /** Resolve a UOM id → name (parent-provided). */
-  uomName: (id: string) => string
 }>()
 
 const yieldUomLabel = computed<string>(() =>
-  props.info ? props.uomName(props.info.recipe.yieldUomId) : '',
+  props.info ? props.info.recipe.yieldUomName ?? '' : '',
 )
 
 const hasStock = computed<boolean>(() => (props.info?.producibleQty ?? 0) > 0)
@@ -160,11 +155,11 @@ const hasStock = computed<boolean>(() => (props.info?.producibleQty ?? 0) > 0)
                 class="border-b border-gray-100 last:border-0 dark:border-gray-800"
               >
                 <td class="px-4 py-3 text-theme-sm text-gray-800 dark:text-white/90">
-                  {{ props.ingredientName(item.ingredientProductId) }}
+                  {{ item.ingredientProductName || item.ingredientProductId }}
                 </td>
                 <td class="px-4 py-3 text-end text-theme-sm text-gray-600 dark:text-gray-300">
                   {{ formatNumber(item.requiredPerUnit) }}
-                  <span class="text-gray-400">{{ props.uomName(item.uomId) }}</span>
+                  <span class="text-gray-400">{{ item.uomName || item.uomId }}</span>
                 </td>
                 <td
                   :class="[
@@ -175,7 +170,7 @@ const hasStock = computed<boolean>(() => (props.info?.producibleQty ?? 0) > 0)
                   ]"
                 >
                   {{ formatNumber(item.availableQty) }}
-                  <span class="text-gray-400">{{ props.uomName(item.uomId) }}</span>
+                  <span class="text-gray-400">{{ item.uomName || item.uomId }}</span>
                 </td>
                 <td class="px-4 py-3 text-end">
                   <Badge v-if="item.isLimiting" variant="light" color="warning" size="sm">

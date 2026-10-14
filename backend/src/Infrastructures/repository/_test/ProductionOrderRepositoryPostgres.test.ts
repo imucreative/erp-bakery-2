@@ -189,12 +189,46 @@ describe('ProductionOrderRepositoryPostgres (instant-complete)', () => {
 
     it('should load header + materials + results', async () => {
       client.query
-        .mockResolvedValueOnce({ rows: [header()], rowCount: 1 }) // header
-        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // materials
+        .mockResolvedValueOnce({
+          rows: [
+            header({
+              outlet_name: 'Outlet Utama',
+              product_name: 'Roti Coklat',
+              recipe_name: 'Resep Roti Coklat',
+            }),
+          ],
+          rowCount: 1,
+        }) // header
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 'material-1',
+              recipe_item_id: 'recipe-item-1',
+              product_id: 'ingredient-1',
+              product_name: 'Tepung',
+              batch_id: 'batch-1',
+              batch_number: 'BATCH-001',
+              planned_qty: '500',
+              qty_consumed: '500',
+            },
+          ],
+          rowCount: 1,
+        }) // materials
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // results
 
       const result = await repo.getById('po1', 'c1');
       expect(result.status).toBe('COMPLETED');
+      expect(result.outletName).toBe('Outlet Utama');
+      expect(result.productName).toBe('Roti Coklat');
+      expect(result.recipeName).toBe('Resep Roti Coklat');
+      expect(result.materials[0].productName).toBe('Tepung');
+      expect(result.materials[0].batchNumber).toBe('BATCH-001');
+      const headerQuery = client.query.mock.calls[0][0] as string;
+      const materialsQuery = client.query.mock.calls[1][0] as string;
+      expect(headerQuery).toContain('AS outlet_name');
+      expect(headerQuery).toContain('AS recipe_name');
+      expect(materialsQuery).toContain('AS product_name');
+      expect(materialsQuery).toContain('b.batch_number');
     });
   });
 
@@ -202,12 +236,21 @@ describe('ProductionOrderRepositoryPostgres (instant-complete)', () => {
     it('should return headers only with total', async () => {
       (mockPool.query as jest.Mock)
         .mockResolvedValueOnce({ rows: [{ count: '1' }] }) // count
-        .mockResolvedValueOnce({ rows: [header()], rowCount: 1 }); // rows
+        .mockResolvedValueOnce({
+          rows: [header({ outlet_name: 'Outlet Utama', product_name: 'Roti Coklat' })],
+          rowCount: 1,
+        }); // rows
 
       const result = await repo.list('c1', { limit: 10, offset: 0 });
       expect(result.total).toBe(1);
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0].status).toBe('COMPLETED');
+      expect(result.rows[0].outletName).toBe('Outlet Utama');
+      expect(result.rows[0].productName).toBe('Roti Coklat');
+      const listQuery = (mockPool.query as jest.Mock).mock.calls[1][0] as string;
+      expect(listQuery).toContain('AS outlet_name');
+      expect(listQuery).toContain('AS product_name');
+      expect(listQuery).toContain('p.company_id = production_orders.company_id');
     });
   });
 
@@ -218,6 +261,7 @@ describe('ProductionOrderRepositoryPostgres (instant-complete)', () => {
       name: 'Roti Coklat',
       yield_qty: '20',
       yield_uom_id: 'uom-pcs',
+      yield_uom_name: 'Pcs',
     };
 
     it('should throw NO_ACTIVE_RECIPE when the product has no active recipe', async () => {
@@ -236,8 +280,22 @@ describe('ProductionOrderRepositoryPostgres (instant-complete)', () => {
         .mockResolvedValueOnce({ rows: [recipeRow], rowCount: 1 }) // recipe
         .mockResolvedValueOnce({
           rows: [
-            { ingredient_product_id: 'ing-1', qty: '500', loss_percentage: '0', uom_id: 'uom-g' },
-            { ingredient_product_id: 'ing-2', qty: '100', loss_percentage: '0', uom_id: 'uom-g' },
+            {
+              ingredient_product_id: 'ing-1',
+              ingredient_product_name: 'Tepung',
+              qty: '500',
+              loss_percentage: '0',
+              uom_id: 'uom-g',
+              uom_name: 'Gram',
+            },
+            {
+              ingredient_product_id: 'ing-2',
+              ingredient_product_name: 'Gula',
+              qty: '100',
+              loss_percentage: '0',
+              uom_id: 'uom-g',
+              uom_name: 'Gram',
+            },
           ],
           rowCount: 2,
         }) // recipe items
@@ -258,10 +316,13 @@ describe('ProductionOrderRepositoryPostgres (instant-complete)', () => {
         name: 'Roti Coklat',
         yieldQty: 20,
         yieldUomId: 'uom-pcs',
+        yieldUomName: 'Pcs',
       });
       const ing1 = result.items.find((i) => i.ingredientProductId === 'ing-1')!;
       const ing2 = result.items.find((i) => i.ingredientProductId === 'ing-2')!;
       expect(ing1.requiredPerUnit).toBe(25);
+      expect(ing1.ingredientProductName).toBe('Tepung');
+      expect(ing1.uomName).toBe('Gram');
       expect(ing1.availableQty).toBe(1000);
       expect(ing1.isLimiting).toBe(false);
       expect(ing2.requiredPerUnit).toBe(5);
@@ -274,7 +335,14 @@ describe('ProductionOrderRepositoryPostgres (instant-complete)', () => {
         .mockResolvedValueOnce({ rows: [recipeRow], rowCount: 1 })
         .mockResolvedValueOnce({
           rows: [
-            { ingredient_product_id: 'ing-1', qty: '100', loss_percentage: '25', uom_id: 'uom-g' },
+            {
+              ingredient_product_id: 'ing-1',
+              ingredient_product_name: 'Tepung',
+              qty: '100',
+              loss_percentage: '25',
+              uom_id: 'uom-g',
+              uom_name: 'Gram',
+            },
           ],
           rowCount: 1,
         })
@@ -299,7 +367,14 @@ describe('ProductionOrderRepositoryPostgres (instant-complete)', () => {
         })
         .mockResolvedValueOnce({
           rows: [
-            { ingredient_product_id: 'ing-1', qty: '0.2', loss_percentage: '12.5', uom_id: 'uom-g' },
+            {
+              ingredient_product_id: 'ing-1',
+              ingredient_product_name: 'Tepung',
+              qty: '0.2',
+              loss_percentage: '12.5',
+              uom_id: 'uom-g',
+              uom_name: 'Gram',
+            },
           ],
           rowCount: 1,
         })
@@ -319,7 +394,14 @@ describe('ProductionOrderRepositoryPostgres (instant-complete)', () => {
         .mockResolvedValueOnce({ rows: [recipeRow], rowCount: 1 })
         .mockResolvedValueOnce({
           rows: [
-            { ingredient_product_id: 'ing-1', qty: '500', loss_percentage: '0', uom_id: 'uom-g' },
+            {
+              ingredient_product_id: 'ing-1',
+              ingredient_product_name: 'Tepung',
+              qty: '500',
+              loss_percentage: '0',
+              uom_id: 'uom-g',
+              uom_name: 'Gram',
+            },
           ],
           rowCount: 1,
         })

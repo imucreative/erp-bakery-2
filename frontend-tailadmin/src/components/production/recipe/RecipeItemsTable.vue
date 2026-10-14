@@ -46,7 +46,7 @@ const props = defineProps<{
             {{ formatNumber(item.qty) }}
           </td>
           <td class="px-4 py-3 text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ props.uomName(item.uomId) }}
+            {{ item.uomName || props.uomName(item.uomId) }}
           </td>
           <td class="px-4 py-3 text-end text-theme-sm text-gray-600 dark:text-gray-300">
             {{ formatNumber(item.lossPercentage) }}%

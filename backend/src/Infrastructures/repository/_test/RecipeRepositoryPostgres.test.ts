@@ -185,5 +185,57 @@ describe('RecipeRepositoryPostgres', () => {
       (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: [], rowCount: 0 });
       await expect(repo.getById('x', 'c1')).rejects.toBeInstanceOf(NotFoundError);
     });
+
+    it('should include related product names without loading the products list', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({
+          rows: [header({ product_name: 'Roti Tawar Jadi', yield_uom_name: 'pcs' })],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({
+          rows: [itemRow({ ingredient_product_name: 'Tepung Terigu', uom_name: 'gram' })],
+          rowCount: 1,
+        });
+
+      const result = await repo.getById('r1', 'c1');
+
+      expect(result.productName).toBe('Roti Tawar Jadi');
+      expect(result.yieldUomName).toBe('pcs');
+      expect(result.items[0].ingredientProductName).toBe('Tepung Terigu');
+      expect(result.items[0].uomName).toBe('gram');
+      const [headerQuery, itemsQuery] = (mockPool.query as jest.Mock).mock.calls.map(
+        ([query]) => query as string,
+      );
+      expect(headerQuery).toContain('AS product_name');
+      expect(headerQuery).toContain('p.company_id = recipes.company_id');
+      expect(headerQuery).toContain('AS yield_uom_name');
+      expect(headerQuery).toContain('u.company_id = recipes.company_id');
+      expect(itemsQuery).toContain('AS ingredient_product_name');
+      expect(itemsQuery).toContain('p.company_id = r.company_id');
+      expect(itemsQuery).toContain('AS uom_name');
+      expect(itemsQuery).toContain('u.company_id = r.company_id');
+    });
+  });
+
+  describe('list', () => {
+    it('should return recipes with related product names', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+        .mockResolvedValueOnce({
+          rows: [header({ product_name: 'Roti Tawar Jadi', yield_uom_name: 'pcs' })],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({
+          rows: [itemRow({ ingredient_product_name: 'Tepung Terigu', uom_name: 'gram' })],
+          rowCount: 1,
+        });
+
+      const result = await repo.list('c1', { limit: 10, offset: 0 });
+
+      expect(result.rows[0].productName).toBe('Roti Tawar Jadi');
+      expect(result.rows[0].yieldUomName).toBe('pcs');
+      expect(result.rows[0].items[0].ingredientProductName).toBe('Tepung Terigu');
+      expect(result.rows[0].items[0].uomName).toBe('gram');
+    });
   });
 });

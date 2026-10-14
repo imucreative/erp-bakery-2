@@ -2,8 +2,8 @@
 /**
  * RecipeList — thin controller for the Recipes (BOM) list page. List state
  * (pagination/search/status + product filter) lives in `useRecipes`; the
- * toolbar and table are separate feature components. Finished product names are
- * resolved from a one-time lookup (products are fetched once via fetchAll).
+ * toolbar and table are separate feature components. Product names come from
+ * recipe records, so product.read is not needed to view recipes.
  * "Buat" and row "detail" navigate to dedicated full pages (the form is a page,
  * not a modal).
  */
@@ -17,9 +17,8 @@ import Button from '@/components/ui/Button.vue'
 import { RecipeFilterBar, RecipeTable } from '@/components/production/recipe'
 import { usePermission } from '@/composables/usePermission'
 import { useRecipes } from '@/composables/useRecipes'
-import { productService, type Product } from '@/services/product.service'
 import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
-import type { Recipe } from '@/services/recipe.service'
+import { recipeService, type Recipe } from '@/services/recipe.service'
 
 const pageTitle = 'Recipe'
 const route = useRoute()
@@ -48,28 +47,27 @@ const {
   nextPage,
 } = useRecipes()
 
-// Resolve finished product names from a one-time lookup.
+// Derive filter options from recipes the user can already read.
 const productOptions = ref<{ id: string; label: string }[]>([])
-const productNames = ref<Map<string, string>>(new Map())
 
 async function loadLookups(): Promise<void> {
   try {
-    const allProducts = await fetchAllPaginated<Product>((page) =>
-      productService.list({ page, limit: PAGE_LIMIT }),
+    const allRecipes = await fetchAllPaginated((page) =>
+      recipeService.list({ page, limit: PAGE_LIMIT }),
     )
-    productOptions.value = allProducts
-      .map((p) => ({ id: p.id, label: `${p.name} (${p.sku})` }))
+    const productsById = new Map<string, string>()
+    for (const recipe of allRecipes) {
+      if (recipe.productName) {
+        productsById.set(recipe.productId, recipe.productName)
+      }
+    }
+    productOptions.value = [...productsById]
+      .map(([id, label]) => ({ id, label }))
       .sort((a, b) => a.label.localeCompare(b.label))
-    productNames.value = new Map(allProducts.map((p) => [p.id, `${p.name} (${p.sku})`]))
   } catch {
-    // Non-fatal: fall back to showing raw ids in the table.
+    // Non-fatal: recipe rows still carry their product names.
     productOptions.value = []
-    productNames.value = new Map()
   }
-}
-
-function productName(id: string): string {
-  return productNames.value.get(id) ?? id
 }
 
 function goToCreate(): void {
@@ -138,7 +136,6 @@ onMounted(() => {
         :items="items"
         :loading="loading"
         :error-message="errorMessage"
-        :product-name="productName"
         @view="goToDetail"
       />
 

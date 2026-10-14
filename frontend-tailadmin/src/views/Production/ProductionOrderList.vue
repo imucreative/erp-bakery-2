@@ -3,8 +3,8 @@
  * ProductionOrderList — thin controller for the Production Orders list page.
  * List state (pagination/search/status + outlet filter) lives in
  * `useProductionOrders`; the toolbar and table are separate feature components.
- * Product and outlet names are resolved from one-time lookups. "Buat" and row
- * "detail" navigate to dedicated full pages (the schedule form is a page).
+ * Names for the order's product and outlet are returned with each order; the
+ * accessible outlet list is used only to populate the filter.
  */
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -19,8 +19,6 @@ import {
 import { usePermission } from '@/composables/usePermission'
 import { useProductionOrders } from '@/composables/useProductionOrders'
 import { outletService, type Outlet } from '@/services/outlet.service'
-import { productService } from '@/services/product.service'
-import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import type { ProductionOrder } from '@/services/production-order.service'
 
 const pageTitle = 'Production Orders'
@@ -44,34 +42,26 @@ const {
   nextPage,
 } = useProductionOrders()
 
-// Resolve outlet + product names from one-time lookups. The outlet filter uses
-// only the outlets the current user may access.
+// The outlet filter only lists outlets the current user may access.
 const outlets = ref<Outlet[]>([])
 const outletNames = ref<Map<string, string>>(new Map())
-const productNames = ref<Map<string, string>>(new Map())
+const lookupError = ref<string | null>(null)
 
 async function loadLookups(): Promise<void> {
   try {
-    const [accessibleOutlets, allProducts] = await Promise.all([
-      outletService.getAccessible(),
-      fetchAllPaginated((p) => productService.list({ page: p, limit: PAGE_LIMIT })),
-    ])
+    const accessibleOutlets = await outletService.getAccessible()
     outlets.value = accessibleOutlets
     outletNames.value = new Map(accessibleOutlets.map((o) => [o.id, o.name]))
-    productNames.value = new Map(allProducts.map((p) => [p.id, `${p.name} (${p.sku})`]))
+    lookupError.value = null
   } catch {
-    // Non-fatal: fall back to showing raw ids in the table.
     outlets.value = []
     outletNames.value = new Map()
-    productNames.value = new Map()
+    lookupError.value = 'Tidak dapat memuat daftar outlet untuk filter.'
   }
 }
 
 function outletName(id: string): string {
   return outletNames.value.get(id) ?? id
-}
-function productName(id: string): string {
-  return productNames.value.get(id) ?? id
 }
 
 function goToCreate(): void {
@@ -108,11 +98,18 @@ onMounted(() => {
         </Button>
       </div>
 
+      <p
+        v-if="lookupError"
+        class="mb-3 rounded-lg border border-warning-500/40 bg-warning-50 px-4 py-3 text-sm text-warning-700 dark:bg-warning-500/10 dark:text-warning-400"
+        role="status"
+      >
+        {{ lookupError }}
+      </p>
+
       <ProductionOrderTable
         :items="items"
         :loading="loading"
         :error-message="errorMessage"
-        :product-name="productName"
         :outlet-name="outletName"
         @view="goToDetail"
       />

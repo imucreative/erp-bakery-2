@@ -3,8 +3,8 @@
  * ProductionOrderTable — presentational table for the Production Order list.
  * Columns: Nomor, Produk, Outlet, Tanggal, Target, Berhasil, Terbuang, Status
  * (badge). Row action is icon-only (view/detail). Renders loading / error /
- * empty states. Product and outlet names are resolved by the parent via injected
- * resolver callbacks (fetched once for the whole page).
+ * empty states. Names for the order's product and outlet come from its API
+ * response; the outlet callback is a fallback for older responses.
  *
  * NOTE: list rows carry HEADERS ONLY (materials/results are empty on list).
  */
@@ -21,7 +21,6 @@ defineProps<{
   items: ProductionOrder[]
   loading: boolean
   errorMessage: string | null
-  productName: (id: string) => string
   outletName: (id: string) => string
 }>()
 
@@ -94,10 +93,10 @@ defineEmits<{
               {{ order.productionNumber }}
             </td>
             <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
-              {{ productName(order.productId) }}
+              {{ order.productName || order.productId }}
             </td>
             <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
-              {{ outletName(order.outletId) }}
+              {{ order.outletName || outletName(order.outletId) }}
             </td>
             <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
               {{ formatDate(order.productionDate) }}

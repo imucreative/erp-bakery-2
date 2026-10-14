@@ -5,8 +5,8 @@
  * Rencana, Qty Dikonsumsi. Pure presentation: resolves product/batch ids →
  * labels via injected resolver callbacks.
  *
- * Materials are populated only after the order is COMPLETED; the parent renders
- * an empty-state message instead of this table when the list is empty.
+ * Material names and batch numbers come from the order detail; callbacks remain
+ * as fallbacks for older API responses.
  */
 import { formatNumber } from '@/lib/format'
 import type { ProductionMaterial } from '@/services/production-order.service'
@@ -44,10 +44,10 @@ const props = defineProps<{
           class="border-b border-gray-100 last:border-0 dark:border-gray-800"
         >
           <td class="px-4 py-3 text-theme-sm text-gray-800 dark:text-white/90">
-            {{ props.productName(material.productId) }}
+            {{ material.productName || props.productName(material.productId) }}
           </td>
           <td class="px-4 py-3 text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ props.batchLabel(material.batchId) }}
+            {{ material.batchNumber || props.batchLabel(material.batchId) }}
           </td>
           <td class="px-4 py-3 text-end text-theme-sm text-gray-600 dark:text-gray-300">
             {{ formatNumber(material.plannedQty) }}

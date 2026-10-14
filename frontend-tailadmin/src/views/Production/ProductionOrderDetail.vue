@@ -7,8 +7,9 @@
  * produced finished-goods batches.
  *
  * This view owns load state only; presentation is delegated to stateless feature
- * sub-components (summary, materials/results tables). Ids are resolved to names
- * via one-time lookups.
+ * sub-components. Display names for the order, materials and batches come from
+ * the production-order response, so opening detail needs no master/inventory
+ * permissions.
  */
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -23,17 +24,12 @@ import {
   ProductionOrderResultsTable,
 } from '@/components/production/production-order'
 import { toMessage } from '@/composables/useStockLedger'
-import { outletService } from '@/services/outlet.service'
-import { productService } from '@/services/product.service'
-import { recipeService } from '@/services/recipe.service'
-import { inventoryService } from '@/services/inventory.service'
 import {
   productionOrderService,
   statusBadgeColor,
   PRODUCTION_ORDER_STATUS_LABELS,
   type ProductionOrder,
 } from '@/services/production-order.service'
-import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 
 const route = useRoute()
 const router = useRouter()
@@ -44,51 +40,28 @@ const order = ref<ProductionOrder | null>(null)
 const loading = ref<boolean>(true)
 const loadError = ref<string | null>(null)
 
-// Lookup maps for resolving ids → names in the read-only view.
-const outletNames = ref<Map<string, string>>(new Map())
-const productNames = ref<Map<string, string>>(new Map())
-const recipeNames = ref<Map<string, string>>(new Map())
-const batchNumbers = ref<Map<string, string>>(new Map())
-
 function outletName(id: string): string {
-  return outletNames.value.get(id) ?? id
+  return order.value?.outletId === id ? order.value.outletName ?? id : id
 }
 function productName(id: string): string {
-  return productNames.value.get(id) ?? id
+  if (order.value?.productId === id && order.value.productName) {
+    return order.value.productName
+  }
+  return order.value?.materials.find((material) => material.productId === id)?.productName ?? id
 }
 function recipeName(id: string): string {
-  return recipeNames.value.get(id) ?? id
+  return order.value?.recipeId === id ? order.value.recipeName ?? id : id
 }
 function batchLabel(id: string): string {
-  return batchNumbers.value.get(id) ?? id
+  return order.value?.materials.find((material) => material.batchId === id)?.batchNumber ?? id
 }
 
 // ── Load ─────────────────────────────────────────────────────────────
-async function loadLookups(outletId: string): Promise<void> {
-  const [allOutlets, allProducts, allRecipes, allBatches] = await Promise.all([
-    fetchAllPaginated((p) => outletService.list({ page: p, limit: PAGE_LIMIT })),
-    fetchAllPaginated((p) => productService.list({ page: p, limit: PAGE_LIMIT })),
-    fetchAllPaginated((p) => recipeService.list({ page: p, limit: PAGE_LIMIT })),
-    // Batches of the order's outlet (include non-batch to resolve any id).
-    fetchAllPaginated((p) =>
-      inventoryService.getBatches({ page: p, limit: PAGE_LIMIT, outletId, includeNonBatch: true }),
-    ),
-  ])
-  outletNames.value = new Map(allOutlets.map((o) => [o.id, o.name]))
-  productNames.value = new Map(allProducts.map((p) => [p.id, `${p.name} (${p.sku})`]))
-  recipeNames.value = new Map(allRecipes.map((r) => [r.id, `${r.name} (${r.recipeNumber})`]))
-  batchNumbers.value = new Map(
-    allBatches.map((entry) => [entry.batch.id, entry.batch.batchNumber || '(tanpa batch)']),
-  )
-}
-
 async function loadOrder(): Promise<void> {
   loading.value = true
   loadError.value = null
   try {
-    const detail = await productionOrderService.getById(orderId.value)
-    order.value = detail
-    await loadLookups(detail.outletId)
+    order.value = await productionOrderService.getById(orderId.value)
   } catch (error) {
     loadError.value = toMessage(error)
     order.value = null
