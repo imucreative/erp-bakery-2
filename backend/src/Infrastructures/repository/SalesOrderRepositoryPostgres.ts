@@ -567,8 +567,12 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
         const itemId = item.id;
         const itemQty = Number(item.qty);
 
-        // (productId -> requiredQty) consumption targets for THIS item.
-        const targets: { productId: string; requiredQty: number }[] = [];
+        // (productId -> requiredQty, sourceDocumentItemId) consumption targets for THIS item.
+        const targets: {
+          productId: string;
+          requiredQty: number;
+          sourceDocumentItemId: string;
+        }[] = [];
 
         if (item.sale_mode === 'MADE_TO_ORDER') {
           if (!item.recipe_id) {
@@ -597,18 +601,29 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
             // Shared consumption math — loss% is NOT a factor (estimate only).
             const requiredQty = scaledIngredientConsumption(Number(ri.qty), scaleFactor);
             if (requiredQty > 0) {
-              targets.push({ productId: ri.ingredient_product_id, requiredQty });
+              targets.push({
+                productId: ri.ingredient_product_id,
+                requiredQty,
+                sourceDocumentItemId: itemId,
+              });
             }
           }
         } else {
           // STOCK: cut the sellable product's own finished-goods stock.
-          targets.push({ productId: item.product_id, requiredQty: itemQty });
+          targets.push({
+            productId: item.product_id,
+            requiredQty: itemQty,
+            sourceDocumentItemId: itemId,
+          });
         }
 
         // Topping consumption — OUTSIDE the mode branch, because a topping is
         // consumed in BOTH modes (qty_per_item * item.qty per selected
         // topping). Made-to-order backflushes recipe ingredients + toppings;
         // stock cuts the finished product + toppings.
+        // Each topping row has its own id (sales_order_item_toppings.id) so the
+        // resulting inventory movement carries a unique source key even if the
+        // topping and product/ingredient consume from the exact same batch.
         const toppingRows = await client.query<ItemToppingRow>(
           `SELECT id, sales_order_item_id, topping_product_id, topping_name_snapshot,
                   qty_per_item, extra_price_snapshot
@@ -619,7 +634,11 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
         for (const t of toppingRows.rows) {
           const requiredQty = Number(t.qty_per_item) * itemQty;
           if (requiredQty > 0) {
-            targets.push({ productId: t.topping_product_id, requiredQty });
+            targets.push({
+              productId: t.topping_product_id,
+              requiredQty,
+              sourceDocumentItemId: t.id,
+            });
           }
         }
 
@@ -631,6 +650,7 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
             outletId,
             orderId,
             itemId,
+            target.sourceDocumentItemId,
             target.productId,
             target.requiredQty,
             bizDate,
@@ -703,6 +723,7 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
     outletId: string,
     orderId: string,
     salesOrderItemId: string,
+    sourceDocumentItemId: string,
     productId: string,
     requiredQty: number,
     bizDate: string,
@@ -737,7 +758,7 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
         [afterQty, batch.id, companyId],
       );
 
-      // Ledger append: SALE (OUTBOUND). Source key = SALES_ORDER + item + batch.
+      // Ledger append: SALE (OUTBOUND). Source key = SALES_ORDER + sub-target item + batch.
       const movementResult = await client.query<{ id: string }>(
         `INSERT INTO inventory_movements
            (company_id, outlet_id, batch_id, product_id, movement_type,
@@ -755,7 +776,7 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
           beforeQty,
           afterQty,
           orderId,
-          salesOrderItemId,
+          sourceDocumentItemId,
           batch.id,
           userId,
         ],

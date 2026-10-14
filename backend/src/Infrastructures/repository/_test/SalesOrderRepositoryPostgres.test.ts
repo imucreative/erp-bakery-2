@@ -627,6 +627,83 @@ describe('SalesOrderRepositoryPostgres', () => {
       expect(
         client.query.mock.calls.filter((c) => typeof c[0] === 'string' && c[0].includes('FROM recipe_items')),
       ).toHaveLength(0);
+
+      // Verify source_document_item_id differentiation: product uses it1, topping uses tp1
+      const movementCalls = client.query.mock.calls.filter(
+        (c) => typeof c[0] === 'string' && c[0].includes('INSERT INTO inventory_movements'),
+      );
+      expect(movementCalls).toHaveLength(2);
+      expect(movementCalls[0][1][8]).toBe('it1');
+      expect(movementCalls[1][1][8]).toBe('tp1');
+
+      expect(client.query).toHaveBeenCalledWith('COMMIT');
+    });
+
+    it('does NOT collide on source-key when product and topping consume from the same batch', async () => {
+      client.query
+        .mockResolvedValueOnce(undefined) // BEGIN
+        .mockResolvedValueOnce(undefined) // SET ISOLATION
+        .mockResolvedValueOnce({ rows: [header({ grand_total: '20000.00' })], rowCount: 1 }) // lock
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 'it1',
+              product_id: 'p1',
+              sale_mode: 'STOCK',
+              recipe_id: null,
+              product_name_snapshot: 'Waffle',
+              unit_price_snapshot: '8000.00',
+              qty: '2.000',
+              item_discount: '0.00',
+              toppings_price: '2000.00',
+              line_total: '20000.00',
+            },
+          ],
+        }) // load items
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 'tp1',
+              sales_order_item_id: 'it1',
+              topping_product_id: 't1',
+              topping_name_snapshot: 'Keju',
+              qty_per_item: '1.000',
+              extra_price_snapshot: '2000.00',
+            },
+          ],
+        }) // item toppings
+        // target 1: product p1 consumes batch b_shared
+        .mockResolvedValueOnce({ rows: [{ id: 'b_shared', qty_available: '10.000' }] })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // update batch b_shared
+        .mockResolvedValueOnce({ rows: [{ id: 'mv1' }], rowCount: 1 }) // movement 1
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // consumption 1
+        // target 2: topping t1 ALSO consumes batch b_shared
+        .mockResolvedValueOnce({ rows: [{ id: 'b_shared', qty_available: '8.000' }] })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // update batch b_shared
+        .mockResolvedValueOnce({ rows: [{ id: 'mv2' }], rowCount: 1 }) // movement 2
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // consumption 2
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // payment insert
+        .mockResolvedValueOnce({ rows: [header({ status: 'PAID' })], rowCount: 1 }) // update header
+        .mockResolvedValueOnce({ rows: [] }) // _loadItems
+        .mockResolvedValueOnce({ rows: [] }) // _loadPayments
+        .mockResolvedValueOnce(undefined); // COMMIT
+
+      const order = await repo.pay('so1', 'c1', 'u1', [
+        { method: 'CASH', amount: 20000, referenceNo: null },
+      ]);
+      expect(order.status).toBe('PAID');
+
+      const movementCalls = client.query.mock.calls.filter(
+        (c) => typeof c[0] === 'string' && c[0].includes('INSERT INTO inventory_movements'),
+      );
+      expect(movementCalls).toHaveLength(2);
+      // Both touch batch 'b_shared'
+      expect(movementCalls[0][1][9]).toBe('b_shared');
+      expect(movementCalls[1][1][9]).toBe('b_shared');
+      // But their source_document_item_id are distinct ('it1' vs 'tp1') preventing 23505 collision
+      expect(movementCalls[0][1][8]).toBe('it1');
+      expect(movementCalls[1][1][8]).toBe('tp1');
+      expect(movementCalls[0][1][8]).not.toBe(movementCalls[1][1][8]);
       expect(client.query).toHaveBeenCalledWith('COMMIT');
     });
   });
