@@ -150,14 +150,14 @@ function onAdd(): void {
               {{ TOPPING_BLOCK_LABELS[blockReason(topping)!] }} — tidak bisa dipakai
             </Badge>
           </div>
-          <div class="text-end">
+          <!-- <div class="text-end">
             <p class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
               {{ topping.extraPrice > 0 ? `+ ${formatRupiah(topping.extraPrice)}` : 'Gratis' }}
             </p>
             <p class="text-theme-xs text-gray-400 dark:text-gray-500">
               ×{{ formatNumber(topping.defaultQtyPerItem) }}
             </p>
-          </div>
+          </div> -->
         </div>
       </div>
     </div>

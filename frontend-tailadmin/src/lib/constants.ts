@@ -5,4 +5,8 @@
  *  - MERCHANDISE: sellable items that are purchased, not produced.
  *  Add more types here if new purchasable categories appear.
  */
-export const PURCHASABLE_PRODUCT_TYPES = ['RAW_MATERIAL', 'PACKAGING', 'BEVERAGE'] as const;
+export const PURCHASABLE_PRODUCT_TYPES = [
+    'RAW_MATERIAL',
+    'PACKAGING',
+    'BEVERAGE'
+] as const;

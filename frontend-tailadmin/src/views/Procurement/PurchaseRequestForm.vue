@@ -78,7 +78,6 @@ async function loadSupportingData(): Promise<void> {
       const result = await productService.list({
         page: p,
         limit: PAGE_LIMIT,
-        //productType: 'RAW_MATERIAL',
         isActive: 'true',
       })
       return { items: result.items, meta: result.meta }
@@ -86,7 +85,6 @@ async function loadSupportingData(): Promise<void> {
     fetchAllPaginated((page) => uomService.list({ page, limit: PAGE_LIMIT, isActive: 'true' })),
   ])
   outlets.value = allOutlets
-  // Keep only purchasable product types (raw material, packaging, etc.)
   products.value = allProducts.filter(p => PURCHASABLE_PRODUCT_TYPES.includes(p.productType as any))
   
   uoms.value = allUoms

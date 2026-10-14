@@ -36,6 +36,7 @@ import {
   type SaveRecipePayload,
   type RecipeStatus,
 } from '@/services/recipe.service'
+import { PURCHASABLE_PRODUCT_TYPES } from '@/lib/constants'
 
 const route = useRoute()
 const router = useRouter()
@@ -162,14 +163,13 @@ async function loadSupportingData(): Promise<void> {
       const result = await productService.list({
         page: p,
         limit: PAGE_LIMIT,
-        //productType: 'RAW_MATERIAL',
         isActive: 'true',
       })
       return { items: result.items, meta: result.meta }
     }),
     fetchAllPaginated<Uom>((page) => uomService.list({ page, limit: PAGE_LIMIT })),
   ])
-  products.value = allProducts
+  products.value = allProducts.filter(p => PURCHASABLE_PRODUCT_TYPES.includes(p.productType as any))
   uoms.value = allUoms
 }
 

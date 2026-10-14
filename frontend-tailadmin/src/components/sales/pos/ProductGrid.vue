@@ -27,7 +27,7 @@
  * INVENTORY.INSUFFICIENT_STOCK as the safety net behind this grid rule.
  */
 import { computed } from 'vue'
-import { Search, Plus } from 'lucide-vue-next'
+import { Search, Plus, DonutIcon } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
 import { formatRupiah } from '@/lib/format'
 import type { PosProduct } from '@/services/sales.service'
@@ -171,7 +171,7 @@ function onCardClick(product: PosProduct): void {
       >
         <div class="mb-2 flex items-start justify-between gap-2">
           <Badge v-if="acceptsToppings(card.product)" size="sm" color="info">
-            Bisa ditambah topping
+            <DonutIcon class="h-4 w-4" aria-hidden="true" />
           </Badge>
           <span
             v-if="card.sellable"
