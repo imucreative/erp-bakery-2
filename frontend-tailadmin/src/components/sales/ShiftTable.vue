@@ -2,7 +2,7 @@
 /**
  * ShiftTable — presentational table for the Shift list. Columns: Outlet, Kasir,
  * Dibuka, Kas Awal, Kas Diharapkan, Kas Aktual, Selisih, Status (badge).
- * Pure presentation: outlet/cashier names resolve via injected callbacks.
+ * Outlet and cashier display names are included on each shift row.
  * Renders loading / error / empty states.
  */
 import Badge from '@/components/ui/Badge.vue'
@@ -17,8 +17,6 @@ const props = defineProps<{
   items: Shift[]
   loading: boolean
   errorMessage: string | null
-  outletName: (id: string) => string
-  cashierName: (id: string) => string
 }>()
 </script>
 
@@ -80,10 +78,10 @@ const props = defineProps<{
             class="border-b border-gray-100 dark:border-gray-800"
           >
             <td class="px-5 py-4 text-theme-sm font-medium text-gray-800 dark:text-white/90">
-              {{ props.outletName(shift.outletId) }}
+              {{ shift.outletName || shift.outletId }}
             </td>
             <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
-              {{ props.cashierName(shift.cashierUserId) }}
+              {{ shift.cashierName || shift.cashierUserId }}
             </td>
             <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
               {{ formatDateTime(shift.openedAt) }}

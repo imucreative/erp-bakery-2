@@ -204,7 +204,13 @@ describe('ShiftRepositoryPostgres', () => {
     it('should return rows and total with filters applied', async () => {
       (mockPool.query as jest.Mock)
         .mockResolvedValueOnce({ rows: [{ count: '2' }] }) // count
-        .mockResolvedValueOnce({ rows: [header(), header({ id: 's2', status: 'CLOSED' })], rowCount: 2 }); // page
+        .mockResolvedValueOnce({
+          rows: [
+            header({ outlet_name: 'Outlet Utama', cashier_name: 'Kasir Satu' }),
+            header({ id: 's2', status: 'CLOSED' }),
+          ],
+          rowCount: 2,
+        }); // page
 
       const { rows, total } = await repo.list('c1', {
         limit: 10,
@@ -216,9 +222,15 @@ describe('ShiftRepositoryPostgres', () => {
 
       expect(total).toBe(2);
       expect(rows).toHaveLength(2);
+      expect(rows[0].outletName).toBe('Outlet Utama');
+      expect(rows[0].cashierName).toBe('Kasir Satu');
       // first positional param is always companyId
       const countCall = (mockPool.query as jest.Mock).mock.calls[0];
       expect(countCall[1][0]).toBe('c1');
+      const listQuery = (mockPool.query as jest.Mock).mock.calls[1][0] as string;
+      expect(listQuery).toContain('AS outlet_name');
+      expect(listQuery).toContain('AS cashier_name');
+      expect(listQuery).toContain('u.company_id = shifts.company_id');
     });
   });
 

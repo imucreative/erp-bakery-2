@@ -813,10 +813,34 @@ describe('SalesOrderRepositoryPostgres', () => {
     it('list returns rows + total', async () => {
       (mockPool.query as jest.Mock)
         .mockResolvedValueOnce({ rows: [{ count: '1' }] }) // count
-        .mockResolvedValueOnce({ rows: [header()], rowCount: 1 }); // page
+        .mockResolvedValueOnce({
+          rows: [header({ outlet_name: 'Outlet Utama', cashier_name: 'Kasir Satu' })],
+          rowCount: 1,
+        }); // page
       const { rows, total } = await repo.list('c1', { limit: 10, offset: 0, status: 'PAID' });
       expect(total).toBe(1);
       expect(rows).toHaveLength(1);
+      expect(rows[0].outletName).toBe('Outlet Utama');
+      expect(rows[0].cashierName).toBe('Kasir Satu');
+      const pageQuery = (mockPool.query as jest.Mock).mock.calls[1][0] as string;
+      expect(pageQuery).toContain('AS outlet_name');
+      expect(pageQuery).toContain('AS cashier_name');
+      expect(pageQuery).toContain('u.company_id = sales_orders.company_id');
+    });
+
+    it('list scopes sales orders to the requested cashier when cashierUserId is provided', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+        .mockResolvedValueOnce({ rows: [header()], rowCount: 1 });
+
+      await repo.list('c1', { limit: 10, offset: 0, cashierUserId: 'u1' });
+
+      const countQuery = (mockPool.query as jest.Mock).mock.calls[0][0] as string;
+      const pageQuery = (mockPool.query as jest.Mock).mock.calls[1][0] as string;
+      expect(countQuery).toContain('cashier_user_id = $2');
+      expect(pageQuery).toContain('cashier_user_id = $2');
+      expect((mockPool.query as jest.Mock).mock.calls[0][1].slice(0, 2)).toEqual(['c1', 'u1']);
+      expect((mockPool.query as jest.Mock).mock.calls[1][1]).toEqual(['c1', 'u1', 10, 0]);
     });
 
     it('listActiveToppings maps the active global catalog rows + per-outlet stock figures', async () => {

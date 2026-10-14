@@ -16,7 +16,7 @@ import { SalesOrderFilterBar, SalesOrderTable } from '@/components/sales'
 import { useSalesOrders } from '@/composables/useSalesOrders'
 import { outletService, type Outlet } from '@/services/outlet.service'
 import { salesService, type Shift, type SalesOrder } from '@/services/sales.service'
-import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
+import { PAGE_LIMIT } from '@/lib/fetchAll'
 
 const pageTitle = 'Sales Orders'
 const router = useRouter()
@@ -45,12 +45,12 @@ const outletNames = ref<Map<string, string>>(new Map())
 
 async function loadLookups(): Promise<void> {
   try {
-    const [allOutlets, shiftResult] = await Promise.all([
-      fetchAllPaginated((p) => outletService.list({ page: p, limit: PAGE_LIMIT })),
+    const [accessibleOutlets, shiftResult] = await Promise.all([
+      outletService.getAccessible(),
       salesService.shifts.list({ page: 1, limit: PAGE_LIMIT }),
     ])
-    outlets.value = allOutlets
-    outletNames.value = new Map(allOutlets.map((o) => [o.id, o.name]))
+    outlets.value = accessibleOutlets
+    outletNames.value = new Map(accessibleOutlets.map((o) => [o.id, o.name]))
     shifts.value = shiftResult.items
   } catch {
     outlets.value = []

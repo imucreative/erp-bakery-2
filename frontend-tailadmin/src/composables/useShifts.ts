@@ -90,12 +90,12 @@ export function useShifts() {
   }
 
   /**
-   * Resolve the current OPEN shift for an outlet (first match or null). Used by
-   * the POS terminal to decide whether to show the terminal or the open-shift
-   * CTA. Returns null on empty outletId.
+   * Resolve the current cashier's OPEN shift for an outlet (first match or
+   * null). Used by the POS terminal to decide whether to show the terminal or
+   * the open-shift CTA. Returns null when the outlet or cashier is missing.
    */
-  async function findOpenShift(outletId: string): Promise<Shift | null> {
-    if (!outletId) {
+  async function findOpenShift(outletId: string, cashierUserId: string): Promise<Shift | null> {
+    if (!outletId || !cashierUserId) {
       return null
     }
     const result = await salesService.shifts.list({
@@ -103,6 +103,7 @@ export function useShifts() {
       limit: 1,
       status: 'OPEN',
       outletId,
+      cashierUserId,
     })
     return result.items[0] ?? null
   }

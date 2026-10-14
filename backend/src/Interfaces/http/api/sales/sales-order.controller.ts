@@ -144,6 +144,7 @@ export class SalesOrderController {
         status: query.status,
         outletId: query.outletId,
         shiftId: query.shiftId,
+        cashierUserId: user.roleCode === 'OWNER' ? undefined : user.sub,
         search: query.search,
       },
       companyId,

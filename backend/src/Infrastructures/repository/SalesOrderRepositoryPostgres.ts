@@ -38,6 +38,7 @@ interface HeaderRow {
   id: string;
   company_id: string;
   outlet_id: string;
+  outlet_name?: string | null;
   shift_id: string;
   invoice_number: string;
   customer_name: string | null;
@@ -49,6 +50,7 @@ interface HeaderRow {
   tax: string;
   grand_total: string;
   cashier_user_id: string;
+  cashier_name?: string | null;
   paid_at: Date | null;
   created_at: Date;
   updated_at: Date;
@@ -129,6 +131,11 @@ const RETURN_HEADER_COLUMNS = `id, company_id, outlet_id, sales_order_id, reason
 const HEADER_COLUMNS = `id, company_id, outlet_id, shift_id, invoice_number, customer_name,
   order_date, status, item_count, subtotal, order_discount, tax, grand_total,
   cashier_user_id, paid_at, created_at, updated_at`;
+const READ_HEADER_COLUMNS = `${HEADER_COLUMNS},
+  (SELECT o.name FROM outlets o
+   WHERE o.id = sales_orders.outlet_id AND o.company_id = sales_orders.company_id) AS outlet_name,
+  (SELECT u.name FROM users u
+   WHERE u.id = sales_orders.cashier_user_id AND u.company_id = sales_orders.company_id) AS cashier_name`;
 
 /**
  * Concrete PostgreSQL implementation of SalesOrderRepository (POS Fase 2).
@@ -193,6 +200,7 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
       id: header.id,
       companyId: header.company_id,
       outletId: header.outlet_id,
+      outletName: header.outlet_name ?? null,
       shiftId: header.shift_id,
       invoiceNumber: header.invoice_number,
       customerName: header.customer_name,
@@ -204,6 +212,7 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
       tax: Number(header.tax),
       grandTotal: Number(header.grand_total),
       cashierUserId: header.cashier_user_id,
+      cashierName: header.cashier_name ?? null,
       paidAt: header.paid_at,
       items,
       payments,
@@ -1075,7 +1084,7 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
 
   async getById(id: string, companyId: string): Promise<SalesOrder> {
     const headerResult = await this.pool.query<HeaderRow>(
-      `SELECT ${HEADER_COLUMNS} FROM sales_orders
+      `SELECT ${READ_HEADER_COLUMNS} FROM sales_orders
        WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL`,
       [id, companyId],
     );
@@ -1099,6 +1108,10 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
       params.push(filter.shiftId);
       conditions.push(`shift_id = $${params.length}`);
     }
+    if (filter.cashierUserId) {
+      params.push(filter.cashierUserId);
+      conditions.push(`cashier_user_id = $${params.length}`);
+    }
     if (filter.status) {
       params.push(filter.status);
       conditions.push(`status = $${params.length}`);
@@ -1118,7 +1131,7 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
 
     params.push(filter.limit, filter.offset);
     const headerResult = await this.pool.query<HeaderRow>(
-      `SELECT ${HEADER_COLUMNS} FROM sales_orders
+      `SELECT ${READ_HEADER_COLUMNS} FROM sales_orders
        WHERE ${whereClause}
        ORDER BY created_at DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
@@ -1154,7 +1167,7 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
         WHERE r.company_id = p.company_id AND r.product_id = p.id
           AND r.status = 'ACTIVE' AND r.deleted_at IS NULL
       )
-      OR p.product_type = 'FINISHED_GOODS'
+      OR p.product_type in ('FINISHED_GOODS', 'BEVERAGE')
     )`;
     conditions.push(sellableClause);
 

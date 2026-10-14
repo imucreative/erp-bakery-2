@@ -28,9 +28,6 @@ import {
 } from '@/components/sales'
 import { usePermission } from '@/composables/usePermission'
 import { toMessage } from '@/composables/useSalesOrders'
-import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
-import { outletService } from '@/services/outlet.service'
-import { userService } from '@/services/user.service'
 import { salesService, type SalesOrder } from '@/services/sales.service'
 import { formatRupiah, formatDateTime } from '@/lib/format'
 
@@ -45,14 +42,11 @@ const loading = ref<boolean>(true)
 const loadError = ref<string | null>(null)
 const actionError = ref<string | null>(null)
 
-const outletNames = ref<Map<string, string>>(new Map())
-const cashierNames = ref<Map<string, string>>(new Map())
-
 function outletName(id: string): string {
-  return outletNames.value.get(id) ?? id
+  return order.value?.outletId === id ? order.value.outletName ?? id : id
 }
 function cashierName(id: string): string {
-  return cashierNames.value.get(id) ?? id
+  return order.value?.cashierUserId === id ? order.value.cashierName ?? id : id
 }
 
 // ── Permission + status → available actions ──────────────────────────
@@ -64,24 +58,11 @@ const showRefund = computed<boolean>(() => canManage.value && status.value === '
 const hasAnyAction = computed<boolean>(() => showVoid.value || showRefund.value)
 
 // ── Load ─────────────────────────────────────────────────────────────
-async function loadLookups(): Promise<void> {
-  const [allOutlets, allUsers] = await Promise.all([
-    fetchAllPaginated((p) => outletService.list({ page: p, limit: PAGE_LIMIT })),
-    fetchAllPaginated((p) => userService.list({ page: p, limit: PAGE_LIMIT })),
-  ])
-  outletNames.value = new Map(allOutlets.map((o) => [o.id, o.name]))
-  cashierNames.value = new Map(allUsers.map((u) => [u.id, u.name]))
-}
-
 async function loadOrder(): Promise<void> {
   loading.value = true
   loadError.value = null
   try {
-    const [detail] = await Promise.all([
-      salesService.orders.getById(orderId.value),
-      loadLookups(),
-    ])
-    order.value = detail
+    order.value = await salesService.orders.getById(orderId.value)
   } catch (error) {
     loadError.value = toMessage(error)
     order.value = null
@@ -112,15 +93,25 @@ async function onConfirmAction(reason: string): Promise<void> {
     return
   }
   const id = order.value.id
+  const outletName = order.value.outletName
+  const cashierName = order.value.cashierName
   actionSubmitting.value = true
   actionError.value = null
   try {
     if (activeAction.value === 'void') {
-      order.value = await salesService.orders.void(id)
+      order.value = {
+        ...(await salesService.orders.void(id)),
+        outletName,
+        cashierName,
+      }
     } else if (activeAction.value === 'refund') {
-      order.value = await salesService.orders.refund(id, {
-        reason: reason || undefined,
-      })
+      order.value = {
+        ...(await salesService.orders.refund(id, {
+          reason: reason || undefined,
+        })),
+        outletName,
+        cashierName,
+      }
     }
     activeAction.value = null
   } catch (error) {

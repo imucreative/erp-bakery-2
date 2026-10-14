@@ -90,7 +90,7 @@ export class ShiftController {
         offset,
         status: query.status,
         outletId: query.outletId,
-        cashierUserId: query.cashierUserId,
+        cashierUserId: user.roleCode === 'OWNER' ? query.cashierUserId : user.sub,
       },
       companyId,
     );

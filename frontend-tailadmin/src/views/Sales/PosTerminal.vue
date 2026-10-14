@@ -110,7 +110,7 @@ async function resolveShift(): Promise<void> {
     activeShift.value = null
     return
   }
-  activeShift.value = await findOpenShift(selectedOutletId.value)
+  activeShift.value = await findOpenShift(selectedOutletId.value, auth.user?.id ?? '')
   if (activeShift.value) {
     await loadProducts()
   } else {

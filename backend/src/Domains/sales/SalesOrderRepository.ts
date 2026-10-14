@@ -78,6 +78,7 @@ export interface SalesOrderListFilter {
   offset: number;
   outletId?: string;
   shiftId?: string;
+  cashierUserId?: string;
   status?: string;
   search?: string;
 }

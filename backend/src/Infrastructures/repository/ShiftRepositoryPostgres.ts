@@ -14,7 +14,9 @@ interface HeaderRow {
   id: string;
   company_id: string;
   outlet_id: string;
+  outlet_name?: string | null;
   cashier_user_id: string;
+  cashier_name?: string | null;
   opened_at: Date;
   closed_at: Date | null;
   opening_cash: string;
@@ -29,6 +31,11 @@ interface HeaderRow {
 
 const COLUMNS = `id, company_id, outlet_id, cashier_user_id, opened_at, closed_at,
   opening_cash, expected_cash, actual_cash, discrepancy, status, notes, created_at, updated_at`;
+const READ_COLUMNS = `${COLUMNS},
+  (SELECT o.name FROM outlets o
+   WHERE o.id = shifts.outlet_id AND o.company_id = shifts.company_id) AS outlet_name,
+  (SELECT u.name FROM users u
+   WHERE u.id = shifts.cashier_user_id AND u.company_id = shifts.company_id) AS cashier_name`;
 
 /**
  * Concrete PostgreSQL implementation of ShiftRepository.
@@ -44,7 +51,9 @@ export class ShiftRepositoryPostgres extends ShiftRepository {
       id: row.id,
       companyId: row.company_id,
       outletId: row.outlet_id,
+      outletName: row.outlet_name ?? null,
       cashierUserId: row.cashier_user_id,
+      cashierName: row.cashier_name ?? null,
       openedAt: row.opened_at,
       closedAt: row.closed_at,
       openingCash: Number(row.opening_cash),
@@ -182,7 +191,7 @@ export class ShiftRepositoryPostgres extends ShiftRepository {
 
   async getById(id: string, companyId: string): Promise<Shift> {
     const result = await this.pool.query<HeaderRow>(
-      `SELECT ${COLUMNS} FROM shifts WHERE id = $1 AND company_id = $2`,
+      `SELECT ${READ_COLUMNS} FROM shifts WHERE id = $1 AND company_id = $2`,
       [id, companyId],
     );
     if (!result.rowCount) {
@@ -218,7 +227,7 @@ export class ShiftRepositoryPostgres extends ShiftRepository {
 
     params.push(filter.limit, filter.offset);
     const result = await this.pool.query<HeaderRow>(
-      `SELECT ${COLUMNS} FROM shifts
+      `SELECT ${READ_COLUMNS} FROM shifts
        WHERE ${whereClause}
        ORDER BY created_at DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,

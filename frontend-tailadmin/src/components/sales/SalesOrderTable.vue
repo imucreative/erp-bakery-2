@@ -87,7 +87,7 @@ defineEmits<{
               {{ order.invoiceNumber }}
             </td>
             <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
-              {{ props.outletName(order.outletId) }}
+              {{ order.outletName || props.outletName(order.outletId) }}
             </td>
             <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
               {{ order.customerName || '—' }}

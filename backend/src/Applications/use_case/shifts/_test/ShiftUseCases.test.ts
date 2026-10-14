@@ -75,12 +75,32 @@ describe('OpenShiftUseCase', () => {
 
 describe('CloseShiftUseCase', () => {
   it('should validate payload and delegate to repo.closeShift', async () => {
+    shiftRepo.getById.mockResolvedValue({ id: 's1', cashierUserId: 'u1' } as never);
     shiftRepo.closeShift.mockResolvedValue({ id: 's1' } as never);
     await new CloseShiftUseCase(shiftRepo).execute('s1', { actualCash: 480000 }, 'c1', 'u1');
+    expect(shiftRepo.getById).toHaveBeenCalledWith('s1', 'c1');
     expect(shiftRepo.closeShift).toHaveBeenCalledWith('s1', 'c1', 'u1', {
       actualCash: 480000,
       notes: null,
     });
+  });
+
+  it("should reject closing another cashier's shift", async () => {
+    shiftRepo.getById.mockResolvedValue({ id: 's1', cashierUserId: 'owner' } as never);
+
+    await expect(
+      new CloseShiftUseCase(shiftRepo).execute('s1', { actualCash: 480000 }, 'c1', 'cashier'),
+    ).rejects.toThrow('AUTHORIZATION.ACCESS_DENIED');
+    expect(shiftRepo.closeShift).not.toHaveBeenCalled();
+  });
+
+  it('should reject closing a shift without an authenticated user', async () => {
+    shiftRepo.getById.mockResolvedValue({ id: 's1', cashierUserId: 'owner' } as never);
+
+    await expect(
+      new CloseShiftUseCase(shiftRepo).execute('s1', { actualCash: 480000 }, 'c1', null),
+    ).rejects.toThrow('AUTHORIZATION.ACCESS_DENIED');
+    expect(shiftRepo.closeShift).not.toHaveBeenCalled();
   });
 
   it('should reject a negative actual cash before repo', async () => {

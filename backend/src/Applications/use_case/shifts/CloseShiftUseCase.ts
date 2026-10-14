@@ -1,6 +1,7 @@
 import { CloseShift } from '../../../Domains/shifts/entities/CloseShift';
 import { Shift } from '../../../Domains/shifts/entities/Shift';
 import { ShiftRepository } from '../../../Domains/shifts/ShiftRepository';
+import { AuthorizationError } from '../../../Commons/exceptions/AuthorizationError';
 
 /**
  * UseCase: CloseShiftUseCase — close a cashier shift (OPEN -> CLOSED).
@@ -19,6 +20,11 @@ export class CloseShiftUseCase {
     userId: string | null,
   ): Promise<Shift> {
     const data = new CloseShift(payload);
+    const shift = await this.shiftRepository.getById(id, companyId);
+    if (!userId || shift.cashierUserId !== userId) {
+      throw new AuthorizationError('AUTHORIZATION.ACCESS_DENIED');
+    }
+
     return this.shiftRepository.closeShift(id, companyId, userId, {
       actualCash: data.actualCash,
       notes: data.notes,

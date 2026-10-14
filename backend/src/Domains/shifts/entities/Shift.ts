@@ -10,7 +10,9 @@ export class Shift {
   public readonly id: string;
   public readonly companyId: string;
   public readonly outletId: string;
+  public readonly outletName: string | null;
   public readonly cashierUserId: string;
+  public readonly cashierName: string | null;
   public readonly openedAt: Date;
   public readonly closedAt: Date | null;
   public readonly openingCash: number;
@@ -26,7 +28,9 @@ export class Shift {
     id: string;
     companyId: string;
     outletId: string;
+    outletName?: string | null;
     cashierUserId: string;
+    cashierName?: string | null;
     openedAt: Date;
     closedAt: Date | null;
     openingCash: number;
@@ -41,7 +45,9 @@ export class Shift {
     this.id = payload.id;
     this.companyId = payload.companyId;
     this.outletId = payload.outletId;
+    this.outletName = payload.outletName ?? null;
     this.cashierUserId = payload.cashierUserId;
+    this.cashierName = payload.cashierName ?? null;
     this.openedAt = payload.openedAt;
     this.closedAt = payload.closedAt;
     this.openingCash = payload.openingCash;

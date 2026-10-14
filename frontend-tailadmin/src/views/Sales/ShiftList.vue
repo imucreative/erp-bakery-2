@@ -2,8 +2,8 @@
 /**
  * ShiftList — thin controller for the cashier Shift list page. List state
  * (pagination + status/outlet filters) lives in `useShifts`; the toolbar and
- * table are separate feature components. Outlet and cashier names come from
- * one-time lookups (outlets also feed the outlet filter options).
+ * table are separate feature components. Shift rows include their outlet and
+ * cashier names; only accessible outlets are loaded for the filter options.
  */
 import { onMounted, ref } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
@@ -13,8 +13,6 @@ import Button from '@/components/ui/Button.vue'
 import { ShiftFilterBar, ShiftTable } from '@/components/sales'
 import { useShifts } from '@/composables/useShifts'
 import { outletService, type Outlet } from '@/services/outlet.service'
-import { userService } from '@/services/user.service'
-import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 
 const pageTitle = 'Shift Kasir'
 
@@ -35,31 +33,13 @@ const {
 } = useShifts()
 
 const outlets = ref<Outlet[]>([])
-const outletNames = ref<Map<string, string>>(new Map())
-const cashierNames = ref<Map<string, string>>(new Map())
 
 async function loadLookups(): Promise<void> {
   try {
-    const [allOutlets, allUsers] = await Promise.all([
-      fetchAllPaginated((p) => outletService.list({ page: p, limit: PAGE_LIMIT })),
-      fetchAllPaginated((p) => userService.list({ page: p, limit: PAGE_LIMIT })),
-    ])
-    outlets.value = allOutlets
-    outletNames.value = new Map(allOutlets.map((o) => [o.id, o.name]))
-    cashierNames.value = new Map(allUsers.map((u) => [u.id, u.name]))
+    outlets.value = await outletService.getAccessible()
   } catch {
     outlets.value = []
-    outletNames.value = new Map()
-    cashierNames.value = new Map()
   }
-}
-
-function outletName(id: string): string {
-  return outletNames.value.get(id) ?? id
-}
-
-function cashierName(id: string): string {
-  return cashierNames.value.get(id) ?? id
 }
 
 onMounted(() => {
@@ -88,8 +68,6 @@ onMounted(() => {
         :items="items"
         :loading="loading"
         :error-message="errorMessage"
-        :outlet-name="outletName"
-        :cashier-name="cashierName"
       />
 
       <div

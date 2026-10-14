@@ -125,7 +125,9 @@ export interface Shift {
   id: string
   companyId: string | null
   outletId: string
+  outletName?: string | null
   cashierUserId: string
+  cashierName?: string | null
   openedAt: string
   closedAt: string | null
   openingCash: number
@@ -228,6 +230,7 @@ export interface SalesOrder {
   id: string
   companyId: string | null
   outletId: string
+  outletName?: string | null
   shiftId: string
   invoiceNumber: string
   customerName: string | null
@@ -239,6 +242,7 @@ export interface SalesOrder {
   tax: number
   grandTotal: number
   cashierUserId: string
+  cashierName?: string | null
   paidAt: string | null
   items: SalesOrderItem[]
   payments: SalesPayment[]

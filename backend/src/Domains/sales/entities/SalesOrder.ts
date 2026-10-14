@@ -47,6 +47,7 @@ export class SalesOrder {
   public readonly id: string;
   public readonly companyId: string;
   public readonly outletId: string;
+  public readonly outletName: string | null;
   public readonly shiftId: string;
   public readonly invoiceNumber: string;
   public readonly customerName: string | null;
@@ -58,6 +59,7 @@ export class SalesOrder {
   public readonly tax: number;
   public readonly grandTotal: number;
   public readonly cashierUserId: string;
+  public readonly cashierName: string | null;
   public readonly paidAt: Date | null;
   public readonly items: SalesOrderItem[];
   public readonly payments: SalesPayment[];
@@ -68,6 +70,7 @@ export class SalesOrder {
     id: string;
     companyId: string;
     outletId: string;
+    outletName: string | null;
     shiftId: string;
     invoiceNumber: string;
     customerName: string | null;
@@ -79,6 +82,7 @@ export class SalesOrder {
     tax: number;
     grandTotal: number;
     cashierUserId: string;
+    cashierName: string | null;
     paidAt: Date | null;
     items: SalesOrderItem[];
     payments: SalesPayment[];
@@ -88,6 +92,7 @@ export class SalesOrder {
     this.id = payload.id;
     this.companyId = payload.companyId;
     this.outletId = payload.outletId;
+    this.outletName = payload.outletName;
     this.shiftId = payload.shiftId;
     this.invoiceNumber = payload.invoiceNumber;
     this.customerName = payload.customerName;
@@ -99,6 +104,7 @@ export class SalesOrder {
     this.tax = payload.tax;
     this.grandTotal = payload.grandTotal;
     this.cashierUserId = payload.cashierUserId;
+    this.cashierName = payload.cashierName;
     this.paidAt = payload.paidAt;
     this.items = payload.items;
     this.payments = payload.payments;
