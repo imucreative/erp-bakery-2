@@ -63,7 +63,6 @@ async function onSubmitCreate(payload: {
   toppingProductId: string
   defaultQtyPerItem: number
   extraPrice: number
-  sortOrder: number
   isActive: boolean
 }): Promise<void> {
   submitting.value = true
@@ -73,7 +72,6 @@ async function onSubmitCreate(payload: {
       toppingProductId: payload.toppingProductId,
       defaultQtyPerItem: payload.defaultQtyPerItem,
       extraPrice: payload.extraPrice,
-      sortOrder: payload.sortOrder,
       isActive: payload.isActive,
     })
     formOpen.value = false
@@ -87,7 +85,6 @@ async function onSubmitCreate(payload: {
 async function onSubmitEdit(payload: {
   defaultQtyPerItem: number
   extraPrice: number
-  sortOrder: number
   isActive: boolean
 }): Promise<void> {
   if (!editing.value) {
@@ -99,7 +96,6 @@ async function onSubmitEdit(payload: {
     await updateTopping(editing.value.id, {
       defaultQtyPerItem: payload.defaultQtyPerItem,
       extraPrice: payload.extraPrice,
-      sortOrder: payload.sortOrder,
       isActive: payload.isActive,
     })
     formOpen.value = false

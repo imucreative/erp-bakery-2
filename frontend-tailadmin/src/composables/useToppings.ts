@@ -36,7 +36,7 @@ export function useToppings() {
   const toppingProducts = ref<Product[]>([])
   const toppingProductsLoaded = ref<boolean>(false)
 
-  // Client-side filter + sort (sortOrder asc, then name) over the full catalog.
+  // Client-side filter + alphabetical sort over the full catalog.
   const items = computed<Topping[]>(() => {
     const term = search.value.trim().toLowerCase()
     const rows = term
@@ -46,8 +46,8 @@ export function useToppings() {
             t.toppingSku.toLowerCase().includes(term),
         )
       : all.value
-    return [...rows].sort(
-      (a, b) => a.sortOrder - b.sortOrder || a.toppingName.localeCompare(b.toppingName),
+    return [...rows].sort((a, b) =>
+      a.toppingName.localeCompare(b.toppingName, 'id', { sensitivity: 'base' }),
     )
   })
 

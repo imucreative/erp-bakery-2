@@ -70,7 +70,7 @@ export class ToppingRepositoryPostgres extends ToppingRepository {
        LEFT JOIN products tp ON tp.id = t.topping_product_id
        LEFT JOIN uoms u ON u.id = tp.uom_id
        WHERE t.company_id = $1 AND t.deleted_at IS NULL
-       ORDER BY t.sort_order ASC, tp.name ASC, t.created_at ASC`,
+       ORDER BY LOWER(tp.name) ASC, tp.name ASC, tp.sku ASC, t.created_at ASC`,
       [companyId],
     );
     return result.rows.map((row) => this._toEntity(row));
@@ -83,7 +83,7 @@ export class ToppingRepositoryPostgres extends ToppingRepository {
        LEFT JOIN products tp ON tp.id = t.topping_product_id
        LEFT JOIN uoms u ON u.id = tp.uom_id
        WHERE t.company_id = $1 AND t.deleted_at IS NULL AND t.is_active = TRUE
-       ORDER BY t.sort_order ASC, tp.name ASC, t.created_at ASC`,
+       ORDER BY LOWER(tp.name) ASC, tp.name ASC, tp.sku ASC, t.created_at ASC`,
       [companyId],
     );
     return result.rows.map((row) => this._toEntity(row));

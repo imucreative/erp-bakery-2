@@ -19,7 +19,7 @@ export interface NewToppingData {
  * by companyId (SaaS multi-tenant isolation).
  */
 export abstract class ToppingRepository {
-  /** List the whole catalog within the company (ordered by sort_order, name) — for management. */
+  /** List the whole catalog within the company in alphabetical name order — for management. */
   abstract list(companyId: string): Promise<Topping[]>;
 
   /** List only ACTIVE catalog entries within the company — for the POS modifier panel. */

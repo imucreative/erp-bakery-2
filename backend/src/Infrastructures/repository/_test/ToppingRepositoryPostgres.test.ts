@@ -39,6 +39,8 @@ describe('ToppingRepositoryPostgres', () => {
       expect(result[0].extraPrice).toBe(2000);
       const sql = (mockPool.query as jest.Mock).mock.calls[0][0] as string;
       expect(sql).not.toContain('is_active = TRUE');
+      expect(sql).toContain('ORDER BY LOWER(tp.name) ASC');
+      expect(sql).not.toContain('ORDER BY t.sort_order');
     });
 
     it('listActive filters to active entries only', async () => {
@@ -47,6 +49,8 @@ describe('ToppingRepositoryPostgres', () => {
       expect(result).toHaveLength(1);
       const sql = (mockPool.query as jest.Mock).mock.calls[0][0] as string;
       expect(sql).toContain('is_active = TRUE');
+      expect(sql).toContain('ORDER BY LOWER(tp.name) ASC');
+      expect(sql).not.toContain('ORDER BY t.sort_order');
     });
   });
 

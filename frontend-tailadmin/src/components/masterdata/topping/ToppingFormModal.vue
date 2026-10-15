@@ -4,9 +4,9 @@
  *
  * CREATE: pilih produk topping (RAW_MATERIAL / SEMI_FINISHED, hanya yang belum
  *   jadi topping) + takaran per item (defaultQtyPerItem > 0) + harga tambahan
- *   (extraPrice >= 0) + urutan (sortOrder) + toggle aktif.
+ *   (extraPrice >= 0) + toggle aktif.
  * EDIT: produk topping read-only (tidak diubah backend); editable: takaran,
- *   harga tambahan, urutan, dan status aktif.
+ *   harga tambahan, dan status aktif.
  *
  * Self-contained form state; emits `submit-create` / `submit-edit` with the
  * payload and lets the parent run the mutation (controls `submitting` +
@@ -18,6 +18,7 @@ import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
 import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
 import type { Topping } from '@/services/topping.service'
 import type { Product } from '@/services/product.service'
+import { Home } from 'lucide-vue-next'
 
 const props = withDefaults(
   defineProps<{
@@ -41,13 +42,11 @@ interface CreatePayload {
   toppingProductId: string
   defaultQtyPerItem: number
   extraPrice: number
-  sortOrder: number
   isActive: boolean
 }
 interface EditPayload {
   defaultQtyPerItem: number
   extraPrice: number
-  sortOrder: number
   isActive: boolean
 }
 
@@ -56,9 +55,21 @@ const isEdit = computed<boolean>(() => props.mode === 'edit')
 const toppingProductId = ref<string>('')
 const defaultQtyPerItem = ref<number>(1)
 const extraPrice = ref<number>(0)
-const sortOrder = ref<number>(0)
 const isActive = ref<boolean>(true)
 const localError = ref<string | null>(null)
+
+const defaultUomName = computed<string>(() => {
+  const selectedProduct = props.productOptions.find(
+    (product) => product.id === toppingProductId.value,
+  )
+  if (selectedProduct?.uomName) {
+    return selectedProduct.uomName
+  }
+  if (props.topping?.toppingProductId === toppingProductId.value && props.topping.uomName) {
+    return props.topping.uomName
+  }
+  return '—'
+})
 
 watch(
   () => [props.open, props.topping] as const,
@@ -68,7 +79,6 @@ watch(
       toppingProductId.value = t?.toppingProductId ?? ''
       defaultQtyPerItem.value = t?.defaultQtyPerItem ?? 1
       extraPrice.value = t?.extraPrice ?? 0
-      sortOrder.value = t?.sortOrder ?? 0
       isActive.value = t?.isActive ?? true
       localError.value = null
     }
@@ -102,14 +112,11 @@ function onSubmit(): void {
     localError.value = 'Harga tambahan tidak boleh negatif.'
     return
   }
-  const order = Math.trunc(Number(sortOrder.value) || 0)
-
   if (isEdit.value) {
     localError.value = null
     emit('submit-edit', {
       defaultQtyPerItem: qty,
       extraPrice: price,
-      sortOrder: order,
       isActive: isActive.value,
     })
     return
@@ -124,7 +131,6 @@ function onSubmit(): void {
     toppingProductId: toppingProductId.value,
     defaultQtyPerItem: qty,
     extraPrice: price,
-    sortOrder: order,
     isActive: isActive.value,
   })
 }
@@ -141,7 +147,7 @@ function onSubmit(): void {
 
     <!-- Panel -->
     <div
-      class="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
+      class="relative max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
     >
       <h4 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
         {{ isEdit ? 'Edit Topping' : 'Tambah Topping' }}
@@ -177,14 +183,29 @@ function onSubmit(): void {
         <!-- Takaran + harga -->
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label :class="labelClass">Takaran / Item<span class="text-error-500">*</span></label>
-            <input
-              v-model.number="defaultQtyPerItem"
-              type="number"
-              min="0"
-              step="any"
-              :class="inputClass"
-            />
+            <label :class="labelClass + ' mb-0'">
+              Takaran / Item<span class="text-error-500">*</span>
+            </label>
+            
+            <div class="mb-1 flex items-center justify-between gap-2">
+              <div class="relative">
+                
+                <input
+                  v-model.number="defaultQtyPerItem"
+                  type="text"
+                  min="0"
+                  step="any"
+                  :class="[inputClass, 'pe-20']"
+                />
+                <span 
+                  class="absolute top-1/2 ltr:right-0 rtl:left-0 -translate-y-1/2 ltr:border-l rtl:border-r border-gray-200 px-3.5 py-3 text-gray-500 dark:border-gray-800 dark:text-gray-400"
+                >
+                  <span class="text-theme-md text-gray-500 dark:text-gray-400">
+                    {{ defaultUomName }}
+                  </span>
+                </span>
+              </div>
+            </div>
           </div>
           <div>
             <label :class="labelClass">Harga Tambahan (Rp)</label>
@@ -192,15 +213,9 @@ function onSubmit(): void {
           </div>
         </div>
 
-        <!-- Urutan + aktif -->
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label :class="labelClass">Urutan</label>
-            <input v-model.number="sortOrder" type="number" min="0" :class="inputClass" />
-          </div>
-          <div class="flex items-end">
-            <ToggleSwitch v-model="isActive" label="Aktif" />
-          </div>
+        <!-- Status -->
+        <div>
+          <ToggleSwitch v-model="isActive" label="Aktif" />
         </div>
 
         <p
