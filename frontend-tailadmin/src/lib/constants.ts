@@ -6,7 +6,25 @@
  *  Add more types here if new purchasable categories appear.
  */
 export const PURCHASABLE_PRODUCT_TYPES = [
-    'RAW_MATERIAL',
-    'PACKAGING',
-    'BEVERAGE'
+  'RAW_MATERIAL',
+  'PACKAGING',
+  'BEVERAGE',
+  'OFFICE_SUPPLIES',
+  'SPARE_PART',
+  'OPERATING_SUPPLIES',
+  'MERCHANDISE',
+  'ELECTRONIC',
 ] as const;
+
+export const PRODUCT_TYPES = [
+  'RAW_MATERIAL',
+  'FINISHED_GOODS',
+  'SEMI_FINISHED',
+  'PACKAGING',
+  'BEVERAGE',
+  'OFFICE_SUPPLIES',
+  'SPARE_PART',
+  'OPERATING_SUPPLIES',
+  'MERCHANDISE',
+  'ELECTRONIC',
+] as const

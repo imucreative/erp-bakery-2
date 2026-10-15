@@ -117,7 +117,7 @@ exports.up = (pgm) => {
   pgm.addConstraint(
     'products',
     'products_product_type_check',
-    "CHECK (product_type IN ('RAW_MATERIAL','FINISHED_GOODS','SEMI_FINISHED','PACKAGING'))",
+    "CHECK (product_type IN ('RAW_MATERIAL','FINISHED_GOODS','SEMI_FINISHED','PACKAGING','BEVERAGE','OFFICE_SUPPLIES','SPARE_PART','OPERATING_SUPPLIES','MERCHANDISE','ELECTRONIC'))",
   );
 
   pgm.createIndex('products', 'company_id');

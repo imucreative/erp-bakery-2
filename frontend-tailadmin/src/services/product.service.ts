@@ -14,15 +14,11 @@
  *  - DELETE /products/:id  → soft-delete (409 when in use)
  */
 
+import { PRODUCT_TYPES } from '@/lib/constants'
 import { httpClient } from './http'
 
-export const PRODUCT_TYPES = [
-  'RAW_MATERIAL',
-  'FINISHED_GOODS',
-  'SEMI_FINISHED',
-  'PACKAGING',
-  'BEVERAGE'
-] as const
+export { PRODUCT_TYPES } from '@/lib/constants'
+
 export type ProductType = (typeof PRODUCT_TYPES)[number]
 
 export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
@@ -31,6 +27,11 @@ export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
   SEMI_FINISHED: 'Setengah Jadi',
   PACKAGING: 'Kemasan',
   BEVERAGE: 'Minuman',
+  OFFICE_SUPPLIES: 'Alat Tulis Kantor',
+  SPARE_PART: 'Suku Cadang',
+  OPERATING_SUPPLIES: 'Bahan Habis Pakai',
+  MERCHANDISE: 'Merchandise',
+  ELECTRONIC: 'Elektronik',
 }
 
 interface ApiSuccess<T> {
