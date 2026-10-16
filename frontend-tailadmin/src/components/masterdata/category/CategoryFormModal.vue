@@ -6,6 +6,7 @@
  * Transparent backdrop per UI standard.
  */
 import { computed, ref, watch } from 'vue'
+import { Save, X } from 'lucide-vue-next'
 import {
   BaseButton,
   BaseFormField,
@@ -160,6 +161,9 @@ function onSubmit(): void {
 
         <div class="flex justify-end gap-3 pt-2">
           <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
+            <template #start-icon>
+              <X class="h-4 w-4" aria-hidden="true" />
+            </template>
             Batal
           </BaseButton>
           <BaseButton
@@ -169,6 +173,9 @@ function onSubmit(): void {
             loading-text="Menyimpan..."
             :disabled="submitting"
           >
+            <template #start-icon>
+              <Save class="h-4 w-4" aria-hidden="true" />
+            </template>
             Simpan
           </BaseButton>
         </div>
