@@ -5,11 +5,11 @@
  * components. This view wires them and owns modal open/mode state.
  */
 import { computed, ref } from 'vue'
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import Button from '@/components/ui/Button.vue'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
+import { BaseButton, BaseInput, BaseSelect } from '@/components/ui'
 import PaymentTermTable from '@/components/masterdata/payment-term/PaymentTermTable.vue'
 import PaymentTermFormModal from '@/components/masterdata/payment-term/PaymentTermFormModal.vue'
 import PaymentTermDeleteModal from '@/components/masterdata/payment-term/PaymentTermDeleteModal.vue'
@@ -128,35 +128,38 @@ void fetchList()
   <AdminLayout>
     <PageBreadcrumb :pageTitle="pageTitle" />
 
-    <ComponentCard title="Payment Terms" desc="Kelola termin pembayaran untuk supplier & transaksi.">
+    <ComponentCard
+      title="Payment Terms"
+      desc="Kelola termin pembayaran untuk supplier & transaksi."
+    >
       <!-- Toolbar -->
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div class="relative w-full sm:max-w-xs">
-            <input
+          <div class="w-full sm:max-w-xs">
+            <BaseInput
+              id="payment-term-search"
               v-model="search"
-              type="text"
               placeholder="Cari payment term..."
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
             />
           </div>
-          <div class="relative w-full sm:w-55">
-            <select
+          <div class="w-full sm:w-55">
+            <BaseSelect
+              id="payment-term-status"
               v-model="activeFilter"
-              class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-            >
-              <option value="all">Semua Status</option>
-              <option value="true">Aktif</option>
-              <option value="false">Nonaktif</option>
-            </select>
-            <ChevronDownIcon
-              class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+              :options="[
+                { label: 'Semua Status', value: 'all' },
+                { label: 'Aktif', value: 'true' },
+                { label: 'Nonaktif', value: 'false' },
+              ]"
             />
           </div>
         </div>
-        <Button v-if="canManage" size="sm" variant="primary" :on-click="openCreate">
-          + Tambah Payment Term
-        </Button>
+        <BaseButton v-if="canManage" size="sm" variant="primary" @click="openCreate">
+          <template #start-icon>
+            <Plus class="h-4 w-4" aria-hidden="true" />
+          </template>
+          Tambah Payment Term
+        </BaseButton>
       </div>
 
       <PaymentTermTable
@@ -177,15 +180,21 @@ void fetchList()
           Menampilkan {{ items.length }} dari {{ meta.total }} data
         </span>
         <div class="flex items-center gap-2">
-          <Button size="sm" variant="outline" :disabled="!canPrev" :on-click="prevPage">
+          <BaseButton size="sm" variant="outline" :disabled="!canPrev" @click="prevPage">
+            <template #start-icon>
+              <ChevronLeft class="h-4 w-4" aria-hidden="true" />
+            </template>
             Sebelumnya
-          </Button>
+          </BaseButton>
           <span class="text-theme-sm text-gray-600 dark:text-gray-300">
             {{ page }} / {{ totalPages }}
           </span>
-          <Button size="sm" variant="outline" :disabled="!canNext" :on-click="nextPage">
+          <BaseButton size="sm" variant="outline" :disabled="!canNext" @click="nextPage">
+            <template #end-icon>
+              <ChevronRight class="h-4 w-4" aria-hidden="true" />
+            </template>
             Berikutnya
-          </Button>
+          </BaseButton>
         </div>
       </div>
     </ComponentCard>

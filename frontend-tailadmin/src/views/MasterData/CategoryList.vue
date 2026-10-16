@@ -150,7 +150,7 @@ onMounted(() => {
           <template #start-icon>
             <Plus class="h-4 w-4" aria-hidden="true" />
           </template>
-          + Tambah Kategori
+          Tambah Kategori
         </BaseButton>
       </div>
 

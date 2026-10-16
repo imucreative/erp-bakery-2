@@ -124,7 +124,7 @@ void fetchList()
           <template #start-icon>
             <Plus class="h-4 w-4" aria-hidden="true" />
           </template>
-          + Tambah UOM
+          Tambah UOM
         </BaseButton>
       </div>
 
