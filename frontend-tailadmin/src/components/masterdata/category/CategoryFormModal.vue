@@ -6,8 +6,14 @@
  * Transparent backdrop per UI standard.
  */
 import { computed, ref, watch } from 'vue'
-import Button from '@/components/ui/Button.vue'
-import { BaseFormField, BaseInput, BaseSelect, BaseTextarea, BaseToggle } from '@/components/ui'
+import {
+  BaseButton,
+  BaseFormField,
+  BaseInput,
+  BaseSelect,
+  BaseTextarea,
+  BaseToggle,
+} from '@/components/ui'
 import type { Category } from '@/services/category.service'
 import type { ProductGroup } from '@/services/product-group.service'
 
@@ -153,21 +159,18 @@ function onSubmit(): void {
         </p>
 
         <div class="flex justify-end gap-3 pt-2">
-          <Button
-            size="sm"
-            variant="outline"
-            :disabled="submitting"
-            :on-click="() => emit('close')"
-          >
+          <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
             Batal
-          </Button>
-          <button
+          </BaseButton>
+          <BaseButton
             type="submit"
+            size="sm"
+            :loading="submitting"
+            loading-text="Menyimpan..."
             :disabled="submitting"
-            class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {{ submitting ? 'Menyimpan...' : 'Simpan' }}
-          </button>
+            Simpan
+          </BaseButton>
         </div>
       </form>
     </div>
