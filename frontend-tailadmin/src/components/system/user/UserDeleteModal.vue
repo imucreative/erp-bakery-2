@@ -3,8 +3,8 @@
  * UserDeleteModal — delete confirmation. Emits `confirm`; parent runs the
  * mutation. Transparent backdrop per UI standard.
  */
-import Button from '@/components/ui/Button.vue'
-import { Trash2 } from 'lucide-vue-next'
+import { BaseButton } from '@/components/ui'
+import { Trash2, X } from 'lucide-vue-next'
 import type { User } from '@/services/user.service'
 
 withDefaults(
@@ -24,7 +24,10 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div v-if="open" class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4">
+  <div
+    v-if="open"
+    class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4"
+  >
     <div
       class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
       aria-hidden="true"
@@ -47,18 +50,19 @@ const emit = defineEmits<{
       </p>
 
       <div class="flex justify-end gap-3">
-        <Button size="sm" variant="outline" :disabled="deleting" :on-click="() => emit('close')">
+        <BaseButton size="sm" variant="outline" :disabled="deleting" @click="emit('close')">
+          <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
           Batal
-        </Button>
-        <button
-          type="button"
-          :disabled="deleting"
-          class="inline-flex items-center justify-center gap-2 rounded-lg bg-error-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-error-600 disabled:cursor-not-allowed disabled:opacity-60"
+        </BaseButton>
+        <BaseButton
+          variant="danger"
+          :loading="deleting"
+          loading-text="Menghapus..."
           @click="emit('confirm')"
         >
-          <Trash2 class="h-4 w-4" aria-hidden="true" />
-          {{ deleting ? 'Menghapus...' : 'Hapus' }}
-        </button>
+          <template #start-icon><Trash2 class="h-4 w-4" aria-hidden="true" /></template>
+          Hapus
+        </BaseButton>
       </div>
     </div>
   </div>
