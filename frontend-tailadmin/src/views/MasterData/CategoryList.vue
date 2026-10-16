@@ -6,11 +6,11 @@
  * first relation-backed master module).
  */
 import { computed, onMounted, ref } from 'vue'
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-vue-next'
+import { Plus } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import { BaseButton, BaseInput } from '@/components/ui'
+import { BaseButton, BaseInput, BaseTablePagination } from '@/components/ui'
 import CategoryTable from '@/components/masterdata/category/CategoryTable.vue'
 import CategoryFormModal from '@/components/masterdata/category/CategoryFormModal.vue'
 import CategoryDeleteModal from '@/components/masterdata/category/CategoryDeleteModal.vue'
@@ -165,31 +165,17 @@ onMounted(() => {
       />
 
       <!-- Pagination -->
-      <div
+      <BaseTablePagination
         v-if="!loading && !errorMessage && items.length > 0"
-        class="flex flex-col items-center justify-between gap-3 pt-2 sm:flex-row"
-      >
-        <span class="text-theme-sm text-gray-500 dark:text-gray-400">
-          Menampilkan {{ items.length }} dari {{ meta.total }} data
-        </span>
-        <div class="flex items-center gap-2">
-          <BaseButton size="sm" variant="outline" :disabled="!canPrev" @click="prevPage">
-            <template #start-icon>
-              <ChevronLeft class="h-4 w-4" aria-hidden="true" />
-            </template>
-            Sebelumnya
-          </BaseButton>
-          <span class="text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ page }} / {{ totalPages }}
-          </span>
-          <BaseButton size="sm" variant="outline" :disabled="!canNext" @click="nextPage">
-            <template #end-icon>
-              <ChevronRight class="h-4 w-4" aria-hidden="true" />
-            </template>
-            Berikutnya
-          </BaseButton>
-        </div>
-      </div>
+        :current-count="items.length"
+        :total-items="meta.total"
+        :current-page="page"
+        :total-pages="totalPages"
+        :has-previous="canPrev"
+        :has-next="canNext"
+        @previous="prevPage"
+        @next="nextPage"
+      />
     </ComponentCard>
 
     <CategoryFormModal
