@@ -7,7 +7,7 @@
  */
 import { Eye, Pencil, Trash2 } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
-import { BaseButton } from '@/components/ui'
+import { BaseButton, BaseTable, BaseTableCell, BaseTableHead, BaseTableRow } from '@/components/ui'
 import type { Role } from '@/services/role.service'
 
 defineProps<{
@@ -29,117 +29,70 @@ function isOwner(role: Role): boolean {
 </script>
 
 <template>
-  <div>
-    <div v-if="loading" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-      Memuat data...
-    </div>
-
-    <div
-      v-else-if="errorMessage"
-      class="rounded-lg border border-error-500/40 bg-error-50 px-4 py-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      role="alert"
-    >
-      {{ errorMessage }}
-    </div>
-
-    <div
-      v-else-if="items.length === 0"
-      class="py-10 text-center text-sm text-gray-500 dark:text-gray-400"
-    >
-      Belum ada role.
-    </div>
-
-    <div v-else class="overflow-x-auto">
-      <table class="min-w-full">
-        <thead>
-          <tr class="border-b border-gray-100 dark:border-gray-800">
-            <th
-              class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+  <BaseTable
+    :loading="loading"
+    :error-message="errorMessage"
+    :is-empty="items.length === 0"
+    empty-message="Belum ada role."
+    aria-label="Daftar role"
+  >
+    <template #header>
+      <BaseTableRow variant="header">
+        <BaseTableHead>Kode</BaseTableHead>
+        <BaseTableHead>Nama</BaseTableHead>
+        <BaseTableHead>Deskripsi</BaseTableHead>
+        <BaseTableHead>Status</BaseTableHead>
+        <BaseTableHead align="end">Aksi</BaseTableHead>
+      </BaseTableRow>
+    </template>
+    <template #body>
+      <BaseTableRow v-for="role in items" :key="role.id">
+        <BaseTableCell emphasis="mono">{{ role.code }}</BaseTableCell>
+        <BaseTableCell emphasis="medium">{{ role.name }}</BaseTableCell>
+        <BaseTableCell>{{ role.description || '—' }}</BaseTableCell>
+        <BaseTableCell>
+          <Badge :color="role.isActive ? 'success' : 'error'">
+            {{ role.isActive ? 'Aktif' : 'Nonaktif' }}
+          </Badge>
+        </BaseTableCell>
+        <BaseTableCell align="end">
+          <div class="flex items-center justify-end gap-2">
+            <BaseButton
+              size="sm"
+              variant="outline"
+              icon-only
+              type="button"
+              aria-label="Lihat permission"
+              title="Lihat permission"
+              @click="$emit('view', role)"
             >
-              Kode
-            </th>
-            <th
-              class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+              <Eye class="h-4 w-4" aria-hidden="true" />
+            </BaseButton>
+            <BaseButton
+              v-if="canManage"
+              size="sm"
+              variant="outline"
+              icon-only
+              aria-label="Edit"
+              title="Edit"
+              @click="$emit('edit', role)"
             >
-              Nama
-            </th>
-            <th
-              class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+              <Pencil class="h-4 w-4" aria-hidden="true" />
+            </BaseButton>
+            <BaseButton
+              v-if="canManage && !isOwner(role)"
+              size="sm"
+              variant="danger"
+              icon-only
+              aria-label="Hapus"
+              title="Hapus"
+              @click="$emit('delete', role)"
             >
-              Deskripsi
-            </th>
-            <th
-              class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
-            >
-              Status
-            </th>
-            <th
-              class="px-5 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
-            >
-              Aksi
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="role in items"
-            :key="role.id"
-            class="border-b border-gray-100 dark:border-gray-800"
-          >
-            <td class="px-5 py-4 text-theme-sm font-mono text-gray-600 dark:text-gray-300">
-              {{ role.code }}
-            </td>
-            <td class="px-5 py-4 text-theme-sm font-medium text-gray-800 dark:text-white/90">
-              {{ role.name }}
-            </td>
-            <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
-              {{ role.description || '—' }}
-            </td>
-            <td class="px-5 py-4">
-              <Badge :color="role.isActive ? 'success' : 'error'">
-                {{ role.isActive ? 'Aktif' : 'Nonaktif' }}
-              </Badge>
-            </td>
-            <td class="px-5 py-4">
-              <div class="flex items-center justify-end gap-2">
-                <BaseButton
-                  size="sm"
-                  variant="outline"
-                  icon-only
-                  type="button"
-                  aria-label="Lihat permission"
-                  title="Lihat permission"
-                  @click="$emit('view', role)"
-                >
-                  <Eye class="h-4 w-4" aria-hidden="true" />
-                </BaseButton>
-                <BaseButton
-                  v-if="canManage"
-                  size="sm"
-                  variant="outline"
-                  icon-only
-                  aria-label="Edit"
-                  title="Edit"
-                  @click="$emit('edit', role)"
-                >
-                  <Pencil class="h-4 w-4" aria-hidden="true" />
-                </BaseButton>
-                <BaseButton
-                  v-if="canManage && !isOwner(role)"
-                  size="sm"
-                  variant="danger"
-                  icon-only
-                  aria-label="Hapus"
-                  title="Hapus"
-                  @click="$emit('delete', role)"
-                >
-                  <Trash2 class="h-4 w-4" aria-hidden="true" />
-                </BaseButton>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+              <Trash2 class="h-4 w-4" aria-hidden="true" />
+            </BaseButton>
+          </div>
+        </BaseTableCell>
+      </BaseTableRow>
+    </template>
+  </BaseTable>
 </template>
