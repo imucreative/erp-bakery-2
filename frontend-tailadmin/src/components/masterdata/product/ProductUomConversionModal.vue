@@ -17,7 +17,17 @@
 import { computed, ref, watch } from 'vue'
 import { Pencil, Trash2, Plus, Check, X } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
-import { BaseButton, BaseFormField, BaseInput, BaseSelect, BaseToggle } from '@/components/ui'
+import {
+  BaseButton,
+  BaseFormField,
+  BaseInput,
+  BaseSelect,
+  BaseTable,
+  BaseTableCell,
+  BaseTableHead,
+  BaseTableRow,
+  BaseToggle,
+} from '@/components/ui'
 import { ApiClientError } from '@/services/http'
 import type { Product } from '@/services/product.service'
 import type { Uom } from '@/services/uom.service'
@@ -280,146 +290,111 @@ async function onDelete(row: ProductUomConversion): Promise<void> {
       <div class="mt-5">
         <h5 class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Daftar konversi</h5>
 
-        <div v-if="loading" class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-          Memuat data...
-        </div>
-
-        <div
-          v-else-if="listError"
-          class="rounded-lg border border-error-500/40 bg-error-50 px-4 py-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-          role="alert"
+        <BaseTable
+          :loading="loading"
+          :error-message="listError"
+          :is-empty="rows.length === 0"
+          empty-message="Belum ada satuan alternatif."
+          aria-label="Daftar konversi satuan"
         >
-          {{ listError }}
-        </div>
-
-        <div
-          v-else-if="rows.length === 0"
-          class="py-6 text-center text-sm text-gray-500 dark:text-gray-400"
-        >
-          Belum ada satuan alternatif.
-        </div>
-
-        <div v-else class="overflow-x-auto">
-          <table class="min-w-full">
-            <thead>
-              <tr class="border-b border-gray-100 dark:border-gray-800">
-                <th
-                  class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
-                >
-                  Satuan Alternatif
-                </th>
-                <th
-                  class="px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
-                >
-                  Faktor
-                </th>
-                <th
-                  class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
-                >
-                  Status
-                </th>
-                <th
-                  class="px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
-                >
-                  Aksi
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="row in rows"
-                :key="row.id"
-                class="border-b border-gray-100 dark:border-gray-800"
-              >
-                <td class="px-4 py-3 text-theme-sm text-gray-800 dark:text-white/90">
-                  <span class="font-medium">{{ row.uomName }}</span>
-                  <span class="ms-1 text-theme-xs text-gray-500 dark:text-gray-400">
-                    ({{ row.uomCode }})
-                  </span>
-                </td>
-                <td class="px-4 py-3 text-end text-theme-sm text-gray-800 dark:text-white/90">
+          <template #header>
+            <BaseTableRow variant="header">
+              <BaseTableHead>Satuan Alternatif</BaseTableHead>
+              <BaseTableHead align="end">Faktor</BaseTableHead>
+              <BaseTableHead>Status</BaseTableHead>
+              <BaseTableHead align="end">Aksi</BaseTableHead>
+            </BaseTableRow>
+          </template>
+          <template #body>
+            <BaseTableRow v-for="row in rows" :key="row.id">
+              <BaseTableCell emphasis="medium">
+                <span class="font-medium">{{ row.uomName }}</span>
+                <span class="ms-1 text-theme-xs text-gray-500 dark:text-gray-400">
+                  ({{ row.uomCode }})
+                </span>
+              </BaseTableCell>
+              <BaseTableCell align="end" emphasis="medium">
+                <template v-if="editingId === row.id">
+                  <BaseInput
+                    :id="`conversion-factor-${row.id}`"
+                    :model-value="editFactor ?? ''"
+                    type="number"
+                    min="0"
+                    step="any"
+                    class="h-9 w-32 text-end"
+                    @update:model-value="updateEditFactor"
+                  />
+                </template>
+                <template v-else>
+                  {{ formatFactor(row.factorToBase) }}
+                </template>
+              </BaseTableCell>
+              <BaseTableCell>
+                <template v-if="editingId === row.id">
+                  <BaseToggle v-model="editActive" label="Aktif" />
+                </template>
+                <template v-else>
+                  <Badge :color="row.isActive ? 'success' : 'error'">
+                    {{ row.isActive ? 'Aktif' : 'Nonaktif' }}
+                  </Badge>
+                </template>
+              </BaseTableCell>
+              <BaseTableCell align="end">
+                <div class="flex items-center justify-end gap-2">
                   <template v-if="editingId === row.id">
-                    <BaseInput
-                      :id="`conversion-factor-${row.id}`"
-                      :model-value="editFactor ?? ''"
-                      type="number"
-                      min="0"
-                      step="any"
-                      class="h-9 w-32 text-end"
-                      @update:model-value="updateEditFactor"
-                    />
+                    <BaseButton
+                      size="sm"
+                      variant="success"
+                      icon-only
+                      aria-label="Simpan"
+                      title="Simpan"
+                      :disabled="savingEdit"
+                      @click="onSaveEdit"
+                    >
+                      <Check class="h-4 w-4" aria-hidden="true" />
+                    </BaseButton>
+                    <BaseButton
+                      size="sm"
+                      variant="outline"
+                      icon-only
+                      aria-label="Batal"
+                      title="Batal"
+                      :disabled="savingEdit"
+                      @click="cancelEdit"
+                    >
+                      <X class="h-4 w-4" aria-hidden="true" />
+                    </BaseButton>
                   </template>
-                  <template v-else>
-                    {{ formatFactor(row.factorToBase) }}
+                  <template v-else-if="canManage">
+                    <BaseButton
+                      size="sm"
+                      variant="outline"
+                      icon-only
+                      aria-label="Edit"
+                      title="Edit"
+                      :disabled="deletingId === row.id || editingId !== null"
+                      @click="startEdit(row)"
+                    >
+                      <Pencil class="h-4 w-4" aria-hidden="true" />
+                    </BaseButton>
+                    <BaseButton
+                      size="sm"
+                      variant="danger"
+                      icon-only
+                      aria-label="Hapus"
+                      title="Hapus"
+                      :disabled="deletingId === row.id || editingId !== null"
+                      @click="onDelete(row)"
+                    >
+                      <Trash2 class="h-4 w-4" aria-hidden="true" />
+                    </BaseButton>
                   </template>
-                </td>
-                <td class="px-4 py-3">
-                  <template v-if="editingId === row.id">
-                    <BaseToggle v-model="editActive" label="Aktif" />
-                  </template>
-                  <template v-else>
-                    <Badge :color="row.isActive ? 'success' : 'error'">
-                      {{ row.isActive ? 'Aktif' : 'Nonaktif' }}
-                    </Badge>
-                  </template>
-                </td>
-                <td class="px-4 py-3">
-                  <div class="flex items-center justify-end gap-2">
-                    <template v-if="editingId === row.id">
-                      <BaseButton
-                        size="sm"
-                        variant="success"
-                        icon-only
-                        aria-label="Simpan"
-                        title="Simpan"
-                        :disabled="savingEdit"
-                        @click="onSaveEdit"
-                      >
-                        <Check class="h-4 w-4" aria-hidden="true" />
-                      </BaseButton>
-                      <BaseButton
-                        size="sm"
-                        variant="outline"
-                        icon-only
-                        aria-label="Batal"
-                        title="Batal"
-                        :disabled="savingEdit"
-                        @click="cancelEdit"
-                      >
-                        <X class="h-4 w-4" aria-hidden="true" />
-                      </BaseButton>
-                    </template>
-                    <template v-else-if="canManage">
-                      <BaseButton
-                        size="sm"
-                        variant="outline"
-                        icon-only
-                        aria-label="Edit"
-                        title="Edit"
-                        :disabled="deletingId === row.id || editingId !== null"
-                        @click="startEdit(row)"
-                      >
-                        <Pencil class="h-4 w-4" aria-hidden="true" />
-                      </BaseButton>
-                      <BaseButton
-                        size="sm"
-                        variant="danger"
-                        icon-only
-                        aria-label="Hapus"
-                        title="Hapus"
-                        :disabled="deletingId === row.id || editingId !== null"
-                        @click="onDelete(row)"
-                      >
-                        <Trash2 class="h-4 w-4" aria-hidden="true" />
-                      </BaseButton>
-                    </template>
-                    <span v-else class="text-theme-xs text-gray-400 dark:text-gray-500"> — </span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                  <span v-else class="text-theme-xs text-gray-400 dark:text-gray-500"> — </span>
+                </div>
+              </BaseTableCell>
+            </BaseTableRow>
+          </template>
+        </BaseTable>
 
         <p
           v-if="rowError"
