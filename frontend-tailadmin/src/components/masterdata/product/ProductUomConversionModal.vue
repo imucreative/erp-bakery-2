@@ -16,10 +16,8 @@
  */
 import { computed, ref, watch } from 'vue'
 import { Pencil, Trash2, Plus, Check, X } from 'lucide-vue-next'
-import Button from '@/components/ui/Button.vue'
 import Badge from '@/components/ui/Badge.vue'
-import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
+import { BaseButton, BaseFormField, BaseInput, BaseSelect, BaseToggle } from '@/components/ui'
 import { ApiClientError } from '@/services/http'
 import type { Product } from '@/services/product.service'
 import type { Uom } from '@/services/uom.service'
@@ -86,8 +84,6 @@ const baseUomName = computed<string>(() => {
   return p.uomName || props.uomNameById[p.uomId] || p.uomId
 })
 
-const uomLabel = (uom: Uom): string => uom.name
-
 /**
  * UOM yang boleh ditambahkan: aktif, bukan satuan dasar produk, dan belum
  * dipakai sebagai konversi existing. Mencegah 400 (base/inactive) & 409 (dup).
@@ -95,10 +91,12 @@ const uomLabel = (uom: Uom): string => uom.name
 const availableUoms = computed<Uom[]>(() => {
   const baseUomId = props.product?.uomId ?? ''
   const usedIds = new Set(rows.value.map((r) => r.uomId))
-  return props.uoms.filter(
-    (u) => u.isActive && u.id !== baseUomId && !usedIds.has(u.id),
-  )
+  return props.uoms.filter((u) => u.isActive && u.id !== baseUomId && !usedIds.has(u.id))
 })
+
+const availableUomOptions = computed(() =>
+  availableUoms.value.map((uom) => ({ label: uom.name, value: uom.id })),
+)
 
 async function loadConversions(): Promise<void> {
   const p = props.product
@@ -122,6 +120,14 @@ function resetAddForm(): void {
   addFactor.value = null
   addActive.value = true
   addError.value = null
+}
+
+function updateAddFactor(value: string): void {
+  addFactor.value = value === '' ? null : Number(value)
+}
+
+function updateEditFactor(value: string): void {
+  editFactor.value = value === '' ? null : Number(value)
 }
 
 function cancelEdit(): void {
@@ -230,10 +236,6 @@ async function onDelete(row: ProductUomConversion): Promise<void> {
     deletingId.value = null
   }
 }
-
-const inputClass =
-  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
-const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
 </script>
 
 <template>
@@ -267,8 +269,10 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
           </span>
         </div>
         <p class="mt-2 text-theme-xs text-gray-500 dark:text-gray-400">
-          Faktor konversi berarti: 1 satuan alternatif = faktor &times; satuan dasar
-          (<span class="font-medium">{{ baseUomName }}</span>).
+          Faktor konversi berarti: 1 satuan alternatif = faktor &times; satuan dasar (<span
+            class="font-medium"
+            >{{ baseUomName }}</span
+          >).
         </p>
       </div>
 
@@ -335,12 +339,14 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
                 </td>
                 <td class="px-4 py-3 text-end text-theme-sm text-gray-800 dark:text-white/90">
                   <template v-if="editingId === row.id">
-                    <input
-                      v-model.number="editFactor"
+                    <BaseInput
+                      :id="`conversion-factor-${row.id}`"
+                      :model-value="editFactor ?? ''"
                       type="number"
                       min="0"
                       step="any"
-                      :class="[inputClass, 'h-9 w-32 text-end']"
+                      class="h-9 w-32 text-end"
+                      @update:model-value="updateEditFactor"
                     />
                   </template>
                   <template v-else>
@@ -349,7 +355,7 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
                 </td>
                 <td class="px-4 py-3">
                   <template v-if="editingId === row.id">
-                    <ToggleSwitch v-model="editActive" label="Aktif" />
+                    <BaseToggle v-model="editActive" label="Aktif" />
                   </template>
                   <template v-else>
                     <Badge :color="row.isActive ? 'success' : 'error'">
@@ -360,55 +366,54 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
                 <td class="px-4 py-3">
                   <div class="flex items-center justify-end gap-2">
                     <template v-if="editingId === row.id">
-                      <button
-                        type="button"
+                      <BaseButton
+                        size="sm"
+                        variant="success"
+                        icon-only
                         aria-label="Simpan"
                         title="Simpan"
                         :disabled="savingEdit"
-                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-success-600 ring-1 ring-inset ring-success-200 transition hover:bg-success-50 disabled:cursor-not-allowed disabled:opacity-60 dark:ring-success-500/30 dark:hover:bg-success-500/10"
                         @click="onSaveEdit"
                       >
                         <Check class="h-4 w-4" aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
+                      </BaseButton>
+                      <BaseButton
+                        size="sm"
+                        variant="outline"
+                        icon-only
                         aria-label="Batal"
                         title="Batal"
                         :disabled="savingEdit"
-                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
                         @click="cancelEdit"
                       >
                         <X class="h-4 w-4" aria-hidden="true" />
-                      </button>
+                      </BaseButton>
                     </template>
                     <template v-else-if="canManage">
-                      <button
-                        type="button"
+                      <BaseButton
+                        size="sm"
+                        variant="outline"
+                        icon-only
                         aria-label="Edit"
                         title="Edit"
                         :disabled="deletingId === row.id || editingId !== null"
-                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
                         @click="startEdit(row)"
                       >
                         <Pencil class="h-4 w-4" aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
+                      </BaseButton>
+                      <BaseButton
+                        size="sm"
+                        variant="danger"
+                        icon-only
                         aria-label="Hapus"
                         title="Hapus"
                         :disabled="deletingId === row.id || editingId !== null"
-                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-error-500 ring-1 ring-inset ring-error-200 transition hover:bg-error-50 hover:text-error-600 disabled:cursor-not-allowed disabled:opacity-60 dark:ring-error-500/30 dark:hover:bg-error-500/10"
                         @click="onDelete(row)"
                       >
                         <Trash2 class="h-4 w-4" aria-hidden="true" />
-                      </button>
+                      </BaseButton>
                     </template>
-                    <span
-                      v-else
-                      class="text-theme-xs text-gray-400 dark:text-gray-500"
-                    >
-                      —
-                    </span>
+                    <span v-else class="text-theme-xs text-gray-400 dark:text-gray-500"> — </span>
                   </div>
                 </td>
               </tr>
@@ -434,47 +439,32 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
           Tambah satuan alternatif
         </h5>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label :class="labelClass">Satuan alternatif<span class="text-error-500">*</span></label>
-            <div class="relative">
-              <select
-                v-model="addUomId"
-                :disabled="availableUoms.length === 0"
-                :class="[
-                  inputClass,
-                  'appearance-none pe-10',
-                  availableUoms.length === 0 ? 'cursor-not-allowed opacity-60' : '',
-                ]"
-              >
-                <option value="" disabled>
-                  {{ availableUoms.length === 0 ? 'Tidak ada satuan tersedia' : 'Pilih satuan' }}
-                </option>
-                <option v-for="u in availableUoms" :key="u.id" :value="u.id">
-                  {{ uomLabel(u) }}
-                </option>
-              </select>
-              <ChevronDownIcon
-                class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-              />
-            </div>
-          </div>
-          <div>
-            <label :class="labelClass">
-              Faktor ke satuan dasar<span class="text-error-500">*</span>
-            </label>
-            <input
-              v-model.number="addFactor"
+          <BaseFormField label="Satuan alternatif" field-id="conversion-uom" required>
+            <BaseSelect
+              id="conversion-uom"
+              v-model="addUomId"
+              :options="availableUomOptions"
+              :disabled="availableUoms.length === 0"
+              :placeholder="
+                availableUoms.length === 0 ? 'Tidak ada satuan tersedia' : 'Pilih satuan'
+              "
+            />
+          </BaseFormField>
+          <BaseFormField label="Faktor ke satuan dasar" field-id="conversion-factor" required>
+            <BaseInput
+              id="conversion-factor"
+              :model-value="addFactor ?? ''"
               type="number"
               min="0"
               step="any"
               placeholder="mis. 25000"
-              :class="inputClass"
+              @update:model-value="updateAddFactor"
             />
-          </div>
+          </BaseFormField>
         </div>
 
         <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <ToggleSwitch v-model="addActive" label="Aktif" />
+          <BaseToggle v-model="addActive" label="Aktif" />
           <p class="text-theme-xs text-gray-500 dark:text-gray-400">
             1
             <span class="font-medium">{{
@@ -494,21 +484,24 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
         </p>
 
         <div class="mt-4 flex justify-end">
-          <button
-            type="button"
+          <BaseButton
+            variant="success"
             :disabled="adding || availableUoms.length === 0"
-            class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+            :loading="adding"
+            loading-text="Menambahkan..."
             @click="onAdd"
           >
-            <Plus class="h-4 w-4" aria-hidden="true" />
-            {{ adding ? 'Menambahkan...' : 'Tambah Konversi' }}
-          </button>
+            <template #start-icon>
+              <Plus class="h-4 w-4" aria-hidden="true" />
+            </template>
+            Tambah Konversi
+          </BaseButton>
         </div>
       </div>
 
       <!-- Footer -->
       <div class="mt-6 flex justify-end">
-        <Button size="sm" variant="outline" :on-click="() => emit('close')">Tutup</Button>
+        <BaseButton size="sm" variant="outline" @click="emit('close')">Tutup</BaseButton>
       </div>
     </div>
   </div>

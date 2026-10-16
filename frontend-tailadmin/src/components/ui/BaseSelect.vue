@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, useAttrs } from 'vue'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
+import { ChevronDown } from 'lucide-vue-next'
 
 defineOptions({ inheritAttrs: false })
 
@@ -63,7 +63,7 @@ function onChange(event: Event): void {
         {{ option.label }}
       </option>
     </select>
-    <ChevronDownIcon
+    <ChevronDown
       class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
     />
   </div>

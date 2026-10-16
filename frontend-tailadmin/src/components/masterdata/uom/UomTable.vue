@@ -7,6 +7,7 @@
  */
 import { Pencil, Trash2 } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
+import { BaseButton } from '@/components/ui'
 import type { Uom } from '@/services/uom.service'
 
 defineProps<{
@@ -80,26 +81,29 @@ defineEmits<{
             </td>
             <td class="px-5 py-4">
               <div class="flex items-center justify-end gap-2">
-                <button
+                <BaseButton
                   v-if="canManage"
-                  type="button"
+                  size="sm"
+                  variant="outline"
+                  icon-only
                   aria-label="Edit"
                   title="Edit"
-                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
                   @click="$emit('edit', uom)"
                 >
                   <Pencil class="h-4 w-4" aria-hidden="true" />
-                </button>
-                <button
+                </BaseButton>
+                <BaseButton
                   v-if="canManage"
-                  type="button"
+                  size="sm"
+                  variant="danger"
+                  icon-only
                   aria-label="Hapus"
                   title="Hapus"
-                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-error-500 ring-1 ring-inset ring-error-200 transition hover:bg-error-50 hover:text-error-600 dark:ring-error-500/30 dark:hover:bg-error-500/10"
+                  class="text-error-500 ring-error-200 hover:bg-error-50 hover:text-error-600 dark:ring-error-500/30 dark:hover:bg-white/[0.03]"
                   @click="$emit('delete', uom)"
                 >
                   <Trash2 class="h-4 w-4" aria-hidden="true" />
-                </button>
+                </BaseButton>
                 <span v-if="!canManage" class="text-theme-xs text-gray-400 dark:text-gray-500">
                   —
                 </span>
