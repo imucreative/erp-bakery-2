@@ -169,6 +169,7 @@ function onSubmit(): void {
           <BaseButton
             type="submit"
             size="sm"
+            variant="success"
             :loading="submitting"
             loading-text="Menyimpan..."
             :disabled="submitting"
