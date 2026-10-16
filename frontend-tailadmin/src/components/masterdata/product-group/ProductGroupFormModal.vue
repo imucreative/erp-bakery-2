@@ -4,8 +4,8 @@
  * on edit). Self-contained form state; emits `submit`. Transparent backdrop.
  */
 import { ref, watch } from 'vue'
-import Button from '@/components/ui/Button.vue'
-import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
+import { Save, X } from 'lucide-vue-next'
+import { BaseButton, BaseFormField, BaseInput, BaseTextarea, BaseToggle } from '@/components/ui'
 import type { ProductGroup } from '@/services/product-group.service'
 
 const props = withDefaults(
@@ -58,7 +58,10 @@ function onSubmit(): void {
 </script>
 
 <template>
-  <div v-if="open" class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4">
+  <div
+    v-if="open"
+    class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4"
+  >
     <div
       class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
       aria-hidden="true"
@@ -73,31 +76,25 @@ function onSubmit(): void {
       </h4>
 
       <form class="space-y-4" @submit.prevent="onSubmit">
-        <div>
-          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Nama<span class="text-error-500">*</span>
-          </label>
-          <input
-            v-model="name"
-            type="text"
-            placeholder="mis. Bahan Baku"
-            class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-          />
-        </div>
+        <BaseFormField
+          label="Nama"
+          field-id="product-group-name"
+          required
+          :error="localError && !name.trim() ? localError : null"
+        >
+          <BaseInput id="product-group-name" v-model="name" placeholder="mis. Bahan Baku" />
+        </BaseFormField>
 
-        <div>
-          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Deskripsi
-          </label>
-          <textarea
+        <BaseFormField label="Deskripsi" field-id="product-group-description">
+          <BaseTextarea
+            id="product-group-description"
             v-model="description"
-            rows="2"
+            :rows="2"
             placeholder="Deskripsi singkat (opsional)"
-            class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-          ></textarea>
-        </div>
+          />
+        </BaseFormField>
 
-        <ToggleSwitch v-if="mode === 'edit'" v-model="isActive" label="Aktif" />
+        <BaseToggle v-if="mode === 'edit'" v-model="isActive" label="Aktif" />
 
         <p
           v-if="localError || errorMessage"
@@ -107,16 +104,23 @@ function onSubmit(): void {
         </p>
 
         <div class="flex justify-end gap-3 pt-2">
-          <Button size="sm" variant="outline" :disabled="submitting" :on-click="() => emit('close')">
+          <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
+            <template #start-icon>
+              <X class="h-4 w-4" aria-hidden="true" />
+            </template>
             Batal
-          </Button>
-          <button
+          </BaseButton>
+          <BaseButton
             type="submit"
-            :disabled="submitting"
-            class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+            variant="success"
+            :loading="submitting"
+            loading-text="Menyimpan..."
           >
-            {{ submitting ? 'Menyimpan...' : 'Simpan' }}
-          </button>
+            <template #start-icon>
+              <Save class="h-4 w-4" aria-hidden="true" />
+            </template>
+            Simpan
+          </BaseButton>
         </div>
       </form>
     </div>
