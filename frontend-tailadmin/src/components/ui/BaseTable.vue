@@ -42,6 +42,9 @@ withDefaults(defineProps<BaseTableProps>(), {
         <tbody>
           <slot name="body" />
         </tbody>
+        <tfoot>
+          <slot name="footer" />
+        </tfoot>
       </table>
     </div>
   </div>
