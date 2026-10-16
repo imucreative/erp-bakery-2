@@ -6,7 +6,7 @@ defineOptions({ inheritAttrs: false })
 interface BaseInputProps {
   modelValue: string | number
   id: string
-  type?: 'text' | 'email' | 'password' | 'number' | 'search' | 'tel' | 'url'
+  type?: 'text' | 'email' | 'password' | 'number' | 'date' | 'search' | 'tel' | 'url'
   placeholder?: string
   error?: string | null
   disabled?: boolean

@@ -20,8 +20,8 @@
 import { onMounted, ref } from 'vue'
 import { Send } from 'lucide-vue-next'
 import { ApiClientError } from '@/services/http'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
 import Badge from '@/components/ui/Badge.vue'
+import { BaseButton, BaseSelect, BaseTextarea } from '@/components/ui'
 import { formatDateTime } from '@/lib/format'
 import {
   purchaseOrderService,
@@ -44,6 +44,11 @@ const body = ref<string>('')
 const category = ref<PurchaseOrderCommentCategory>('INTERNAL')
 const submitting = ref<boolean>(false)
 const formError = ref<string | null>(null)
+
+const commentCategoryOptions = PURCHASE_ORDER_COMMENT_CATEGORIES.map((categoryValue) => ({
+  value: categoryValue,
+  label: PURCHASE_ORDER_COMMENT_CATEGORY_LABELS[categoryValue],
+}))
 
 function toMessage(error: unknown): string {
   if (error instanceof ApiClientError) {
@@ -161,7 +166,10 @@ onMounted(() => {
     </template>
 
     <!-- Add-comment form -->
-    <form class="space-y-3 border-t border-gray-100 pt-5 dark:border-gray-800" @submit.prevent="submitComment">
+    <form
+      class="space-y-3 border-t border-gray-100 pt-5 dark:border-gray-800"
+      @submit.prevent="submitComment"
+    >
       <div>
         <label
           for="po-comment-body"
@@ -169,39 +177,37 @@ onMounted(() => {
         >
           Tambah Komentar
         </label>
-        <textarea
+        <BaseTextarea
           id="po-comment-body"
-          v-model="body"
-          rows="3"
+          :model-value="body"
+          :rows="3"
           placeholder="Tulis komentar..."
-          class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-        ></textarea>
+          @update:model-value="body = $event"
+        />
       </div>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="relative w-full sm:w-48">
-          <select
-            v-model="category"
+          <BaseSelect
+            id="po-comment-category"
+            :model-value="category"
+            :options="commentCategoryOptions"
             aria-label="Kategori komentar"
-            class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-          >
-            <option v-for="c in PURCHASE_ORDER_COMMENT_CATEGORIES" :key="c" :value="c">
-              {{ PURCHASE_ORDER_COMMENT_CATEGORY_LABELS[c] }}
-            </option>
-          </select>
-          <ChevronDownIcon
-            class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+            @update:model-value="category = $event as PurchaseOrderCommentCategory"
           />
         </div>
 
-        <button
+        <BaseButton
           type="submit"
-          :disabled="submitting"
-          class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+          variant="primary"
+          :loading="submitting"
+          loading-text="Mengirim..."
         >
-          <Send class="h-4 w-4 rtl:-scale-x-100" aria-hidden="true" />
-          {{ submitting ? 'Mengirim...' : 'Kirim' }}
-        </button>
+          <template #start-icon
+            ><Send class="h-4 w-4 rtl:-scale-x-100" aria-hidden="true"
+          /></template>
+          Kirim
+        </BaseButton>
       </div>
 
       <p

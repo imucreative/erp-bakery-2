@@ -23,8 +23,8 @@
  * outlet from the PR) through its own watchers, so those keep working unchanged.
  */
 import { computed } from 'vue'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
 import EntityCombobox from '@/components/ui/EntityCombobox.vue'
+import { BaseInput, BaseSelect, BaseTextarea } from '@/components/ui'
 import type { PurchaseRequest } from '@/services/purchase-request.service'
 import type { Supplier } from '@/services/supplier.service'
 import type { PaymentTerm } from '@/services/payment-term.service'
@@ -53,8 +53,6 @@ const emit = defineEmits<{
   (e: 'update:notes', value: string): void
 }>()
 
-const inputClass =
-  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
 const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
 
 // ── Chip labels for the two comboboxes ────────────────────────────────
@@ -139,36 +137,31 @@ const prPickerDisabled = computed<boolean>(() => props.disabled || props.prLocke
       <!-- Order Date -->
       <div>
         <label :class="labelClass">Tanggal Order<span class="text-error-500">*</span></label>
-        <input
-          :value="props.orderDate"
+        <BaseInput
+          id="purchase-order-date"
+          :model-value="props.orderDate"
           type="date"
           :disabled="props.disabled"
-          :class="inputClass"
-          @click="($event.target as HTMLInputElement).showPicker?.()"
-          @focus="($event.target as HTMLInputElement).showPicker?.()"
-          @input="emit('update:orderDate', ($event.target as HTMLInputElement).value)"
+          @update:model-value="emit('update:orderDate', $event)"
         />
       </div>
 
       <!-- Payment Term (override, optional; defaults from supplier) -->
       <div class="sm:col-span-2">
         <label :class="labelClass">Termin Pembayaran</label>
-        <div class="relative">
-          <select
-            :value="props.paymentTermId"
-            :disabled="props.disabled"
-            :class="[inputClass, 'appearance-none pe-10']"
-            @change="emit('update:paymentTermId', ($event.target as HTMLSelectElement).value)"
-          >
-            <option value="">Tanpa termin / default vendor</option>
-            <option v-for="pt in props.paymentTerms" :key="pt.id" :value="pt.id">
-              {{ pt.name }} ({{ pt.dueDays }} hari)
-            </option>
-          </select>
-          <ChevronDownIcon
-            class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-          />
-        </div>
+        <BaseSelect
+          id="purchase-order-payment-term"
+          :model-value="props.paymentTermId"
+          :options="[
+            { value: '', label: 'Tanpa termin / default vendor' },
+            ...props.paymentTerms.map((pt) => ({
+              value: pt.id,
+              label: `${pt.name} (${pt.dueDays} hari)`,
+            })),
+          ]"
+          :disabled="props.disabled"
+          @update:model-value="emit('update:paymentTermId', $event)"
+        />
         <p v-if="props.duePreview" class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
           {{ props.duePreview }}
         </p>
@@ -177,14 +170,14 @@ const prPickerDisabled = computed<boolean>(() => props.disabled || props.prLocke
 
     <div>
       <label :class="labelClass">Catatan</label>
-      <textarea
-        :value="props.notes"
-        rows="2"
+      <BaseTextarea
+        id="purchase-order-notes"
+        :model-value="props.notes"
+        :rows="2"
         :disabled="props.disabled"
         placeholder="Catatan opsional untuk PO ini..."
-        class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-        @input="emit('update:notes', ($event.target as HTMLTextAreaElement).value)"
-      ></textarea>
+        @update:model-value="emit('update:notes', $event)"
+      />
     </div>
   </div>
 </template>
