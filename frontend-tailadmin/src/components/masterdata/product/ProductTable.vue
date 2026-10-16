@@ -6,6 +6,7 @@
  */
 import { Pencil, Trash2, Ruler } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
+import { BaseButton } from '@/components/ui'
 import { PRODUCT_TYPE_LABELS, type Product } from '@/services/product.service'
 
 defineProps<{
@@ -56,25 +57,39 @@ function formatIdr(value: number): string {
       <table class="min-w-full">
         <thead>
           <tr class="border-b border-gray-100 dark:border-gray-800">
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            <th
+              class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+            >
               SKU
             </th>
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            <th
+              class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+            >
               Nama
             </th>
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            <th
+              class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+            >
               Tipe
             </th>
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            <th
+              class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+            >
               UOM
             </th>
-            <th class="px-5 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            <th
+              class="px-5 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+            >
               Harga Jual
             </th>
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            <th
+              class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+            >
               Status
             </th>
-            <th class="px-5 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            <th
+              class="px-5 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+            >
               Aksi
             </th>
           </tr>
@@ -107,35 +122,39 @@ function formatIdr(value: number): string {
             </td>
             <td class="px-5 py-4">
               <div class="flex items-center justify-end gap-2">
-                <button
+                <BaseButton
+                  size="sm"
+                  variant="info"
+                  icon-only
                   type="button"
                   aria-label="Satuan & Konversi"
                   title="Satuan & Konversi"
-                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
                   @click="$emit('conversions', product)"
                 >
                   <Ruler class="h-4 w-4" aria-hidden="true" />
-                </button>
-                <button
+                </BaseButton>
+                <BaseButton
                   v-if="canManage"
-                  type="button"
+                  size="sm"
+                  variant="outline"
+                  icon-only
                   aria-label="Edit"
                   title="Edit"
-                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
                   @click="$emit('edit', product)"
                 >
                   <Pencil class="h-4 w-4" aria-hidden="true" />
-                </button>
-                <button
+                </BaseButton>
+                <BaseButton
                   v-if="canManage"
-                  type="button"
+                  size="sm"
+                  variant="danger"
+                  icon-only
                   aria-label="Hapus"
                   title="Hapus"
-                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-error-500 ring-1 ring-inset ring-error-200 transition hover:bg-error-50 hover:text-error-600 dark:ring-error-500/30 dark:hover:bg-error-500/10"
                   @click="$emit('delete', product)"
                 >
                   <Trash2 class="h-4 w-4" aria-hidden="true" />
-                </button>
+                </BaseButton>
               </div>
             </td>
           </tr>

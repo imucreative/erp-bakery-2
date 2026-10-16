@@ -5,10 +5,11 @@
  * `useProducts`; table and modals are separate components.
  */
 import { computed, onMounted, ref } from 'vue'
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import Button from '@/components/ui/Button.vue'
+import { BaseButton, BaseInput } from '@/components/ui'
 import ProductTable from '@/components/masterdata/product/ProductTable.vue'
 import ProductFormModal from '@/components/masterdata/product/ProductFormModal.vue'
 import ProductDeleteModal from '@/components/masterdata/product/ProductDeleteModal.vue'
@@ -203,20 +204,23 @@ onMounted(() => {
   <AdminLayout>
     <PageBreadcrumb :pageTitle="pageTitle" />
 
-    <ComponentCard title="Products" desc="Kelola produk (dengan grup, kategori, UOM, dan supplier).">
+    <ComponentCard
+      title="Products"
+      desc="Kelola produk (dengan grup, kategori, UOM, dan supplier)."
+    >
       <!-- Toolbar -->
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="relative w-full sm:max-w-xs">
-          <input
+          <BaseInput
+            id="product-search"
             v-model="search"
-            type="text"
             placeholder="Cari produk (nama / SKU / barcode)..."
-            class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
           />
         </div>
-        <Button v-if="canManage" size="sm" variant="primary" :on-click="openCreate">
-          + Tambah Produk
-        </Button>
+        <BaseButton v-if="canManage" size="sm" variant="primary" @click="openCreate">
+          <template #start-icon><Plus class="h-4 w-4" aria-hidden="true" /></template>
+          Tambah Produk
+        </BaseButton>
       </div>
 
       <ProductTable
@@ -239,15 +243,17 @@ onMounted(() => {
           Menampilkan {{ items.length }} dari {{ meta.total }} data
         </span>
         <div class="flex items-center gap-2">
-          <Button size="sm" variant="outline" :disabled="!canPrev" :on-click="prevPage">
+          <BaseButton size="sm" variant="outline" :disabled="!canPrev" @click="prevPage">
+            <template #start-icon><ChevronLeft class="h-4 w-4" aria-hidden="true" /></template>
             Sebelumnya
-          </Button>
+          </BaseButton>
           <span class="text-theme-sm text-gray-600 dark:text-gray-300">
             {{ page }} / {{ totalPages }}
           </span>
-          <Button size="sm" variant="outline" :disabled="!canNext" :on-click="nextPage">
+          <BaseButton size="sm" variant="outline" :disabled="!canNext" @click="nextPage">
+            <template #end-icon><ChevronRight class="h-4 w-4" aria-hidden="true" /></template>
             Berikutnya
-          </Button>
+          </BaseButton>
         </div>
       </div>
     </ComponentCard>
