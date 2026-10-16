@@ -7,6 +7,7 @@
  */
 import { Eye, Pencil, Trash2 } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
+import { BaseButton } from '@/components/ui'
 import type { Role } from '@/services/role.service'
 
 defineProps<{
@@ -52,19 +53,29 @@ function isOwner(role: Role): boolean {
       <table class="min-w-full">
         <thead>
           <tr class="border-b border-gray-100 dark:border-gray-800">
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            <th
+              class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+            >
               Kode
             </th>
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            <th
+              class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+            >
               Nama
             </th>
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            <th
+              class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+            >
               Deskripsi
             </th>
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            <th
+              class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+            >
               Status
             </th>
-            <th class="px-5 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            <th
+              class="px-5 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+            >
               Aksi
             </th>
           </tr>
@@ -91,35 +102,39 @@ function isOwner(role: Role): boolean {
             </td>
             <td class="px-5 py-4">
               <div class="flex items-center justify-end gap-2">
-                <button
+                <BaseButton
+                  size="sm"
+                  variant="outline"
+                  icon-only
                   type="button"
                   aria-label="Lihat permission"
                   title="Lihat permission"
-                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
                   @click="$emit('view', role)"
                 >
                   <Eye class="h-4 w-4" aria-hidden="true" />
-                </button>
-                <button
+                </BaseButton>
+                <BaseButton
                   v-if="canManage"
-                  type="button"
+                  size="sm"
+                  variant="outline"
+                  icon-only
                   aria-label="Edit"
                   title="Edit"
-                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
                   @click="$emit('edit', role)"
                 >
                   <Pencil class="h-4 w-4" aria-hidden="true" />
-                </button>
-                <button
+                </BaseButton>
+                <BaseButton
                   v-if="canManage && !isOwner(role)"
-                  type="button"
+                  size="sm"
+                  variant="danger"
+                  icon-only
                   aria-label="Hapus"
                   title="Hapus"
-                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-error-500 ring-1 ring-inset ring-error-200 transition hover:bg-error-50 hover:text-error-600 dark:ring-error-500/30 dark:hover:bg-error-500/10"
                   @click="$emit('delete', role)"
                 >
                   <Trash2 class="h-4 w-4" aria-hidden="true" />
-                </button>
+                </BaseButton>
               </div>
             </td>
           </tr>

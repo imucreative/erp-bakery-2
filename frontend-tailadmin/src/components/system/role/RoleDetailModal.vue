@@ -5,7 +5,8 @@
  * Transparent backdrop per UI standard.
  */
 import { computed } from 'vue'
-import Button from '@/components/ui/Button.vue'
+import { BaseButton } from '@/components/ui'
+import { X } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
 import type { Role, RoleDetail } from '@/services/role.service'
 
@@ -52,7 +53,10 @@ const permissionCount = computed<number>(() => props.detail?.permissions.length 
 </script>
 
 <template>
-  <div v-if="open" class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4">
+  <div
+    v-if="open"
+    class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4"
+  >
     <div
       class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
       aria-hidden="true"
@@ -92,7 +96,9 @@ const permissionCount = computed<number>(() => props.detail?.permissions.length 
 
       <div v-else class="space-y-4">
         <div v-for="group in groups" :key="group.domain" class="space-y-2">
-          <p class="text-theme-xs font-semibold uppercase capitalize text-gray-500 dark:text-gray-400">
+          <p
+            class="text-theme-xs font-semibold uppercase capitalize text-gray-500 dark:text-gray-400"
+          >
             {{ group.domain }}
           </p>
           <div class="flex flex-wrap gap-2">
@@ -108,7 +114,10 @@ const permissionCount = computed<number>(() => props.detail?.permissions.length 
       </div>
 
       <div class="mt-6 flex justify-end">
-        <Button size="sm" variant="outline" :on-click="() => emit('close')">Tutup</Button>
+        <BaseButton size="sm" variant="outline" @click="emit('close')">
+          <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
+          Tutup
+        </BaseButton>
       </div>
     </div>
   </div>
