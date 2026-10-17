@@ -25,9 +25,17 @@
  */
 import { computed } from 'vue'
 import { Trash2 } from 'lucide-vue-next'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
 import EntityCombobox from '@/components/ui/EntityCombobox.vue'
 import { PlusIcon } from '@/icons'
+import {
+  BaseButton,
+  BaseInput,
+  BaseSelect,
+  BaseTable,
+  BaseTableCell,
+  BaseTableHead,
+  BaseTableRow,
+} from '@/components/ui'
 import type { Product } from '@/services/product.service'
 import type { Uom } from '@/services/uom.service'
 
@@ -49,9 +57,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'update:modelValue', rows: RecipeEditorItemRow[]): void
 }>()
-
-const inputClass =
-  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
 
 const productMap = computed<Map<string, Product>>(
   () => new Map(props.products.map((p) => [p.id, p])),
@@ -153,154 +158,104 @@ function removeRow(index: number): void {
          by the row count; `overflow-y-hidden` guarantees the combobox dropdown can
          never turn this wrapper into a vertical scroll container (CSS would
          otherwise compute overflow-y to auto because overflow-x is not visible). -->
-    <div
-      class="overflow-x-auto overflow-y-hidden rounded-xl border border-gray-200 dark:border-gray-800"
-    >
-      <table class="min-w-full">
-        <thead>
-          <tr class="border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]">
-            <th
-              class="w-80 px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+    <BaseTable aria-label="Editor bahan resep">
+      <template #header>
+        <BaseTableRow variant="header">
+          <BaseTableHead>Bahan</BaseTableHead><BaseTableHead>Qty</BaseTableHead
+          ><BaseTableHead>UOM</BaseTableHead><BaseTableHead>Loss %</BaseTableHead
+          ><BaseTableHead align="end">Aksi</BaseTableHead>
+        </BaseTableRow>
+      </template>
+      <template #body>
+        <BaseTableRow v-for="(row, index) in modelValue" :key="index">
+          <!-- Ingredient (Bahan) picker — text autocomplete, client-filtered -->
+          <BaseTableCell class="align-top">
+            <EntityCombobox
+              :model-value="row.ingredientProductId"
+              :selected-label="chosenLabel(row)"
+              :items="sortedProducts"
+              :item-id="(product) => product.id"
+              :item-label="ingredientLabel"
+              :item-disabled="makeBlockedTest(index)"
+              item-disabled-hint="sudah dipakai di baris lain"
+              mode="client"
+              :max-suggestions="50"
+              :visible-item-count="10"
+              placeholder="Ketik untuk mencari bahan..."
+              empty-text="Bahan tidak ditemukan."
+              :aria-label="`Bahan baris ${index + 1}`"
+              :clear-aria-label="`Hapus bahan baris ${index + 1}`"
+              :disabled="disabled"
+              @select="chooseIngredient(index, $event)"
+              @clear="clearIngredient(index)"
+            />
+          </BaseTableCell>
+          <!-- Qty -->
+          <BaseTableCell class="align-top">
+            <BaseInput
+              :id="`recipe-qty-${index}`"
+              :model-value="row.qty"
+              type="number"
+              min="0"
+              step="any"
+              :disabled="disabled"
+              @update:model-value="updateRow(index, { qty: Number($event) })"
+            />
+          </BaseTableCell>
+          <!-- UOM -->
+          <BaseTableCell class="align-top">
+            <BaseSelect
+              :id="`recipe-uom-${index}`"
+              :model-value="row.uomId"
+              :options="uoms.map((uom) => ({ value: uom.id, label: uom.name }))"
+              :disabled="disabled"
+              placeholder="Pilih UOM..."
+              @update:model-value="updateRow(index, { uomId: $event })"
+            />
+          </BaseTableCell>
+          <!-- Loss percentage -->
+          <BaseTableCell class="align-top">
+            <BaseInput
+              :id="`recipe-loss-${index}`"
+              :model-value="row.lossPercentage"
+              type="number"
+              min="0"
+              max="100"
+              step="any"
+              :disabled="disabled"
+              @update:model-value="updateRow(index, { lossPercentage: Number($event) })"
+            />
+          </BaseTableCell>
+          <!-- Remove -->
+          <BaseTableCell align="end" class="align-top">
+            <BaseButton
+              size="sm"
+              variant="danger"
+              icon-only
+              aria-label="Hapus baris"
+              title="Hapus baris"
+              :disabled="disabled"
+              @click="removeRow(index)"
             >
-              Bahan
-            </th>
-            <th
-              class="w-28 px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
-            >
-              Qty
-            </th>
-            <th
-              class="w-40 px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
-            >
-              UOM
-            </th>
-            <th
-              class="w-32 px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
-            >
-              Loss %
-            </th>
-            <th
-              class="w-16 px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
-            >
-              Aksi
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(row, index) in modelValue"
-            :key="index"
-            class="border-b border-gray-100 last:border-0 dark:border-gray-800"
-          >
-            <!-- Ingredient (Bahan) picker — text autocomplete, client-filtered -->
-            <td class="px-4 py-3 align-top">
-              <EntityCombobox
-                :model-value="row.ingredientProductId"
-                :selected-label="chosenLabel(row)"
-                :items="sortedProducts"
-                :item-id="(product) => product.id"
-                :item-label="ingredientLabel"
-                :item-disabled="makeBlockedTest(index)"
-                item-disabled-hint="sudah dipakai di baris lain"
-                mode="client"
-                :max-suggestions="50"
-                :visible-item-count="10"
-                placeholder="Ketik untuk mencari bahan..."
-                empty-text="Bahan tidak ditemukan."
-                :aria-label="`Bahan baris ${index + 1}`"
-                :clear-aria-label="`Hapus bahan baris ${index + 1}`"
-                :disabled="disabled"
-                @select="chooseIngredient(index, $event)"
-                @clear="clearIngredient(index)"
-              />
-            </td>
-            <!-- Qty -->
-            <td class="px-4 py-3 align-top">
-              <input
-                :value="row.qty"
-                type="number"
-                min="0"
-                step="any"
-                :disabled="disabled"
-                :class="inputClass"
-                @input="
-                  updateRow(index, { qty: Number(($event.target as HTMLInputElement).value) })
-                "
-              />
-            </td>
-            <!-- UOM -->
-            <td class="px-4 py-3 align-top">
-              <div class="relative">
-                <select
-                  :value="row.uomId"
-                  :disabled="disabled"
-                  :class="[inputClass, 'appearance-none pe-10']"
-                  @change="updateRow(index, { uomId: ($event.target as HTMLSelectElement).value })"
-                >
-                  <option value="" disabled>Pilih UOM...</option>
-                  <option v-for="uom in uoms" :key="uom.id" :value="uom.id">
-                    {{ uom.name }}
-                  </option>
-                </select>
-                <ChevronDownIcon
-                  class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-                />
-              </div>
-            </td>
-            <!-- Loss percentage -->
-            <td class="px-4 py-3 align-top">
-              <input
-                :value="row.lossPercentage"
-                type="number"
-                min="0"
-                max="100"
-                step="any"
-                :disabled="disabled"
-                :class="inputClass"
-                @input="
-                  updateRow(index, {
-                    lossPercentage: Number(($event.target as HTMLInputElement).value),
-                  })
-                "
-              />
-            </td>
-            <!-- Remove -->
-            <td class="px-4 py-3 text-end align-top">
-              <button
-                type="button"
-                aria-label="Hapus baris"
-                title="Hapus baris"
-                :disabled="disabled"
-                class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-error-500 ring-1 ring-inset ring-error-200 transition hover:bg-error-50 hover:text-error-600 disabled:cursor-not-allowed disabled:opacity-40 dark:ring-error-500/30 dark:hover:bg-error-500/10"
-                @click="removeRow(index)"
-              >
-                <Trash2 class="h-4 w-4" aria-hidden="true" />
-              </button>
-            </td>
-          </tr>
+              <Trash2 class="h-4 w-4" aria-hidden="true" />
+            </BaseButton>
+          </BaseTableCell>
+        </BaseTableRow>
 
-          <tr v-if="modelValue.length === 0">
-            <td
-              colspan="5"
-              class="px-4 py-6 text-center text-theme-sm text-gray-500 dark:text-gray-400"
-            >
-              Belum ada bahan. Tambahkan baris lalu ketik untuk mencari bahan.
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+        <BaseTableRow v-if="modelValue.length === 0">
+          <BaseTableCell colspan="5" align="center">
+            Belum ada bahan. Tambahkan baris lalu ketik untuk mencari bahan.
+          </BaseTableCell>
+        </BaseTableRow>
+      </template>
+    </BaseTable>
 
     <!-- Add row -->
     <div v-if="!disabled" class="flex items-center gap-2">
-      <button
-        type="button"
-        class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
-        @click="addRow"
-      >
-        <PlusIcon class="h-4 w-4" aria-hidden="true" />
+      <BaseButton size="sm" variant="outline" @click="addRow">
+        <template #start-icon><PlusIcon class="h-4 w-4" aria-hidden="true" /></template>
         Tambah Bahan
-      </button>
+      </BaseButton>
     </div>
 
     <p class="text-theme-xs text-gray-400 dark:text-gray-500">

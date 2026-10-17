@@ -8,11 +8,7 @@
  */
 import Badge from '@/components/ui/Badge.vue'
 import { formatDateTime, formatNumber } from '@/lib/format'
-import {
-  RECIPE_STATUS_LABELS,
-  statusBadgeColor,
-  type Recipe,
-} from '@/services/recipe.service'
+import { RECIPE_STATUS_LABELS, statusBadgeColor, type Recipe } from '@/services/recipe.service'
 
 const props = defineProps<{
   recipe: Recipe

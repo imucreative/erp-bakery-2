@@ -13,7 +13,7 @@ import { CheckCircle2 } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import Button from '@/components/ui/Button.vue'
+import { BaseButton, BaseTablePagination } from '@/components/ui'
 import { RecipeFilterBar, RecipeTable } from '@/components/production/recipe'
 import { usePermission } from '@/composables/usePermission'
 import { useRecipes } from '@/composables/useRecipes'
@@ -106,13 +106,14 @@ onMounted(() => {
         <CheckCircle2 class="h-4 w-4 shrink-0" aria-hidden="true" />
         Resep draft berhasil dihapus.
       </span>
-      <button
-        type="button"
+      <BaseButton
+        variant="outline"
+        size="sm"
         class="text-success-600 underline-offset-2 hover:underline dark:text-success-500"
         @click="dismissDeletedNotice"
       >
         Tutup
-      </button>
+      </BaseButton>
     </div>
 
     <ComponentCard
@@ -127,9 +128,9 @@ onMounted(() => {
           v-model:product="productFilter"
           :products="productOptions"
         />
-        <Button v-if="canManage" size="sm" variant="primary" :on-click="goToCreate">
+        <BaseButton v-if="canManage" size="sm" variant="primary" @click="goToCreate">
           + Buat Resep
-        </Button>
+        </BaseButton>
       </div>
 
       <RecipeTable
@@ -140,25 +141,17 @@ onMounted(() => {
       />
 
       <!-- Pagination -->
-      <div
+      <BaseTablePagination
         v-if="!loading && !errorMessage && items.length > 0"
-        class="flex flex-col items-center justify-between gap-3 pt-2 sm:flex-row"
-      >
-        <span class="text-theme-sm text-gray-500 dark:text-gray-400">
-          Menampilkan {{ items.length }} dari {{ meta.total }} data
-        </span>
-        <div class="flex items-center gap-2">
-          <Button size="sm" variant="outline" :disabled="!canPrev" :on-click="prevPage">
-            Sebelumnya
-          </Button>
-          <span class="text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ page }} / {{ totalPages }}
-          </span>
-          <Button size="sm" variant="outline" :disabled="!canNext" :on-click="nextPage">
-            Berikutnya
-          </Button>
-        </div>
-      </div>
+        :current-count="items.length"
+        :total-items="meta.total"
+        :current-page="page"
+        :total-pages="totalPages"
+        :has-previous="canPrev"
+        :has-next="canNext"
+        @previous="prevPage"
+        @next="nextPage"
+      />
     </ComponentCard>
   </AdminLayout>
 </template>
