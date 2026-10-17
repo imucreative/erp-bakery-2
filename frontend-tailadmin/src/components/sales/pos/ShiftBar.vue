@@ -7,6 +7,7 @@
 import { Store, Clock, LogOut } from 'lucide-vue-next'
 import { formatDateTime } from '@/lib/format'
 import type { Shift } from '@/services/sales.service'
+import { BaseButton } from '@/components/ui'
 
 const props = defineProps<{
   shift: Shift
@@ -35,14 +36,11 @@ const emit = defineEmits<{
         {{ formatDateTime(props.shift.openedAt) }}
       </span>
     </div>
-    <button
-      v-if="props.canManage"
-      type="button"
-      class="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-error-600 ring-1 ring-inset ring-error-200 transition hover:bg-error-50 dark:bg-transparent dark:ring-error-500/30 dark:hover:bg-error-500/10"
-      @click="emit('close-shift')"
-    >
-      <LogOut class="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
+    <BaseButton v-if="props.canManage" size="sm" variant="danger" @click="emit('close-shift')">
+      <template #start-icon>
+        <LogOut class="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
+      </template>
       Tutup Shift
-    </button>
+    </BaseButton>
   </div>
 </template>
