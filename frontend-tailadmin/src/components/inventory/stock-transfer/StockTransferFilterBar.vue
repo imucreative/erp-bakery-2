@@ -7,11 +7,8 @@
  * `destinationOutlet` via v-model. Outlet options are resolved once by the
  * parent.
  */
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
-import {
-  TRANSFER_STATUSES,
-  TRANSFER_STATUS_LABELS,
-} from '@/services/stock-transfer.service'
+import { BaseInput, BaseSelect } from '@/components/ui'
+import { TRANSFER_STATUSES, TRANSFER_STATUS_LABELS } from '@/services/stock-transfer.service'
 import type { StatusFilter } from '@/composables/useStockTransfers'
 
 interface OutletOption {
@@ -37,55 +34,39 @@ const emit = defineEmits<{
 
 <template>
   <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-    <div class="relative w-full sm:max-w-xs">
-      <input
-        :value="search"
-        type="text"
-        placeholder="Cari nomor / catatan..."
-        class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-        @input="emit('update:search', ($event.target as HTMLInputElement).value)"
-      />
-    </div>
-    <div class="relative w-full sm:w-44">
-      <select
-        :value="status"
-        class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-        @change="emit('update:status', ($event.target as HTMLSelectElement).value as StatusFilter)"
-      >
-        <option value="all">Semua Status</option>
-        <option v-for="s in TRANSFER_STATUSES" :key="s" :value="s">
-          {{ TRANSFER_STATUS_LABELS[s] }}
-        </option>
-      </select>
-      <ChevronDownIcon
-        class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
-      />
-    </div>
-    <div class="relative w-full sm:w-52">
-      <select
-        :value="sourceOutlet"
-        class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-        @change="emit('update:sourceOutlet', ($event.target as HTMLSelectElement).value)"
-      >
-        <option value="">Semua Outlet Sumber</option>
-        <option v-for="o in outlets" :key="o.id" :value="o.id">{{ o.name }}</option>
-      </select>
-      <ChevronDownIcon
-        class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
-      />
-    </div>
-    <div class="relative w-full sm:w-52">
-      <select
-        :value="destinationOutlet"
-        class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-        @change="emit('update:destinationOutlet', ($event.target as HTMLSelectElement).value)"
-      >
-        <option value="">Semua Outlet Tujuan</option>
-        <option v-for="o in outlets" :key="o.id" :value="o.id">{{ o.name }}</option>
-      </select>
-      <ChevronDownIcon
-        class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
-      />
-    </div>
+    <BaseInput
+      id="stock-transfer-search"
+      :model-value="search"
+      type="search"
+      placeholder="Cari nomor / catatan..."
+      class="sm:max-w-xs"
+      @update:model-value="emit('update:search', $event)"
+    />
+    <BaseSelect
+      id="stock-transfer-status"
+      :model-value="status"
+      :options="[
+        { value: 'all', label: 'Semua Status' },
+        ...TRANSFER_STATUSES.map((value) => ({ value, label: TRANSFER_STATUS_LABELS[value] })),
+      ]"
+      class="sm:w-44"
+      @update:model-value="emit('update:status', $event as StatusFilter)"
+    />
+    <BaseSelect
+      id="stock-transfer-source"
+      :model-value="sourceOutlet"
+      :options="outlets.map((o) => ({ value: o.id, label: o.name }))"
+      placeholder="Semua Outlet Sumber"
+      class="sm:w-52"
+      @update:model-value="emit('update:sourceOutlet', $event)"
+    />
+    <BaseSelect
+      id="stock-transfer-destination"
+      :model-value="destinationOutlet"
+      :options="outlets.map((o) => ({ value: o.id, label: o.name }))"
+      placeholder="Semua Outlet Tujuan"
+      class="sm:w-52"
+      @update:model-value="emit('update:destinationOutlet', $event)"
+    />
   </div>
 </template>

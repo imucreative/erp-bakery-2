@@ -11,7 +11,7 @@
  */
 import { computed } from 'vue'
 import { TriangleAlert } from 'lucide-vue-next'
-import Button from '@/components/ui/Button.vue'
+import { BaseButton } from '@/components/ui'
 
 export type StockTransferAction = 'submit' | 'dispatch' | 'receive' | 'cancel'
 
@@ -32,9 +32,7 @@ const emit = defineEmits<{
 const isDispatch = computed<boolean>(() => props.action === 'dispatch')
 const isReceive = computed<boolean>(() => props.action === 'receive')
 const isCancel = computed<boolean>(() => props.action === 'cancel')
-const showWarning = computed<boolean>(
-  () => isDispatch.value || isReceive.value || isCancel.value,
-)
+const showWarning = computed<boolean>(() => isDispatch.value || isReceive.value || isCancel.value)
 
 const title = computed<string>(() => {
   switch (props.action) {
@@ -94,16 +92,10 @@ const warningText = computed<string>(() => {
   }
 })
 
-const confirmClass = computed<string>(() => {
-  const base =
-    'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition disabled:cursor-not-allowed disabled:opacity-60'
-  if (props.action === 'receive') {
-    return `${base} bg-success-500 hover:bg-success-600`
-  }
-  if (props.action === 'cancel') {
-    return `${base} bg-error-500 hover:bg-error-600`
-  }
-  return `${base} bg-brand-500 hover:bg-brand-600`
+const confirmVariant = computed<'primary' | 'success' | 'danger'>(() => {
+  if (props.action === 'receive') return 'success'
+  if (props.action === 'cancel') return 'danger'
+  return 'primary'
 })
 </script>
 
@@ -140,12 +132,19 @@ const confirmClass = computed<string>(() => {
       </p>
 
       <div class="flex justify-end gap-3">
-        <Button size="sm" variant="outline" :disabled="submitting" :on-click="() => emit('close')">
+        <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
           Kembali
-        </Button>
-        <button type="button" :disabled="submitting" :class="confirmClass" @click="emit('confirm')">
-          {{ submitting ? 'Memproses...' : confirmLabel }}
-        </button>
+        </BaseButton>
+        <BaseButton
+          size="sm"
+          :variant="confirmVariant"
+          :disabled="submitting"
+          :loading="submitting"
+          loading-text="Memproses..."
+          @click="emit('confirm')"
+        >
+          {{ confirmLabel }}
+        </BaseButton>
       </div>
     </div>
   </div>
