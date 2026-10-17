@@ -8,7 +8,7 @@
  * lookup maps (raw-id fallback). Read-only — no actions beyond closing.
  */
 import { computed } from 'vue'
-import Button from '@/components/ui/Button.vue'
+import { BaseButton } from '@/components/ui'
 import Badge from '@/components/ui/Badge.vue'
 import { formatDate, formatQtyWithUom } from '@/lib/format'
 import {
@@ -63,9 +63,7 @@ const outletName = computed<string>(() => {
   if (!props.detail) {
     return ''
   }
-  return (
-    props.outletNames.get(props.detail.batch.outletId) ?? props.detail.batch.outletId
-  )
+  return props.outletNames.get(props.detail.batch.outletId) ?? props.detail.batch.outletId
 })
 
 type ExpiryColor = 'success' | 'error' | 'warning' | 'light'
@@ -100,7 +98,10 @@ function statusColor(status: string): BatchStatusColor {
 </script>
 
 <template>
-  <div v-if="open" class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4">
+  <div
+    v-if="open"
+    class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4"
+  >
     <div
       class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
       aria-hidden="true"
@@ -149,7 +150,11 @@ function statusColor(status: string): BatchStatusColor {
           <div class="flex flex-col">
             <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">No. Batch</span>
             <span class="text-theme-sm text-gray-800 dark:text-white/90">
-              {{ detail.batch.isNonBatch || !detail.batch.batchNumber ? 'Non-batch' : detail.batch.batchNumber }}
+              {{
+                detail.batch.isNonBatch || !detail.batch.batchNumber
+                  ? 'Non-batch'
+                  : detail.batch.batchNumber
+              }}
             </span>
           </div>
           <div class="flex flex-col">
@@ -159,19 +164,25 @@ function statusColor(status: string): BatchStatusColor {
             </span>
           </div>
           <div class="flex flex-col">
-            <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">Qty Tersedia</span>
+            <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400"
+              >Qty Tersedia</span
+            >
             <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
               {{ formatQtyWithUom(detail.batch.qtyAvailable, uomLabel) }}
             </span>
           </div>
           <div class="flex flex-col">
-            <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">Tgl Diterima</span>
+            <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400"
+              >Tgl Diterima</span
+            >
             <span class="text-theme-sm text-gray-800 dark:text-white/90">
               {{ detail.batch.receivedDate ? formatDate(detail.batch.receivedDate) : '—' }}
             </span>
           </div>
           <div class="flex flex-col">
-            <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">Tgl Kedaluwarsa</span>
+            <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400"
+              >Tgl Kedaluwarsa</span
+            >
             <span class="text-theme-sm text-gray-800 dark:text-white/90">
               {{ detail.batch.expiredDate ? formatDate(detail.batch.expiredDate) : '—' }}
             </span>
@@ -185,7 +196,9 @@ function statusColor(status: string): BatchStatusColor {
             </span>
           </div>
           <div class="flex flex-col">
-            <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">Kedaluwarsa</span>
+            <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400"
+              >Kedaluwarsa</span
+            >
             <span>
               <Badge :color="expiryColor(detail.expiryState)">
                 {{ expiryStateLabel(detail.expiryState) }}
@@ -201,15 +214,12 @@ function statusColor(status: string): BatchStatusColor {
         </div>
       </div>
 
-      <div
-        v-else
-        class="py-8 text-center text-sm text-gray-500 dark:text-gray-400"
-      >
+      <div v-else class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
         Data batch tidak tersedia.
       </div>
 
       <div class="mt-6 flex justify-end">
-        <Button size="sm" variant="outline" :on-click="() => emit('close')">Tutup</Button>
+        <BaseButton size="sm" variant="outline" @click="emit('close')">Tutup</BaseButton>
       </div>
     </div>
   </div>
