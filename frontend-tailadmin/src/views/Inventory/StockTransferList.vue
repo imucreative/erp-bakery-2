@@ -18,6 +18,7 @@ import { useStockTransfers } from '@/composables/useStockTransfers'
 import { outletService, type Outlet } from '@/services/outlet.service'
 import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import type { StockTransfer } from '@/services/stock-transfer.service'
+import { Plus } from 'lucide-vue-next'
 
 const pageTitle = 'Stock Transfer'
 const router = useRouter()
@@ -96,6 +97,9 @@ onMounted(() => {
           :outlets="outlets"
         />
         <BaseButton v-if="canCreate" size="sm" variant="primary" @click="goToCreate">
+          <template #start-icon>
+            <Plus class="h-4 w-4" aria-hidden="true" />
+          </template>
           Buat Transfer
         </BaseButton>
       </div>

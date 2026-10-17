@@ -8,7 +8,7 @@
  * parent.
  */
 import { BaseInput, BaseSelect } from '@/components/ui'
-import { TRANSFER_STATUSES, TRANSFER_STATUS_LABELS } from '@/services/stock-transfer.service'
+import { TRANSFER_STATUS_LABELS } from '@/services/stock-transfer.service'
 import type { StatusFilter } from '@/composables/useStockTransfers'
 
 interface OutletOption {
@@ -47,7 +47,7 @@ const emit = defineEmits<{
       :model-value="status"
       :options="[
         { value: 'all', label: 'Semua Status' },
-        ...TRANSFER_STATUSES.map((value) => ({ value, label: TRANSFER_STATUS_LABELS[value] })),
+        ...Object.entries(TRANSFER_STATUS_LABELS).map(([value, label]) => ({ value, label })),
       ]"
       class="sm:w-44"
       @update:model-value="emit('update:status', $event as StatusFilter)"

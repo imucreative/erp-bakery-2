@@ -7,7 +7,7 @@
  * are resolved once by the parent.
  */
 import { BaseInput, BaseSelect } from '@/components/ui'
-import { OPNAME_STATUSES, OPNAME_STATUS_LABELS } from '@/services/stock-opname.service'
+import { OPNAME_STATUS_LABELS } from '@/services/stock-opname.service'
 import type { OpnameStatusFilter } from '@/composables/useStockOpnames'
 
 interface OutletOption {
@@ -44,7 +44,10 @@ const emit = defineEmits<{
       :model-value="status"
       :options="[
         { value: 'all', label: 'Semua Status' },
-        ...OPNAME_STATUSES.map((value) => ({ value, label: OPNAME_STATUS_LABELS[value] })),
+        ...Object.entries(OPNAME_STATUS_LABELS).map(([value, label]) => ({
+          value,
+          label,
+        })),
       ]"
       class="sm:w-48"
       @update:model-value="emit('update:status', $event as OpnameStatusFilter)"
