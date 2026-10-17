@@ -17,7 +17,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { Download, FileText, ImageIcon, Paperclip, Trash2, UploadCloud } from 'lucide-vue-next'
 import { ApiClientError } from '@/services/http'
-import { BaseButton } from '@/components/ui'
+import { BaseButton, BaseFileButton } from '@/components/ui'
 import { formatDateTime, formatFileSize } from '@/lib/format'
 import {
   purchaseReturnService,
@@ -38,7 +38,7 @@ const loading = ref<boolean>(true)
 const loadError = ref<string | null>(null)
 
 // Upload state
-const fileInput = ref<HTMLInputElement | null>(null)
+const fileButton = ref<{ reset: () => void } | null>(null)
 const selectedFile = ref<File | null>(null)
 const uploading = ref<boolean>(false)
 const uploadError = ref<string | null>(null)
@@ -86,10 +86,8 @@ async function loadAttachments(): Promise<void> {
 }
 
 // ── Upload ───────────────────────────────────────────────────────────
-function onFileChange(event: Event): void {
+function onFileChange(file: File | null): void {
   uploadError.value = null
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0] ?? null
   selectedFile.value = file
 }
 
@@ -105,9 +103,7 @@ function validateFile(file: File): string | null {
 
 function resetFileInput(): void {
   selectedFile.value = null
-  if (fileInput.value) {
-    fileInput.value.value = ''
-  }
+  fileButton.value?.reset()
 }
 
 async function uploadSelected(): Promise<void> {
@@ -305,19 +301,16 @@ onMounted(() => {
       </label>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <label
-          class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-theme-sm font-medium text-gray-700 shadow-theme-xs transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white/[0.03]"
+        <BaseFileButton
+          ref="fileButton"
+          size="sm"
+          variant="outline"
+          :accept="ACCEPT_ATTR"
+          @file-change="onFileChange"
         >
           <Paperclip class="h-4 w-4" aria-hidden="true" />
           Pilih File
-          <input
-            ref="fileInput"
-            type="file"
-            class="sr-only"
-            :accept="ACCEPT_ATTR"
-            @change="onFileChange"
-          />
-        </label>
+        </BaseFileButton>
 
         <span
           class="min-w-0 flex-1 truncate text-theme-sm text-gray-500 dark:text-gray-400"
