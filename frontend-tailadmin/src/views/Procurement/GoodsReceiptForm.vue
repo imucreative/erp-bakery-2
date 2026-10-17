@@ -36,7 +36,7 @@ import { ChevronLeft } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import Button from '@/components/ui/Button.vue'
+import { BaseButton } from '@/components/ui'
 import {
   GoodsReceiptHeaderFields,
   GoodsReceiptItemsEditor,
@@ -401,15 +401,16 @@ function onCancel(): void {
 
     <!-- Page header: back (icon-only) + title on the start -->
     <div class="mb-5 flex flex-wrap items-center gap-3">
-      <button
-        type="button"
+      <BaseButton
+        variant="outline"
+        icon-only
         aria-label="Kembali ke Daftar"
         title="Kembali ke Daftar"
         class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
         @click="onCancel"
       >
         <ChevronLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
-      </button>
+      </BaseButton>
       <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
         {{ pageTitle }}
       </h3>
@@ -457,8 +458,8 @@ function onCancel(): void {
             class="mb-3 rounded-lg border border-warning-500/40 bg-warning-50 px-4 py-3 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
             role="alert"
           >
-            Semua item PO ini sudah habis diterima pada GR lain. Tidak ada sisa
-            (outstanding) yang bisa diterima, sehingga GR tidak dapat dibuat.
+            Semua item PO ini sudah habis diterima pada GR lain. Tidak ada sisa (outstanding) yang
+            bisa diterima, sehingga GR tidak dapat dibuat.
           </p>
           <GoodsReceiptItemsEditor
             v-model="items"
@@ -477,17 +478,19 @@ function onCancel(): void {
         </p>
 
         <div class="flex justify-end gap-3 pt-2">
-          <Button size="sm" variant="outline" :disabled="submitting" :on-click="onCancel">
+          <BaseButton size="sm" variant="outline" :disabled="submitting" @click="onCancel">
             {{ isReadOnly ? 'Kembali' : 'Batal' }}
-          </Button>
-          <button
+          </BaseButton>
+          <BaseButton
             v-if="!isReadOnly"
             type="submit"
+            variant="primary"
             :disabled="submitting || allReceived"
-            class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+            :loading="submitting"
+            loading-text="Menyimpan..."
           >
-            {{ submitting ? 'Menyimpan...' : 'Simpan sebagai Draft' }}
-          </button>
+            Simpan sebagai Draft
+          </BaseButton>
         </div>
       </form>
     </ComponentCard>

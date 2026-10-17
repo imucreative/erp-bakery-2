@@ -21,11 +21,9 @@
 import { computed, onMounted, ref } from 'vue'
 import { Download, FileText, ImageIcon, Paperclip, Trash2, UploadCloud } from 'lucide-vue-next'
 import { ApiClientError } from '@/services/http'
+import { BaseButton } from '@/components/ui'
 import { formatDateTime, formatFileSize } from '@/lib/format'
-import {
-  goodsReceiptService,
-  type GoodsReceiptAttachment,
-} from '@/services/goods-receipt.service'
+import { goodsReceiptService, type GoodsReceiptAttachment } from '@/services/goods-receipt.service'
 
 const props = defineProps<{
   goodsReceiptId: string
@@ -50,6 +48,10 @@ const uploadError = ref<string | null>(null)
 const downloadingId = ref<string | null>(null)
 const confirmDeleteId = ref<string | null>(null)
 const deletingId = ref<string | null>(null)
+
+function openFilePicker(): void {
+  fileInput.value?.click()
+}
 
 function toMessage(error: unknown): string {
   if (error instanceof ApiClientError) {
@@ -237,26 +239,30 @@ onMounted(() => {
             </div>
 
             <div class="flex shrink-0 items-center gap-1">
-              <button
+              <BaseButton
+                size="sm"
+                variant="outline"
+                icon-only
                 type="button"
                 :disabled="downloadingId === attachment.id"
-                class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-white/[0.05] dark:hover:text-white/90"
                 :title="'Unduh'"
                 :aria-label="`Unduh ${attachment.originalName}`"
                 @click="download(attachment)"
               >
                 <Download class="h-5 w-5" aria-hidden="true" />
-              </button>
-              <button
+              </BaseButton>
+              <BaseButton
                 v-if="canManage"
+                size="sm"
+                variant="danger"
+                icon-only
                 type="button"
-                class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-error-500 transition hover:bg-error-50 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-error-500/10"
                 :title="'Hapus'"
                 :aria-label="`Hapus ${attachment.originalName}`"
                 @click="requestDelete(attachment.id)"
               >
                 <Trash2 class="h-5 w-5" aria-hidden="true" />
-              </button>
+              </BaseButton>
             </div>
           </div>
 
@@ -269,22 +275,24 @@ onMounted(() => {
               Hapus lampiran ini? Tindakan ini permanen.
             </span>
             <div class="flex items-center gap-2">
-              <button
-                type="button"
+              <BaseButton
+                size="sm"
+                variant="outline"
                 :disabled="deletingId === attachment.id"
-                class="inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-theme-sm font-medium text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
                 @click="cancelDelete"
               >
                 Batal
-              </button>
-              <button
-                type="button"
+              </BaseButton>
+              <BaseButton
+                size="sm"
+                variant="danger"
+                :loading="deletingId === attachment.id"
+                loading-text="Menghapus..."
                 :disabled="deletingId === attachment.id"
-                class="inline-flex items-center justify-center rounded-lg bg-error-500 px-3 py-1.5 text-theme-sm font-medium text-white shadow-theme-xs transition hover:bg-error-600 disabled:cursor-not-allowed disabled:opacity-60"
                 @click="confirmDelete(attachment)"
               >
-                {{ deletingId === attachment.id ? 'Menghapus...' : 'Hapus' }}
-              </button>
+                Hapus
+              </BaseButton>
             </div>
           </div>
         </li>
@@ -302,35 +310,39 @@ onMounted(() => {
       </label>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <label
-          class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-theme-sm font-medium text-gray-700 shadow-theme-xs transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white/[0.03]"
-        >
+        <BaseButton type="button" size="sm" variant="outline" @click="openFilePicker">
           <Paperclip class="h-4 w-4" aria-hidden="true" />
           Pilih File
-          <input
-            ref="fileInput"
-            type="file"
-            class="sr-only"
-            :accept="ACCEPT_ATTR"
-            @change="onFileChange"
-          />
-        </label>
+        </BaseButton>
+        <input
+          ref="fileInput"
+          type="file"
+          class="sr-only"
+          :accept="ACCEPT_ATTR"
+          @change="onFileChange"
+        />
 
         <span
           class="min-w-0 flex-1 truncate text-theme-sm text-gray-500 dark:text-gray-400"
           :class="{ 'text-gray-800 dark:text-white/90': hasSelection }"
         >
-          {{ selectedFile ? `${selectedFile.name} (${formatFileSize(selectedFile.size)})` : 'PDF, JPG, atau PNG · maks 5 MB' }}
+          {{
+            selectedFile
+              ? `${selectedFile.name} (${formatFileSize(selectedFile.size)})`
+              : 'PDF, JPG, atau PNG · maks 5 MB'
+          }}
         </span>
 
-        <button
+        <BaseButton
           type="submit"
-          :disabled="uploading || !hasSelection"
-          class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-theme-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+          variant="primary"
+          :loading="uploading"
+          loading-text="Mengunggah..."
+          :disabled="!hasSelection"
         >
           <UploadCloud class="h-4 w-4" aria-hidden="true" />
-          {{ uploading ? 'Mengunggah...' : 'Unggah' }}
-        </button>
+          Unggah
+        </BaseButton>
       </div>
 
       <p

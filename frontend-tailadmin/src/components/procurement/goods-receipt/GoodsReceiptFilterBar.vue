@@ -6,9 +6,7 @@
  * v-model:search / v-model:status / v-model:purchaseOrder.
  */
 import { BaseInput, BaseSelect } from '@/components/ui'
-import {
-  GOODS_RECEIPT_STATUS_LABELS,
-} from '@/services/goods-receipt.service'
+import { GOODS_RECEIPT_STATUS_LABELS } from '@/services/goods-receipt.service'
 import type { StatusFilter } from '@/composables/useGoodsReceipts'
 import type { PurchaseOrder } from '@/services/purchase-order.service'
 
@@ -24,6 +22,14 @@ const emit = defineEmits<{
   (event: 'update:status', value: StatusFilter): void
   (event: 'update:purchaseOrder', value: string): void
 }>()
+
+const statusOptions = [
+  { value: 'all', label: 'Semua Status' },
+  ...Object.entries(GOODS_RECEIPT_STATUS_LABELS).map(([value, label]) => ({
+    value,
+    label,
+  })),
+]
 </script>
 
 <template>
@@ -40,13 +46,7 @@ const emit = defineEmits<{
       <BaseSelect
         id="goods-receipt-status"
         :model-value="status"
-        :options="[
-          { value: 'all', label: 'Semua Status' },
-          ...Object.entries(GOODS_RECEIPT_STATUS_LABELS).map(([value, label]) => ({
-            value,
-            label,
-          })),
-        ]"
+        :options="statusOptions"
         @update:model-value="emit('update:status', $event as StatusFilter)"
       />
     </div>

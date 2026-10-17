@@ -192,7 +192,7 @@ function removeRow(index: number): void {
         </BaseTableRow>
       </template>
       <template #body>
-        <tr
+        <BaseTableRow
           v-for="(row, index) in modelValue"
           :key="row.purchaseOrderItemId || index"
           class="border-b border-gray-100 last:border-0 dark:border-gray-800"
@@ -326,7 +326,7 @@ function removeRow(index: number): void {
               <Trash2 class="h-4 w-4" aria-hidden="true" />
             </BaseButton>
           </BaseTableCell>
-        </tr>
+        </BaseTableRow>
 
         <BaseTableRow v-if="modelValue.length === 0">
           <BaseTableCell colspan="9" align="center">
