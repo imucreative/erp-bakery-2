@@ -12,7 +12,7 @@ import { useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import Button from '@/components/ui/Button.vue'
+import { BaseButton, BaseTablePagination } from '@/components/ui'
 import {
   PurchaseReturnFilterBar,
   PurchaseReturnTable,
@@ -107,9 +107,9 @@ onMounted(() => {
           :goods-receipts="goodsReceipts"
           :suppliers="suppliers"
         />
-        <Button v-if="canCreate" size="sm" variant="primary" :on-click="goToCreate">
+        <BaseButton v-if="canCreate" size="sm" variant="primary" @click="goToCreate">
           + Buat Retur
-        </Button>
+        </BaseButton>
       </div>
 
       <PurchaseReturnTable
@@ -121,25 +121,17 @@ onMounted(() => {
       />
 
       <!-- Pagination -->
-      <div
+      <BaseTablePagination
         v-if="!loading && !errorMessage && items.length > 0"
-        class="flex flex-col items-center justify-between gap-3 pt-2 sm:flex-row"
-      >
-        <span class="text-theme-sm text-gray-500 dark:text-gray-400">
-          Menampilkan {{ items.length }} dari {{ meta.total }} data
-        </span>
-        <div class="flex items-center gap-2">
-          <Button size="sm" variant="outline" :disabled="!canPrev" :on-click="prevPage">
-            Sebelumnya
-          </Button>
-          <span class="text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ page }} / {{ totalPages }}
-          </span>
-          <Button size="sm" variant="outline" :disabled="!canNext" :on-click="nextPage">
-            Berikutnya
-          </Button>
-        </div>
-      </div>
+        :current-count="items.length"
+        :total-items="meta.total"
+        :current-page="page"
+        :total-pages="totalPages"
+        :has-previous="canPrev"
+        :has-next="canNext"
+        @previous="prevPage"
+        @next="nextPage"
+      />
     </ComponentCard>
   </AdminLayout>
 </template>

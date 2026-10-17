@@ -10,8 +10,8 @@
  * `disabled` renders the read-only mode and `grLocked` locks the GR select
  * (edit mode — the source GR can't change).
  */
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
 import type { GoodsReceipt } from '@/services/goods-receipt.service'
+import { BaseInput, BaseSelect, BaseTextarea } from '@/components/ui'
 
 const props = defineProps<{
   goodsReceiptId: string
@@ -31,8 +31,6 @@ const emit = defineEmits<{
   (e: 'update:notes', value: string): void
 }>()
 
-const inputClass =
-  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
 const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
 </script>
 
@@ -42,22 +40,14 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
       <!-- Source Goods Receipt -->
       <div>
         <label :class="labelClass">GR Sumber<span class="text-error-500">*</span></label>
-        <div class="relative">
-          <select
-            :value="props.goodsReceiptId"
-            :disabled="props.disabled || props.grLocked"
-            :class="[inputClass, 'appearance-none pe-10']"
-            @change="emit('update:goodsReceiptId', ($event.target as HTMLSelectElement).value)"
-          >
-            <option value="" disabled>Pilih GR (status selesai)</option>
-            <option v-for="gr in props.completedReceipts" :key="gr.id" :value="gr.id">
-              {{ gr.grNumber }}
-            </option>
-          </select>
-          <ChevronDownIcon
-            class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-          />
-        </div>
+        <BaseSelect
+          id="purchase-return-goods-receipt"
+          :model-value="props.goodsReceiptId"
+          :options="props.completedReceipts.map((gr) => ({ value: gr.id, label: gr.grNumber }))"
+          placeholder="Pilih GR (status selesai)"
+          :disabled="props.disabled || props.grLocked"
+          @update:model-value="emit('update:goodsReceiptId', $event)"
+        />
         <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
           Hanya GR berstatus selesai yang dapat diretur.
         </p>
@@ -66,14 +56,12 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
       <!-- Return Date -->
       <div>
         <label :class="labelClass">Tanggal Retur</label>
-        <input
-          :value="props.returnDate"
+        <BaseInput
+          id="purchase-return-date"
+          :model-value="props.returnDate"
           type="date"
           :disabled="props.disabled"
-          :class="inputClass"
-          @click="($event.target as HTMLInputElement).showPicker?.()"
-          @focus="($event.target as HTMLInputElement).showPicker?.()"
-          @input="emit('update:returnDate', ($event.target as HTMLInputElement).value)"
+          @update:model-value="emit('update:returnDate', $event)"
         />
       </div>
 
@@ -106,14 +94,14 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
 
     <div>
       <label :class="labelClass">Catatan</label>
-      <textarea
-        :value="props.notes"
-        rows="2"
+      <BaseTextarea
+        id="purchase-return-notes"
+        :model-value="props.notes"
+        :rows="2"
         :disabled="props.disabled"
         placeholder="Catatan opsional untuk retur ini..."
-        class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-        @input="emit('update:notes', ($event.target as HTMLTextAreaElement).value)"
-      ></textarea>
+        @update:model-value="emit('update:notes', $event)"
+      />
     </div>
   </div>
 </template>
