@@ -6,7 +6,7 @@
  * flow via v-model (outletId / opnameDate / notes) so the parent form owns
  * state, validation, and submission. `disabled` renders a submitting lock.
  */
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
+import { BaseInput, BaseSelect, BaseTextarea } from '@/components/ui'
 import type { Outlet } from '@/services/outlet.service'
 
 const props = defineProps<{
@@ -23,8 +23,6 @@ const emit = defineEmits<{
   (e: 'update:notes', value: string): void
 }>()
 
-const inputClass =
-  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
 const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
 </script>
 
@@ -34,22 +32,14 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
       <!-- Outlet -->
       <div>
         <label :class="labelClass">Outlet<span class="text-error-500">*</span></label>
-        <div class="relative">
-          <select
-            :value="props.outletId"
-            :disabled="props.disabled"
-            :class="[inputClass, 'appearance-none pe-10']"
-            @change="emit('update:outletId', ($event.target as HTMLSelectElement).value)"
-          >
-            <option value="" disabled>Pilih outlet</option>
-            <option v-for="outlet in props.outlets" :key="outlet.id" :value="outlet.id">
-              {{ outlet.name }}
-            </option>
-          </select>
-          <ChevronDownIcon
-            class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-          />
-        </div>
+        <BaseSelect
+          id="stock-opname-outlet"
+          :model-value="props.outletId"
+          :options="props.outlets.map((outlet) => ({ value: outlet.id, label: outlet.name }))"
+          :disabled="props.disabled"
+          placeholder="Pilih outlet"
+          @update:model-value="emit('update:outletId', $event)"
+        />
         <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
           Semua batch aktif outlet dikunci dan di-snapshot menjadi item saat penghitungan dimulai.
         </p>
@@ -58,28 +48,26 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
       <!-- Opname Date -->
       <div>
         <label :class="labelClass">Tanggal Opname<span class="text-error-500">*</span></label>
-        <input
-          :value="props.opnameDate"
+        <BaseInput
+          id="stock-opname-date"
+          :model-value="props.opnameDate"
           type="date"
           :disabled="props.disabled"
-          :class="inputClass"
-          @click="($event.target as HTMLInputElement).showPicker?.()"
-          @focus="($event.target as HTMLInputElement).showPicker?.()"
-          @input="emit('update:opnameDate', ($event.target as HTMLInputElement).value)"
+          @update:model-value="emit('update:opnameDate', $event)"
         />
       </div>
     </div>
 
     <div>
       <label :class="labelClass">Catatan</label>
-      <textarea
-        :value="props.notes"
-        rows="2"
+      <BaseTextarea
+        id="stock-opname-notes"
+        :model-value="props.notes"
+        :rows="2"
         :disabled="props.disabled"
         placeholder="Catatan opsional untuk opname ini..."
-        class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-        @input="emit('update:notes', ($event.target as HTMLTextAreaElement).value)"
-      ></textarea>
+        @update:model-value="emit('update:notes', $event)"
+      />
     </div>
   </div>
 </template>

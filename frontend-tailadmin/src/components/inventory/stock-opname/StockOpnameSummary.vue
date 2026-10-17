@@ -9,6 +9,7 @@
  */
 import { ExternalLink } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
+import { BaseButton } from '@/components/ui'
 import { formatDate, formatDateTime } from '@/lib/format'
 import {
   OPNAME_STATUS_LABELS,
@@ -79,14 +80,14 @@ const emit = defineEmits<{
         Penyesuaian Rekonsiliasi
       </dt>
       <dd class="mt-1">
-        <button
-          type="button"
-          class="inline-flex items-center gap-1.5 text-theme-sm font-medium text-brand-500 transition hover:text-brand-600"
+        <BaseButton
+          size="sm"
+          variant="info"
           @click="emit('open-adjustment', props.opname.generatedAdjustmentId!)"
         >
-          <ExternalLink class="h-4 w-4" aria-hidden="true" />
+          <template #start-icon><ExternalLink class="h-4 w-4" aria-hidden="true" /></template>
           Lihat Stock Adjustment
-        </button>
+        </BaseButton>
       </dd>
     </div>
   </dl>

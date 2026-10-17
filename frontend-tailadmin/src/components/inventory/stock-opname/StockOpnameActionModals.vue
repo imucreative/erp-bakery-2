@@ -11,7 +11,7 @@
  */
 import { computed } from 'vue'
 import { TriangleAlert } from 'lucide-vue-next'
-import Button from '@/components/ui/Button.vue'
+import { BaseButton } from '@/components/ui'
 
 export type StockOpnameAction = 'start' | 'submit' | 'approve' | 'complete' | 'cancel'
 
@@ -83,16 +83,10 @@ const confirmLabel = computed<string>(() => {
   }
 })
 
-const confirmClass = computed<string>(() => {
-  const base =
-    'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition disabled:cursor-not-allowed disabled:opacity-60'
-  if (props.action === 'complete') {
-    return `${base} bg-success-500 hover:bg-success-600`
-  }
-  if (props.action === 'cancel') {
-    return `${base} bg-error-500 hover:bg-error-600`
-  }
-  return `${base} bg-brand-500 hover:bg-brand-600`
+const confirmVariant = computed<'primary' | 'success' | 'danger'>(() => {
+  if (props.action === 'complete') return 'success'
+  if (props.action === 'cancel') return 'danger'
+  return 'primary'
 })
 </script>
 
@@ -118,9 +112,7 @@ const confirmClass = computed<string>(() => {
         class="mb-4 flex items-start gap-2 rounded-lg border border-warning-500/40 bg-warning-50 px-3 py-2 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
       >
         <TriangleAlert class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-        <span v-if="isComplete">
-          Setelah selesai, opname tidak bisa diubah atau dibatalkan.
-        </span>
+        <span v-if="isComplete"> Setelah selesai, opname tidak bisa diubah atau dibatalkan. </span>
         <span v-else>Opname yang dibatalkan tidak dapat dikembalikan.</span>
       </div>
 
@@ -132,12 +124,19 @@ const confirmClass = computed<string>(() => {
       </p>
 
       <div class="flex justify-end gap-3">
-        <Button size="sm" variant="outline" :disabled="submitting" :on-click="() => emit('close')">
+        <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
           Kembali
-        </Button>
-        <button type="button" :disabled="submitting" :class="confirmClass" @click="emit('confirm')">
-          {{ submitting ? 'Memproses...' : confirmLabel }}
-        </button>
+        </BaseButton>
+        <BaseButton
+          size="sm"
+          :variant="confirmVariant"
+          :disabled="submitting"
+          :loading="submitting"
+          loading-text="Memproses..."
+          @click="emit('confirm')"
+        >
+          {{ confirmLabel }}
+        </BaseButton>
       </div>
     </div>
   </div>
