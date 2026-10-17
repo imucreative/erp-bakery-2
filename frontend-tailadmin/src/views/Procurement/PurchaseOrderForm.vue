@@ -41,7 +41,7 @@ import { ChevronLeft } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import Button from '@/components/ui/Button.vue'
+import { BaseButton } from '@/components/ui'
 import {
   PurchaseOrderHeaderFields,
   PurchaseOrderItemsEditor,
@@ -51,15 +51,12 @@ import {
 import { formatDate, toISODate } from '@/lib/format'
 import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import { toMessage } from '@/composables/usePurchaseRequests'
-import { outletService, type Outlet } from '@/services/outlet.service'
+import { outletService } from '@/services/outlet.service'
 import { productService, type Product } from '@/services/product.service'
 import { uomService, type Uom } from '@/services/uom.service'
 import { supplierService, type Supplier } from '@/services/supplier.service'
 import { paymentTermService, type PaymentTerm } from '@/services/payment-term.service'
-import {
-  purchaseRequestService,
-  type PurchaseRequest,
-} from '@/services/purchase-request.service'
+import { purchaseRequestService, type PurchaseRequest } from '@/services/purchase-request.service'
 import {
   purchaseOrderService,
   type PurchaseOrder,
@@ -200,7 +197,12 @@ async function loadSupportingData(): Promise<void> {
   const [allRequests, allSuppliers, paymentTermResult, allProducts, allUoms, allOutlets] =
     await Promise.all([
       fetchAllPaginated((page) =>
-        purchaseRequestService.list({ page, limit: PAGE_LIMIT, status: 'APPROVED', orderable: true }),
+        purchaseRequestService.list({
+          page,
+          limit: PAGE_LIMIT,
+          status: 'APPROVED',
+          orderable: true,
+        }),
       ),
       fetchAllPaginated((page) =>
         supplierService.list({ page, limit: PAGE_LIMIT, isActive: 'true' }),
@@ -258,10 +260,7 @@ async function loadExisting(id: string): Promise<void> {
   // fails, fall back to the PO items themselves so the product stays read-only
   // and existing quantities remain the cap.
   try {
-    const outstanding = await purchaseOrderService.getOutstanding(
-      po.purchaseRequestId,
-      po.id,
-    )
+    const outstanding = await purchaseOrderService.getOutstanding(po.purchaseRequestId, po.id)
     prItems.value = toSourcePrItems(outstanding)
   } catch {
     prItems.value = po.items.map((item) => ({
@@ -443,15 +442,16 @@ function onCancel(): void {
 
     <!-- Page header: back (icon-only) + title on the start -->
     <div class="mb-5 flex flex-wrap items-center gap-3">
-      <button
-        type="button"
+      <BaseButton
+        variant="outline"
+        icon-only
         aria-label="Kembali ke Daftar"
         title="Kembali ke Daftar"
         class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
         @click="onCancel"
       >
         <ChevronLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
-      </button>
+      </BaseButton>
       <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
         {{ pageTitle }}
       </h3>
@@ -503,8 +503,8 @@ function onCancel(): void {
             class="mb-3 rounded-lg border border-warning-500/40 bg-warning-50 px-4 py-3 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
             role="alert"
           >
-            Semua item PR ini sudah habis dipesan pada PO lain. Tidak ada sisa
-            (outstanding) yang bisa dipesan, sehingga PO tidak dapat dibuat.
+            Semua item PR ini sudah habis dipesan pada PO lain. Tidak ada sisa (outstanding) yang
+            bisa dipesan, sehingga PO tidak dapat dibuat.
           </p>
           <PurchaseOrderItemsEditor
             v-model="items"
@@ -523,17 +523,19 @@ function onCancel(): void {
         </p>
 
         <div class="flex justify-end gap-3 pt-2">
-          <Button size="sm" variant="outline" :disabled="submitting" :on-click="onCancel">
+          <BaseButton size="sm" variant="outline" :disabled="submitting" @click="onCancel">
             {{ isReadOnly ? 'Kembali' : 'Batal' }}
-          </Button>
-          <button
+          </BaseButton>
+          <BaseButton
             v-if="!isReadOnly"
             type="submit"
+            variant="primary"
             :disabled="submitting || allConsumed"
-            class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+            :loading="submitting"
+            loading-text="Menyimpan..."
           >
-            {{ submitting ? 'Menyimpan...' : 'Simpan sebagai Draft' }}
-          </button>
+            Simpan sebagai Draft
+          </BaseButton>
         </div>
       </form>
     </ComponentCard>

@@ -23,6 +23,7 @@ import { ChevronLeft } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
+import { BaseButton } from '@/components/ui'
 import {
   PurchaseOrderSummary,
   PurchaseOrderItemsTable,
@@ -97,11 +98,7 @@ const showApprove = computed<boolean>(() => canApprove.value && status.value ===
 const showReject = computed<boolean>(() => canApprove.value && status.value === 'SUBMITTED')
 const hasAnyAction = computed<boolean>(
   () =>
-    showEdit.value ||
-    showSubmit.value ||
-    showCancel.value ||
-    showApprove.value ||
-    showReject.value,
+    showEdit.value || showSubmit.value || showCancel.value || showApprove.value || showReject.value,
 )
 
 // ── Load ─────────────────────────────────────────────────────────────
@@ -217,15 +214,16 @@ async function onConfirmAction(note: string): Promise<void> {
       <!-- Page header: back (icon-only) + title on the start, lifecycle actions on the end -->
       <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <button
-            type="button"
+          <BaseButton
+            variant="outline"
+            icon-only
             aria-label="Kembali ke Daftar"
             title="Kembali ke Daftar"
             class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
             @click="goToList"
           >
             <ChevronLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
-          </button>
+          </BaseButton>
           <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
             {{ po.poNumber }}
           </h3>
@@ -267,17 +265,10 @@ async function onConfirmAction(note: string): Promise<void> {
             />
 
             <div class="mt-6">
-              <PurchaseOrderItemsTable
-                :po="po"
-                :product-name="productName"
-                :uom-name="uomName"
-              />
+              <PurchaseOrderItemsTable :po="po" :product-name="productName" :uom-name="uomName" />
             </div>
 
-            <p
-              v-if="!hasAnyAction"
-              class="mt-6 text-theme-sm text-gray-400 dark:text-gray-500"
-            >
+            <p v-if="!hasAnyAction" class="mt-6 text-theme-sm text-gray-400 dark:text-gray-500">
               Tidak ada aksi untuk status ini.
             </p>
           </ComponentCard>
