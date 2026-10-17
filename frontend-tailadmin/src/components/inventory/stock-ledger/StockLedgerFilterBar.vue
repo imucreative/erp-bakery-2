@@ -6,7 +6,7 @@
  * input. Two-way binds `outletId`, `productId`, and `movementType`. Outlet and
  * product options are resolved once by the parent.
  */
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
+import { BaseSelect } from '@/components/ui'
 import { MOVEMENT_TYPES, movementTypeLabel } from '@/services/inventory.service'
 
 interface OutletOption {
@@ -37,51 +37,45 @@ const emit = defineEmits<{
 
 <template>
   <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-    <div class="relative w-full sm:w-56">
-      <select
-        :value="outletId"
-        class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-        @change="emit('update:outletId', ($event.target as HTMLSelectElement).value)"
-      >
-        <option value="">Semua Outlet</option>
-        <option v-for="outlet in outlets" :key="outlet.id" :value="outlet.id">
-          {{ outlet.name }}
-        </option>
-      </select>
-      <ChevronDownIcon
-        class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+    <div class="w-full sm:w-56">
+      <BaseSelect
+        id="stock-ledger-outlet"
+        :model-value="outletId"
+        :options="[
+          { value: '', label: 'Semua Outlet' },
+          ...outlets.map((outlet) => ({ value: outlet.id, label: outlet.name })),
+        ]"
+        @update:model-value="emit('update:outletId', $event)"
       />
     </div>
 
-    <div class="relative w-full sm:w-64">
-      <select
-        :value="productId"
-        class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-        @change="emit('update:productId', ($event.target as HTMLSelectElement).value)"
-      >
-        <option value="">Semua Produk</option>
-        <option v-for="product in products" :key="product.id" :value="product.id">
-          {{ product.name }} ({{ product.sku }})
-        </option>
-      </select>
-      <ChevronDownIcon
-        class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+    <div class="w-full sm:w-64">
+      <BaseSelect
+        id="stock-ledger-product"
+        :model-value="productId"
+        :options="[
+          { value: '', label: 'Semua Produk' },
+          ...products.map((product) => ({
+            value: product.id,
+            label: `${product.name} (${product.sku})`,
+          })),
+        ]"
+        @update:model-value="emit('update:productId', $event)"
       />
     </div>
 
-    <div class="relative w-full sm:w-56">
-      <select
-        :value="movementType"
-        class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-        @change="emit('update:movementType', ($event.target as HTMLSelectElement).value)"
-      >
-        <option value="">Semua Tipe</option>
-        <option v-for="type in MOVEMENT_TYPES" :key="type" :value="type">
-          {{ movementTypeLabel(type) }}
-        </option>
-      </select>
-      <ChevronDownIcon
-        class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+    <div class="w-full sm:w-56">
+      <BaseSelect
+        id="stock-ledger-movement-type"
+        :model-value="movementType"
+        :options="[
+          { value: '', label: 'Semua Tipe' },
+          ...MOVEMENT_TYPES.map((type) => ({
+            value: type,
+            label: movementTypeLabel(type),
+          })),
+        ]"
+        @update:model-value="emit('update:movementType', $event)"
       />
     </div>
   </div>
