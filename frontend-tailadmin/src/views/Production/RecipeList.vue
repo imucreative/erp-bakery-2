@@ -9,7 +9,7 @@
  */
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { CheckCircle2 } from 'lucide-vue-next'
+import { CheckCircle2, Plus } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
@@ -129,7 +129,10 @@ onMounted(() => {
           :products="productOptions"
         />
         <BaseButton v-if="canManage" size="sm" variant="primary" @click="goToCreate">
-          + Buat Resep
+          <template #start-icon>
+            <Plus class="h-4 w-4" aria-hidden="true" />
+          </template>
+          Buat Resep
         </BaseButton>
       </div>
 
