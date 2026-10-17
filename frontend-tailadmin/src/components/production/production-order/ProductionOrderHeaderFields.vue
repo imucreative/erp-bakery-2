@@ -18,8 +18,8 @@
  * list and `outletLocked` so the field renders read-only; otherwise a native
  * picker lists only the accessible outlets.
  */
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
 import EntityCombobox from '@/components/ui/EntityCombobox.vue'
+import { BaseInput, BaseSelect, BaseTextarea } from '@/components/ui'
 import type { Outlet } from '@/services/outlet.service'
 import type { Product } from '@/services/product.service'
 
@@ -61,8 +61,6 @@ const emit = defineEmits<{
   (e: 'product-clear'): void
 }>()
 
-const inputClass =
-  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
 const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
 
 // ── Product autocomplete ─────────────────────────────────────────────
@@ -72,15 +70,14 @@ function selectProduct(product: Product): void {
   emit('product-select', product)
 }
 
-function onQtyInput(event: Event, field: 'scheduledQty' | 'actualQty' | 'wasteQty'): void {
-  const raw = (event.target as HTMLInputElement).value
-  const value = raw === '' ? null : Number(raw)
+function updateNullableQty(field: 'scheduledQty' | 'actualQty' | 'wasteQty', value: string): void {
+  const quantity = value === '' ? null : Number(value)
   if (field === 'scheduledQty') {
-    emit('update:scheduledQty', value)
+    emit('update:scheduledQty', quantity)
   } else if (field === 'actualQty') {
-    emit('update:actualQty', value)
+    emit('update:actualQty', quantity)
   } else {
-    emit('update:wasteQty', value)
+    emit('update:wasteQty', quantity)
   }
 }
 </script>
@@ -91,31 +88,23 @@ function onQtyInput(event: Event, field: 'scheduledQty' | 'actualQty' | 'wasteQt
       <!-- Outlet -->
       <div>
         <label :class="labelClass">Outlet<span class="text-error-500">*</span></label>
-        <div v-if="props.outletLocked" class="relative">
-          <input
-            :value="props.outlets[0]?.name ?? ''"
-            type="text"
-            readonly
-            disabled
-            :class="inputClass"
-          />
-        </div>
-        <div v-else class="relative">
-          <select
-            :value="props.outletId"
-            :disabled="props.disabled"
-            :class="[inputClass, 'appearance-none pe-10']"
-            @change="emit('update:outletId', ($event.target as HTMLSelectElement).value)"
-          >
-            <option value="" disabled>Pilih outlet</option>
-            <option v-for="outlet in props.outlets" :key="outlet.id" :value="outlet.id">
-              {{ outlet.name }}
-            </option>
-          </select>
-          <ChevronDownIcon
-            class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-          />
-        </div>
+        <BaseInput
+          v-if="props.outletLocked"
+          id="production-order-outlet-locked"
+          :model-value="props.outlets[0]?.name ?? ''"
+          type="text"
+          readonly
+          disabled
+        />
+        <BaseSelect
+          v-else
+          id="production-order-outlet"
+          :model-value="props.outletId"
+          :options="props.outlets.map((outlet) => ({ value: outlet.id, label: outlet.name }))"
+          :disabled="props.disabled"
+          placeholder="Pilih outlet"
+          @update:model-value="emit('update:outletId', $event)"
+        />
       </div>
 
       <!-- Finished product (server-side autocomplete) -->
@@ -157,16 +146,16 @@ function onQtyInput(event: Event, field: 'scheduledQty' | 'actualQty' | 'wasteQt
       <!-- Target (scheduled) -->
       <div>
         <label :class="labelClass">Target<span class="text-error-500">*</span></label>
-        <input
-          :value="props.scheduledQty ?? ''"
+        <BaseInput
+          id="production-order-scheduled-qty"
+          :model-value="props.scheduledQty ?? ''"
           type="number"
           min="0"
           step="any"
           inputmode="decimal"
           :disabled="props.disabled"
           placeholder="0"
-          :class="inputClass"
-          @input="onQtyInput($event, 'scheduledQty')"
+          @update:model-value="updateNullableQty('scheduledQty', $event)"
         />
         <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
           Jumlah barang jadi yang ditargetkan.
@@ -176,16 +165,16 @@ function onQtyInput(event: Event, field: 'scheduledQty' | 'actualQty' | 'wasteQt
       <!-- Success (actual) -->
       <div>
         <label :class="labelClass">Berhasil<span class="text-error-500">*</span></label>
-        <input
-          :value="props.actualQty ?? ''"
+        <BaseInput
+          id="production-order-actual-qty"
+          :model-value="props.actualQty ?? ''"
           type="number"
           min="0"
           step="any"
           inputmode="decimal"
           :disabled="props.disabled"
           placeholder="0"
-          :class="inputClass"
-          @input="onQtyInput($event, 'actualQty')"
+          @update:model-value="updateNullableQty('actualQty', $event)"
         />
         <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
           Barang jadi yang berhasil dan masuk ke stok.
@@ -195,16 +184,16 @@ function onQtyInput(event: Event, field: 'scheduledQty' | 'actualQty' | 'wasteQt
       <!-- Waste -->
       <div>
         <label :class="labelClass">Gagal / Terbuang</label>
-        <input
-          :value="props.wasteQty ?? ''"
+        <BaseInput
+          id="production-order-waste-qty"
+          :model-value="props.wasteQty ?? ''"
           type="number"
           min="0"
           step="any"
           inputmode="decimal"
           :disabled="props.disabled"
           placeholder="0"
-          :class="inputClass"
-          @input="onQtyInput($event, 'wasteQty')"
+          @update:model-value="updateNullableQty('wasteQty', $event)"
         />
         <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
           Jumlah yang gagal/terbuang dan tidak masuk stok.
@@ -217,14 +206,12 @@ function onQtyInput(event: Event, field: 'scheduledQty' | 'actualQty' | 'wasteQt
           Tanggal Kedaluwarsa Hasil
           <span v-if="(props.actualQty ?? 0) > 0" class="text-error-500">*</span>
         </label>
-        <input
-          :value="props.resultExpiredDate"
+        <BaseInput
+          id="production-order-result-expiry"
+          :model-value="props.resultExpiredDate"
           type="date"
           :disabled="props.disabled"
-          :class="inputClass"
-          @click="($event.target as HTMLInputElement).showPicker?.()"
-          @focus="($event.target as HTMLInputElement).showPicker?.()"
-          @input="emit('update:resultExpiredDate', ($event.target as HTMLInputElement).value)"
+          @update:model-value="emit('update:resultExpiredDate', $event)"
         />
         <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
           Kedaluwarsa batch barang jadi (wajib bila Berhasil &gt; 0).
@@ -234,28 +221,26 @@ function onQtyInput(event: Event, field: 'scheduledQty' | 'actualQty' | 'wasteQt
       <!-- Production date -->
       <div>
         <label :class="labelClass">Tanggal Produksi</label>
-        <input
-          :value="props.productionDate"
+        <BaseInput
+          id="production-order-date"
+          :model-value="props.productionDate"
           type="date"
           :disabled="props.disabled"
-          :class="inputClass"
-          @click="($event.target as HTMLInputElement).showPicker?.()"
-          @focus="($event.target as HTMLInputElement).showPicker?.()"
-          @input="emit('update:productionDate', ($event.target as HTMLInputElement).value)"
+          @update:model-value="emit('update:productionDate', $event)"
         />
       </div>
     </div>
 
     <div>
       <label :class="labelClass">Catatan</label>
-      <textarea
-        :value="props.notes"
-        rows="2"
+      <BaseTextarea
+        id="production-order-notes"
+        :model-value="props.notes"
+        :rows="2"
         :disabled="props.disabled"
         placeholder="Catatan opsional — alasan terbuang: gosong / tester / dll."
-        class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-        @input="emit('update:notes', ($event.target as HTMLTextAreaElement).value)"
-      ></textarea>
+        @update:model-value="emit('update:notes', $event)"
+      />
     </div>
   </div>
 </template>

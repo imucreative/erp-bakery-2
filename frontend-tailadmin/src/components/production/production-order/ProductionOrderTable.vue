@@ -1,15 +1,7 @@
 <script setup lang="ts">
-/**
- * ProductionOrderTable — presentational table for the Production Order list.
- * Columns: Nomor, Produk, Outlet, Tanggal, Target, Berhasil, Terbuang, Status
- * (badge). Row action is icon-only (view/detail). Renders loading / error /
- * empty states. Names for the order's product and outlet come from its API
- * response; the outlet callback is a fallback for older responses.
- *
- * NOTE: list rows carry HEADERS ONLY (materials/results are empty on list).
- */
 import { Eye } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
+import { BaseButton, BaseTable, BaseTableCell, BaseTableHead, BaseTableRow } from '@/components/ui'
 import { formatDate, formatNumber } from '@/lib/format'
 import {
   PRODUCTION_ORDER_STATUS_LABELS,
@@ -23,114 +15,54 @@ defineProps<{
   errorMessage: string | null
   outletName: (id: string) => string
 }>()
-
-defineEmits<{
-  (event: 'view', order: ProductionOrder): void
-}>()
+defineEmits<{ (event: 'view', order: ProductionOrder): void }>()
 </script>
 
 <template>
-  <div>
-    <div v-if="loading" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-      Memuat data...
-    </div>
-
-    <div
-      v-else-if="errorMessage"
-      class="rounded-lg border border-error-500/40 bg-error-50 px-4 py-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      role="alert"
+  <BaseTable
+    :loading="loading"
+    :error-message="errorMessage"
+    :is-empty="items.length === 0"
+    empty-message="Belum ada perintah produksi."
+    aria-label="Daftar production order"
+  >
+    <template #header
+      ><BaseTableRow variant="header"
+        ><BaseTableHead>Nomor</BaseTableHead><BaseTableHead>Produk</BaseTableHead
+        ><BaseTableHead>Outlet</BaseTableHead><BaseTableHead>Tanggal</BaseTableHead
+        ><BaseTableHead align="end">Target</BaseTableHead
+        ><BaseTableHead align="end">Berhasil</BaseTableHead
+        ><BaseTableHead align="end">Terbuang</BaseTableHead><BaseTableHead>Status</BaseTableHead
+        ><BaseTableHead align="end">Aksi</BaseTableHead></BaseTableRow
+      ></template
     >
-      {{ errorMessage }}
-    </div>
-
-    <div
-      v-else-if="items.length === 0"
-      class="py-10 text-center text-sm text-gray-500 dark:text-gray-400"
-    >
-      Belum ada perintah produksi.
-    </div>
-
-    <div v-else class="overflow-x-auto">
-      <table class="min-w-full">
-        <thead>
-          <tr class="border-b border-gray-100 dark:border-gray-800">
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Nomor
-            </th>
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Produk
-            </th>
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Outlet
-            </th>
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Tanggal
-            </th>
-            <th class="px-5 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Target
-            </th>
-            <th class="px-5 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Berhasil
-            </th>
-            <th class="px-5 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Terbuang
-            </th>
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Status
-            </th>
-            <th class="px-5 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Aksi
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="order in items"
-            :key="order.id"
-            class="border-b border-gray-100 dark:border-gray-800"
-          >
-            <td class="px-5 py-4 text-theme-sm font-medium text-gray-800 dark:text-white/90">
-              {{ order.productionNumber }}
-            </td>
-            <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
-              {{ order.productName || order.productId }}
-            </td>
-            <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
-              {{ order.outletName || outletName(order.outletId) }}
-            </td>
-            <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
-              {{ formatDate(order.productionDate) }}
-            </td>
-            <td class="px-5 py-4 text-end text-theme-sm text-gray-600 dark:text-gray-300">
-              {{ formatNumber(order.scheduledQty) }}
-            </td>
-            <td class="px-5 py-4 text-end text-theme-sm text-gray-600 dark:text-gray-300">
-              {{ order.actualQty !== null ? formatNumber(order.actualQty) : '-' }}
-            </td>
-            <td class="px-5 py-4 text-end text-theme-sm text-gray-600 dark:text-gray-300">
-              {{ formatNumber(order.wasteQty) }}
-            </td>
-            <td class="px-5 py-4">
-              <Badge :color="statusBadgeColor(order.status)">
-                {{ PRODUCTION_ORDER_STATUS_LABELS[order.status] }}
-              </Badge>
-            </td>
-            <td class="px-5 py-4">
-              <div class="flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  aria-label="Lihat detail"
-                  title="Lihat detail"
-                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
-                  @click="$emit('view', order)"
-                >
-                  <Eye class="h-4 w-4" aria-hidden="true" />
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+    <template #body>
+      <BaseTableRow v-for="order in items" :key="order.id">
+        <BaseTableCell emphasis="medium">{{ order.productionNumber }}</BaseTableCell>
+        <BaseTableCell>{{ order.productName || order.productId }}</BaseTableCell>
+        <BaseTableCell>{{ order.outletName || outletName(order.outletId) }}</BaseTableCell>
+        <BaseTableCell>{{ formatDate(order.productionDate) }}</BaseTableCell>
+        <BaseTableCell align="end">{{ formatNumber(order.scheduledQty) }}</BaseTableCell>
+        <BaseTableCell align="end">{{
+          order.actualQty !== null ? formatNumber(order.actualQty) : '-'
+        }}</BaseTableCell>
+        <BaseTableCell align="end">{{ formatNumber(order.wasteQty) }}</BaseTableCell>
+        <BaseTableCell
+          ><Badge :color="statusBadgeColor(order.status)">{{
+            PRODUCTION_ORDER_STATUS_LABELS[order.status]
+          }}</Badge></BaseTableCell
+        >
+        <BaseTableCell align="end"
+          ><BaseButton
+            size="sm"
+            variant="outline"
+            icon-only
+            aria-label="Lihat detail"
+            title="Lihat detail"
+            @click="$emit('view', order)"
+            ><Eye class="h-4 w-4" aria-hidden="true" /></BaseButton
+        ></BaseTableCell>
+      </BaseTableRow>
+    </template>
+  </BaseTable>
 </template>

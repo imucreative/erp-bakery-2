@@ -19,6 +19,7 @@
 import { computed } from 'vue'
 import { AlertTriangle, PackageCheck } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
+import { BaseTable, BaseTableCell, BaseTableHead, BaseTableRow } from '@/components/ui'
 import { formatNumber } from '@/lib/format'
 import type { ProducibleInfo } from '@/services/production-order.service'
 
@@ -34,7 +35,7 @@ const props = defineProps<{
 }>()
 
 const yieldUomLabel = computed<string>(() =>
-  props.info ? props.info.recipe.yieldUomName ?? '' : '',
+  props.info ? (props.info.recipe.yieldUomName ?? '') : '',
 )
 
 const hasStock = computed<boolean>(() => (props.info?.producibleQty ?? 0) > 0)
@@ -120,76 +121,49 @@ const hasStock = computed<boolean>(() => (props.info?.producibleQty ?? 0) > 0)
       <!-- Ingredient table -->
       <div>
         <p class="mb-2 text-theme-xs uppercase text-gray-500 dark:text-gray-400">Daftar Bahan</p>
-        <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
-          <table class="min-w-full">
-            <thead>
-              <tr
-                class="border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]"
+        <BaseTable aria-label="Kapasitas bahan produksi">
+          <template #header>
+            <BaseTableRow variant="header">
+              <BaseTableHead>Bahan</BaseTableHead>
+              <BaseTableHead align="end">Kebutuhan / Unit</BaseTableHead>
+              <BaseTableHead align="end">Sisa Stok</BaseTableHead>
+              <BaseTableHead align="end">Status</BaseTableHead>
+            </BaseTableRow>
+          </template>
+          <template #body>
+            <BaseTableRow v-for="item in props.info.items" :key="item.ingredientProductId">
+              <BaseTableCell emphasis="medium">
+                {{ item.ingredientProductName || item.ingredientProductId }}
+              </BaseTableCell>
+              <BaseTableCell align="end">
+                {{ formatNumber(item.requiredPerUnit) }}
+                <span class="text-gray-400">{{ item.uomName || item.uomId }}</span>
+              </BaseTableCell>
+              <BaseTableCell
+                align="end"
+                :class="[
+                  item.isLimiting
+                    ? 'font-medium text-warning-600 dark:text-orange-400'
+                    : 'text-gray-600 dark:text-gray-300',
+                ]"
               >
-                <th
-                  class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
-                >
-                  Bahan
-                </th>
-                <th
-                  class="px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
-                >
-                  Kebutuhan / Unit
-                </th>
-                <th
-                  class="px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
-                >
-                  Sisa Stok
-                </th>
-                <th
-                  class="px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400"
-                >
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="item in props.info.items"
-                :key="item.ingredientProductId"
-                class="border-b border-gray-100 last:border-0 dark:border-gray-800"
-              >
-                <td class="px-4 py-3 text-theme-sm text-gray-800 dark:text-white/90">
-                  {{ item.ingredientProductName || item.ingredientProductId }}
-                </td>
-                <td class="px-4 py-3 text-end text-theme-sm text-gray-600 dark:text-gray-300">
-                  {{ formatNumber(item.requiredPerUnit) }}
-                  <span class="text-gray-400">{{ item.uomName || item.uomId }}</span>
-                </td>
-                <td
-                  :class="[
-                    'px-4 py-3 text-end text-theme-sm',
-                    item.isLimiting
-                      ? 'font-medium text-warning-600 dark:text-orange-400'
-                      : 'text-gray-600 dark:text-gray-300',
-                  ]"
-                >
-                  {{ formatNumber(item.availableQty) }}
-                  <span class="text-gray-400">{{ item.uomName || item.uomId }}</span>
-                </td>
-                <td class="px-4 py-3 text-end">
-                  <Badge v-if="item.isLimiting" variant="light" color="warning" size="sm">
-                    Pembatas
-                  </Badge>
-                  <span v-else class="text-theme-xs text-gray-400 dark:text-gray-500">—</span>
-                </td>
-              </tr>
-              <tr v-if="props.info.items.length === 0">
-                <td
-                  colspan="4"
-                  class="px-4 py-6 text-center text-theme-sm text-gray-500 dark:text-gray-400"
-                >
-                  Resep ini tidak memiliki bahan.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                {{ formatNumber(item.availableQty) }}
+                <span class="text-gray-400">{{ item.uomName || item.uomId }}</span>
+              </BaseTableCell>
+              <BaseTableCell align="end">
+                <Badge v-if="item.isLimiting" variant="light" color="warning" size="sm">
+                  Pembatas
+                </Badge>
+                <span v-else class="text-theme-xs text-gray-400 dark:text-gray-500">—</span>
+              </BaseTableCell>
+            </BaseTableRow>
+            <BaseTableRow v-if="props.info.items.length === 0">
+              <BaseTableCell colspan="4" align="center">
+                Resep ini tidak memiliki bahan.
+              </BaseTableCell>
+            </BaseTableRow>
+          </template>
+        </BaseTable>
       </div>
     </div>
 

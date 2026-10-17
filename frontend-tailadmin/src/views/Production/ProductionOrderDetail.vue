@@ -18,6 +18,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import Badge from '@/components/ui/Badge.vue'
+import { BaseButton } from '@/components/ui'
 import {
   ProductionOrderSummary,
   ProductionOrderMaterialsTable,
@@ -41,7 +42,7 @@ const loading = ref<boolean>(true)
 const loadError = ref<string | null>(null)
 
 function outletName(id: string): string {
-  return order.value?.outletId === id ? order.value.outletName ?? id : id
+  return order.value?.outletId === id ? (order.value.outletName ?? id) : id
 }
 function productName(id: string): string {
   if (order.value?.productId === id && order.value.productName) {
@@ -50,7 +51,7 @@ function productName(id: string): string {
   return order.value?.materials.find((material) => material.productId === id)?.productName ?? id
 }
 function recipeName(id: string): string {
-  return order.value?.recipeId === id ? order.value.recipeName ?? id : id
+  return order.value?.recipeId === id ? (order.value.recipeName ?? id) : id
 }
 function batchLabel(id: string): string {
   return order.value?.materials.find((material) => material.batchId === id)?.batchNumber ?? id
@@ -102,15 +103,16 @@ function goToList(): void {
       <!-- Page header: back (icon-only) + number + status badge -->
       <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <button
-            type="button"
+          <BaseButton
+            variant="outline"
+            icon-only
             aria-label="Kembali ke Daftar"
             title="Kembali ke Daftar"
             class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
             @click="goToList"
           >
             <ChevronLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
-          </button>
+          </BaseButton>
           <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
             {{ order.productionNumber }}
           </h3>
