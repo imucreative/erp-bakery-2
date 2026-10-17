@@ -7,7 +7,7 @@
  * keeping the user on the page. Transparent backdrop per UI standard.
  */
 import { computed, ref, watch } from 'vue'
-import Button from '@/components/ui/Button.vue'
+import { BaseButton, BaseTextarea } from '@/components/ui'
 
 export type PurchaseRequestAction = 'approve' | 'reject' | 'cancel'
 
@@ -81,15 +81,6 @@ const confirmLabel = computed<string>(() => {
   }
 })
 
-const confirmClass = computed<string>(() => {
-  const base =
-    'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition disabled:cursor-not-allowed disabled:opacity-60'
-  if (props.action === 'approve') {
-    return `${base} bg-success-500 hover:bg-success-600`
-  }
-  return `${base} bg-error-500 hover:bg-error-600`
-})
-
 function onConfirm(): void {
   const trimmed = note.value.trim()
   if (noteRequired.value && trimmed.length === 0) {
@@ -122,12 +113,13 @@ function onConfirm(): void {
         <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
           Catatan<span v-if="noteRequired" class="text-error-500">*</span>
         </label>
-        <textarea
-          v-model="note"
-          rows="3"
+        <BaseTextarea
+          id="purchase-request-action-note"
+          :model-value="note"
+          :rows="3"
           :placeholder="noteRequired ? 'Alasan penolakan...' : 'Catatan opsional...'"
-          class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-        ></textarea>
+          @update:model-value="note = $event"
+        />
       </div>
 
       <p
@@ -138,12 +130,18 @@ function onConfirm(): void {
       </p>
 
       <div class="flex justify-end gap-3">
-        <Button size="sm" variant="outline" :disabled="submitting" :on-click="() => emit('close')">
+        <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
           Batal
-        </Button>
-        <button type="button" :disabled="submitting" :class="confirmClass" @click="onConfirm">
-          {{ submitting ? 'Memproses...' : confirmLabel }}
-        </button>
+        </BaseButton>
+        <BaseButton
+          type="button"
+          :variant="action === 'approve' ? 'success' : 'danger'"
+          :loading="submitting"
+          loading-text="Memproses..."
+          @click="onConfirm"
+        >
+          {{ confirmLabel }}
+        </BaseButton>
       </div>
     </div>
   </div>
