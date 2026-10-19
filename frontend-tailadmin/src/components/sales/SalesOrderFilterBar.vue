@@ -11,7 +11,11 @@ import {
   SALES_ORDER_STATUS_LABELS,
   type Shift,
 } from '@/services/sales.service'
-import type { SalesOrderStatusFilter } from '@/composables/useSalesOrders'
+import type {
+  SalesOrderStatusFilter,
+  SalesOrderOutletFilter,
+  SalesOrderShiftFilter,
+} from '@/composables/useSalesOrders'
 import type { Outlet } from '@/services/outlet.service'
 import BaseInput from '../ui/BaseInput.vue'
 import BaseSelect from '../ui/BaseSelect.vue'
@@ -19,8 +23,8 @@ import BaseSelect from '../ui/BaseSelect.vue'
 const props = defineProps<{
   search: string
   status: SalesOrderStatusFilter
-  outlet: string
-  shift: string
+  outlet: SalesOrderOutletFilter
+  shift: SalesOrderShiftFilter
   outlets: Outlet[]
   shifts: Shift[]
 }>()
@@ -28,8 +32,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'update:search', value: string): void
   (event: 'update:status', value: SalesOrderStatusFilter): void
-  (event: 'update:outlet', value: string): void
-  (event: 'update:shift', value: string): void
+  (event: 'update:outlet', value: SalesOrderOutletFilter): void
+  (event: 'update:shift', value: SalesOrderShiftFilter): void
 }>()
 
 const statusOptions = [
@@ -53,18 +57,18 @@ const distinctShifts = computed<Shift[]>(() => {
   })
 })
 
-const outletsOptions = [
+const outletsOptions = computed(() => [
   { value: '', label: 'Semua Outlet' },
   ...props.outlets.map((outlet) => ({ value: outlet.id, label: outlet.name })),
-]
+])
 
-const shiftsOptions = [
+const shiftsOptions = computed(() => [
   { value: '', label: 'Semua Shift' },
   ...distinctShifts.value.map((shift) => ({
     value: shift.id,
     label: `${shift.cashierName || 'Unknown Cashier'}`,
   })),
-]
+])
 </script>
 
 <template>
@@ -90,7 +94,7 @@ const shiftsOptions = [
         id="sales-order-outlet"
         :model-value="outlet"
         :options="outletsOptions"
-        @update:model-value="emit('update:outlet', $event as SalesOrderStatusFilter)"
+        @update:model-value="emit('update:outlet', $event as SalesOrderOutletFilter)"
       />
     </div>
     <div class="relative w-full sm:w-56">
@@ -98,7 +102,7 @@ const shiftsOptions = [
         id="sales-order-shift"
         :model-value="shift"
         :options="shiftsOptions"
-        @update:model-value="emit('update:shift', $event as SalesOrderStatusFilter)"
+        @update:model-value="emit('update:shift', $event as SalesOrderShiftFilter)"
       />
     </div>
   </div>

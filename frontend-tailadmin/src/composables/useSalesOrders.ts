@@ -30,6 +30,8 @@ export interface SalesOrderListMeta {
   totalPages: number
 }
 
+export type SalesOrderOutletFilter = string
+export type SalesOrderShiftFilter = string
 export type SalesOrderStatusFilter = 'all' | SalesOrderStatus
 
 export function useSalesOrders() {
@@ -46,8 +48,8 @@ export function useSalesOrders() {
   const search = ref<string>('')
   const debouncedSearch = ref<string>('')
   const statusFilter = ref<SalesOrderStatusFilter>('all')
-  const outletFilter = ref<string>('')
-  const shiftFilter = ref<string>('')
+  const outletFilter = ref<SalesOrderOutletFilter>('')
+  const shiftFilter = ref<SalesOrderShiftFilter>('')
   const page = ref<number>(1)
   let searchTimer: ReturnType<typeof setTimeout> | undefined
 
