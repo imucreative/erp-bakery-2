@@ -13,8 +13,7 @@
  */
 import { computed, ref, watch } from 'vue'
 import { CreditCard } from 'lucide-vue-next'
-import Button from '@/components/ui/Button.vue'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
+import { BaseButton, BaseFormField, BaseInput, BaseSelect } from '@/components/ui'
 import { formatRupiah } from '@/lib/format'
 import {
   PAYMENT_METHODS,
@@ -125,40 +124,30 @@ function onConfirm(): void {
         </div>
       </div>
 
-      <div class="mb-4">
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-          Metode Pembayaran
-        </label>
-        <div class="relative">
-          <select
-            v-model="method"
-            class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-          >
-            <option v-for="m in PAYMENT_METHODS" :key="m" :value="m">
-              {{ PAYMENT_METHOD_LABELS[m] }}
-            </option>
-          </select>
-          <ChevronDownIcon
-            class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
-          />
-        </div>
-      </div>
+      <BaseFormField label="Metode Pembayaran" field-id="pos-payment-method" class="mb-4">
+        <BaseSelect
+          id="pos-payment-method"
+          :model-value="method"
+          :options="PAYMENT_METHODS.map((m) => ({ label: PAYMENT_METHOD_LABELS[m], value: m }))"
+          @update:model-value="method = $event as PaymentMethod"
+        />
+      </BaseFormField>
 
       <!-- CASH: amount tendered + change -->
       <template v-if="isCash">
-        <div class="mb-4">
-          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Uang Diterima (Rp)
-          </label>
-          <input
-            v-model.number="amountTendered"
+        <BaseFormField label="Uang Diterima (Rp)" field-id="pos-amount-tendered" class="mb-4">
+          <BaseInput
+            id="pos-amount-tendered"
+            :model-value="amountTendered"
             type="number"
             min="0"
             step="1000"
-            class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+            @update:model-value="amountTendered = Number($event)"
           />
-        </div>
-        <div class="mb-4 flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3 dark:bg-white/[0.03]">
+        </BaseFormField>
+        <div
+          class="mb-4 flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3 dark:bg-white/[0.03]"
+        >
           <span class="text-theme-sm text-gray-500 dark:text-gray-400">Kembalian</span>
           <span class="text-theme-sm font-semibold text-gray-800 dark:text-white/90">
             {{ formatRupiah(change) }}
@@ -167,17 +156,14 @@ function onConfirm(): void {
       </template>
 
       <!-- Non-cash: optional reference number -->
-      <div v-else class="mb-4">
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-          No. Referensi
-        </label>
-        <input
-          v-model="referenceNo"
-          type="text"
+      <BaseFormField v-else label="No. Referensi" field-id="pos-reference-no" class="mb-4">
+        <BaseInput
+          id="pos-reference-no"
+          :model-value="referenceNo"
           placeholder="Opsional (mis. kode approval)"
-          class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
+          @update:model-value="referenceNo = $event"
         />
-      </div>
+      </BaseFormField>
 
       <p
         v-if="props.errorMessage"
@@ -187,18 +173,21 @@ function onConfirm(): void {
       </p>
 
       <div class="mt-auto flex justify-end gap-3 pt-4">
-        <Button size="sm" variant="outline" :disabled="props.submitting" :on-click="() => emit('close')">
+        <BaseButton size="sm" variant="outline" :disabled="props.submitting" @click="emit('close')">
           Batal
-        </Button>
-        <button
-          type="button"
+        </BaseButton>
+        <BaseButton
+          size="sm"
+          :loading="props.submitting"
+          loading-text="Memproses..."
           :disabled="!canConfirm"
-          class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
           @click="onConfirm"
         >
-          <CreditCard class="h-4 w-4" aria-hidden="true" />
-          {{ props.submitting ? 'Memproses...' : 'Konfirmasi Bayar' }}
-        </button>
+          <template #start-icon>
+            <CreditCard class="h-4 w-4" aria-hidden="true" />
+          </template>
+          Konfirmasi Bayar
+        </BaseButton>
       </div>
     </div>
   </div>

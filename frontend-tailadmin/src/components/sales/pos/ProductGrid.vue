@@ -27,8 +27,9 @@
  * INVENTORY.INSUFFICIENT_STOCK as the safety net behind this grid rule.
  */
 import { computed } from 'vue'
-import { Search, Plus, DonutIcon } from 'lucide-vue-next'
+import { Plus, DonutIcon } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
+import { BaseInput } from '@/components/ui'
 import { formatRupiah } from '@/lib/format'
 import type { PosProduct } from '@/services/sales.service'
 
@@ -50,7 +51,7 @@ const emit = defineEmits<{
 type UnsellableReason = 'EXPIRED' | 'OUT_OF_STOCK'
 
 const REASON_LABELS: Record<UnsellableReason, string> = {
-  EXPIRED: 'Kedaluwarsa — tidak bisa dijual',
+  EXPIRED: 'Kedaluwarsa',
   OUT_OF_STOCK: 'Stok habis',
 }
 
@@ -119,17 +120,12 @@ function onCardClick(product: PosProduct): void {
 
 <template>
   <div class="flex h-full flex-col">
-    <div class="relative mb-4">
-      <Search
-        class="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-        aria-hidden="true"
-      />
-      <input
-        :value="props.search"
-        type="text"
+    <div class="mb-4">
+      <BaseInput
+        id="pos-product-search"
+        :model-value="props.search"
         placeholder="Cari produk..."
-        class="h-11 w-full rounded-lg border border-gray-300 bg-transparent ps-10 pe-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-        @input="emit('update:search', ($event.target as HTMLInputElement).value)"
+        @update:model-value="emit('update:search', $event)"
       />
     </div>
 
