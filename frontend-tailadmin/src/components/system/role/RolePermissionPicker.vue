@@ -16,6 +16,7 @@
  */
 import { computed } from 'vue'
 import type { Permission } from '@/services/permission.service'
+import { BaseCheckbox } from '@/components/ui'
 
 const props = withDefaults(
   defineProps<{
@@ -320,12 +321,10 @@ const totalSelected = computed<number>(() => props.modelValue.length)
                   isLocked(perm.code) ? 'cursor-not-allowed opacity-90' : '',
                 ]"
               >
-                <input
-                  type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500/20 disabled:cursor-not-allowed dark:border-gray-600 dark:bg-gray-800"
-                  :checked="isChecked(perm.code)"
+                <BaseCheckbox
+                  :model-value="isChecked(perm.code)"
                   :disabled="isLocked(perm.code)"
-                  @change="toggle(perm.code)"
+                  @update:model-value="toggle(perm.code)"
                 />
                 <span class="capitalize text-gray-700 dark:text-gray-300">
                   {{ actionLabel(perm) }}

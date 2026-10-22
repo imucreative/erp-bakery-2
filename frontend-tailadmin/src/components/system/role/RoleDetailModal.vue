@@ -64,7 +64,7 @@ const permissionCount = computed<number>(() => props.detail?.permissions.length 
     ></div>
 
     <div
-      class="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
+      class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
     >
       <div class="mb-4 flex items-start justify-between gap-3">
         <div>
@@ -97,7 +97,7 @@ const permissionCount = computed<number>(() => props.detail?.permissions.length 
       <div v-else class="space-y-4">
         <div v-for="group in groups" :key="group.domain" class="space-y-2">
           <p
-            class="text-theme-xs font-semibold uppercase capitalize text-gray-500 dark:text-gray-400"
+            class="text-theme-xs font-semibold uppercase capitalize text-warning-500 dark:text-warning-400"
           >
             {{ group.domain }}
           </p>
