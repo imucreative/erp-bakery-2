@@ -62,6 +62,7 @@ function openEdit(outlet: Outlet): void {
 }
 
 async function onSubmitForm(payload: {
+  code?: string
   name: string
   address: string
   phone: string
@@ -79,6 +80,7 @@ async function onSubmitForm(payload: {
       })
     } else {
       await createOutlet({
+        code: payload.code || undefined,
         name: payload.name,
         address: payload.address || undefined,
         phone: payload.phone || undefined,

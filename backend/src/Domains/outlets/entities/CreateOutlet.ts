@@ -1,12 +1,14 @@
 /**
  * Domain Entity: CreateOutlet
  *
- * Validates payload for creating an outlet. The outlet `code` is generated
- * by the use case (OUT-### scoped per company), not supplied by the client.
+ * Validates payload for creating an outlet. The client may supply a custom
+ * `code` (normalised to uppercase, unique per company); when omitted or blank
+ * the use case generates one (OUT-### scoped per company).
  * Mirrors RegisterCompany validation style: validate in constructor, throw
  * domain error codes that DomainErrorTranslator maps to HTTP errors.
  */
 export class CreateOutlet {
+  public readonly code: string | null;
   public readonly name: string;
   public readonly address: string | null;
   public readonly phone: string | null;
@@ -14,8 +16,10 @@ export class CreateOutlet {
   constructor(payload: unknown) {
     this._verifyPayload(payload);
 
-    const { name, address, phone } = payload as Record<string, unknown>;
+    const { code, name, address, phone } = payload as Record<string, unknown>;
 
+    const rawCode = code ? (code as string).trim() : '';
+    this.code = rawCode.length > 0 ? rawCode.toUpperCase() : null;
     this.name = (name as string).trim();
     this.address = address ? (address as string).trim() : null;
     this.phone = phone ? (phone as string).trim() : null;
@@ -26,13 +30,17 @@ export class CreateOutlet {
       throw new Error('CREATE_OUTLET.NOT_CONTAIN_NEEDED_PROPERTY');
     }
 
-    const { name, address, phone } = payload as Record<string, unknown>;
+    const { code, name, address, phone } = payload as Record<string, unknown>;
 
     if (!name) {
       throw new Error('CREATE_OUTLET.NOT_CONTAIN_NEEDED_PROPERTY');
     }
 
     if (typeof name !== 'string') {
+      throw new Error('CREATE_OUTLET.NOT_MEET_DATA_TYPE_SPECIFICATION');
+    }
+
+    if (code !== undefined && code !== null && typeof code !== 'string') {
       throw new Error('CREATE_OUTLET.NOT_MEET_DATA_TYPE_SPECIFICATION');
     }
 
@@ -46,6 +54,10 @@ export class CreateOutlet {
 
     if (name.trim().length === 0 || name.trim().length > 100) {
       throw new Error('CREATE_OUTLET.NAME_LIMIT_CHAR');
+    }
+
+    if (code && (code as string).trim().length > 20) {
+      throw new Error('CREATE_OUTLET.CODE_LIMIT_CHAR');
     }
 
     if (phone && (phone as string).trim().length > 30) {

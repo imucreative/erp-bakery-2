@@ -8,6 +8,7 @@ import {
 import { Outlet } from '../../Domains/outlets/entities/Outlet';
 import { UpdateOutletFields } from '../../Domains/outlets/entities/UpdateOutlet';
 import { NotFoundError } from '../../Commons/exceptions/NotFoundError';
+import { ConflictError } from '../../Commons/exceptions/ConflictError';
 
 interface OutletRow {
   id: string;
@@ -46,14 +47,29 @@ export class OutletRepositoryPostgres extends OutletRepository {
   }
 
   async addOutlet(data: NewOutletData, companyId: string): Promise<Outlet> {
-    const result = await this.pool.query<OutletRow>(
-      `INSERT INTO outlets (company_id, code, name, address, phone)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, company_id, code, name, address, phone, is_active, created_at, updated_at`,
-      [companyId, data.code, data.name, data.address, data.phone],
-    );
+    let row: OutletRow;
+    try {
+      const result = await this.pool.query<OutletRow>(
+        `INSERT INTO outlets (company_id, code, name, address, phone)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, company_id, code, name, address, phone, is_active, created_at, updated_at`,
+        [companyId, data.code, data.name, data.address, data.phone],
+      );
+      row = result.rows[0];
+    } catch (err) {
+      // UNIQUE (code, company_id) — the only unique key a client can collide with.
+      if (
+        err &&
+        typeof err === 'object' &&
+        'code' in err &&
+        (err as { code: string }).code === '23505'
+      ) {
+        throw new ConflictError('OUTLET.CODE_DUPLICATE');
+      }
+      throw err;
+    }
 
-    return this._toOutlet(result.rows[0]);
+    return this._toOutlet(row);
   }
 
   async generateOutletCode(companyId: string): Promise<string> {
