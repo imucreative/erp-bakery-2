@@ -327,21 +327,15 @@ onBeforeUnmount(() => {
       >
         <ChevronLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
       </BaseButton>
-      <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
+      <h3 class="card-title">
         {{ pageTitle }}
       </h3>
     </div>
 
     <ComponentCard :title="pageTitle">
-      <div v-if="loading" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-        Memuat data...
-      </div>
+      <div v-if="loading" class="text-muted py-10 text-center">Memuat data...</div>
 
-      <div
-        v-else-if="loadError"
-        class="rounded-lg border border-error-500/40 bg-error-50 px-4 py-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-        role="alert"
-      >
+      <div v-else-if="loadError" class="alert-error px-4 py-3" role="alert">
         {{ loadError }}
       </div>
 
@@ -385,7 +379,7 @@ onBeforeUnmount(() => {
 
         <p
           v-if="overProducibleBlocked"
-          class="flex items-center gap-2 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
+          class="alert-error flex items-center gap-2 px-3 py-2"
           role="alert"
         >
           <AlertTriangle class="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -394,10 +388,7 @@ onBeforeUnmount(() => {
           }}). Kurangi jumlah atau tambah stok bahan.
         </p>
 
-        <p
-          v-if="formError"
-          class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-        >
+        <p v-if="formError" class="alert-error px-3 py-2">
           {{ formError }}
         </p>
 

@@ -52,10 +52,7 @@ const hasStock = computed<boolean>(() => (props.info?.producibleQty ?? 0) > 0)
     </div>
 
     <!-- Loading -->
-    <div
-      v-if="props.loading"
-      class="py-6 text-center text-theme-sm text-gray-500 dark:text-gray-400"
-    >
+    <div v-if="props.loading" class="text-muted py-6 text-center">
       Menghitung kapasitas produksi...
     </div>
 
@@ -69,11 +66,7 @@ const hasStock = computed<boolean>(() => (props.info?.producibleQty ?? 0) > 0)
     </p>
 
     <!-- Other error -->
-    <p
-      v-else-if="props.error"
-      class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-theme-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      role="alert"
-    >
+    <p v-else-if="props.error" class="alert-error px-3 py-2" role="alert">
       {{ props.error }}
     </p>
 
@@ -103,7 +96,7 @@ const hasStock = computed<boolean>(() => (props.info?.producibleQty ?? 0) > 0)
             >
               {{ formatNumber(props.info.producibleQty) }}
             </span>
-            <span class="text-theme-sm text-gray-500 dark:text-gray-400">{{ yieldUomLabel }}</span>
+            <span class="text-muted">{{ yieldUomLabel }}</span>
           </p>
         </div>
       </div>
@@ -168,7 +161,7 @@ const hasStock = computed<boolean>(() => (props.info?.producibleQty ?? 0) > 0)
     </div>
 
     <!-- Idle (no product+outlet selected yet) -->
-    <p v-else class="py-6 text-center text-theme-sm text-gray-500 dark:text-gray-400">
+    <p v-else class="text-muted py-6 text-center">
       Pilih produk jadi dan outlet untuk melihat kapasitas produksi.
     </p>
   </section>

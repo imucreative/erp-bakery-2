@@ -184,7 +184,7 @@ async function onConfirmAction(note: string): Promise<void> {
 
     <div
       v-if="loading"
-      class="rounded-2xl border border-gray-200 bg-white p-10 text-center text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400"
+      class="text-muted rounded-2xl border border-gray-200 bg-white p-10 text-center dark:border-gray-800 dark:bg-white/[0.03]"
     >
       Memuat data...
     </div>
@@ -211,7 +211,7 @@ async function onConfirmAction(note: string): Promise<void> {
           >
             <ChevronLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
           </BaseButton>
-          <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
+          <h3 class="card-title">
             {{ gr.grNumber }}
           </h3>
         </div>
@@ -233,10 +233,7 @@ async function onConfirmAction(note: string): Promise<void> {
         <div class="space-y-5 lg:col-span-2">
           <ComponentCard title="Informasi Goods Receipt">
             <!-- Action error banner (mutation failures keep user here) -->
-            <p
-              v-if="actionError"
-              class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-            >
+            <p v-if="actionError" class="alert-error mb-4 px-3 py-2">
               {{ actionError }}
             </p>
 

@@ -174,10 +174,7 @@ onMounted(() => {
       />
 
       <!-- Count footer -->
-      <div
-        v-if="!loading && !errorMessage && items.length > 0"
-        class="pt-2 text-theme-sm text-gray-500 dark:text-gray-400"
-      >
+      <div v-if="!loading && !errorMessage && items.length > 0" class="text-muted pt-2">
         Menampilkan {{ items.length }} dari {{ total }} topping
       </div>
     </ComponentCard>

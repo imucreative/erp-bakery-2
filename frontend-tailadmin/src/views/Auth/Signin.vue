@@ -13,9 +13,7 @@
                 >
                   Sign In
                 </h1>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                  Enter your email and password to sign in!
-                </p>
+                <p class="text-muted">Enter your email and password to sign in!</p>
               </div>
               <div>
                 <div
@@ -27,7 +25,7 @@
                 </div>
                 <div
                   v-if="errorMessage"
-                  class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-4 py-3 text-sm text-error-600 dark:border-error-500/40 dark:bg-error-500/10 dark:text-error-400"
+                  class="alert-error mb-4 px-4 py-3 dark:border-error-500/40"
                   role="alert"
                 >
                   {{ errorMessage }}

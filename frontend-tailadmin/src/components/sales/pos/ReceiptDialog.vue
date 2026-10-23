@@ -45,11 +45,11 @@ function onPrint(): void {
     >
       <div class="mb-4 flex items-center gap-2 text-success-600 dark:text-success-500">
         <CheckCircle2 class="h-6 w-6" aria-hidden="true" />
-        <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Pembayaran Berhasil</h4>
+        <h4 class="modal-title">Pembayaran Berhasil</h4>
       </div>
 
       <div class="mb-4 text-center">
-        <p class="text-theme-sm text-gray-500 dark:text-gray-400">Invoice</p>
+        <p class="text-muted">Invoice</p>
         <p class="text-base font-semibold text-gray-800 dark:text-white/90">
           {{ props.order.invoiceNumber }}
         </p>

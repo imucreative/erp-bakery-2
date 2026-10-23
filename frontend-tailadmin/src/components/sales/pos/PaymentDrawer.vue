@@ -110,14 +110,14 @@ function onConfirm(): void {
     <div
       class="relative flex h-full w-full max-w-md flex-col overflow-y-auto border-s border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
     >
-      <h4 class="mb-1 text-lg font-semibold text-gray-800 dark:text-white/90">Pembayaran</h4>
-      <p class="mb-5 text-sm text-gray-500 dark:text-gray-400">
+      <h4 class="modal-title mb-1">Pembayaran</h4>
+      <p class="text-muted mb-5">
         Pilih metode pembayaran dan konfirmasi untuk menyelesaikan transaksi.
       </p>
 
       <div class="mb-5 rounded-xl border border-gray-200 p-4 dark:border-gray-800">
         <div class="flex items-center justify-between">
-          <span class="text-theme-sm text-gray-500 dark:text-gray-400">Total Tagihan</span>
+          <span class="text-muted">Total Tagihan</span>
           <span class="text-xl font-semibold text-brand-600 dark:text-brand-400">
             {{ formatRupiah(props.grandTotal) }}
           </span>
@@ -148,7 +148,7 @@ function onConfirm(): void {
         <div
           class="mb-4 flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3 dark:bg-white/[0.03]"
         >
-          <span class="text-theme-sm text-gray-500 dark:text-gray-400">Kembalian</span>
+          <span class="text-muted">Kembalian</span>
           <span class="text-theme-sm font-semibold text-gray-800 dark:text-white/90">
             {{ formatRupiah(change) }}
           </span>
@@ -165,10 +165,7 @@ function onConfirm(): void {
         />
       </BaseFormField>
 
-      <p
-        v-if="props.errorMessage"
-        class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      >
+      <p v-if="props.errorMessage" class="alert-error mb-4 px-3 py-2">
         {{ props.errorMessage }}
       </p>
 

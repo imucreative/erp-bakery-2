@@ -43,7 +43,7 @@ const sameOutlet = computed<boolean>(
   () => Boolean(props.sourceOutletId) && props.sourceOutletId === props.destinationOutletId,
 )
 
-const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
+const labelClass = 'form-label'
 </script>
 
 <template>

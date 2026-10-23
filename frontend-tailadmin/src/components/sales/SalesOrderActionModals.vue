@@ -9,8 +9,8 @@
  */
 import { computed, ref, watch } from 'vue'
 import { TriangleAlert } from 'lucide-vue-next'
-import BaseTextarea from '../ui/BaseTextarea.vue';
-import BaseButton from '../ui/BaseButton.vue';
+import BaseTextarea from '../ui/BaseTextarea.vue'
+import BaseButton from '../ui/BaseButton.vue'
 
 export type SalesOrderAction = 'void' | 'refund'
 
@@ -74,8 +74,8 @@ function onConfirm(): void {
     <div
       class="relative w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
     >
-      <h4 class="mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">{{ title }}</h4>
-      <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">{{ description }}</p>
+      <h4 class="modal-title mb-2">{{ title }}</h4>
+      <p class="text-muted mb-4">{{ description }}</p>
 
       <div
         v-if="isRefund"
@@ -86,9 +86,7 @@ function onConfirm(): void {
       </div>
 
       <div v-if="isRefund" class="mb-4">
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-          Alasan
-        </label>
+        <label class="form-label"> Alasan </label>
         <BaseTextarea
           id="refund-sales-order-action-note"
           :model-value="reason"
@@ -98,10 +96,7 @@ function onConfirm(): void {
         />
       </div>
 
-      <p
-        v-if="errorMessage"
-        class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      >
+      <p v-if="errorMessage" class="alert-error mb-4 px-3 py-2">
         {{ errorMessage }}
       </p>
 

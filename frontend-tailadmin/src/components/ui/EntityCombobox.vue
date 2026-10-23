@@ -428,13 +428,10 @@ onBeforeUnmount(() => {
             : {},
         ]"
       >
-        <p v-if="props.searching" class="px-4 py-2 text-theme-sm text-gray-500 dark:text-gray-400">
+        <p v-if="props.searching" class="text-muted px-4 py-2">
           {{ searchingText }}
         </p>
-        <p
-          v-else-if="visibleItems.length === 0"
-          class="px-4 py-2 text-theme-sm text-gray-500 dark:text-gray-400"
-        >
+        <p v-else-if="visibleItems.length === 0" class="text-muted px-4 py-2">
           {{ emptyText }}
         </p>
         <ul v-else role="listbox">

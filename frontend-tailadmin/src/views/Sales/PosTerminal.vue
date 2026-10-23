@@ -28,11 +28,11 @@
  * mutation submitting flags, and surfaces backend errors via `toMessage`.
  */
 import { computed, onMounted, ref } from 'vue'
-import { DoorOpen, X } from 'lucide-vue-next'
+import { DoorOpen } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import { BaseButton, BaseSelect } from '@/components/ui'
+import { BaseAlert, BaseButton, BaseSelect } from '@/components/ui'
 import {
   ProductGrid,
   ModifierPanel,
@@ -457,7 +457,7 @@ onMounted(() => {
     <!-- Bootstrapping -->
     <div
       v-if="bootstrapping"
-      class="rounded-2xl border border-gray-200 bg-white p-10 text-center text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400"
+      class="text-muted rounded-2xl border border-gray-200 bg-white p-10 text-center dark:border-gray-800 dark:bg-white/[0.03]"
     >
       Memuat terminal POS...
     </div>
@@ -539,23 +539,15 @@ onMounted(() => {
             class="rounded-2xl border border-gray-200 bg-white p-4 lg:col-span-7 dark:border-gray-800 dark:bg-white/[0.03]"
           >
             <!-- Blocked (expired / out-of-stock) product alert — dismissible,
-                 never clears the cart. Reuses the view's error-banner style. -->
-            <div
+                 never clears the cart. -->
+            <BaseAlert
               v-if="blockedAlert"
-              class="mb-4 flex items-start justify-between gap-3 rounded-lg border border-warning-500/40 bg-warning-50 px-4 py-3 text-sm text-warning-700 dark:bg-warning-500/10 dark:text-warning-400"
-              role="alert"
-            >
-              <span>{{ blockedAlert }}</span>
-              <button
-                type="button"
-                aria-label="Tutup peringatan"
-                title="Tutup peringatan"
-                class="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md text-warning-600 transition hover:bg-warning-100 dark:text-warning-400 dark:hover:bg-warning-500/20"
-                @click="blockedAlert = null"
-              >
-                <X class="h-4 w-4" aria-hidden="true" />
-              </button>
-            </div>
+              variant="warning"
+              :message="blockedAlert"
+              dismissible
+              class="mb-4"
+              @dismiss="blockedAlert = null"
+            />
 
             <ProductGrid
               :products="products"

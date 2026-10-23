@@ -33,7 +33,7 @@ const emit = defineEmits<{
   (e: 'update:notes', value: string): void
 }>()
 
-const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
+const labelClass = 'form-label'
 
 const selectedPoLabel = computed<string>(() =>
   props.purchaseOrderId ? props.poNumber(props.purchaseOrderId) : '',

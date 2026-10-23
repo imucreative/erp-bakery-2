@@ -21,6 +21,7 @@ import { usePurchaseRequests } from '@/composables/usePurchaseRequests'
 import { outletService } from '@/services/outlet.service'
 import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import type { PurchaseRequest } from '@/services/purchase-request.service'
+import { Plus } from 'lucide-vue-next'
 
 const pageTitle = 'Purchase Requests'
 const router = useRouter()
@@ -88,7 +89,10 @@ onMounted(() => {
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PurchaseRequestFilterBar v-model:search="search" v-model:status="statusFilter" />
         <BaseButton v-if="canCreate" size="sm" variant="primary" @click="goToCreate">
-          + Buat Purchase Request
+          <template #start-icon>
+            <Plus class="h-4 w-4" aria-hidden="true" />
+          </template>
+          Buat Purchase Request
         </BaseButton>
       </div>
 

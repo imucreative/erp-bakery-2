@@ -43,10 +43,10 @@ const loadError = ref<string | null>(null)
 const actionError = ref<string | null>(null)
 
 function outletName(id: string): string {
-  return order.value?.outletId === id ? order.value.outletName ?? id : id
+  return order.value?.outletId === id ? (order.value.outletName ?? id) : id
 }
 function cashierName(id: string): string {
-  return order.value?.cashierUserId === id ? order.value.cashierName ?? id : id
+  return order.value?.cashierUserId === id ? (order.value.cashierName ?? id) : id
 }
 
 // ── Permission + status → available actions ──────────────────────────
@@ -128,7 +128,7 @@ async function onConfirmAction(reason: string): Promise<void> {
 
     <div
       v-if="loading"
-      class="rounded-2xl border border-gray-200 bg-white p-10 text-center text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400"
+      class="text-muted rounded-2xl border border-gray-200 bg-white p-10 text-center dark:border-gray-800 dark:bg-white/[0.03]"
     >
       Memuat data...
     </div>
@@ -154,7 +154,7 @@ async function onConfirmAction(reason: string): Promise<void> {
           >
             <ChevronLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
           </button>
-          <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
+          <h3 class="card-title">
             {{ order.invoiceNumber }}
           </h3>
         </div>
@@ -173,10 +173,7 @@ async function onConfirmAction(reason: string): Promise<void> {
         <!-- Main column: summary + items -->
         <div class="space-y-5 lg:col-span-2">
           <ComponentCard title="Informasi Sales Order">
-            <p
-              v-if="actionError"
-              class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-            >
+            <p v-if="actionError" class="alert-error mb-4 px-3 py-2">
               {{ actionError }}
             </p>
 
@@ -193,10 +190,7 @@ async function onConfirmAction(reason: string): Promise<void> {
               <SalesOrderItemsTable :order="order" />
             </div>
 
-            <p
-              v-if="!hasAnyAction"
-              class="mt-6 text-theme-sm text-gray-400 dark:text-gray-500"
-            >
+            <p v-if="!hasAnyAction" class="mt-6 text-theme-sm text-gray-400 dark:text-gray-500">
               Tidak ada aksi untuk status ini.
             </p>
           </ComponentCard>
@@ -208,10 +202,7 @@ async function onConfirmAction(reason: string): Promise<void> {
             <SalesOrderPaymentsTable :payments="order.payments" />
           </ComponentCard>
 
-          <ComponentCard
-            v-if="order.status === 'REFUNDED' && order.salesReturn"
-            title="Refund"
-          >
+          <ComponentCard v-if="order.status === 'REFUNDED' && order.salesReturn" title="Refund">
             <dl class="space-y-3">
               <div class="flex items-center justify-between text-theme-sm">
                 <dt class="text-gray-500 dark:text-gray-400">Jumlah Refund</dt>

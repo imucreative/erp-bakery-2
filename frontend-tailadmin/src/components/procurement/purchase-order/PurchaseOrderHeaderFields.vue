@@ -53,7 +53,7 @@ const emit = defineEmits<{
   (e: 'update:notes', value: string): void
 }>()
 
-const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
+const labelClass = 'form-label'
 
 // ── Chip labels for the two comboboxes ────────────────────────────────
 // The lists are already loaded by the parent, so the chosen item is resolved

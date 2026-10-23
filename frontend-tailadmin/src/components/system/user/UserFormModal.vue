@@ -147,14 +147,11 @@ function onSubmit(): void {
     <div
       class="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
     >
-      <h4 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
+      <h4 class="modal-title mb-4">
         {{ isEdit ? 'Edit User' : 'Tambah User' }}
       </h4>
 
-      <div
-        v-if="isEdit && detailLoading"
-        class="py-8 text-center text-sm text-gray-500 dark:text-gray-400"
-      >
+      <div v-if="isEdit && detailLoading" class="text-muted py-8 text-center">
         Memuat data user...
       </div>
 
@@ -229,10 +226,7 @@ function onSubmit(): void {
 
         <BaseToggle v-if="isEdit" v-model="isActive" label="Aktif" />
 
-        <p
-          v-if="localError || errorMessage"
-          class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-        >
+        <p v-if="localError || errorMessage" class="alert-error px-3 py-2">
           {{ localError || errorMessage }}
         </p>
 

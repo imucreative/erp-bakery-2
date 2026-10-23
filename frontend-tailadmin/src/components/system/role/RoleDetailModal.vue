@@ -68,7 +68,7 @@ const permissionCount = computed<number>(() => props.detail?.permissions.length 
     >
       <div class="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">{{ title }}</h4>
+          <h4 class="modal-title">{{ title }}</h4>
           <p v-if="code" class="mt-0.5 font-mono text-theme-xs text-gray-500 dark:text-gray-400">
             {{ code }}
           </p>
@@ -76,21 +76,13 @@ const permissionCount = computed<number>(() => props.detail?.permissions.length 
         <Badge color="info">{{ permissionCount }} permission</Badge>
       </div>
 
-      <div v-if="loading" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-        Memuat permission...
-      </div>
+      <div v-if="loading" class="text-muted py-8 text-center">Memuat permission...</div>
 
-      <div
-        v-else-if="errorMessage"
-        class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      >
+      <div v-else-if="errorMessage" class="alert-error px-3 py-2">
         {{ errorMessage }}
       </div>
 
-      <div
-        v-else-if="groups.length === 0"
-        class="py-8 text-center text-sm text-gray-500 dark:text-gray-400"
-      >
+      <div v-else-if="groups.length === 0" class="text-muted py-8 text-center">
         Role ini tidak memiliki permission.
       </div>
 

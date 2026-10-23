@@ -185,17 +185,13 @@ onMounted(() => {
     <!-- Loading -->
     <p
       v-if="loading"
-      class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-6 text-center text-theme-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.02] dark:text-gray-400"
+      class="text-muted rounded-lg border border-gray-200 bg-gray-50 px-3 py-6 text-center dark:border-gray-800 dark:bg-white/[0.02]"
     >
       Memuat lampiran...
     </p>
 
     <!-- Load / action error -->
-    <p
-      v-else-if="loadError"
-      class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-theme-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      role="alert"
-    >
+    <p v-else-if="loadError" class="alert-error px-3 py-2" role="alert">
       {{ loadError }}
     </p>
 
@@ -203,7 +199,7 @@ onMounted(() => {
       <!-- Empty -->
       <p
         v-if="attachments.length === 0"
-        class="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-6 text-center text-theme-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.02] dark:text-gray-400"
+        class="text-muted rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-6 text-center dark:border-gray-800 dark:bg-white/[0.02]"
       >
         Belum ada lampiran.
       </p>
@@ -306,9 +302,7 @@ onMounted(() => {
       class="space-y-3 border-t border-gray-100 pt-5 dark:border-gray-800"
       @submit.prevent="uploadSelected"
     >
-      <label class="mb-1.5 block text-theme-sm font-medium text-gray-700 dark:text-gray-400">
-        Unggah Lampiran
-      </label>
+      <label class="form-label"> Unggah Lampiran </label>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
         <BaseFileButton
@@ -323,7 +317,7 @@ onMounted(() => {
         </BaseFileButton>
 
         <span
-          class="min-w-0 flex-1 truncate text-theme-sm text-gray-500 dark:text-gray-400"
+          class="text-muted min-w-0 flex-1 truncate"
           :class="{ 'text-gray-800 dark:text-white/90': hasSelection }"
         >
           {{
@@ -345,11 +339,7 @@ onMounted(() => {
         </BaseButton>
       </div>
 
-      <p
-        v-if="uploadError"
-        class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-theme-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-        role="alert"
-      >
+      <p v-if="uploadError" class="alert-error px-3 py-2" role="alert">
         {{ uploadError }}
       </p>
     </form>

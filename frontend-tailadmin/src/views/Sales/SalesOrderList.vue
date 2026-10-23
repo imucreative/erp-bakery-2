@@ -104,9 +104,7 @@ onMounted(() => {
         v-if="!loading && !errorMessage && items.length > 0"
         class="flex flex-col items-center justify-between gap-3 pt-2 sm:flex-row"
       >
-        <span class="text-theme-sm text-gray-500 dark:text-gray-400">
-          Menampilkan {{ items.length }} dari {{ meta.total }} data
-        </span>
+        <span class="text-muted"> Menampilkan {{ items.length }} dari {{ meta.total }} data </span>
         <div class="flex items-center gap-2">
           <Button size="sm" variant="outline" :disabled="!canPrev" :on-click="prevPage">
             Sebelumnya

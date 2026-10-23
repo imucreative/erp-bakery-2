@@ -70,7 +70,6 @@ defineEmits<{
               icon-only
               aria-label="Hapus"
               title="Hapus"
-              class="text-error-500 ring-error-200 hover:bg-error-50 hover:text-error-600 dark:ring-error-500/30 dark:hover:bg-white/[0.03]"
               @click="$emit('delete', paymentTerm)"
             >
               <Trash2 class="h-4 w-4" aria-hidden="true" />

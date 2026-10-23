@@ -256,22 +256,13 @@ const totalSelected = computed<number>(() => props.modelValue.length)
 
 <template>
   <div>
-    <div v-if="loading" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-      Memuat katalog permission...
-    </div>
+    <div v-if="loading" class="text-muted py-8 text-center">Memuat katalog permission...</div>
 
-    <div
-      v-else-if="errorMessage"
-      class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      role="alert"
-    >
+    <div v-else-if="errorMessage" class="alert-error px-3 py-2" role="alert">
       {{ errorMessage }}
     </div>
 
-    <div
-      v-else-if="domains.length === 0"
-      class="py-8 text-center text-sm text-gray-500 dark:text-gray-400"
-    >
+    <div v-else-if="domains.length === 0" class="text-muted py-8 text-center">
       Katalog permission kosong.
     </div>
 
@@ -289,9 +280,12 @@ const totalSelected = computed<number>(() => props.modelValue.length)
         class="overflow-hidden rounded-2xl border"
         :class="domain.accent.card"
       >
-        <div class="flex items-center justify-between gap-3 px-4 py-3" :class="domain.accent.header">
+        <div
+          class="flex items-center justify-between gap-3 px-4 py-3"
+          :class="domain.accent.header"
+        >
           <div class="flex items-center gap-2.5">
-            <span class="inline-block h-3 w-3 rounded-full" :class="domain.accent.dot"/>
+            <span class="inline-block h-3 w-3 rounded-full" :class="domain.accent.dot" />
             <h5 class="text-sm font-semibold capitalize" :class="domain.accent.title">
               {{ domain.label }}
             </h5>

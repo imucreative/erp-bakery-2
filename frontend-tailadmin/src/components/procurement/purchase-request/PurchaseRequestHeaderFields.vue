@@ -23,7 +23,7 @@ const emit = defineEmits<{
   (e: 'update:notes', value: string): void
 }>()
 
-const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
+const labelClass = 'form-label'
 
 const outletOptions = (outlets: Outlet[]) =>
   outlets.map((outlet) => ({ value: outlet.id, label: outlet.name }))

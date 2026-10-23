@@ -61,7 +61,7 @@ const emit = defineEmits<{
   (e: 'product-clear'): void
 }>()
 
-const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
+const labelClass = 'form-label'
 
 // ── Product autocomplete ─────────────────────────────────────────────
 // The interaction (chip, search input, dropdown, keyboard nav, aria) is the

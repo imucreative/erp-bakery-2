@@ -16,25 +16,14 @@ const props = withDefaults(defineProps<BaseFormFieldProps>(), {
 
 <template>
   <div>
-    <label
-      :for="props.fieldId"
-      class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-    >
+    <label :for="props.fieldId" class="form-label">
       {{ props.label }}<span v-if="props.required" class="text-error-500">*</span>
     </label>
     <slot />
-    <p
-      v-if="props.error"
-      :id="`${props.fieldId}-error`"
-      class="mt-1.5 text-sm text-error-600 dark:text-error-400"
-    >
+    <p v-if="props.error" :id="`${props.fieldId}-error`" class="form-error">
       {{ props.error }}
     </p>
-    <p
-      v-else-if="props.hint"
-      :id="`${props.fieldId}-hint`"
-      class="mt-1.5 text-sm text-gray-500 dark:text-gray-400"
-    >
+    <p v-else-if="props.hint" :id="`${props.fieldId}-hint`" class="form-hint">
       {{ props.hint }}
     </p>
   </div>

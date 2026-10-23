@@ -99,7 +99,7 @@ onMounted(() => {
 
     <div
       v-if="deletedNotice"
-      class="mb-4 flex items-start justify-between gap-3 rounded-lg border border-success-500/40 bg-success-50 px-4 py-3 text-sm text-success-600 dark:bg-success-500/10 dark:text-success-500"
+      class="alert-success mb-4 flex items-start justify-between gap-3 px-4 py-3"
       role="status"
     >
       <span class="flex items-center gap-2">

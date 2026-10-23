@@ -4,7 +4,7 @@
   >
     <div class="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Recent Orders</h3>
+        <h3 class="card-title">Recent Orders</h3>
       </div>
 
       <div class="flex items-center gap-3">
@@ -98,10 +98,10 @@
               </div>
             </td>
             <td class="py-3 whitespace-nowrap">
-              <p class="text-gray-500 text-theme-sm dark:text-gray-400">{{ product.category }}</p>
+              <p class="text-muted">{{ product.category }}</p>
             </td>
             <td class="py-3 whitespace-nowrap">
-              <p class="text-gray-500 text-theme-sm dark:text-gray-400">{{ product.price }}</p>
+              <p class="text-muted">{{ product.price }}</p>
             </td>
             <td class="py-3 whitespace-nowrap">
               <span

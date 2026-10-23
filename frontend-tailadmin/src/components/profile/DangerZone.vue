@@ -1,6 +1,6 @@
 <template>
   <div class="mb-6 rounded-2xl border border-gray-200 p-5 lg:p-6 dark:border-gray-800">
-    <h4 class="text-lg font-semibold text-gray-800 mb-3 lg:mb-6 dark:text-white/90">Danger Zone</h4>
+    <h4 class="card-title mb-3 lg:mb-6">Danger Zone</h4>
     <div>
       <div
         class="flex flex-col justify-between gap-4 border-b border-gray-200 py-4 first:pt-0 last:border-b-0 last:pb-0 sm:flex-row sm:items-end dark:border-gray-800"
@@ -9,9 +9,7 @@
           <span class="block text-base mb-1 font-medium text-gray-800 dark:text-white/90"
             >Logout all devices</span
           >
-          <p class="text-sm text-gray-500 dark:text-gray-400">
-            Sign out from every active session.
-          </p>
+          <p class="text-muted">Sign out from every active session.</p>
         </div>
         <div>
           <button
@@ -43,9 +41,7 @@
           <span class="block text-base mb-1 font-medium text-gray-800 dark:text-white/90"
             >Logout all devices</span
           >
-          <p class="text-sm text-gray-500 dark:text-gray-400">
-            Sign out from every active session.
-          </p>
+          <p class="text-muted">Sign out from every active session.</p>
         </div>
         <div>
           <button

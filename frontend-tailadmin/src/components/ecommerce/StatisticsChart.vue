@@ -4,10 +4,8 @@
   >
     <div class="flex flex-col gap-5 mb-6 sm:flex-row sm:justify-between">
       <div class="w-full">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Statistics</h3>
-        <p class="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
-          Target you’ve set for each month
-        </p>
+        <h3 class="card-title">Statistics</h3>
+        <p class="text-muted mt-1">Target you’ve set for each month</p>
       </div>
 
       <div class="flex items-center gap-3 sm:justify-end">

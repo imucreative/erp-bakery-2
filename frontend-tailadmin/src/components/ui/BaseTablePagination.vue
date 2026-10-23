@@ -24,7 +24,7 @@ const emit = defineEmits<{
     class="flex flex-col items-center justify-between gap-3 pt-2 sm:flex-row"
     aria-label="Pagination tabel"
   >
-    <span class="text-theme-sm text-gray-500 dark:text-gray-400">
+    <span class="text-muted">
       Menampilkan {{ props.currentCount }} dari {{ props.totalItems }} data
     </span>
     <div class="flex items-center gap-2">

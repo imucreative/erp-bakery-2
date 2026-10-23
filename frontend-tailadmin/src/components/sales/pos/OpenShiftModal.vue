@@ -67,15 +67,11 @@ function onConfirm(): void {
     <div
       class="relative w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
     >
-      <h4 class="mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">Buka Shift Kasir</h4>
-      <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
-        Pilih outlet dan masukkan kas awal untuk memulai shift.
-      </p>
+      <h4 class="modal-title mb-2">Buka Shift Kasir</h4>
+      <p class="text-muted mb-4">Pilih outlet dan masukkan kas awal untuk memulai shift.</p>
 
       <div class="mb-4">
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-          Outlet
-        </label>
+        <label class="form-label"> Outlet </label>
         <BaseSelect
           id="open-shift-outlet"
           v-model="outletId"
@@ -85,9 +81,7 @@ function onConfirm(): void {
       </div>
 
       <div class="mb-4">
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-          Kas Awal (Rp)
-        </label>
+        <label class="form-label"> Kas Awal (Rp) </label>
         <BaseInput
           id="open-shift-opening-cash"
           :model-value="openingCash"
@@ -99,9 +93,7 @@ function onConfirm(): void {
       </div>
 
       <div class="mb-4">
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-          Catatan
-        </label>
+        <label class="form-label"> Catatan </label>
         <BaseTextarea
           id="open-shift-notes"
           v-model="notes"
@@ -110,10 +102,7 @@ function onConfirm(): void {
         />
       </div>
 
-      <p
-        v-if="props.errorMessage"
-        class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      >
+      <p v-if="props.errorMessage" class="alert-error mb-4 px-3 py-2">
         {{ props.errorMessage }}
       </p>
 

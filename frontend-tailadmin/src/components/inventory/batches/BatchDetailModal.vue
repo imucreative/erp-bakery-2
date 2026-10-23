@@ -113,21 +113,16 @@ function statusColor(status: string): BatchStatusColor {
     >
       <div class="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Detail Batch</h4>
+          <h4 class="modal-title">Detail Batch</h4>
           <p class="mt-0.5 text-theme-xs text-gray-500 dark:text-gray-400">
             Informasi batch inventaris (hanya-baca).
           </p>
         </div>
       </div>
 
-      <div v-if="loading" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-        Memuat detail batch...
-      </div>
+      <div v-if="loading" class="text-muted py-8 text-center">Memuat detail batch...</div>
 
-      <div
-        v-else-if="errorMessage"
-        class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      >
+      <div v-else-if="errorMessage" class="alert-error px-3 py-2">
         {{ errorMessage }}
       </div>
 
@@ -214,9 +209,7 @@ function statusColor(status: string): BatchStatusColor {
         </div>
       </div>
 
-      <div v-else class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-        Data batch tidak tersedia.
-      </div>
+      <div v-else class="text-muted py-8 text-center">Data batch tidak tersedia.</div>
 
       <div class="mt-6 flex justify-end">
         <BaseButton size="sm" variant="outline" @click="emit('close')">Tutup</BaseButton>

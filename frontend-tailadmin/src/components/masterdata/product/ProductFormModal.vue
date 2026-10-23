@@ -221,7 +221,7 @@ function onSubmit(): void {
     <div
       class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
     >
-      <h4 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
+      <h4 class="modal-title mb-4">
         {{ isEdit ? 'Edit Produk' : 'Tambah Produk' }}
       </h4>
 
@@ -345,10 +345,7 @@ function onSubmit(): void {
           </div>
         </div>
 
-        <p
-          v-if="localError || errorMessage"
-          class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-        >
+        <p v-if="localError || errorMessage" class="alert-error px-3 py-2">
           {{ localError || errorMessage }}
         </p>
 

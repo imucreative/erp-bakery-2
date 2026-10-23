@@ -86,7 +86,7 @@ function goToList(): void {
 
     <div
       v-if="loading"
-      class="rounded-2xl border border-gray-200 bg-white p-10 text-center text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400"
+      class="text-muted rounded-2xl border border-gray-200 bg-white p-10 text-center dark:border-gray-800 dark:bg-white/[0.03]"
     >
       Memuat data...
     </div>
@@ -113,7 +113,7 @@ function goToList(): void {
           >
             <ChevronLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
           </BaseButton>
-          <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
+          <h3 class="card-title">
             {{ order.productionNumber }}
           </h3>
         </div>

@@ -4,12 +4,8 @@
   >
     <div class="flex justify-between">
       <div>
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
-          Customers Demographic
-        </h3>
-        <p class="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
-          Number of customer based on country
-        </p>
+        <h3 class="card-title">Customers Demographic</h3>
+        <p class="text-muted mt-1">Number of customer based on country</p>
       </div>
     </div>
     <div
@@ -36,7 +32,9 @@
         </div>
 
         <div class="flex w-full max-w-[140px] items-center gap-3">
-          <div class="relative block h-2 w-full max-w-[100px] rounded-sm bg-gray-200 dark:bg-gray-800">
+          <div
+            class="relative block h-2 w-full max-w-[100px] rounded-sm bg-gray-200 dark:bg-gray-800"
+          >
             <div
               class="absolute left-0 top-0 flex h-full w-[79%] items-center justify-center rounded-sm bg-brand-500 text-xs font-medium text-white"
             ></div>
@@ -59,7 +57,9 @@
         </div>
 
         <div class="flex w-full max-w-[140px] items-center gap-3">
-          <div class="relative block h-2 w-full max-w-[100px] rounded-sm bg-gray-200 dark:bg-gray-800">
+          <div
+            class="relative block h-2 w-full max-w-[100px] rounded-sm bg-gray-200 dark:bg-gray-800"
+          >
             <div
               class="absolute left-0 top-0 flex h-full w-[23%] items-center justify-center rounded-sm bg-brand-500 text-xs font-medium text-white"
             ></div>

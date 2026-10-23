@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseAlert from './BaseAlert.vue'
+
 interface BaseTableProps {
   loading?: boolean
   errorMessage?: string | null
@@ -18,19 +20,15 @@ withDefaults(defineProps<BaseTableProps>(), {
 
 <template>
   <div>
-    <div v-if="loading" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+    <div v-if="loading" class="text-muted py-10 text-center">
       <slot name="loading">Memuat data...</slot>
     </div>
 
-    <div
-      v-else-if="errorMessage"
-      class="rounded-lg border border-error-500/40 bg-error-50 px-4 py-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      role="alert"
-    >
+    <BaseAlert v-else-if="errorMessage">
       <slot name="error">{{ errorMessage }}</slot>
-    </div>
+    </BaseAlert>
 
-    <div v-else-if="isEmpty" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+    <div v-else-if="isEmpty" class="text-muted py-10 text-center">
       <slot name="empty">{{ emptyMessage }}</slot>
     </div>
 

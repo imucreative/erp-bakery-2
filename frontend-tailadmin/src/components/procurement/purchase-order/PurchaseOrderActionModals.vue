@@ -105,11 +105,11 @@ function onConfirm(): void {
     <div
       class="relative w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
     >
-      <h4 class="mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">{{ title }}</h4>
-      <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">{{ description }}</p>
+      <h4 class="modal-title mb-2">{{ title }}</h4>
+      <p class="text-muted mb-4">{{ description }}</p>
 
       <div class="mb-4">
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+        <label class="form-label">
           Catatan<span v-if="noteRequired" class="text-error-500">*</span>
         </label>
         <BaseTextarea
@@ -121,10 +121,7 @@ function onConfirm(): void {
         />
       </div>
 
-      <p
-        v-if="localError || errorMessage"
-        class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      >
+      <p v-if="localError || errorMessage" class="alert-error mb-4 px-3 py-2">
         {{ localError || errorMessage }}
       </p>
 

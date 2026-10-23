@@ -67,7 +67,7 @@ function onConfirm(): void {
       <template v-if="props.result">
         <div class="mb-4 flex items-center gap-2 text-success-600 dark:text-success-500">
           <CheckCircle2 class="h-6 w-6" aria-hidden="true" />
-          <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Shift Ditutup</h4>
+          <h4 class="modal-title">Shift Ditutup</h4>
         </div>
         <dl class="space-y-3 rounded-xl border border-gray-200 p-4 dark:border-gray-800">
           <div class="flex items-center justify-between text-theme-sm">
@@ -112,18 +112,14 @@ function onConfirm(): void {
 
       <!-- Form view: enter actual cash to close -->
       <template v-else>
-        <h4 class="mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">
-          Tutup Shift Kasir
-        </h4>
-        <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+        <h4 class="modal-title mb-2">Tutup Shift Kasir</h4>
+        <p class="text-muted mb-4">
           Masukkan jumlah kas aktual di laci. Sistem menghitung selisih terhadap kas yang diharapkan
           (hanya pembayaran tunai).
         </p>
 
         <div class="mb-4">
-          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Kas Aktual (Rp)
-          </label>
+          <label class="form-label"> Kas Aktual (Rp) </label>
           <BaseInput
             id="close-shift-actual-cash"
             :model-value="actualCash"
@@ -135,9 +131,7 @@ function onConfirm(): void {
         </div>
 
         <div class="mb-4">
-          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Catatan
-          </label>
+          <label class="form-label"> Catatan </label>
           <BaseTextarea
             id="close-shift-notes"
             v-model="notes"
@@ -146,10 +140,7 @@ function onConfirm(): void {
           />
         </div>
 
-        <p
-          v-if="props.errorMessage"
-          class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-        >
+        <p v-if="props.errorMessage" class="alert-error mb-4 px-3 py-2">
           {{ props.errorMessage }}
         </p>
 
@@ -171,7 +162,7 @@ function onConfirm(): void {
             @click="onConfirm"
           >
             <template #start-icon>
-              <LogOut class="h-4 w-4 rtl:rotate-180" aria-hidden="true"/>
+              <LogOut class="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
             </template>
             Tutup Shift
           </BaseButton>

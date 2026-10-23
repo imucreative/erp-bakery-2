@@ -8,7 +8,7 @@
           <div class="w-full max-w-xl pt-10 mx-auto">
             <router-link
               to="/signin"
-              class="inline-flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              class="text-muted inline-flex items-center gap-2 transition-colors hover:text-gray-700 dark:hover:text-gray-300"
             >
               <ArrowLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
               Sign In
@@ -22,7 +22,7 @@
               >
                 Sign Up
               </h1>
-              <p class="text-sm text-gray-500 dark:text-gray-400">
+              <p class="text-muted">
                 Buat perusahaan baru beserta akun pemilik (owner) untuk mulai menggunakan Bakery
                 ERP.
               </p>
@@ -30,7 +30,7 @@
             <div>
               <div
                 v-if="errorMessage"
-                class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-4 py-3 text-sm text-error-600 dark:border-error-500/40 dark:bg-error-500/10 dark:text-error-400"
+                class="alert-error mb-4 px-4 py-3 dark:border-error-500/40"
                 role="alert"
               >
                 {{ errorMessage }}

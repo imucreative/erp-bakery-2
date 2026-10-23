@@ -25,9 +25,7 @@ function actorLabel(log: PurchaseReturnStatusLog): string {
 
 <template>
   <div>
-    <p v-if="logs.length === 0" class="text-theme-sm text-gray-500 dark:text-gray-400">
-      Belum ada riwayat status.
-    </p>
+    <p v-if="logs.length === 0" class="text-muted">Belum ada riwayat status.</p>
 
     <ol v-else class="relative space-y-6 border-s border-gray-200 ps-6 dark:border-gray-800">
       <li v-for="log in logs" :key="log.id" class="relative">
@@ -50,9 +48,7 @@ function actorLabel(log: PurchaseReturnStatusLog): string {
           <p class="text-theme-sm text-gray-700 dark:text-gray-300">
             oleh <span class="font-medium">{{ actorLabel(log) }}</span>
           </p>
-          <p v-if="log.note" class="text-theme-sm text-gray-500 dark:text-gray-400">
-            "{{ log.note }}"
-          </p>
+          <p v-if="log.note" class="text-muted">"{{ log.note }}"</p>
           <p class="text-theme-xs text-gray-400 dark:text-gray-500">
             {{ formatDateTime(log.createdAt) }}
           </p>

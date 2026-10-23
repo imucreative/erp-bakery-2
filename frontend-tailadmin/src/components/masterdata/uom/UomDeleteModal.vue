@@ -37,15 +37,12 @@ const emit = defineEmits<{
     <div
       class="relative w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
     >
-      <h4 class="mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">Hapus UOM</h4>
-      <p class="mb-5 text-sm text-gray-500 dark:text-gray-400">
+      <h4 class="modal-title mb-2">Hapus UOM</h4>
+      <p class="text-muted mb-5">
         Yakin menghapus "{{ uom?.name }}"? Tindakan ini tidak dapat dibatalkan.
       </p>
 
-      <p
-        v-if="errorMessage"
-        class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      >
+      <p v-if="errorMessage" class="alert-error mb-4 px-3 py-2">
         {{ errorMessage }}
       </p>
 

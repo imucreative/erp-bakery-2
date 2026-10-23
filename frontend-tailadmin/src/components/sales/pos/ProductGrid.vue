@@ -129,15 +129,9 @@ function onCardClick(product: PosProduct): void {
       />
     </div>
 
-    <div v-if="props.loading" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-      Memuat produk...
-    </div>
+    <div v-if="props.loading" class="text-muted py-10 text-center">Memuat produk...</div>
 
-    <div
-      v-else-if="props.errorMessage"
-      class="rounded-lg border border-error-500/40 bg-error-50 px-4 py-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      role="alert"
-    >
+    <div v-else-if="props.errorMessage" class="alert-error px-4 py-3" role="alert">
       {{ props.errorMessage }}
     </div>
 

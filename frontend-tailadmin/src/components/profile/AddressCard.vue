@@ -3,9 +3,7 @@
     <div class="p-5 border mb-6 border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
       <div class="flex flex-col gap-6 sm:flex-row lg:items-start lg:justify-between">
         <div class="flex-1">
-          <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4 lg:mb-6">
-            Address
-          </h4>
+          <h4 class="card-title mb-4 lg:mb-6">Address</h4>
 
           <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
             <div>
@@ -88,7 +86,7 @@
             <h4 class="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
               Edit Address
             </h4>
-            <p class="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
+            <p class="text-muted mb-6 lg:mb-7">
               Update your details to keep your profile up-to-date.
             </p>
           </div>
@@ -96,9 +94,7 @@
             <div class="px-2 overflow-y-auto custom-scrollbar">
               <div class="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Country
-                  </label>
+                  <label class="form-label"> Country </label>
                   <input
                     type="text"
                     value="United States"
@@ -107,9 +103,7 @@
                 </div>
 
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    City/State
-                  </label>
+                  <label class="form-label"> City/State </label>
                   <input
                     type="text"
                     value="Poenix, Arizona, United States"
@@ -118,9 +112,7 @@
                 </div>
 
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Postal Code
-                  </label>
+                  <label class="form-label"> Postal Code </label>
                   <input
                     type="text"
                     value="ERT 2489"
@@ -129,9 +121,7 @@
                 </div>
 
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    TAX ID
-                  </label>
+                  <label class="form-label"> TAX ID </label>
                   <input
                     type="text"
                     value="AS4568384"

@@ -23,6 +23,7 @@ import { supplierService, type Supplier } from '@/services/supplier.service'
 import { goodsReceiptService, type GoodsReceipt } from '@/services/goods-receipt.service'
 import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import type { PurchaseReturn } from '@/services/purchase-return.service'
+import { Plus } from 'lucide-vue-next'
 
 const pageTitle = 'Purchase Returns'
 const router = useRouter()
@@ -108,7 +109,10 @@ onMounted(() => {
           :suppliers="suppliers"
         />
         <BaseButton v-if="canCreate" size="sm" variant="primary" @click="goToCreate">
-          + Buat Retur
+          <template #start-icon>
+            <Plus class="h-4 w-4" aria-hidden="true" />
+          </template>
+          Buat Retur
         </BaseButton>
       </div>
 

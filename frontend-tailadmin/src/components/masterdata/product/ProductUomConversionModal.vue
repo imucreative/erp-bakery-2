@@ -262,8 +262,8 @@ async function onDelete(row: ProductUomConversion): Promise<void> {
     <div
       class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
     >
-      <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Satuan &amp; Konversi</h4>
-      <p class="mt-1 text-theme-sm text-gray-500 dark:text-gray-400">
+      <h4 class="modal-title">Satuan &amp; Konversi</h4>
+      <p class="text-muted mt-1">
         {{ product?.name ?? '—' }}
       </p>
 
@@ -396,11 +396,7 @@ async function onDelete(row: ProductUomConversion): Promise<void> {
           </template>
         </BaseTable>
 
-        <p
-          v-if="rowError"
-          class="mt-3 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-          role="alert"
-        >
+        <p v-if="rowError" class="alert-error mt-3 px-3 py-2" role="alert">
           {{ rowError }}
         </p>
       </div>
@@ -450,11 +446,7 @@ async function onDelete(row: ProductUomConversion): Promise<void> {
           </p>
         </div>
 
-        <p
-          v-if="addError"
-          class="mt-3 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-          role="alert"
-        >
+        <p v-if="addError" class="alert-error mt-3 px-3 py-2" role="alert">
           {{ addError }}
         </p>
 

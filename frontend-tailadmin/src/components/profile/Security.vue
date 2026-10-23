@@ -1,6 +1,6 @@
 <template>
   <div class="mb-6 rounded-2xl border border-gray-200 p-5 lg:p-6 dark:border-gray-800">
-    <h4 class="text-lg mb-3 font-semibold text-gray-800 lg:mb-6 dark:text-white/90">Security</h4>
+    <h4 class="card-title mb-3 lg:mb-6">Security</h4>
     <div>
       <div
         class="flex flex-col justify-between gap-4 border-b border-gray-200 py-4 first:pt-0 last:border-b-0 last:pb-0 sm:flex-row sm:items-end dark:border-gray-800"
@@ -9,9 +9,7 @@
           <span class="block font-medium text-base mb-1 text-gray-800 dark:text-white/90"
             >Change Password</span
           >
-          <p class="text-sm text-gray-500 dark:text-gray-400">
-            Receive real-time notifications and team alerts.
-          </p>
+          <p class="text-muted">Receive real-time notifications and team alerts.</p>
         </div>
         <div>
           <button
@@ -43,9 +41,7 @@
           <span class="block mb-1 font-medium text-base text-gray-800 dark:text-white/90"
             >Two-factor authentication (2FA)</span
           >
-          <p class="text-sm text-gray-500 dark:text-gray-400">
-            Keep your account secure by enabling 2FA
-          </p>
+          <p class="text-muted">Keep your account secure by enabling 2FA</p>
         </div>
         <div>
           <label

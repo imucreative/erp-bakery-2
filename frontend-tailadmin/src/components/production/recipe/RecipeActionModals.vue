@@ -64,8 +64,8 @@ const confirmVariant = computed<'success' | 'danger'>(() =>
     <div
       class="relative w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
     >
-      <h4 class="mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">{{ title }}</h4>
-      <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">{{ description }}</p>
+      <h4 class="modal-title mb-2">{{ title }}</h4>
+      <p class="text-muted mb-4">{{ description }}</p>
       <div
         v-if="isDestructive"
         class="mb-4 flex items-start gap-2 rounded-lg border border-warning-500/40 bg-warning-50 px-3 py-2 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
@@ -74,10 +74,7 @@ const confirmVariant = computed<'success' | 'danger'>(() =>
           warningText
         }}</span>
       </div>
-      <p
-        v-if="errorMessage"
-        class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      >
+      <p v-if="errorMessage" class="alert-error mb-4 px-3 py-2">
         {{ errorMessage }}
       </p>
       <div class="flex justify-end gap-3">

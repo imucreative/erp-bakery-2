@@ -148,9 +148,7 @@ const emit = defineEmits<{
     <!-- Totals + pay -->
     <div class="mt-4 space-y-3 border-t border-gray-200 pt-4 dark:border-gray-800">
       <div class="flex items-center justify-between gap-3">
-        <label for="pos-order-discount" class="text-theme-sm text-gray-500 dark:text-gray-400">
-          Diskon Order
-        </label>
+        <label for="pos-order-discount" class="text-muted"> Diskon Order </label>
         <div class="w-32">
           <BaseInput
             id="pos-order-discount"
