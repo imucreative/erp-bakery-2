@@ -1,0 +1,37 @@
+/* Penyesuaian arah untuk [dir='rtl'] (fitur useRTL). */
+
+/* ==========================================================================
+   RTL Overrides & Localization Utilities
+   ========================================================================== */
+
+[dir='rtl'] .custom-datepicker .flatpickr-calendar.static.open {
+  left: 0 !important;
+  right: auto !important;
+}
+
+[dir='rtl'] .flatpickr-calendar.arrowTop:before,
+[dir='rtl'] .flatpickr-calendar.arrowTop:after {
+  left: 22px;
+  right: auto;
+}
+
+[dir='rtl'] .apexcharts-tooltip {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir='rtl'] div[id*='chartdiv'],
+[dir='rtl'] .am5-layer-30,
+[dir='rtl'] .am5-tooltip-container,
+[dir='rtl'] .mapOne,
+[dir='rtl'] .mapTwo,
+[dir='rtl'] .jvm-container {
+  direction: ltr !important;
+  text-align: left !important;
+}
+
+[dir='rtl'] div[class*='am5-'] svg text,
+[dir='rtl'] div[class*='am5-'] text {
+  direction: ltr !important;
+  unicode-bidi: embed;
+}

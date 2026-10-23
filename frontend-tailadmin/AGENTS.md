@@ -7,7 +7,15 @@
 ```
 src/
 ├── assets/
-│   └── main.css                  # Tailwind CSS v4 theme (@theme), global utility classes & 3rd party overrides
+│   ├── main.css                  # ENTRY CSS saja: @import font + 'tailwindcss' + partial + @custom-variant
+│   └── styles/                   # Partial CSS per kategori (diimpor berurutan dari main.css)
+│       ├── theme.css             # @theme design token (font, breakpoint, warna, shadow, z-index)
+│       ├── base.css              # @layer base (border compat, cursor, body)
+│       ├── menu.css              # @utility menu-* untuk AppSidebar
+│       ├── ui.css                # @utility snippet inti: *-title, text-muted, form-*, alert-*
+│       ├── inputs.css            # aturan elemen input[type=date]/[type=time]
+│       ├── vendor.css            # override library (apexcharts, jsvectormap, flatpickr)
+│       └── rtl.css               # koreksi arah [dir='rtl']
 ├── components/
 │   ├── charts/                   # ApexChart subcomponents (BarChart, LineChart)
 │   ├── common/                   # Shared wrappers (ComponentCard, PageBreadcrumb, ThemeToggler)
@@ -37,7 +45,8 @@ src/
 
 - **Vue 3** with **Composition API** (`<script setup lang="ts">`) and **Vue Router 4**.
 - **TypeScript ~5.7**: Strict type safety throughout components, composables, and router.
-- **Tailwind CSS v4**: Configured with `@tailwindcss/postcss` and `@theme` tokens in `src/assets/main.css`. No `tailwind.config.js`.
+- **Tailwind CSS v4**: Configured with `@tailwindcss/postcss`; `@theme` tokens live in
+  `src/assets/styles/theme.css`, imported by the `src/assets/main.css` entry. No `tailwind.config.js`.
 - Path alias: `@/*` → `src/*` (configured in `vite.config.ts`).
 - **Vite 6** with `@vitejs/plugin-vue` and `@vitejs/plugin-vue-jsx`.
 - **State Management via Composables**:
@@ -89,7 +98,24 @@ src/
 
 ## Styling Rules & Dark Mode
 
-- **Tailwind CSS v4**: Configured via `src/assets/main.css` using `@theme`. There is **no** `tailwind.config.js`.
+- **Tailwind CSS v4**: `src/assets/main.css` is only the ENTRY (`@import` font + `'tailwindcss'`
+  + partial + `@custom-variant dark`). `@theme` lives in `src/assets/styles/theme.css`; other
+  concerns have their own partial (`base`, `menu`, `ui`, `inputs`, `vendor`, `rtl`). Put new
+  styles in the partial that matches their category, and keep the `@import` order in
+  `main.css` unchanged — the order is what the cascade depends on. There is **no**
+  `tailwind.config.js`.
+- **Core snippet classes** (`src/assets/styles/ui.css`, declared with `@utility`): use
+  `page-title` / `card-title` / `modal-title` for headings, `text-muted` for secondary text,
+  `form-label` / `form-hint` / `form-error` for field text, `alert-error` / `alert-success` /
+  `alert-warning` / `alert-info` for banners, and `no-scrollbar` / `custom-scrollbar` for
+  scroll containers. Prefer these over retyping the long class chain. Custom utilities are
+  emitted BEFORE core utilities, so a call-site utility always wins
+  (e.g. `class="modal-title mt-4"`) without `!important`. Snippets deliberately exclude
+  margin (headings) and padding (alerts) so callers can set density.
+- **Shared components win**: banner = `BaseAlert`, modal = `BaseModal` (backdrop, Esc-close,
+  `role="dialog"`, `size` and `scrollable` are already handled), table shell/error = `BaseTable`,
+  form field text = `BaseFormField`. Do not re-create `fixed inset-0` modal wrappers or
+  hand-written `alert-*` divs in feature components.
 - **Theme Tokens**: Always use predefined theme tokens:
   - **Colors**: `brand` (`25`–`950`), `gray` (`25`–`950`), `blue-light` (`25`–`950`), `orange` (`25`–`950`), `success`, `error`, `warning`.
   - **Typography**: `font-outfit`, `text-theme-xs/sm/xl`, `text-title-sm/md/lg/xl/2xl`.
@@ -117,7 +143,8 @@ src/
 ## Don'ts
 
 - Don't install new NPM packages without asking the user.
-- Don't create `tailwind.config.js` — Tailwind v4 configuration belongs in `src/assets/main.css`.
+- Don't create `tailwind.config.js` — Tailwind v4 configuration belongs in `src/assets/styles/*.css`
+  (tokens in `theme.css`), imported through the `src/assets/main.css` entry.
 - Don't use Options API or `defineComponent` boilerplate — always use `<script setup lang="ts">`.
 - Don't hardcode physical directional utilities (`ml-*`, `mr-*`, `pl-*`, `pr-*`, `left-*`, `right-*`, `border-l-*`, `border-r-*`, `rounded-l-*`, `rounded-r-*`, `text-left`, `text-right`) without providing RTL support (`ltr:` / `rtl:` or CSS logical equivalents).
 - Don't hardcode hex colors in `class=""` attributes — use `@theme` tokens.

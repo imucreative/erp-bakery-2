@@ -1,0 +1,93 @@
+/* Snippet class inti: heading, form, alert, scrollbar, tombol, animasi dropdown. */
+
+/* Heading & teks — margin sengaja tidak disertakan karena sering berbeda antar pemakai */
+@utility page-title {
+  @apply text-xl font-semibold text-gray-800 dark:text-white/90;
+}
+
+@utility card-title {
+  @apply text-lg font-semibold text-gray-800 dark:text-white/90;
+}
+
+@utility modal-title {
+  @apply text-lg font-semibold text-gray-800 dark:text-white/90;
+}
+
+@utility text-muted {
+  @apply text-theme-sm text-gray-500 dark:text-gray-400;
+}
+
+/* Form */
+@utility form-label {
+  @apply mb-1.5 block text-theme-sm font-medium text-gray-700 dark:text-gray-400;
+}
+
+@utility form-hint {
+  @apply mt-1.5 text-theme-sm text-gray-500 dark:text-gray-400;
+}
+
+@utility form-error {
+  @apply mt-1.5 text-theme-sm text-error-600 dark:text-error-400;
+}
+
+/* Alert — padding di luar supaya pemakai bebas pilih px-3 py-2 (modal) atau px-4 py-3 (halaman) */
+@utility alert-error {
+  @apply rounded-lg border border-error-500/40 bg-error-50 text-theme-sm text-error-600 dark:bg-error-500/10 dark:text-error-400;
+}
+
+@utility alert-success {
+  @apply rounded-lg border border-success-500/40 bg-success-50 text-theme-sm text-success-600 dark:bg-success-500/10 dark:text-success-500;
+}
+
+@utility alert-warning {
+  @apply rounded-lg border border-warning-500/40 bg-warning-50 text-theme-sm text-warning-600 dark:bg-warning-500/10 dark:text-warning-400;
+}
+
+@utility alert-info {
+  @apply rounded-lg border border-brand-500/40 bg-brand-50 text-theme-sm text-brand-600 dark:bg-brand-500/10 dark:text-brand-400;
+}
+
+@utility no-scrollbar {
+  /* Chrome, Safari and Opera */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+@utility custom-scrollbar {
+  &::-webkit-scrollbar {
+    @apply size-1.5;
+  }
+
+  &::-webkit-scrollbar-track {
+    @apply rounded-full;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    @apply bg-gray-200 rounded-full dark:bg-gray-700;
+  }
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #344054;
+}
+
+.edit-button {
+  @apply flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.15s ease-out forwards;
+}
