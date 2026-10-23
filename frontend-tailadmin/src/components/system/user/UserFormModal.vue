@@ -4,10 +4,18 @@
  *   CREATE: name + email + password(min 8) + phone? + role (required) + outlets.
  *   EDIT: email read-only, no password; editable name/phone/role/active + outlets
  *     (full-sync). Outlet assignment via a toggle-switch list.
- * Transparent backdrop per UI standard.
+ * Backdrop, Esc-close, and panel chrome come from BaseModal.
  */
 import { computed, ref, watch } from 'vue'
-import { BaseButton, BaseFormField, BaseInput, BaseSelect, BaseToggle } from '@/components/ui'
+import {
+  BaseAlert,
+  BaseButton,
+  BaseFormField,
+  BaseInput,
+  BaseModal,
+  BaseSelect,
+  BaseToggle,
+} from '@/components/ui'
 import { Save, X } from 'lucide-vue-next'
 import type { UserDetail } from '@/services/user.service'
 import type { Role } from '@/services/role.service'
@@ -134,118 +142,103 @@ function onSubmit(): void {
 </script>
 
 <template>
-  <div
-    v-if="open"
-    class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4"
-  >
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-      @click="emit('close')"
-    ></div>
+  <BaseModal :open="open" size="lg" scrollable @close="emit('close')">
+    <h4 class="modal-title mb-4">
+      {{ isEdit ? 'Edit User' : 'Tambah User' }}
+    </h4>
 
-    <div
-      class="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
-      <h4 class="modal-title mb-4">
-        {{ isEdit ? 'Edit User' : 'Tambah User' }}
-      </h4>
+    <div v-if="isEdit && detailLoading" class="text-muted py-8 text-center">
+      Memuat data user...
+    </div>
 
-      <div v-if="isEdit && detailLoading" class="text-muted py-8 text-center">
-        Memuat data user...
+    <form v-else class="space-y-4" @submit.prevent="onSubmit">
+      <BaseFormField label="Nama" field-id="user-name" required>
+        <BaseInput id="user-name" v-model="name" placeholder="Nama lengkap" />
+      </BaseFormField>
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <BaseFormField label="Email" field-id="user-email" :required="!isEdit">
+          <BaseInput
+            v-if="!isEdit"
+            id="user-email"
+            v-model="email"
+            type="email"
+            placeholder="nama@company.com"
+          />
+          <p
+            v-else
+            class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300"
+          >
+            {{ email }}
+          </p>
+        </BaseFormField>
+        <BaseFormField label="Telepon" field-id="user-phone">
+          <BaseInput id="user-phone" v-model="phone" type="tel" placeholder="0812-3456-7890" />
+        </BaseFormField>
       </div>
 
-      <form v-else class="space-y-4" @submit.prevent="onSubmit">
-        <BaseFormField label="Nama" field-id="user-name" required>
-          <BaseInput id="user-name" v-model="name" placeholder="Nama lengkap" />
-        </BaseFormField>
+      <BaseFormField v-if="!isEdit" label="Password" field-id="user-password" required>
+        <BaseInput
+          id="user-password"
+          v-model="password"
+          type="password"
+          placeholder="Minimal 8 karakter"
+          autocomplete="new-password"
+        />
+      </BaseFormField>
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <BaseFormField label="Email" field-id="user-email" :required="!isEdit">
-            <BaseInput
-              v-if="!isEdit"
-              id="user-email"
-              v-model="email"
-              type="email"
-              placeholder="nama@company.com"
-            />
-            <p
-              v-else
-              class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300"
-            >
-              {{ email }}
-            </p>
-          </BaseFormField>
-          <BaseFormField label="Telepon" field-id="user-phone">
-            <BaseInput id="user-phone" v-model="phone" type="tel" placeholder="0812-3456-7890" />
-          </BaseFormField>
-        </div>
+      <BaseFormField label="Role" field-id="user-role" required>
+        <BaseSelect
+          id="user-role"
+          v-model="roleId"
+          :options="roleOptions"
+          placeholder="Pilih role"
+        />
+      </BaseFormField>
 
-        <BaseFormField v-if="!isEdit" label="Password" field-id="user-password" required>
-          <BaseInput
-            id="user-password"
-            v-model="password"
-            type="password"
-            placeholder="Minimal 8 karakter"
-            autocomplete="new-password"
-          />
-        </BaseFormField>
-
-        <BaseFormField label="Role" field-id="user-role" required>
-          <BaseSelect
-            id="user-role"
-            v-model="roleId"
-            :options="roleOptions"
-            placeholder="Pilih role"
-          />
-        </BaseFormField>
-
-        <BaseFormField label="Akses Outlet" field-id="user-outlets">
+      <BaseFormField label="Akses Outlet" field-id="user-outlets">
+        <div
+          class="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-gray-200 p-3 dark:border-gray-800"
+        >
+          <p v-if="outlets.length === 0" class="text-theme-xs text-gray-400 dark:text-gray-500">
+            Tidak ada outlet tersedia.
+          </p>
           <div
-            class="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-gray-200 p-3 dark:border-gray-800"
+            v-for="o in outlets"
+            :key="o.id"
+            class="flex items-center justify-between gap-3 py-1 text-sm text-gray-700 dark:text-gray-300"
           >
-            <p v-if="outlets.length === 0" class="text-theme-xs text-gray-400 dark:text-gray-500">
-              Tidak ada outlet tersedia.
-            </p>
-            <div
-              v-for="o in outlets"
-              :key="o.id"
-              class="flex items-center justify-between gap-3 py-1 text-sm text-gray-700 dark:text-gray-300"
-            >
-              <span>
-                {{ o.name }}
-                <span class="font-mono text-theme-xs text-gray-400">({{ o.code }})</span>
-              </span>
-              <BaseToggle
-                :model-value="outletIds.includes(o.id)"
-                @update:model-value="toggleOutlet(o.id)"
-              />
-            </div>
+            <span>
+              {{ o.name }}
+              <span class="font-mono text-theme-xs text-gray-400">({{ o.code }})</span>
+            </span>
+            <BaseToggle
+              :model-value="outletIds.includes(o.id)"
+              @update:model-value="toggleOutlet(o.id)"
+            />
           </div>
-        </BaseFormField>
-
-        <BaseToggle v-if="isEdit" v-model="isActive" label="Aktif" />
-
-        <p v-if="localError || errorMessage" class="alert-error px-3 py-2">
-          {{ localError || errorMessage }}
-        </p>
-
-        <div class="flex justify-end gap-3 pt-2">
-          <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
-            <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
-            Batal
-          </BaseButton>
-          <BaseButton
-            type="submit"
-            variant="success"
-            :loading="submitting"
-            loading-text="Menyimpan..."
-          >
-            <template #start-icon><Save class="h-4 w-4" aria-hidden="true" /></template>
-            Simpan
-          </BaseButton>
         </div>
-      </form>
-    </div>
-  </div>
+      </BaseFormField>
+
+      <BaseToggle v-if="isEdit" v-model="isActive" label="Aktif" />
+
+      <BaseAlert :message="localError || errorMessage" size="sm" />
+
+      <div class="flex justify-end gap-3 pt-2">
+        <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
+          <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
+          Batal
+        </BaseButton>
+        <BaseButton
+          type="submit"
+          variant="success"
+          :loading="submitting"
+          loading-text="Menyimpan..."
+        >
+          <template #start-icon><Save class="h-4 w-4" aria-hidden="true" /></template>
+          Simpan
+        </BaseButton>
+      </div>
+    </form>
+  </BaseModal>
 </template>

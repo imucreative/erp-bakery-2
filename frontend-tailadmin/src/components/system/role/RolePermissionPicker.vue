@@ -16,7 +16,7 @@
  */
 import { computed } from 'vue'
 import type { Permission } from '@/services/permission.service'
-import { BaseCheckbox } from '@/components/ui'
+import { BaseAlert, BaseCheckbox } from '@/components/ui'
 
 const props = withDefaults(
   defineProps<{
@@ -258,9 +258,7 @@ const totalSelected = computed<number>(() => props.modelValue.length)
   <div>
     <div v-if="loading" class="text-muted py-8 text-center">Memuat katalog permission...</div>
 
-    <div v-else-if="errorMessage" class="alert-error px-3 py-2" role="alert">
-      {{ errorMessage }}
-    </div>
+    <BaseAlert v-else-if="errorMessage" size="sm">{{ errorMessage }}</BaseAlert>
 
     <div v-else-if="domains.length === 0" class="text-muted py-8 text-center">
       Katalog permission kosong.

@@ -2,10 +2,10 @@
 /**
  * RoleDetailModal — read-only view of a role's permissions, grouped by the
  * leading domain segment (e.g. `product.read` → `product`) for readability.
- * Transparent backdrop per UI standard.
+ * Backdrop, Esc-close, and panel chrome come from BaseModal.
  */
 import { computed } from 'vue'
-import { BaseButton } from '@/components/ui'
+import { BaseAlert, BaseButton, BaseModal } from '@/components/ui'
 import { X } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
 import type { Role, RoleDetail } from '@/services/role.service'
@@ -53,64 +53,49 @@ const permissionCount = computed<number>(() => props.detail?.permissions.length 
 </script>
 
 <template>
-  <div
-    v-if="open"
-    class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4"
-  >
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-      @click="emit('close')"
-    ></div>
-
-    <div
-      class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
-      <div class="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <h4 class="modal-title">{{ title }}</h4>
-          <p v-if="code" class="mt-0.5 font-mono text-theme-xs text-gray-500 dark:text-gray-400">
-            {{ code }}
-          </p>
-        </div>
-        <Badge color="info">{{ permissionCount }} permission</Badge>
+  <BaseModal :open="open" size="2xl" scrollable @close="emit('close')">
+    <div class="mb-4 flex items-start justify-between gap-3">
+      <div>
+        <h4 class="modal-title">{{ title }}</h4>
+        <p v-if="code" class="mt-0.5 font-mono text-theme-xs text-gray-500 dark:text-gray-400">
+          {{ code }}
+        </p>
       </div>
+      <Badge color="info">{{ permissionCount }} permission</Badge>
+    </div>
 
-      <div v-if="loading" class="text-muted py-8 text-center">Memuat permission...</div>
+    <div v-if="loading" class="text-muted py-8 text-center">Memuat permission...</div>
 
-      <div v-else-if="errorMessage" class="alert-error px-3 py-2">
-        {{ errorMessage }}
-      </div>
+    <BaseAlert v-else-if="errorMessage" size="sm">{{ errorMessage }}</BaseAlert>
 
-      <div v-else-if="groups.length === 0" class="text-muted py-8 text-center">
-        Role ini tidak memiliki permission.
-      </div>
+    <div v-else-if="groups.length === 0" class="text-muted py-8 text-center">
+      Role ini tidak memiliki permission.
+    </div>
 
-      <div v-else class="space-y-4">
-        <div v-for="group in groups" :key="group.domain" class="space-y-2">
-          <p
-            class="text-theme-xs font-semibold uppercase capitalize text-warning-500 dark:text-warning-400"
+    <div v-else class="space-y-4">
+      <div v-for="group in groups" :key="group.domain" class="space-y-2">
+        <p
+          class="text-theme-xs font-semibold uppercase capitalize text-warning-500 dark:text-warning-400"
+        >
+          {{ group.domain }}
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <span
+            v-for="c in group.codes"
+            :key="c"
+            class="inline-flex items-center rounded-lg bg-gray-100 px-2.5 py-1 font-mono text-theme-xs text-gray-700 dark:bg-white/5 dark:text-gray-300"
           >
-            {{ group.domain }}
-          </p>
-          <div class="flex flex-wrap gap-2">
-            <span
-              v-for="c in group.codes"
-              :key="c"
-              class="inline-flex items-center rounded-lg bg-gray-100 px-2.5 py-1 font-mono text-theme-xs text-gray-700 dark:bg-white/5 dark:text-gray-300"
-            >
-              {{ c }}
-            </span>
-          </div>
+            {{ c }}
+          </span>
         </div>
-      </div>
-
-      <div class="mt-6 flex justify-end">
-        <BaseButton size="sm" variant="outline" @click="emit('close')">
-          <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
-          Tutup
-        </BaseButton>
       </div>
     </div>
-  </div>
+
+    <div class="mt-6 flex justify-end">
+      <BaseButton size="sm" variant="outline" @click="emit('close')">
+        <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
+        Tutup
+      </BaseButton>
+    </div>
+  </BaseModal>
 </template>
