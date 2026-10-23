@@ -236,18 +236,6 @@ layer(base);
   @apply text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5;
 }
 
-@utility menu-dropdown-item {
-  @apply text-theme-sm relative flex items-center gap-3 rounded-lg px-3 py-2.5 font-medium;
-}
-
-@utility menu-dropdown-item-active {
-  @apply bg-brand-50 text-brand-500 dark:bg-brand-500/[0.12] dark:text-brand-400;
-}
-
-@utility menu-dropdown-item-inactive {
-  @apply text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5;
-}
-
 @utility menu-dropdown-badge {
   @apply text-success-600 dark:text-success-500 block rounded-full px-2.5 py-0.5 text-xs font-medium uppercase;
 }
@@ -270,6 +258,53 @@ layer(base);
 
 @utility menu-dropdown-badge-pro-inactive {
   @apply bg-brand-50 group-hover:bg-brand-100 dark:bg-brand-500/15 dark:group-hover:bg-brand-500/20;
+}
+
+/* Heading & teks — margin sengaja tidak disertakan karena sering berbeda antar pemakai */
+@utility page-title {
+  @apply text-xl font-semibold text-gray-800 dark:text-white/90;
+}
+
+@utility card-title {
+  @apply text-lg font-semibold text-gray-800 dark:text-white/90;
+}
+
+@utility modal-title {
+  @apply text-lg font-semibold text-gray-800 dark:text-white/90;
+}
+
+@utility text-muted {
+  @apply text-sm text-gray-500 dark:text-gray-400;
+}
+
+/* Form */
+@utility form-label {
+  @apply mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400;
+}
+
+@utility form-hint {
+  @apply mt-1.5 text-sm text-gray-500 dark:text-gray-400;
+}
+
+@utility form-error {
+  @apply mt-1.5 text-sm text-error-600 dark:text-error-400;
+}
+
+/* Alert — padding di luar supaya pemakai bebas pilih px-3 py-2 (modal) atau px-4 py-3 (halaman) */
+@utility alert-error {
+  @apply rounded-lg border border-error-500/40 bg-error-50 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400;
+}
+
+@utility alert-success {
+  @apply rounded-lg border border-success-500/40 bg-success-50 text-sm text-success-600 dark:bg-success-500/10 dark:text-success-500;
+}
+
+@utility alert-warning {
+  @apply rounded-lg border border-warning-500/40 bg-warning-50 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-warning-400;
+}
+
+@utility alert-info {
+  @apply rounded-lg border border-brand-500/40 bg-brand-50 text-sm text-brand-600 dark:bg-brand-500/10 dark:text-brand-400;
 }
 
 @utility no-scrollbar {
@@ -1234,32 +1269,6 @@ pre[class*='language-'] {
 .menu-accordion > div {
   overflow: hidden;
   min-height: 0;
-}
-
-@utility no-scrollbar {
-  /* Chrome, Safari and Opera */
-  &::-webkit-scrollbar {
-    display: none;
-  }
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
-}
-@utility custom-scrollbar {
-  &::-webkit-scrollbar {
-    @apply size-1.5;
-  }
-
-  &::-webkit-scrollbar-track {
-    @apply rounded-full;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    @apply bg-gray-200 rounded-full dark:bg-gray-700;
-  }
-}
-
-.dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #344054;
 }
 
 /* Customer Pin-Point Map */
