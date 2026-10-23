@@ -2,8 +2,8 @@
 /**
  * SupplierFormModal — create/edit modal for a supplier (name, address, phone,
  * PIC, optional default payment term + active toggle on edit). Self-contained
- * form state; emits `submit` and lets the parent run the mutation. Transparent
- * backdrop per UI standard.
+ * form state; emits `submit` and lets the parent run the mutation. Backdrop,
+ * Esc-close, and panel chrome come from BaseModal.
  *
  * Payment Term is OPTIONAL. Options are loaded via paymentTermService.lookup()
  * (active-only) when the modal opens. On CREATE the field emits the selected id
@@ -18,9 +18,11 @@
 import { computed, ref, watch } from 'vue'
 import { Save, X } from 'lucide-vue-next'
 import {
+  BaseAlert,
   BaseButton,
   BaseFormField,
   BaseInput,
+  BaseModal,
   BaseSelect,
   BaseTextarea,
   BaseToggle,
@@ -143,93 +145,78 @@ function onSubmit(): void {
 </script>
 
 <template>
-  <div
-    v-if="open"
-    class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4"
-  >
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-      @click="emit('close')"
-    ></div>
+  <BaseModal :open="open" size="lg" @close="emit('close')">
+    <h4 class="modal-title mb-4">
+      {{ mode === 'edit' ? 'Edit Supplier' : 'Tambah Supplier' }}
+    </h4>
 
-    <div
-      class="relative w-full max-w-lg rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
-      <h4 class="modal-title mb-4">
-        {{ mode === 'edit' ? 'Edit Supplier' : 'Tambah Supplier' }}
-      </h4>
+    <form class="space-y-4" @submit.prevent="onSubmit">
+      <BaseFormField
+        label="Nama"
+        field-id="supplier-name"
+        required
+        :error="localError && !name.trim() ? localError : null"
+      >
+        <BaseInput id="supplier-name" v-model="name" placeholder="mis. PT Tepung Sejahtera" />
+      </BaseFormField>
 
-      <form class="space-y-4" @submit.prevent="onSubmit">
-        <BaseFormField
-          label="Nama"
-          field-id="supplier-name"
-          required
-          :error="localError && !name.trim() ? localError : null"
-        >
-          <BaseInput id="supplier-name" v-model="name" placeholder="mis. PT Tepung Sejahtera" />
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <BaseFormField label="PIC" field-id="supplier-pic">
+          <BaseInput id="supplier-pic" v-model="picName" placeholder="Nama penanggung jawab" />
         </BaseFormField>
-
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <BaseFormField label="PIC" field-id="supplier-pic">
-            <BaseInput id="supplier-pic" v-model="picName" placeholder="Nama penanggung jawab" />
-          </BaseFormField>
-          <BaseFormField label="Telepon" field-id="supplier-phone">
-            <BaseInput id="supplier-phone" v-model="phone" type="tel" placeholder="021-555-0200" />
-          </BaseFormField>
-        </div>
-
-        <BaseFormField label="Alamat" field-id="supplier-address">
-          <BaseTextarea
-            id="supplier-address"
-            v-model="address"
-            :rows="2"
-            placeholder="Alamat supplier"
-          />
+        <BaseFormField label="Telepon" field-id="supplier-phone">
+          <BaseInput id="supplier-phone" v-model="phone" type="tel" placeholder="021-555-0200" />
         </BaseFormField>
+      </div>
 
-        <BaseFormField label="Payment Term (default)" field-id="supplier-payment-term">
-          <BaseSelect
-            id="supplier-payment-term"
-            v-model="defaultPaymentTermId"
-            :options="paymentTermOptions"
-            :disabled="paymentTermsLoading"
-            placeholder="Tanpa payment term"
-          />
-          <p v-if="paymentTermsLoading" class="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
-            Memuat payment term...
-          </p>
-          <p v-else-if="paymentTermsError" class="mt-1 text-theme-xs text-error-500">
-            {{ paymentTermsError }}
-          </p>
-        </BaseFormField>
+      <BaseFormField label="Alamat" field-id="supplier-address">
+        <BaseTextarea
+          id="supplier-address"
+          v-model="address"
+          :rows="2"
+          placeholder="Alamat supplier"
+        />
+      </BaseFormField>
 
-        <BaseToggle v-if="mode === 'edit'" v-model="isActive" label="Aktif" />
-
-        <p v-if="localError || errorMessage" class="alert-error px-3 py-2">
-          {{ localError || errorMessage }}
+      <BaseFormField label="Payment Term (default)" field-id="supplier-payment-term">
+        <BaseSelect
+          id="supplier-payment-term"
+          v-model="defaultPaymentTermId"
+          :options="paymentTermOptions"
+          :disabled="paymentTermsLoading"
+          placeholder="Tanpa payment term"
+        />
+        <p v-if="paymentTermsLoading" class="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
+          Memuat payment term...
         </p>
+        <p v-else-if="paymentTermsError" class="mt-1 text-theme-xs text-error-500">
+          {{ paymentTermsError }}
+        </p>
+      </BaseFormField>
 
-        <div class="flex justify-end gap-3 pt-2">
-          <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
-            <template #start-icon>
-              <X class="h-4 w-4" aria-hidden="true" />
-            </template>
-            Batal
-          </BaseButton>
-          <BaseButton
-            type="submit"
-            variant="success"
-            :loading="submitting"
-            loading-text="Menyimpan..."
-          >
-            <template #start-icon>
-              <Save class="h-4 w-4" aria-hidden="true" />
-            </template>
-            Simpan
-          </BaseButton>
-        </div>
-      </form>
-    </div>
-  </div>
+      <BaseToggle v-if="mode === 'edit'" v-model="isActive" label="Aktif" />
+
+      <BaseAlert :message="localError || errorMessage" size="sm" />
+
+      <div class="flex justify-end gap-3 pt-2">
+        <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
+          <template #start-icon>
+            <X class="h-4 w-4" aria-hidden="true" />
+          </template>
+          Batal
+        </BaseButton>
+        <BaseButton
+          type="submit"
+          variant="success"
+          :loading="submitting"
+          loading-text="Menyimpan..."
+        >
+          <template #start-icon>
+            <Save class="h-4 w-4" aria-hidden="true" />
+          </template>
+          Simpan
+        </BaseButton>
+      </div>
+    </form>
+  </BaseModal>
 </template>
