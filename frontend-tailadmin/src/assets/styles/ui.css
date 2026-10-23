@@ -17,6 +17,12 @@
   @apply text-theme-sm text-gray-500 dark:text-gray-400;
 }
 
+/* Isian placeholder/hint yang lebih redup dari text-muted (titik dua, “—”,
+   keterangan kecil di dalam sel tabel). */
+@utility text-muted-xs {
+  @apply text-theme-xs text-gray-400 dark:text-gray-500;
+}
+
 /* Form */
 @utility form-label {
   @apply mb-1.5 block text-theme-sm font-medium text-gray-700 dark:text-gray-400;

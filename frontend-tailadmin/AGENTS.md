@@ -105,7 +105,8 @@ src/
   `main.css` unchanged — the order is what the cascade depends on. There is **no**
   `tailwind.config.js`.
 - **Core snippet classes** (`src/assets/styles/ui.css`, declared with `@utility`): use
-  `page-title` / `card-title` / `modal-title` for headings, `text-muted` for secondary text,
+  `page-title` / `card-title` / `modal-title` for headings, `text-muted` for secondary text
+  (`text-muted-xs` for dimmer placeholders like an empty-cell `—`),
   `form-label` / `form-hint` / `form-error` for field text, `alert-error` / `alert-success` /
   `alert-warning` / `alert-info` for banners, and `no-scrollbar` / `custom-scrollbar` for
   scroll containers. Prefer these over retyping the long class chain. Custom utilities are
