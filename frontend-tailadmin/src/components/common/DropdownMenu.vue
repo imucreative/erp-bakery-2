@@ -22,11 +22,7 @@
     </button>
 
     <!-- Dropdown Menu -->
-    <div
-      v-if="open"
-      ref="menuRef"
-      :class="computedMenuClass"
-    >
+    <div v-if="open" ref="menuRef" :class="computedMenuClass">
       <slot name="menu">
         <!-- Default menu items -->
         <template v-for="(item, index) in menuItems">
@@ -105,7 +101,10 @@ const computedMenuClass = computed(() => {
   const shouldOpenUp = props.openUpward || isUpward.value
   let baseClass = props.menuClass
   if (shouldOpenUp) {
-    baseClass = baseClass.replace(/\btop-full\b/g, '').replace(/\bmt-\d+\b/g, '').trim()
+    baseClass = baseClass
+      .replace(/\btop-full\b/g, '')
+      .replace(/\bmt-\d+\b/g, '')
+      .trim()
     return `${baseClass} bottom-full mb-1 top-auto!`
   }
   return baseClass.includes('top-full') ? baseClass : `${baseClass} top-full mt-1`
@@ -148,7 +147,9 @@ const toggleDropdown = async () => {
       isUpward.value = true
     } else if (dropdown.value) {
       const dropdownRect = dropdown.value.getBoundingClientRect()
-      const scrollParent = dropdown.value.closest('.overflow-x-auto, .overflow-y-auto, table, tbody')
+      const scrollParent = dropdown.value.closest(
+        '.overflow-x-auto, .overflow-y-auto, table, tbody',
+      )
       let spaceBelowParent = Infinity
       if (scrollParent) {
         spaceBelowParent = scrollParent.getBoundingClientRect().bottom - dropdownRect.bottom
@@ -177,4 +178,3 @@ const handleMenuItemClick = (callback: any) => {
   closeDropdown()
 }
 </script>
-

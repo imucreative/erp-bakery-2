@@ -76,12 +76,7 @@ interface ApiListResponse<T> {
   meta: ListMeta
 }
 
-export const PURCHASE_RETURN_STATUSES = [
-  'DRAFT',
-  'SUBMITTED',
-  'COMPLETED',
-  'CANCELLED',
-] as const
+export const PURCHASE_RETURN_STATUSES = ['DRAFT', 'SUBMITTED', 'COMPLETED', 'CANCELLED'] as const
 export type PurchaseReturnStatus = (typeof PURCHASE_RETURN_STATUSES)[number]
 
 export const PURCHASE_RETURN_STATUS_LABELS: Record<PurchaseReturnStatus, string> = {
@@ -146,18 +141,11 @@ export interface PurchaseReturnStatusLog {
  * Comment categories. INTERNAL/APPROVAL/EXTERNAL are user-selectable and sent to
  * the backend; SYSTEM is display-only (backend-authored) and never submitted.
  */
-export const PURCHASE_RETURN_COMMENT_CATEGORIES = [
-  'INTERNAL',
-  'APPROVAL',
-  'EXTERNAL',
-] as const
-export type PurchaseReturnCommentCategory =
-  (typeof PURCHASE_RETURN_COMMENT_CATEGORIES)[number]
+export const PURCHASE_RETURN_COMMENT_CATEGORIES = ['INTERNAL', 'APPROVAL', 'EXTERNAL'] as const
+export type PurchaseReturnCommentCategory = (typeof PURCHASE_RETURN_COMMENT_CATEGORIES)[number]
 
 /** Full set including SYSTEM, used only for rendering existing comments. */
-export type PurchaseReturnCommentCategoryDisplay =
-  | PurchaseReturnCommentCategory
-  | 'SYSTEM'
+export type PurchaseReturnCommentCategoryDisplay = PurchaseReturnCommentCategory | 'SYSTEM'
 
 export const PURCHASE_RETURN_COMMENT_CATEGORY_LABELS: Record<
   PurchaseReturnCommentCategoryDisplay,
@@ -355,10 +343,7 @@ export const purchaseReturnService = {
   },
 
   async create(payload: SavePurchaseReturnPayload): Promise<PurchaseReturn> {
-    const response = await httpClient.post<ApiSuccess<PurchaseReturn>>(
-      '/purchase-returns',
-      payload,
-    )
+    const response = await httpClient.post<ApiSuccess<PurchaseReturn>>('/purchase-returns', payload)
     return response.data.data
   },
 
@@ -449,17 +434,12 @@ export const purchaseReturnService = {
    * `Content-Disposition` header (fallback `originalName`), then trigger a
    * browser download via a temporary object URL.
    */
-  async downloadAttachment(
-    id: string,
-    attId: string,
-    fallbackName: string,
-  ): Promise<void> {
+  async downloadAttachment(id: string, attId: string, fallbackName: string): Promise<void> {
     const response = await httpClient.get<Blob>(
       `/purchase-returns/${id}/attachments/${attId}/download`,
       { responseType: 'blob' },
     )
-    const disposition =
-      (response.headers['content-disposition'] as string | undefined) ?? null
+    const disposition = (response.headers['content-disposition'] as string | undefined) ?? null
     const fileName = filenameFromContentDisposition(disposition) ?? fallbackName
     triggerBlobDownload(response.data, fileName)
   },

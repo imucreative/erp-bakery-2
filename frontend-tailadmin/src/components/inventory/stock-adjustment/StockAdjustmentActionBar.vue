@@ -37,11 +37,7 @@ const emit = defineEmits<{
 
 <template>
   <div class="flex flex-wrap items-center justify-end gap-3">
-    <BaseButton
-      v-if="props.showEdit"
-      variant="outline"
-      @click="emit('edit')"
-    >
+    <BaseButton v-if="props.showEdit" variant="outline" @click="emit('edit')">
       <Pencil class="h-4 w-4" aria-hidden="true" />
       Edit
     </BaseButton>

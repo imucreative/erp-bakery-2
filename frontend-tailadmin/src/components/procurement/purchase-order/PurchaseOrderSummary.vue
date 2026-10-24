@@ -89,7 +89,9 @@ function paymentTermLabel(po: PurchaseOrder): string {
 
     <!-- Totals -->
     <div class="sm:col-span-2">
-      <div class="mt-2 grid grid-cols-1 gap-2 rounded-xl border border-gray-200 p-4 dark:border-gray-800 sm:grid-cols-3">
+      <div
+        class="mt-2 grid grid-cols-1 gap-2 rounded-xl border border-gray-200 p-4 dark:border-gray-800 sm:grid-cols-3"
+      >
         <div>
           <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Subtotal</dt>
           <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">

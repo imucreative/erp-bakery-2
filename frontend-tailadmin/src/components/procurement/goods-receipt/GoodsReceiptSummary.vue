@@ -59,7 +59,11 @@ const props = defineProps<{
     <div>
       <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Stok Diposting</dt>
       <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
-        {{ props.gr.inventoryPostedAt ? formatDateTime(props.gr.inventoryPostedAt) : 'Belum diposting' }}
+        {{
+          props.gr.inventoryPostedAt
+            ? formatDateTime(props.gr.inventoryPostedAt)
+            : 'Belum diposting'
+        }}
       </dd>
     </div>
     <div>

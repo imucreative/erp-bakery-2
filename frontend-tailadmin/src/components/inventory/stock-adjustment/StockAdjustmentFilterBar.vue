@@ -33,12 +33,10 @@ const emit = defineEmits<{
 
 const statusOptions = [
   { value: 'all' as const, label: 'Semua Status' },
-  ...STOCK_ADJUSTMENT_STATUSES.map(
-    (status: keyof typeof STOCK_ADJUSTMENT_STATUS_LABELS) => ({
-      value: status,
-      label: STOCK_ADJUSTMENT_STATUS_LABELS[status],
-    }),
-  ),
+  ...STOCK_ADJUSTMENT_STATUSES.map((status: keyof typeof STOCK_ADJUSTMENT_STATUS_LABELS) => ({
+    value: status,
+    label: STOCK_ADJUSTMENT_STATUS_LABELS[status],
+  })),
 ]
 </script>
 

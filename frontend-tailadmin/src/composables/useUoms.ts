@@ -6,11 +6,7 @@
 
 import { computed, ref, watch } from 'vue'
 import { ApiClientError } from '@/services/http'
-import {
-  uomService,
-  type Uom,
-  type UomListParams,
-} from '@/services/uom.service'
+import { uomService, type Uom, type UomListParams } from '@/services/uom.service'
 
 const DEFAULT_LIMIT = 10
 const SEARCH_DEBOUNCE_MS = 350

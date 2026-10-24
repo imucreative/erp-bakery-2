@@ -172,6 +172,7 @@ Handle your app's state with Pinia for clean, organized code.
   - Fixed DOM reflow warnings and animation transitions.
 
 ### Version 2.3.0 - [April 28, 2026]
+
 - Added **AI Dashboard** with token usage and revenue tracking.
 - Added **Sales Dashboard** with retention and multi-channel analytics.
 - Added **Finance Dashboard** with cashflow and balance management.

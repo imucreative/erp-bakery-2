@@ -64,8 +64,13 @@ src/
   - `npm run dev` — starts the development server.
   - `npm run build` — runs type-check then builds the production bundle into `dist/`.
   - `npm run type-check` — runs `vue-tsc --build` for TypeScript validation.
-  - `npm run lint` — runs ESLint with auto-fix.
-  - `npm run format` — runs Prettier on `src/`.
+  - `npm run lint` — runs ESLint with auto-fix. **Do not run it**: `--fix` rewrites line
+    endings and import order across files unrelated to the task. Run plain `npx eslint <files>`
+    instead.
+  - `npm run format` — runs Prettier on `src/`. Prefer `npx prettier --write <file>` for the
+    files you touched, and verify with `npx prettier --check .` (it also covers the root
+    config files, which `npm run format` skips). `.prettierignore` keeps `dist/` and `.vite/`
+    out of the check.
 
 ## Conventions
 
@@ -99,15 +104,17 @@ src/
 ## Styling Rules & Dark Mode
 
 - **Tailwind CSS v4**: `src/assets/main.css` is only the ENTRY (`@import` font + `'tailwindcss'`
-  + partial + `@custom-variant dark`). `@theme` lives in `src/assets/styles/theme.css`; other
-  concerns have their own partial (`base`, `menu`, `ui`, `inputs`, `vendor`, `rtl`). Put new
-  styles in the partial that matches their category, and keep the `@import` order in
-  `main.css` unchanged — the order is what the cascade depends on. There is **no**
-  `tailwind.config.js`.
+  - partial + `@custom-variant dark`). `@theme` lives in `src/assets/styles/theme.css`; other
+    concerns have their own partial (`base`, `menu`, `ui`, `inputs`, `vendor`, `rtl`). Put new
+    styles in the partial that matches their category, and keep the `@import` order in
+    `main.css` unchanged — the order is what the cascade depends on. There is **no**
+    `tailwind.config.js`.
 - **Core snippet classes** (`src/assets/styles/ui.css`, declared with `@utility`): use
   `page-title` / `card-title` / `modal-title` for headings, `text-muted` for secondary text
   (`text-muted-xs` for dimmer placeholders like an empty-cell `—`),
-  `form-label` / `form-hint` / `form-error` for field text, `alert-error` / `alert-success` /
+  `form-label` / `form-hint` / `form-error` for field text, `form-readonly` for a read-only
+  value shown in place of an input (SKU, email, code, parent group name),
+  `alert-error` / `alert-success` /
   `alert-warning` / `alert-info` for banners, and `no-scrollbar` / `custom-scrollbar` for
   scroll containers. Prefer these over retyping the long class chain. Custom utilities are
   emitted BEFORE core utilities, so a call-site utility always wins

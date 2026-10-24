@@ -5,10 +5,7 @@
 
 import { ref } from 'vue'
 import { ApiClientError } from '@/services/http'
-import {
-  dashboardService,
-  type InventoryDashboardSummary,
-} from '@/services/dashboard.service'
+import { dashboardService, type InventoryDashboardSummary } from '@/services/dashboard.service'
 
 function toMessage(error: unknown): string {
   if (error instanceof ApiClientError || error instanceof Error) {

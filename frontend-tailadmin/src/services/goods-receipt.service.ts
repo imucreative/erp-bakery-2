@@ -98,18 +98,11 @@ export interface GoodsReceiptStatusLog {
  * Comment categories. INTERNAL/APPROVAL/EXTERNAL are user-selectable and sent to
  * the backend; SYSTEM is display-only (backend-authored) and never submitted.
  */
-export const GOODS_RECEIPT_COMMENT_CATEGORIES = [
-  'INTERNAL',
-  'APPROVAL',
-  'EXTERNAL',
-] as const
-export type GoodsReceiptCommentCategory =
-  (typeof GOODS_RECEIPT_COMMENT_CATEGORIES)[number]
+export const GOODS_RECEIPT_COMMENT_CATEGORIES = ['INTERNAL', 'APPROVAL', 'EXTERNAL'] as const
+export type GoodsReceiptCommentCategory = (typeof GOODS_RECEIPT_COMMENT_CATEGORIES)[number]
 
 /** Full set including SYSTEM, used only for rendering existing comments. */
-export type GoodsReceiptCommentCategoryDisplay =
-  | GoodsReceiptCommentCategory
-  | 'SYSTEM'
+export type GoodsReceiptCommentCategoryDisplay = GoodsReceiptCommentCategory | 'SYSTEM'
 
 export const GOODS_RECEIPT_COMMENT_CATEGORY_LABELS: Record<
   GoodsReceiptCommentCategoryDisplay,
@@ -372,17 +365,12 @@ export const goodsReceiptService = {
    * `Content-Disposition` header (fallback `originalName`), then trigger a
    * browser download via a temporary object URL.
    */
-  async downloadAttachment(
-    id: string,
-    attId: string,
-    fallbackName: string,
-  ): Promise<void> {
+  async downloadAttachment(id: string, attId: string, fallbackName: string): Promise<void> {
     const response = await httpClient.get<Blob>(
       `/goods-receipts/${id}/attachments/${attId}/download`,
       { responseType: 'blob' },
     )
-    const disposition =
-      (response.headers['content-disposition'] as string | undefined) ?? null
+    const disposition = (response.headers['content-disposition'] as string | undefined) ?? null
     const fileName = filenameFromContentDisposition(disposition) ?? fallbackName
     triggerBlobDownload(response.data, fileName)
   },
@@ -443,9 +431,7 @@ export function commentCategoryBadgeColor(
 }
 
 /** Badge color mapping per status (aligns with the ui/Badge `color` palette). */
-export function statusBadgeColor(
-  status: GoodsReceiptStatus,
-): 'light' | 'success' | 'error' {
+export function statusBadgeColor(status: GoodsReceiptStatus): 'light' | 'success' | 'error' {
   switch (status) {
     case 'COMPLETED':
       return 'success'

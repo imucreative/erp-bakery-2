@@ -9,7 +9,7 @@
  *   refund → parent opens the refund confirmation modal (PAID only)
  */
 import { Ban, RotateCcw } from 'lucide-vue-next'
-import BaseButton from '../ui/BaseButton.vue';
+import BaseButton from '../ui/BaseButton.vue'
 
 const props = defineProps<{
   showVoid: boolean
@@ -26,10 +26,11 @@ const emit = defineEmits<{
 <template>
   <div class="flex flex-wrap items-center justify-end gap-3">
     <BaseButton
-      v-if="props.showVoid" 
-      variant="danger" 
+      v-if="props.showVoid"
+      variant="danger"
       :disabled="props.submitting"
-      @click="emit('void')">
+      @click="emit('void')"
+    >
       <Ban class="h-4 w-4" aria-hidden="true" />
       Batalkan
     </BaseButton>
@@ -37,7 +38,8 @@ const emit = defineEmits<{
       v-if="props.showRefund"
       variant="warning"
       :disabled="props.submitting"
-      @click="emit('refund')">
+      @click="emit('refund')"
+    >
       <RotateCcw class="h-4 w-4 rtl:-scale-x-100" aria-hidden="true" />
       Refund
     </BaseButton>

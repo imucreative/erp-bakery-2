@@ -42,8 +42,7 @@ export function useToppings() {
     const rows = term
       ? all.value.filter(
           (t) =>
-            t.toppingName.toLowerCase().includes(term) ||
-            t.toppingSku.toLowerCase().includes(term),
+            t.toppingName.toLowerCase().includes(term) || t.toppingSku.toLowerCase().includes(term),
         )
       : all.value
     return [...rows].sort((a, b) =>

@@ -64,10 +64,7 @@ onMounted(() => {
         />
       </div>
 
-      <ShiftTable 
-        :items="items" 
-        :loading="loading" 
-        :error-message="errorMessage" />
+      <ShiftTable :items="items" :loading="loading" :error-message="errorMessage" />
 
       <BaseTablePagination
         v-if="!loading && !errorMessage && items.length > 0"

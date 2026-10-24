@@ -41,33 +41,30 @@ function uomLabel(row: StockOnHandRow): string {
       </BaseTableRow>
     </template>
     <template #body>
-      <BaseTableRow
-            v-for="row in items"
-            :key="`${row.productId}-${row.outletId}`"
-          >
-            <BaseTableCell>
-              <div class="flex flex-col">
-                <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
-                  {{ row.productName }}
-                </span>
-                <span class="text-theme-xs text-gray-500 dark:text-gray-400">
-                  {{ row.productSku }}
-                </span>
-              </div>
-            </BaseTableCell>
-            <BaseTableCell>
-              {{ row.outletName }}
-            </BaseTableCell>
-            <BaseTableCell align="end" emphasis="medium">
-              {{ formatQtyWithUom(row.qtyAvailable, uomLabel(row)) }}
-            </BaseTableCell>
-            <BaseTableCell align="end">
-              {{ formatQtyWithUom(row.minimumStock, uomLabel(row)) }}
-            </BaseTableCell>
-            <BaseTableCell>
-              <Badge v-if="row.isLow" color="warning">Rendah</Badge>
-              <Badge v-else color="success">Normal</Badge>
-            </BaseTableCell>
+      <BaseTableRow v-for="row in items" :key="`${row.productId}-${row.outletId}`">
+        <BaseTableCell>
+          <div class="flex flex-col">
+            <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+              {{ row.productName }}
+            </span>
+            <span class="text-theme-xs text-gray-500 dark:text-gray-400">
+              {{ row.productSku }}
+            </span>
+          </div>
+        </BaseTableCell>
+        <BaseTableCell>
+          {{ row.outletName }}
+        </BaseTableCell>
+        <BaseTableCell align="end" emphasis="medium">
+          {{ formatQtyWithUom(row.qtyAvailable, uomLabel(row)) }}
+        </BaseTableCell>
+        <BaseTableCell align="end">
+          {{ formatQtyWithUom(row.minimumStock, uomLabel(row)) }}
+        </BaseTableCell>
+        <BaseTableCell>
+          <Badge v-if="row.isLow" color="warning">Rendah</Badge>
+          <Badge v-else color="success">Normal</Badge>
+        </BaseTableCell>
       </BaseTableRow>
     </template>
   </BaseTable>

@@ -65,11 +65,15 @@ const props = defineProps<{
       <div class="mt-2 space-y-2 rounded-xl border border-gray-200 p-4 dark:border-gray-800">
         <div class="flex items-center justify-between text-theme-sm">
           <span class="text-gray-500 dark:text-gray-400">Subtotal</span>
-          <span class="text-gray-800 dark:text-white/90">{{ formatRupiah(props.order.subtotal) }}</span>
+          <span class="text-gray-800 dark:text-white/90">{{
+            formatRupiah(props.order.subtotal)
+          }}</span>
         </div>
         <div class="flex items-center justify-between text-theme-sm">
           <span class="text-gray-500 dark:text-gray-400">Diskon Order</span>
-          <span class="text-gray-800 dark:text-white/90">{{ formatRupiah(props.order.orderDiscount) }}</span>
+          <span class="text-gray-800 dark:text-white/90">{{
+            formatRupiah(props.order.orderDiscount)
+          }}</span>
         </div>
         <div class="flex items-center justify-between text-theme-sm">
           <span class="text-gray-500 dark:text-gray-400">Pajak</span>
@@ -79,7 +83,9 @@ const props = defineProps<{
           class="flex items-center justify-between border-t border-gray-200 pt-2 text-base font-semibold dark:border-gray-800"
         >
           <span class="text-gray-800 dark:text-white/90">Grand Total</span>
-          <span class="text-brand-600 dark:text-brand-400">{{ formatRupiah(props.order.grandTotal) }}</span>
+          <span class="text-brand-600 dark:text-brand-400">{{
+            formatRupiah(props.order.grandTotal)
+          }}</span>
         </div>
       </div>
     </div>

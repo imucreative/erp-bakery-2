@@ -14,7 +14,7 @@ export const PURCHASABLE_PRODUCT_TYPES = [
   'OPERATING_SUPPLIES',
   'MERCHANDISE',
   'ELECTRONIC',
-] as const;
+] as const
 
 export const PRODUCT_TYPES = [
   'RAW_MATERIAL',

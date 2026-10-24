@@ -168,9 +168,7 @@ export interface SaveStockAdjustmentPayload {
   items: StockAdjustmentItemPayload[]
 }
 
-function toQuery(
-  params: StockAdjustmentListParams,
-): Record<string, string | number> {
+function toQuery(params: StockAdjustmentListParams): Record<string, string | number> {
   const query: Record<string, string | number> = {
     page: params.page,
     limit: params.limit,
@@ -211,10 +209,7 @@ export const stockAdjustmentService = {
     return response.data.data
   },
 
-  async update(
-    id: string,
-    payload: SaveStockAdjustmentPayload,
-  ): Promise<StockAdjustment> {
+  async update(id: string, payload: SaveStockAdjustmentPayload): Promise<StockAdjustment> {
     const response = await httpClient.put<ApiSuccess<StockAdjustment>>(
       `/inventory/adjustments/${id}`,
       payload,
@@ -272,8 +267,6 @@ export function statusBadgeColor(
 }
 
 /** Badge color per direction (IN success/green, OUT warning/orange). */
-export function directionBadgeColor(
-  direction: AdjustmentDirection,
-): 'success' | 'warning' {
+export function directionBadgeColor(direction: AdjustmentDirection): 'success' | 'warning' {
   return direction === 'IN' ? 'success' : 'warning'
 }

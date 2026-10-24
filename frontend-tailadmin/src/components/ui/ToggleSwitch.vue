@@ -20,7 +20,9 @@
       <span
         :class="[
           'inline-block h-5 w-5 transform rounded-full bg-white shadow-theme-xs transition-transform duration-200 ease-in-out',
-          modelValue ? 'ltr:translate-x-5 rtl:-translate-x-5' : 'ltr:translate-x-0.5 rtl:-translate-x-0.5',
+          modelValue
+            ? 'ltr:translate-x-5 rtl:-translate-x-5'
+            : 'ltr:translate-x-0.5 rtl:-translate-x-0.5',
         ]"
       />
     </button>

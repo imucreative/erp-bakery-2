@@ -61,8 +61,7 @@ export function usePosCart() {
    * product (same mode + identical topping selection) already exists, bump qty.
    */
   function addItem(product: PosProduct, selectedToppings: PosToppingOption[]): void {
-    const toppings =
-      product.saleMode === 'MADE_TO_ORDER' ? [...selectedToppings] : []
+    const toppings = product.saleMode === 'MADE_TO_ORDER' ? [...selectedToppings] : []
 
     const existing = lines.value.find(
       (line) =>
