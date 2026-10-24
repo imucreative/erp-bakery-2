@@ -44,7 +44,7 @@ const labelClass = 'form-label'
           placeholder="Pilih outlet"
           @update:model-value="emit('update:outletId', $event)"
         />
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
+        <p class="mt-1 text-muted-xs">
           Outlet menentukan batch stok yang dapat dipilih pada item.
           <template v-if="props.outletLocked"> Hapus semua item untuk mengganti outlet. </template>
         </p>

@@ -406,7 +406,7 @@ function onCancel(): void {
 
         <!-- Ingredient items -->
         <div>
-          <h5 class="mb-3 text-sm font-semibold text-gray-800 dark:text-white/90">Bahan</h5>
+          <h5 class="mb-3 section-title">Bahan</h5>
           <RecipeItemsEditor
             v-model="items"
             :products="products"

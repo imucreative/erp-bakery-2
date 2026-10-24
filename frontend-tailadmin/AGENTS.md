@@ -109,13 +109,17 @@ src/
     styles in the partial that matches their category, and keep the `@import` order in
     `main.css` unchanged — the order is what the cascade depends on. There is **no**
     `tailwind.config.js`.
-- **Core snippet classes** (`src/assets/styles/ui.css`, declared with `@utility`, 31 utilities): use
-  `page-title` / `card-title` / `modal-title` for headings, `text-muted` for secondary text
-  (`text-muted-xs` for dimmer placeholders like an empty-cell `—`, `text-meta` for small metadata
+- **Core snippet classes** (`src/assets/styles/ui.css`, declared with `@utility`, 32 utilities): use
+  `page-title` / `card-title` / `modal-title` / `section-title` for headings (`section-title` is the
+  in-card sub-heading one level below the other two — `<h5>Item</h5>` on form/detail pages),
+  `text-muted` for secondary text
+  (`text-muted-xs` for dimmer placeholders like an empty-cell `—` and for the `<dt>` key labels of a
+  summary card, written `text-muted-xs uppercase`, `text-meta` for small metadata
   sitting under a primary text — the SKU sub-line under a product name in a table row, the uppercase
-  key label of a label/value pair, a modal header subtitle; it is the xs sibling of `text-muted`,
+  key label of a modal detail's label/value pair, a modal header subtitle; it is the xs sibling of `text-muted`,
   same `gray-500` → `gray-400` dark pair, and NOT `text-muted-xs`, whose swapped grays would read
-  dimmer — `text-strong` for the primary text of a list row such as an attachment name, comment
+  dimmer — the two uppercase label styles are both correct in their own frame (summary `<dt>` =
+  `text-muted-xs uppercase`, modal detail label = `text-meta uppercase`); do not unify them, `text-strong` for the primary text of a list row such as an attachment name, comment
   author, or the product name on a list table, `text-value` for the read-only
   value of a summary list or a detail modal — same as `text-strong` without `font-medium`, `text-body` for the
   paragraph tone one step softer (`whitespace-pre-wrap` comment body, the "oleh <nama>" line in a
@@ -156,7 +160,7 @@ src/
   emitted BEFORE core utilities, so a call-site utility always wins
   (e.g. `class="modal-title mt-4"`) without `!important`. Ordering is per property category,
   though — and within a category **shorthand loses to longhand**: in the built CSS
-  (`dist/assets/index-B1SI766m.css`) `.p-4` (39787)
+  (`dist/assets/index-DOinNrgJ.css`) `.p-4` (39787)
   is emitted before `.px-4` (40196) and `.py-3` (40645), so to override a snippet's or component's
   padding use `px-*` / `py-*`, never `p-*` (`p-*` on top of `BaseAlert size="md"` silently kept
   the component's `px-4 py-3`). Plain layout utilities like `.flex`/`.h-11` are emitted earlier,
@@ -179,6 +183,10 @@ src/
     `theme.css` opens `@theme` with `--font-*: initial` and defines only `--font-outfit`, so
     **`font-mono` is never emitted** — writing it on a call site has no effect (5 dead sites remain,
     see dok 48 §2.8); do not add new ones until `--font-mono` is defined or the class is removed.
+    Token vs core utility: `text-theme-sm` (14px/20px) equals `text-sm` (`.875rem` / line-height
+    `calc(1.25/.875)`, root is 16px), so sweeping a `text-sm` chain into a snippet may keep `text-sm`
+    (`section-title` does). `text-theme-xs` (12px/**18px**) does **not** equal `text-xs` (12px/16px),
+    so small text always goes through the theme token.
   - **Shadows**: `shadow-theme-xs/sm/md/lg/xl`.
   - **Breakpoints**: `2xsm` (375px), `xsm` (425px), `sm` (640px), `md` (768px), `lg` (1024px), `xl` (1280px), `2xl` (1536px).
 - **Dark Mode**:

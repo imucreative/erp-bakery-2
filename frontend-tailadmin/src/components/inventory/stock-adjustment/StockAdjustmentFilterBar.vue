@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
  * StockAdjustmentFilterBar — search (adjustmentNumber/notes) + status filter +
- * outlet filter toolbar for the Stock Adjustment list. Native selects wrapped
- * with a ChevronDownIcon per the UI standard. Two-way binds `search`, `status`,
- * and `outlet` via v-model:search / v-model:status / v-model:outlet. Outlet
- * options are resolved once by the parent.
+ * outlet filter for the Stock Adjustment list, laid out as a `stack-row` of
+ * `BaseSelect`/`BaseInput` fields. Two-way binds `search`, `status`, and `outlet`
+ * via v-model:search / v-model:status / v-model:outlet. Outlet options are
+ * resolved once by the parent, which also owns the `toolbar-row` that pairs this
+ * bar with the "Buat" button.
  */
 import { BaseInput, BaseSelect } from '@/components/ui'
 import {

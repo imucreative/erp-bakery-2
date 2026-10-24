@@ -13,6 +13,14 @@
   @apply text-lg font-semibold text-gray-800 dark:text-white/90;
 }
 
+/* Judul bagian di dalam kartu (sub-heading `<h5>` "Item"/"Bahan" pada form &
+   detail). Anggota keluarga heading tingkat empat: lebih kecil dari
+   `card-title`/`modal-title`, tidak setegas body. Margin tetap di call-site
+   (`mb-3` pada hampir semua pemakai, tapi `ProductionProduciblePanel` tanpa). */
+@utility section-title {
+  @apply text-sm font-semibold text-gray-800 dark:text-white/90;
+}
+
 @utility text-muted {
   @apply text-theme-sm text-gray-500 dark:text-gray-400;
 }

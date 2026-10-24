@@ -489,7 +489,7 @@ function onCancel(): void {
 
         <!-- Line items -->
         <div>
-          <h5 class="mb-3 text-sm font-semibold text-gray-800 dark:text-white/90">Item</h5>
+          <h5 class="mb-3 section-title">Item</h5>
           <p
             v-if="allConsumed"
             class="mb-3 rounded-lg border border-warning-500/40 bg-warning-50 px-4 py-3 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"

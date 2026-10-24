@@ -304,7 +304,7 @@ function onCancel(): void {
 
         <!-- Line items -->
         <div>
-          <h5 class="mb-3 text-sm font-semibold text-gray-800 dark:text-white/90">Item</h5>
+          <h5 class="mb-3 section-title">Item</h5>
           <StockTransferItemsEditor
             v-model="items"
             :batches="batches"

@@ -139,10 +139,7 @@ function removeRow(index: number): void {
             />
             <div v-if="row.batchId" class="mt-1 flex flex-col gap-0.5">
               <span class="text-meta">{{ productLabel(row.productId) }}</span>
-              <span
-                v-if="availableForRow(row) !== null"
-                class="text-theme-xs text-gray-400 dark:text-gray-500"
-              >
+              <span v-if="availableForRow(row) !== null" class="text-muted-xs">
                 Tersedia saat ini: {{ formatNumber(availableForRow(row)) }}
               </span>
             </div>
@@ -234,7 +231,7 @@ function removeRow(index: number): void {
         Tambah Item
       </BaseButton>
     </div>
-    <p class="text-theme-xs text-gray-400 dark:text-gray-500">
+    <p class="text-muted-xs">
       Setiap item harus menargetkan batch yang tersedia pada outlet terpilih. Penyesuaian OUT yang
       melebihi stok tersedia akan ditolak backend saat penyelesaian.
     </p>

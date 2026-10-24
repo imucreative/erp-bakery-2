@@ -48,7 +48,7 @@ const hasStock = computed<boolean>(() => (props.info?.producibleQty ?? 0) > 0)
   >
     <div class="mb-3 flex items-center gap-2">
       <PackageCheck class="h-4 w-4 text-brand-500 dark:text-brand-400" aria-hidden="true" />
-      <h4 class="text-sm font-semibold text-gray-800 dark:text-white/90">Kapasitas Produksi</h4>
+      <h4 class="section-title">Kapasitas Produksi</h4>
     </div>
 
     <!-- Loading -->

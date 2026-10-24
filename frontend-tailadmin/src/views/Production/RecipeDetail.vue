@@ -267,7 +267,7 @@ function onDuplicate(): void {
           <RecipeSummary :recipe="recipe" :product-name="productName" :uom-name="uomName" />
 
           <div class="mt-6">
-            <h5 class="mb-3 text-sm font-semibold text-gray-800 dark:text-white/90">Bahan</h5>
+            <h5 class="mb-3 section-title">Bahan</h5>
             <RecipeItemsTable :recipe="recipe" :product-name="productName" :uom-name="uomName" />
           </div>
 
