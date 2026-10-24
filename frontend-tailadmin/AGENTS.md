@@ -111,11 +111,16 @@ src/
     `tailwind.config.js`.
 - **Core snippet classes** (`src/assets/styles/ui.css`, declared with `@utility`): use
   `page-title` / `card-title` / `modal-title` for headings, `text-muted` for secondary text
-  (`text-muted-xs` for dimmer placeholders like an empty-cell `—`),
+  (`text-muted-xs` for dimmer placeholders like an empty-cell `—`, `text-strong` for the primary
+  text of a list row such as an attachment name or comment author),
   `form-label` / `form-hint` / `form-error` for field text, `form-readonly` for a read-only
   value shown in place of an input (SKU, email, code, parent group name),
   `alert-error` / `alert-success` /
-  `alert-warning` / `alert-info` for banners, and `no-scrollbar` / `custom-scrollbar` for
+  `alert-warning` / `alert-info` for banners, `panel-muted` for empty/loading panels
+  (add `border-dashed` at the call site when needed), `panel-card` for nested item cards
+  (attachment/comment rows), `timeline-rail` + `timeline-dot` for status timelines (rail on the
+  `<ol>`, dot on the first `<span>` inside each `relative` `<li>`; always use them as a pair),
+  and `no-scrollbar` / `custom-scrollbar` for
   scroll containers. Prefer these over retyping the long class chain. Custom utilities are
   emitted BEFORE core utilities, so a call-site utility always wins
   (e.g. `class="modal-title mt-4"`) without `!important`. Snippets deliberately exclude

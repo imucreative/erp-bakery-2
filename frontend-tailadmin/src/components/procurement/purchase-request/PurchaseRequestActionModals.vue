@@ -7,7 +7,7 @@
  * keeping the user on the page. Transparent backdrop per UI standard.
  */
 import { computed, ref, watch } from 'vue'
-import { BaseButton, BaseTextarea } from '@/components/ui'
+import { BaseAlert, BaseButton, BaseModal, BaseTextarea } from '@/components/ui'
 
 export type PurchaseRequestAction = 'approve' | 'reject' | 'cancel'
 
@@ -93,53 +93,38 @@ function onConfirm(): void {
 </script>
 
 <template>
-  <div
-    v-if="action"
-    class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4"
-  >
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-      @click="emit('close')"
-    ></div>
+  <BaseModal :open="Boolean(action)" @close="emit('close')">
+    <h4 class="modal-title mb-2">{{ title }}</h4>
+    <p class="text-muted mb-4">{{ description }}</p>
 
-    <div
-      class="relative w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
-      <h4 class="modal-title mb-2">{{ title }}</h4>
-      <p class="text-muted mb-4">{{ description }}</p>
-
-      <div class="mb-4">
-        <label class="form-label">
-          Catatan<span v-if="noteRequired" class="text-error-500">*</span>
-        </label>
-        <BaseTextarea
-          id="purchase-request-action-note"
-          :model-value="note"
-          :rows="3"
-          :placeholder="noteRequired ? 'Alasan penolakan...' : 'Catatan opsional...'"
-          @update:model-value="note = $event"
-        />
-      </div>
-
-      <p v-if="localError || errorMessage" class="alert-error mb-4 px-3 py-2">
-        {{ localError || errorMessage }}
-      </p>
-
-      <div class="flex justify-end gap-3">
-        <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
-          Batal
-        </BaseButton>
-        <BaseButton
-          type="button"
-          :variant="action === 'approve' ? 'success' : 'danger'"
-          :loading="submitting"
-          loading-text="Memproses..."
-          @click="onConfirm"
-        >
-          {{ confirmLabel }}
-        </BaseButton>
-      </div>
+    <div class="mb-4">
+      <label class="form-label">
+        Catatan<span v-if="noteRequired" class="text-error-500">*</span>
+      </label>
+      <BaseTextarea
+        id="purchase-request-action-note"
+        :model-value="note"
+        :rows="3"
+        :placeholder="noteRequired ? 'Alasan penolakan...' : 'Catatan opsional...'"
+        @update:model-value="note = $event"
+      />
     </div>
-  </div>
+
+    <BaseAlert :message="localError || errorMessage" size="sm" class="mb-4" />
+
+    <div class="flex justify-end gap-3">
+      <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
+        Batal
+      </BaseButton>
+      <BaseButton
+        type="button"
+        :variant="action === 'approve' ? 'success' : 'danger'"
+        :loading="submitting"
+        loading-text="Memproses..."
+        @click="onConfirm"
+      >
+        {{ confirmLabel }}
+      </BaseButton>
+    </div>
+  </BaseModal>
 </template>

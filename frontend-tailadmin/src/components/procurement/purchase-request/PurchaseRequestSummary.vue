@@ -22,7 +22,7 @@ const props = defineProps<{
 <template>
   <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Status</dt>
+      <dt class="text-muted-xs uppercase">Status</dt>
       <dd class="mt-1">
         <Badge :color="statusBadgeColor(props.pr.status)">
           {{ PURCHASE_REQUEST_STATUS_LABELS[props.pr.status] }}
@@ -30,25 +30,25 @@ const props = defineProps<{
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Outlet Tujuan</dt>
+      <dt class="text-muted-xs uppercase">Outlet Tujuan</dt>
       <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
         {{ props.outletName(props.pr.destinationOutletId) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Tanggal Dibutuhkan</dt>
+      <dt class="text-muted-xs uppercase">Tanggal Dibutuhkan</dt>
       <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
         {{ formatDate(props.pr.expectedDate) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Dibuat</dt>
+      <dt class="text-muted-xs uppercase">Dibuat</dt>
       <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
         {{ formatDateTime(props.pr.createdAt) }}
       </dd>
     </div>
     <div v-if="props.pr.notes" class="sm:col-span-2">
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Catatan</dt>
+      <dt class="text-muted-xs uppercase">Catatan</dt>
       <dd class="mt-1 text-theme-sm text-gray-700 dark:text-gray-300">{{ props.pr.notes }}</dd>
     </div>
   </dl>

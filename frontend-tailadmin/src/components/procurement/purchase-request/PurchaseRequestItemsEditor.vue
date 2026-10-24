@@ -274,7 +274,7 @@ function chosenLabel(row: EditorItemRow): string {
             />
             <span
               v-if="row.productId && validUoms.isLoading(row.productId)"
-              class="mt-1 block text-theme-xs text-gray-400 dark:text-gray-500"
+              class="mt-1 block text-muted-xs"
             >
               Memuat satuan...
             </span>
@@ -333,7 +333,7 @@ function chosenLabel(row: EditorItemRow): string {
       Tambah Item
     </BaseButton>
 
-    <p class="text-theme-xs text-gray-400 dark:text-gray-500">
+    <p class="text-muted-xs">
       Subtotal & total di atas hanya pratinjau; nilai final dihitung oleh server.
     </p>
   </div>

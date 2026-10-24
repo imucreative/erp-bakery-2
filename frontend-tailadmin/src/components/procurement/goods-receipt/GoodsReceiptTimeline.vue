@@ -28,12 +28,9 @@ function actorLabel(log: GoodsReceiptStatusLog): string {
   <div>
     <p v-if="logs.length === 0" class="text-muted">Belum ada riwayat status.</p>
 
-    <ol v-else class="relative space-y-6 border-s border-gray-200 ps-6 dark:border-gray-800">
+    <ol v-else class="timeline-rail">
       <li v-for="log in logs" :key="log.id" class="relative">
-        <span
-          class="absolute -start-[1.9rem] top-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand-500 ring-4 ring-white dark:ring-gray-900"
-          aria-hidden="true"
-        ></span>
+        <span class="timeline-dot" aria-hidden="true"></span>
         <div class="flex flex-col gap-1.5">
           <div class="flex flex-wrap items-center gap-2">
             <template v-if="log.fromStatus">

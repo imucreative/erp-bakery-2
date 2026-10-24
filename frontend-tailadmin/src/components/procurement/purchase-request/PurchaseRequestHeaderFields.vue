@@ -53,9 +53,7 @@ const outletOptions = (outlets: Outlet[]) =>
           :disabled="props.disabled"
           @update:model-value="emit('update:expectedDate', $event)"
         />
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
-          Harus besok atau setelahnya.
-        </p>
+        <p class="mt-1 text-muted-xs">Harus besok atau setelahnya.</p>
       </div>
     </div>
 
