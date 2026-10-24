@@ -71,14 +71,10 @@ export class RegisterCompanyUseCase {
 
       roleIdMap[roleDef.code] = roleId;
 
-      if (roleDef.permissions === 'ALL') {
-        await this.roleRepository.assignAllPermissionsToRole(roleId);
-      } else {
-        await this.roleRepository.assignPermissionsToRole(
-          roleId,
-          roleDef.permissions as string[],
-        );
-      }
+      await this.roleRepository.assignPermissionsToRole(
+        roleId,
+        roleDef.permissions,
+      );
     }
 
     // Step 8 — hash owner password

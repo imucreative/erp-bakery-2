@@ -48,7 +48,7 @@ function onInput(event: Event): void {
     :readonly="props.readonly"
     :aria-invalid="props.error ? 'true' : undefined"
     :aria-describedby="describedBy"
-    class="form-input w-full resize-y readonly:bg-gray-50 dark:readonly:bg-white/[0.03]"
+    class="form-input w-full resize-y py-3 readonly:bg-gray-50 dark:readonly:bg-white/[0.03]"
     @input="onInput"
   />
 </template>

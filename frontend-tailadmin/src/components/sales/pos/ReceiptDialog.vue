@@ -29,6 +29,21 @@ const emit = defineEmits<{
 const isOpen = computed<boolean>(() => props.open && props.order !== null)
 
 function onPrint(): void {
+  // Salin panel struk ke #print-root (anak langsung <body>) agar yang tercetak
+  // hanya isi struk — lihat blok print #print-root di ui.css.
+  const panel = document.querySelector('.modal-wrapper-center .modal-panel-center')
+  if (!panel) {
+    window.print()
+    return
+  }
+
+  let root = document.getElementById('print-root')
+  if (!root) {
+    root = document.createElement('div')
+    root.id = 'print-root'
+    document.body.appendChild(root)
+  }
+  root.replaceChildren(panel.cloneNode(true))
   window.print()
 }
 </script>
@@ -112,7 +127,7 @@ function onPrint(): void {
         </div>
       </div>
 
-      <div class="mt-6 button-row">
+      <div class="mt-6 button-row print:hidden">
         <BaseButton size="sm" variant="outline" @click="onPrint">
           <template #start-icon>
             <Printer class="h-4 w-4" aria-hidden="true" />

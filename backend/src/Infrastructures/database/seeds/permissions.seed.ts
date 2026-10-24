@@ -147,8 +147,77 @@ export const DEFAULT_ROLES = [
   {
     code: 'OWNER',
     name: 'Owner',
-    description: 'Full access to all company resources',
-    permissions: 'ALL', // special sentinel — assign all permissions
+    description: 'Full access to company operational resources (excluding system admin)',
+    permissions: [
+      // Master Data
+      'outlet.read', 'outlet.manage',
+      'supplier.read', 'supplier.manage',
+      'payment-term.read', 'payment-term.manage',
+      'category.read', 'category.manage',
+      'product-group.read', 'product-group.manage',
+      'uom.read', 'uom.manage',
+      'product.read', 'product.manage',
+
+      // Procurement
+      'procurement.pr.read', 'procurement.pr.create', 'procurement.pr.update',
+      'procurement.pr.approve', 'procurement.pr.manage',
+      'procurement.po.read', 'procurement.po.create', 'procurement.po.update',
+      'procurement.po.approve', 'procurement.po.manage',
+      'procurement.gr.read', 'procurement.gr.create', 'procurement.gr.update',
+      'procurement.gr.complete', 'procurement.gr.manage',
+      'procurement.return.read', 'procurement.return.create', 'procurement.return.update',
+      'procurement.return.complete', 'procurement.return.manage',
+
+      // Inventory
+      'inventory.read', 'inventory.manage',
+      'inventory.adjustment.read', 'inventory.adjustment.create',
+      'inventory.adjustment.update', 'inventory.adjustment.approve',
+      'inventory.adjustment.complete', 'inventory.adjustment.manage',
+      'inventory.stock-count.read', 'inventory.stock-count.create',
+      'inventory.stock-count.update', 'inventory.stock-count.approve',
+      'inventory.stock-count.complete', 'inventory.stock-count.manage',
+      'inventory.transfer.read', 'inventory.transfer.create',
+      'inventory.transfer.update', 'inventory.transfer.dispatch',
+      'inventory.transfer.receive', 'inventory.transfer.manage',
+      'replenishment.read', 'replenishment.manage',
+
+      // Production
+      'recipe.read', 'recipe.manage',
+      'bom.read', 'bom.manage',
+      'production.read', 'production.manage',
+      'production-order.read', 'production-order.manage',
+
+      // Distribution
+      'distribution.read', 'distribution.manage',
+      'delivery-order.read', 'delivery-order.manage',
+      'inter-outlet-transfer.read', 'inter-outlet-transfer.manage',
+
+      // Sales & POS
+      'sales.read', 'sales.manage',
+      'shift.read', 'shift.manage',
+      'pos.read', 'pos.manage',
+
+      // Finance
+      'finance.vendor-invoice.read', 'finance.vendor-invoice.create',
+      'finance.vendor-invoice.update', 'finance.vendor-invoice.verify',
+      'finance.vendor-invoice.post', 'finance.vendor-invoice.manage',
+      'finance.accounts-payable.read', 'finance.accounts-payable.manage',
+      'payment.read', 'payment.manage',
+      'expense.read', 'expense.manage',
+      'cashflow.read', 'cashflow.manage',
+
+      // Reporting
+      'dashboard.read',
+      'report.read', 'report.manage',
+
+      // Settings
+      'setting.read', 'setting.manage',
+      'company.read', 'company.manage',
+
+      // ❌ EXCLUDED (system-administration domain — SUPER_ADMIN only):
+      // user.read, user.manage, role.read, role.manage,
+      // permission.read, permission.manage, audit.read, auth.manage
+    ],
   },
   {
     code: 'SUPERVISOR_OUTLET',

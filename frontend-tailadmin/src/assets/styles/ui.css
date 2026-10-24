@@ -432,3 +432,94 @@
 .animate-fadeIn {
   animation: fadeIn 0.15s ease-out forwards;
 }
+
+/* ── Print — ReceiptDialog menyalin panel struknya ke #print-root (anak langsung
+   <body>) sebelum window.print(); semua sibling body disembunyikan sehingga yang
+   tercetak hanya isi struk. Ukuran kertas mengikuti printer thermal struk 80mm
+   (ubah `size` di @page dan `width` #print-root menjadi 58mm/54mm bila printer
+   memakai kertas 58mm). */
+#print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 4mm;
+  }
+
+  body > *:not(#print-root) {
+    display: none !important;
+  }
+
+  #print-root {
+    display: block !important;
+    width: 72mm;
+  }
+
+  #print-root .modal-panel-center {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  #print-root .flex-1 {
+    overflow: visible !important;
+  }
+
+  /* Kompaksi tipografi & spasi untuk kertas thermal */
+  #print-root .modal-title {
+    font-size: 12px !important;
+  }
+
+  #print-root svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  #print-root .text-base {
+    font-size: 13px !important;
+  }
+
+  #print-root .text-theme-sm,
+  #print-root .text-value,
+  #print-root .text-muted {
+    font-size: 11px !important;
+  }
+
+  #print-root .text-meta,
+  #print-root .text-muted-xs {
+    font-size: 9px !important;
+  }
+
+  #print-root .mb-4 {
+    margin-bottom: 2mm !important;
+  }
+
+  #print-root .mt-4 {
+    margin-top: 2mm !important;
+  }
+
+  #print-root .p-4 {
+    padding: 2mm !important;
+  }
+
+  #print-root .py-2 {
+    padding-top: 1mm !important;
+    padding-bottom: 1mm !important;
+  }
+
+  #print-root .space-y-2 > * + * {
+    margin-top: 1mm !important;
+  }
+
+  #print-root .rounded-xl {
+    border-radius: 1.5mm !important;
+  }
+}
