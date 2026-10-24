@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
  * StockOpnameFilterBar — search (opnameNumber/notes) + status filter + outlet
- * filter toolbar for the Stock Opname list. Native selects wrapped with a
- * ChevronDownIcon per the UI standard. Two-way binds `search`, `status`, and
+ * filter for the Stock Opname list, laid out as a `stack-row` of
+ * `BaseSelect`/`BaseInput` fields. Two-way binds `search`, `status`, and
  * `outlet` via v-model:search / v-model:status / v-model:outlet. Outlet options
- * are resolved once by the parent.
+ * are resolved once by the parent, which also owns the `toolbar-row` that pairs
+ * this bar with the "Buat Opname" button.
  */
 import { BaseInput, BaseSelect } from '@/components/ui'
 import { OPNAME_STATUS_LABELS } from '@/services/stock-opname.service'

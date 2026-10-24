@@ -122,7 +122,7 @@ function onSave(item: StockOpnameItem): void {
               @update:model-value="onDraftInput(item.id, $event)"
             />
           </div>
-          <span v-else class="text-theme-sm text-gray-800 dark:text-white/90">
+          <span v-else class="text-value">
             {{ item.countedQty !== null ? formatNumber(item.countedQty) : '-' }}
           </span>
         </BaseTableCell>

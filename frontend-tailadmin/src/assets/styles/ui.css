@@ -45,9 +45,9 @@
   @apply text-theme-sm font-medium text-gray-800 dark:text-white/90;
 }
 
-/* Nilai read-only pada daftar ringkasan (`<dd>` di kartu Summary) — setegas
-   `text-strong` tapi tanpa `font-medium`, karena label di atasnya yang sudah
-   memberi penegasan. */
+/* Nilai read-only pada daftar ringkasan (`<dd>` di kartu Summary) atau sel tabel
+   yang tidak editable — setegas `text-strong` tapi tanpa `font-medium`, karena
+   label di atasnya yang sudah memberi penegasan. */
 @utility text-value {
   @apply text-theme-sm text-gray-800 dark:text-white/90;
 }

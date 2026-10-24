@@ -15,7 +15,7 @@ import { ChevronLeft, Save } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import { BaseButton } from '@/components/ui'
+import { BaseAlert, BaseButton } from '@/components/ui'
 import { StockOpnameHeaderFields } from '@/components/inventory/stock-opname'
 import { toISODate } from '@/lib/format'
 import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
@@ -117,9 +117,7 @@ function onCancel(): void {
     <ComponentCard :title="pageTitle">
       <div v-if="loading" class="text-muted py-10 text-center">Memuat data...</div>
 
-      <div v-else-if="loadError" class="alert-error px-4 py-3" role="alert">
-        {{ loadError }}
-      </div>
+      <BaseAlert v-else-if="loadError" :message="loadError" size="md" />
 
       <form v-else class="space-y-6" @submit.prevent="onSubmit">
         <!-- Header -->
@@ -131,9 +129,7 @@ function onCancel(): void {
           :disabled="submitting"
         />
 
-        <p v-if="formError" class="alert-error px-3 py-2">
-          {{ formError }}
-        </p>
+        <BaseAlert v-if="formError" :message="formError" size="sm" />
 
         <div class="button-row pt-2">
           <BaseButton size="sm" variant="outline" :disabled="submitting" @click="onCancel">

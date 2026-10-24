@@ -40,7 +40,7 @@ const labelClass = 'form-label'
           placeholder="Pilih outlet"
           @update:model-value="emit('update:outletId', $event)"
         />
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
+        <p class="mt-1 text-muted-xs">
           Semua batch aktif outlet dikunci dan di-snapshot menjadi item saat penghitungan dimulai.
         </p>
       </div>

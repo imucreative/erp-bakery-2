@@ -121,7 +121,7 @@ src/
   dimmer — the two uppercase label styles are both correct in their own frame (summary `<dt>` =
   `text-muted-xs uppercase`, modal detail label = `text-meta uppercase`); do not unify them, `text-strong` for the primary text of a list row such as an attachment name, comment
   author, or the product name on a list table, `text-value` for the read-only
-  value of a summary list or a detail modal — same as `text-strong` without `font-medium`, `text-body` for the
+  value of a summary list, a detail modal, or a read-only table cell — same as `text-strong` without `font-medium`, `text-body` for the
   paragraph tone one step softer (`whitespace-pre-wrap` comment body, the "oleh <nama>" line in a
   timeline, the notes `<dd>` of a summary card),
   `form-label` / `form-hint` / `form-error` for field text, `form-readonly` for a read-only
