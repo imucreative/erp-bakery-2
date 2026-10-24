@@ -48,7 +48,7 @@ function onInput(event: Event): void {
     :readonly="props.readonly"
     :aria-invalid="props.error ? 'true' : undefined"
     :aria-describedby="describedBy"
-    class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 readonly:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:readonly:bg-white/[0.03]"
+    class="form-input h-11 w-full readonly:bg-gray-50 dark:readonly:bg-white/[0.03]"
     @input="onInput"
   />
 </template>

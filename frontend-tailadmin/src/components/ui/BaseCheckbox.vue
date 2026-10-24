@@ -29,7 +29,7 @@ function onChange(event: Event): void {
     type="checkbox"
     :checked="props.modelValue"
     :disabled="props.disabled"
-    class="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500/20 disabled:cursor-not-allowed dark:border-gray-600 dark:bg-gray-800"
+    class="checkbox"
     @change="onChange"
   />
 </template>

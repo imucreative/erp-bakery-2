@@ -38,12 +38,10 @@ const variantClass: Record<AlertVariant, string> = {
 }
 
 const dismissClass: Record<AlertVariant, string> = {
-  error: 'text-error-600 hover:bg-error-100 dark:text-error-400 dark:hover:bg-error-500/20',
-  success:
-    'text-success-600 hover:bg-success-100 dark:text-success-500 dark:hover:bg-success-500/20',
-  warning:
-    'text-warning-600 hover:bg-warning-100 dark:text-warning-400 dark:hover:bg-warning-500/20',
-  info: 'text-brand-600 hover:bg-brand-100 dark:text-brand-400 dark:hover:bg-brand-500/20',
+  error: 'dismiss-error',
+  success: 'dismiss-success',
+  warning: 'dismiss-warning',
+  info: 'dismiss-info',
 }
 
 const hasIcon = computed(() => Boolean(slots.icon))

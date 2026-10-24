@@ -31,19 +31,19 @@ const props = defineProps<{
     </div>
     <div>
       <dt class="text-muted-xs uppercase">Outlet Tujuan</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dd class="mt-1 text-value">
         {{ props.outletName(props.pr.destinationOutletId) }}
       </dd>
     </div>
     <div>
       <dt class="text-muted-xs uppercase">Tanggal Dibutuhkan</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dd class="mt-1 text-value">
         {{ formatDate(props.pr.expectedDate) }}
       </dd>
     </div>
     <div>
       <dt class="text-muted-xs uppercase">Dibuat</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dd class="mt-1 text-value">
         {{ formatDateTime(props.pr.createdAt) }}
       </dd>
     </div>

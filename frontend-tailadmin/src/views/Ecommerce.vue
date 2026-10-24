@@ -75,10 +75,10 @@ const inventoryMetrics = computed<Metric[]>(() => {
 })
 
 const toneClass: Record<Metric['tone'], string> = {
-  brand: 'bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400',
-  warning: 'bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-400',
-  error: 'bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500',
-  muted: 'bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-300',
+  brand: 'tone-brand',
+  warning: 'tone-warning',
+  error: 'tone-error',
+  muted: 'tone-muted',
 }
 
 onMounted(() => {
@@ -102,7 +102,7 @@ onMounted(() => {
           size="md"
         />
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div class="field-grid xl:grid-cols-3">
           <div
             v-for="m in inventoryMetrics"
             :key="m.key"
@@ -132,13 +132,13 @@ onMounted(() => {
         <template #actions>
           <Badge color="light">Menunggu Sales</Badge>
         </template>
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div class="field-grid">
           <div
             class="rounded-2xl border border-dashed border-gray-300 p-5 text-center dark:border-gray-700"
           >
             <TrendingUp class="mx-auto mb-2 h-6 w-6 text-gray-400" aria-hidden="true" />
             <p class="text-muted">Pendapatan Hari Ini</p>
-            <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
+            <p class="mt-1 text-muted-xs">
               Tersedia setelah modul Sales
             </p>
           </div>
@@ -147,7 +147,7 @@ onMounted(() => {
           >
             <TrendingUp class="mx-auto mb-2 h-6 w-6 text-gray-400" aria-hidden="true" />
             <p class="text-muted">Transaksi Hari Ini</p>
-            <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
+            <p class="mt-1 text-muted-xs">
               Tersedia setelah modul Sales
             </p>
           </div>

@@ -146,7 +146,7 @@ function onSubmit(): void {
             placeholder="mis. GUDANG"
             class="uppercase"
           />
-          <p v-if="isEdit" class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
+          <p v-if="isEdit" class="mt-1 text-muted-xs">
             Kode tidak dapat diubah.
           </p>
         </BaseFormField>

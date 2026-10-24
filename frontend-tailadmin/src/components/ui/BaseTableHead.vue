@@ -23,7 +23,7 @@ const alignClass = computed<string>(() => {
 </script>
 
 <template>
-  <th v-bind="attrs" :class="['px-5 py-3 text-meta font-medium uppercase', alignClass]">
+  <th v-bind="attrs" :class="['th-base', alignClass]">
     <slot />
   </th>
 </template>

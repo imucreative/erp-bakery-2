@@ -31,22 +31,21 @@ const emit = defineEmits<{
 
 const attrs = useAttrs()
 const sizeClasses = {
-  sm: 'px-4 py-3 text-sm',
-  md: 'px-5 py-3.5 text-sm',
+  sm: 'btn-sm',
+  md: 'btn-md',
 }
 const variantClasses = {
-  primary: 'bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300',
-  outline:
-    'bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300',
-  success: 'bg-success-500 text-white shadow-theme-xs hover:bg-success-600 disabled:bg-success-300',
-  info: 'bg-blue-light-500 text-white shadow-theme-xs hover:bg-blue-light-600 disabled:bg-blue-light-300',
-  warning: 'bg-warning-500 text-white shadow-theme-xs hover:bg-warning-600 disabled:bg-warning-300',
-  danger: 'bg-error-500 text-white shadow-theme-xs hover:bg-error-600 disabled:bg-error-300',
+  primary: 'btn-primary',
+  outline: 'btn-outline',
+  success: 'btn-success',
+  info: 'btn-info',
+  warning: 'btn-warning',
+  danger: 'btn-danger',
 }
 
 const buttonClass = computed<string>(() =>
   [
-    'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition',
+    'btn-base',
     props.iconOnly ? 'h-9 w-9 p-0' : sizeClasses[props.size],
     variantClasses[props.variant],
     props.fullWidth ? 'w-full' : '',

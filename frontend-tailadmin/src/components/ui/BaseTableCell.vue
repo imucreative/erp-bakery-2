@@ -21,9 +21,9 @@ const cellClass = computed<string>(() => {
     end: 'text-end',
   }
   const emphasisClasses = {
-    normal: 'text-gray-600 dark:text-gray-300',
-    medium: 'font-medium text-gray-800 dark:text-white/90',
-    mono: 'font-mono text-gray-600 dark:text-gray-300',
+    normal: 'td-normal',
+    medium: 'td-medium',
+    mono: 'td-mono',
   }
   return `${alignClasses[props.align]} ${emphasisClasses[props.emphasis]}`
 })
@@ -32,11 +32,7 @@ const cellClass = computed<string>(() => {
 <template>
   <td
     v-bind="attrs"
-    :class="[
-      'px-5 py-4 text-theme-sm',
-      cellClass,
-      typeof attrs.class === 'string' ? attrs.class : '',
-    ]"
+    :class="['td-base', cellClass, typeof attrs.class === 'string' ? attrs.class : '']"
   >
     <slot />
   </td>

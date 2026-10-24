@@ -195,7 +195,7 @@ function onSubmit(): void {
         <div
           class="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-gray-200 p-3 dark:border-gray-800"
         >
-          <p v-if="outlets.length === 0" class="text-theme-xs text-gray-400 dark:text-gray-500">
+          <p v-if="outlets.length === 0" class="text-muted-xs">
             Tidak ada outlet tersedia.
           </p>
           <div

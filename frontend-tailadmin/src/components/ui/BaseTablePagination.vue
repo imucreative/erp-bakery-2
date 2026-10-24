@@ -20,14 +20,11 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div
-    class="flex flex-col items-center justify-between gap-3 pt-2 sm:flex-row"
-    aria-label="Pagination tabel"
-  >
+  <div class="pagination-wrapper" aria-label="Pagination tabel">
     <span class="text-muted">
       Menampilkan {{ props.currentCount }} dari {{ props.totalItems }} data
     </span>
-    <div class="flex items-center gap-2">
+    <div class="pagination-buttons">
       <BaseButton
         size="sm"
         variant="outline"
@@ -37,7 +34,7 @@ const emit = defineEmits<{
         <template #start-icon><ChevronLeft class="h-4 w-4" aria-hidden="true" /></template>
         Sebelumnya
       </BaseButton>
-      <span class="text-theme-sm text-gray-600 dark:text-gray-300">
+      <span class="pagination-indicator">
         {{ props.currentPage }} / {{ props.totalPages }}
       </span>
       <BaseButton size="sm" variant="outline" :disabled="!props.hasNext" @click="emit('next')">

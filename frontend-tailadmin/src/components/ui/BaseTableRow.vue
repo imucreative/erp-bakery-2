@@ -9,13 +9,7 @@ withDefaults(defineProps<BaseTableRowProps>(), {
 </script>
 
 <template>
-  <tr
-    :class="
-      variant === 'header'
-        ? 'border-b border-gray-100 dark:border-gray-800'
-        : 'border-b border-gray-100 dark:border-gray-800'
-    "
-  >
+  <tr class="tr-base">
     <slot />
   </tr>
 </template>

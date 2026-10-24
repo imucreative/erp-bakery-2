@@ -375,7 +375,7 @@ async function onDelete(row: ProductUomConversion): Promise<void> {
                     <Trash2 class="h-4 w-4" aria-hidden="true" />
                   </BaseButton>
                 </template>
-                <span v-else class="text-theme-xs text-gray-400 dark:text-gray-500"> — </span>
+                <span v-else class="text-muted-xs"> — </span>
               </div>
             </BaseTableCell>
           </BaseTableRow>

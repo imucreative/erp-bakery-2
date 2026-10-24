@@ -50,7 +50,7 @@ function onChange(event: Event): void {
       :disabled="props.disabled"
       :aria-invalid="props.error ? 'true' : undefined"
       :aria-describedby="describedBy"
-      class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+      class="form-input h-11 w-full appearance-none pe-10"
       @change="onChange"
     >
       <option v-if="props.placeholder" value="" disabled>{{ props.placeholder }}</option>

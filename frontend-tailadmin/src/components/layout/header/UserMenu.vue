@@ -129,7 +129,7 @@
                   class="flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-theme-sm font-medium transition-colors cursor-pointer ltr:text-left rtl:text-right"
                   :class="
                     currentLocale === language.id
-                      ? 'bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400'
+                      ? 'tone-brand'
                       : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white'
                   "
                 >

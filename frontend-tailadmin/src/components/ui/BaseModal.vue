@@ -41,18 +41,14 @@ const sizeClass: Record<ModalSize, string> = {
 }
 
 const wrapperClass = computed(() =>
-  props.placement === 'end'
-    ? 'fixed inset-0 z-99999 flex justify-end'
-    : 'fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4',
+  props.placement === 'end' ? 'modal-wrapper-end' : 'modal-wrapper-center',
 )
 
 const panelClass = computed(() => {
-  if (props.placement === 'end') {
-    return `relative flex h-full w-full ${sizeClass[props.size]} flex-col overflow-y-auto border-s border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900`
-  }
-  return `relative w-full ${sizeClass[props.size]} rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900${
-    props.scrollable ? ' max-h-[90vh] overflow-y-auto' : ''
-  }`
+  const baseClass = props.placement === 'end' ? 'modal-panel-end' : 'modal-panel-center'
+  const scrollableClass =
+    props.placement === 'center' && props.scrollable ? ' max-h-[90vh] overflow-y-auto' : ''
+  return `${baseClass} ${sizeClass[props.size]}${scrollableClass}`
 })
 
 function onKeydown(event: KeyboardEvent): void {
@@ -74,7 +70,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 <template>
   <div v-if="props.open" :class="wrapperClass">
     <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
+      class="modal-backdrop"
       aria-hidden="true"
       @click="props.dismissible && emit('close')"
     ></div>
