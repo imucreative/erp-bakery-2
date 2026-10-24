@@ -392,7 +392,7 @@ onBeforeUnmount(() => {
           {{ formError }}
         </p>
 
-        <div class="flex justify-end gap-3 pt-2">
+        <div class="button-row pt-2">
           <BaseButton size="sm" variant="outline" :disabled="submitting" @click="onCancel">
             Batal
           </BaseButton>

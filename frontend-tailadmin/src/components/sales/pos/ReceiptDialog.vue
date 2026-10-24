@@ -129,7 +129,7 @@ function onPrint(): void {
         </div>
       </div>
 
-      <div class="mt-6 flex justify-end gap-3">
+      <div class="mt-6 button-row">
         <BaseButton size="sm" variant="outline" @click="onPrint">
           <template #start-icon>
             <Printer class="h-4 w-4" aria-hidden="true" />

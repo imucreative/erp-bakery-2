@@ -272,11 +272,7 @@ onMounted(() => {
     </template>
 
     <!-- Upload area (only when the viewer can manage) -->
-    <form
-      v-if="canManage"
-      class="space-y-3 border-t border-gray-100 pt-5 dark:border-gray-800"
-      @submit.prevent="uploadSelected"
-    >
+    <form v-if="canManage" class="form-divider" @submit.prevent="uploadSelected">
       <label class="form-label"> Unggah Lampiran </label>
 
       <div class="stack-row">

@@ -178,7 +178,7 @@ function onSubmit(): void {
 
       <BaseAlert :message="localError || errorMessage" size="sm" />
 
-      <div class="flex justify-end gap-3 pt-2">
+      <div class="button-row pt-2">
         <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
           <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
           Batal

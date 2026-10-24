@@ -137,7 +137,7 @@ onMounted(() => {
               {{ formatDateTime(comment.createdAt) }}
             </span>
           </div>
-          <p class="whitespace-pre-wrap text-theme-sm text-gray-700 dark:text-gray-300">
+          <p class="whitespace-pre-wrap text-body">
             {{ comment.body }}
           </p>
         </li>
@@ -145,10 +145,7 @@ onMounted(() => {
     </template>
 
     <!-- Add-comment form -->
-    <form
-      class="space-y-3 border-t border-gray-100 pt-5 dark:border-gray-800"
-      @submit.prevent="submitComment"
-    >
+    <form class="form-divider" @submit.prevent="submitComment">
       <div>
         <label for="gr-comment-body" class="form-label"> Tambah Komentar </label>
         <BaseTextarea

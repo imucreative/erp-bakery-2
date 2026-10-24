@@ -32,7 +32,7 @@ const emit = defineEmits<{
 
     <BaseAlert :message="errorMessage" size="sm" class="mb-4" />
 
-    <div class="flex justify-end gap-3">
+    <div class="button-row">
       <BaseButton size="sm" variant="outline" :disabled="deleting" @click="emit('close')">
         <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
         Batal

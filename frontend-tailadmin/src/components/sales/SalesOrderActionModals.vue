@@ -100,7 +100,7 @@ function onConfirm(): void {
         {{ errorMessage }}
       </p>
 
-      <div class="flex justify-end gap-3">
+      <div class="button-row">
         <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
           Batal
         </BaseButton>

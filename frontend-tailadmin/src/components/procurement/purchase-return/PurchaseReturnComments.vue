@@ -18,7 +18,7 @@ import { onMounted, ref } from 'vue'
 import { Send } from 'lucide-vue-next'
 import { ApiClientError } from '@/services/http'
 import Badge from '@/components/ui/Badge.vue'
-import { BaseButton, BaseSelect, BaseTextarea } from '@/components/ui'
+import { BaseAlert, BaseButton, BaseSelect, BaseTextarea } from '@/components/ui'
 import { formatDateTime } from '@/lib/format'
 import {
   purchaseReturnService,
@@ -111,46 +111,30 @@ onMounted(() => {
 <template>
   <div class="space-y-5">
     <!-- Loading -->
-    <p
-      v-if="loading"
-      class="text-muted rounded-lg border border-gray-200 bg-gray-50 px-3 py-6 text-center dark:border-gray-800 dark:bg-white/[0.02]"
-    >
-      Memuat komentar...
-    </p>
+    <p v-if="loading" class="panel-muted">Memuat komentar...</p>
 
     <!-- Load error -->
-    <p v-else-if="loadError" class="alert-error px-3 py-2" role="alert">
-      {{ loadError }}
-    </p>
+    <BaseAlert v-else-if="loadError" :message="loadError" size="sm" />
 
     <template v-else>
       <!-- Empty -->
-      <p
-        v-if="comments.length === 0"
-        class="text-muted rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-6 text-center dark:border-gray-800 dark:bg-white/[0.02]"
-      >
-        Belum ada komentar.
-      </p>
+      <p v-if="comments.length === 0" class="panel-muted border-dashed">Belum ada komentar.</p>
 
       <!-- Comment list (chronological) -->
       <ul v-else class="space-y-4">
-        <li
-          v-for="comment in comments"
-          :key="comment.id"
-          class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.02]"
-        >
+        <li v-for="comment in comments" :key="comment.id" class="panel-card">
           <div class="mb-2 flex flex-wrap items-center gap-2">
-            <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+            <span class="text-strong">
               {{ authorLabel(comment) }}
             </span>
             <Badge :color="commentCategoryBadgeColor(comment.category)">
               {{ PURCHASE_RETURN_COMMENT_CATEGORY_LABELS[comment.category] }}
             </Badge>
-            <span class="text-theme-xs text-gray-400 dark:text-gray-500 ms-auto">
+            <span class="text-muted-xs ms-auto">
               {{ formatDateTime(comment.createdAt) }}
             </span>
           </div>
-          <p class="whitespace-pre-wrap text-theme-sm text-gray-700 dark:text-gray-300">
+          <p class="whitespace-pre-wrap text-body">
             {{ comment.body }}
           </p>
         </li>
@@ -158,10 +142,7 @@ onMounted(() => {
     </template>
 
     <!-- Add-comment form -->
-    <form
-      class="space-y-3 border-t border-gray-100 pt-5 dark:border-gray-800"
-      @submit.prevent="submitComment"
-    >
+    <form class="form-divider" @submit.prevent="submitComment">
       <div>
         <label for="pr-comment-body" class="form-label"> Tambah Komentar </label>
         <BaseTextarea
@@ -195,9 +176,7 @@ onMounted(() => {
         </BaseButton>
       </div>
 
-      <p v-if="formError" class="alert-error px-3 py-2" role="alert">
-        {{ formError }}
-      </p>
+      <BaseAlert v-if="formError" :message="formError" size="sm" />
     </form>
   </div>
 </template>

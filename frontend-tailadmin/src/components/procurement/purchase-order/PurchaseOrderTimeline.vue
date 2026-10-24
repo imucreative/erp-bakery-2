@@ -43,7 +43,7 @@ function actorLabel(log: PurchaseOrderStatusLog): string {
               {{ PURCHASE_ORDER_STATUS_LABELS[log.toStatus] }}
             </Badge>
           </div>
-          <p class="text-theme-sm text-gray-700 dark:text-gray-300">
+          <p class="text-body">
             oleh <span class="font-medium">{{ actorLabel(log) }}</span>
           </p>
           <p v-if="log.note" class="text-muted">"{{ log.note }}"</p>

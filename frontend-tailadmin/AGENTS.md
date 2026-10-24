@@ -113,7 +113,9 @@ src/
   `page-title` / `card-title` / `modal-title` for headings, `text-muted` for secondary text
   (`text-muted-xs` for dimmer placeholders like an empty-cell `—`, `text-strong` for the primary
   text of a list row such as an attachment name or comment author, `text-value` for the read-only
-  value of a summary list — same as `text-strong` without `font-medium`),
+  value of a summary list — same as `text-strong` without `font-medium`, `text-body` for the
+  paragraph tone one step softer (`whitespace-pre-wrap` comment body, the "oleh <nama>" line in a
+  timeline, the notes `<dd>` of a summary card),
   `form-label` / `form-hint` / `form-error` for field text, `form-readonly` for a read-only
   value shown in place of an input (SKU, email, code, parent group name),
   `alert-error` / `alert-success` /
@@ -121,11 +123,18 @@ src/
   (add `border-dashed` at the call site when needed), `panel-loading` for a page-level
   "Memuat data…" card (full-width `rounded-2xl` white card, not the dimmed in-card `panel-muted`),
   `panel-card` for nested item cards
-  (attachment/comment rows), `icon-tile` for the square icon in front of a list row (attachment
+  (attachment/comment rows), `form-divider` for the input form that sits below such a panel
+  (`space-y-3` + top border — note `@apply space-y-*` emits its margin as a separate
+  `:where(.form-divider > :not(:last-child))` rule, exactly like `timeline-rail`),
+  `icon-tile` for the square icon in front of a list row (attachment
   icon, avatar — 40px tile, override `h-*`/`w-*` at the call site for another size),
   `toolbar-row` for a filter/actions bar (stacks under 640px; add margin at the call site),
   `stack-row` for the same bar when it has no left/right split — a run of fields, or a field plus
   the button that may keep flowing (`sm:justify-between` is what separates the two),
+  `button-row` for a run of buttons pushed to the end (modal footer, form Save/Cancel; it is
+  deliberately only `flex justify-end gap-3` — no `items-center`/`flex-wrap`, so the 9
+  `*ActionBar.vue` rows that use `flex flex-wrap items-center justify-end gap-3` keep their own
+  layout; add `pt-*`/`mt-*` at the call site),
   `field-grid` for a two-column form/summary grid (stacks under 640px; `gap-*` and `sm:grid-cols-*`
   are plain core utilities, so overriding them at the call site works and keeps the snippet's
   `display`/`grid-cols-1` base — `PurchaseOrderSummary` uses `field-grid gap-2 sm:grid-cols-3` for
@@ -139,8 +148,9 @@ src/
   scroll containers. Prefer these over retyping the long class chain. Custom utilities are
   emitted BEFORE core utilities, so a call-site utility always wins
   (e.g. `class="modal-title mt-4"`) without `!important`. Ordering is per property category,
-  though — and within a category **shorthand loses to longhand**: in the built CSS `.p-4` (39274)
-  is emitted before `.px-4` (39683) and `.py-3` (40132), so to override a snippet's or component's
+  though — and within a category **shorthand loses to longhand**: in the built CSS
+  (`dist/assets/index-CEnZavT_.css`) `.p-4` (39787)
+  is emitted before `.px-4` (40196) and `.py-3` (40645), so to override a snippet's or component's
   padding use `px-*` / `py-*`, never `p-*` (`p-*` on top of `BaseAlert size="md"` silently kept
   the component's `px-4 py-3`). Plain layout utilities like `.flex`/`.h-11` are emitted earlier,
   which is still safe

@@ -69,7 +69,7 @@ const props = defineProps<{
 
     <div v-if="props.transfer.notes" class="sm:col-span-2">
       <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Catatan</dt>
-      <dd class="mt-1 text-theme-sm text-gray-700 dark:text-gray-300">
+      <dd class="mt-1 text-body">
         {{ props.transfer.notes }}
       </dd>
     </div>

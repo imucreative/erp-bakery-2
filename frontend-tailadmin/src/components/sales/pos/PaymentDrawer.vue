@@ -169,7 +169,7 @@ function onConfirm(): void {
         {{ props.errorMessage }}
       </p>
 
-      <div class="mt-auto flex justify-end gap-3 pt-4">
+      <div class="button-row mt-auto pt-4">
         <BaseButton size="sm" variant="outline" :disabled="props.submitting" @click="emit('close')">
           Batal
         </BaseButton>

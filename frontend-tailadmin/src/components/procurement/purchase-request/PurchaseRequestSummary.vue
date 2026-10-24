@@ -49,7 +49,7 @@ const props = defineProps<{
     </div>
     <div v-if="props.pr.notes" class="sm:col-span-2">
       <dt class="text-muted-xs uppercase">Catatan</dt>
-      <dd class="mt-1 text-theme-sm text-gray-700 dark:text-gray-300">{{ props.pr.notes }}</dd>
+      <dd class="mt-1 text-body">{{ props.pr.notes }}</dd>
     </div>
   </dl>
 </template>

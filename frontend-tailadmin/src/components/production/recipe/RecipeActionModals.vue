@@ -77,7 +77,7 @@ const confirmVariant = computed<'success' | 'danger'>(() =>
       <p v-if="errorMessage" class="alert-error mb-4 px-3 py-2">
         {{ errorMessage }}
       </p>
-      <div class="flex justify-end gap-3">
+      <div class="button-row">
         <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')"
           >Kembali</BaseButton
         >

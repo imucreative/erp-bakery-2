@@ -67,7 +67,7 @@ const props = defineProps<{
 
     <div v-if="props.recipe.instructions" class="sm:col-span-2">
       <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Instruksi</dt>
-      <dd class="mt-1 whitespace-pre-line text-theme-sm text-gray-700 dark:text-gray-300">
+      <dd class="mt-1 whitespace-pre-line text-body">
         {{ props.recipe.instructions }}
       </dd>
     </div>

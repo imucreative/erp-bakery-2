@@ -215,7 +215,7 @@ async function onConfirmAction(reason: string): Promise<void> {
               </div>
               <div v-if="order.salesReturn.reason">
                 <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Alasan</dt>
-                <dd class="mt-1 text-theme-sm text-gray-700 dark:text-gray-300">
+                <dd class="mt-1 text-body">
                   {{ order.salesReturn.reason }}
                 </dd>
               </div>

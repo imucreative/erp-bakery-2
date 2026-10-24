@@ -128,7 +128,7 @@ const confirmVariant = computed<'primary' | 'success' | 'danger'>(() => {
         {{ errorMessage }}
       </p>
 
-      <div class="flex justify-end gap-3">
+      <div class="button-row">
         <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
           Kembali
         </BaseButton>

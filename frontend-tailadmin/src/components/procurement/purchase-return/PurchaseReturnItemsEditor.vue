@@ -145,13 +145,10 @@ function updateRow(index: number, patch: Partial<EditorReturnRow>): void {
           <!-- Product (read-only) -->
           <BaseTableCell class="align-top">
             <div class="flex min-h-11 flex-col justify-center">
-              <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+              <span class="text-strong">
                 {{ productLabel(row) }}
               </span>
-              <span
-                v-if="noneReturnable(row)"
-                class="text-theme-xs text-gray-400 dark:text-gray-500"
-              >
+              <span v-if="noneReturnable(row)" class="text-muted-xs">
                 Tidak ada sisa untuk diretur
               </span>
             </div>
@@ -239,7 +236,7 @@ function updateRow(index: number, patch: Partial<EditorReturnRow>): void {
       </template>
     </BaseTable>
 
-    <p class="text-theme-xs text-gray-400 dark:text-gray-500">
+    <p class="text-muted-xs">
       Hanya baris dengan sisa dapat-diretur yang bisa dipilih. Jumlah retur tidak boleh melebihi
       jumlah dapat diretur. Keterangan wajib bila alasan Lainnya.
     </p>

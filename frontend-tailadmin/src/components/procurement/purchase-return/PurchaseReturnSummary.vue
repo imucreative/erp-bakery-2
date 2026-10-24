@@ -25,7 +25,7 @@ const props = defineProps<{
 <template>
   <dl class="field-grid">
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Status</dt>
+      <dt class="text-muted-xs uppercase">Status</dt>
       <dd class="mt-1">
         <Badge :color="statusBadgeColor(props.pr.status)">
           {{ PURCHASE_RETURN_STATUS_LABELS[props.pr.status] }}
@@ -33,51 +33,51 @@ const props = defineProps<{
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">GR Sumber</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">GR Sumber</dt>
+      <dd class="mt-1 text-value">
         {{ props.grNumber(props.pr.goodsReceiptId) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Vendor</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Vendor</dt>
+      <dd class="mt-1 text-value">
         {{ props.pr.supplierName }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Outlet</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Outlet</dt>
+      <dd class="mt-1 text-value">
         {{ props.pr.outletName }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Tanggal Retur</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Tanggal Retur</dt>
+      <dd class="mt-1 text-value">
         {{ formatDate(props.pr.returnDate) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Diajukan</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Diajukan</dt>
+      <dd class="mt-1 text-value">
         {{ props.pr.submittedAt ? formatDateTime(props.pr.submittedAt) : '—' }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Selesai</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Selesai</dt>
+      <dd class="mt-1 text-value">
         {{ props.pr.completedAt ? formatDateTime(props.pr.completedAt) : '—' }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Dibuat</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Dibuat</dt>
+      <dd class="mt-1 text-value">
         {{ formatDateTime(props.pr.createdAt) }}
       </dd>
     </div>
 
     <div v-if="props.pr.notes" class="sm:col-span-2">
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Catatan</dt>
-      <dd class="mt-1 text-theme-sm text-gray-700 dark:text-gray-300">{{ props.pr.notes }}</dd>
+      <dt class="text-muted-xs uppercase">Catatan</dt>
+      <dd class="mt-1 text-body">{{ props.pr.notes }}</dd>
     </div>
   </dl>
 </template>

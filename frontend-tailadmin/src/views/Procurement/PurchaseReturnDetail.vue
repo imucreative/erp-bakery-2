@@ -22,7 +22,7 @@ import { ChevronLeft } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import { BaseButton } from '@/components/ui'
+import { BaseAlert, BaseButton } from '@/components/ui'
 import {
   PurchaseReturnSummary,
   PurchaseReturnItemsTable,
@@ -175,13 +175,7 @@ async function onConfirmAction(note: string): Promise<void> {
 
     <div v-if="loading" class="panel-loading">Memuat data...</div>
 
-    <div
-      v-else-if="loadError"
-      class="rounded-2xl border border-error-500/40 bg-error-50 p-4 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      role="alert"
-    >
-      {{ loadError }}
-    </div>
+    <BaseAlert v-else-if="loadError" :message="loadError" size="md" class="rounded-2xl py-4" />
 
     <template v-else-if="pr">
       <!-- Page header: back (icon-only) + title on the start, lifecycle actions on the end -->
@@ -221,9 +215,7 @@ async function onConfirmAction(note: string): Promise<void> {
         <div class="space-y-5 lg:col-span-2">
           <ComponentCard title="Informasi Purchase Return">
             <!-- Action error banner (mutation failures keep user here) -->
-            <p v-if="actionError" class="alert-error mb-4 px-3 py-2">
-              {{ actionError }}
-            </p>
+            <BaseAlert v-if="actionError" :message="actionError" size="sm" class="mb-4" />
 
             <PurchaseReturnSummary
               :pr="pr"

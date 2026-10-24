@@ -48,9 +48,7 @@ const labelClass = 'form-label'
           :disabled="props.disabled || props.grLocked"
           @update:model-value="emit('update:goodsReceiptId', $event)"
         />
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
-          Hanya GR berstatus selesai yang dapat diretur.
-        </p>
+        <p class="mt-1 text-muted-xs">Hanya GR berstatus selesai yang dapat diretur.</p>
       </div>
 
       <!-- Return Date -->
@@ -68,27 +66,19 @@ const labelClass = 'form-label'
       <!-- Supplier (inherited from GR, read-only) -->
       <div>
         <label :class="labelClass">Vendor</label>
-        <div
-          class="flex h-11 w-full items-center rounded-lg border border-gray-200 bg-gray-50 px-4 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/[0.02] dark:text-gray-300"
-        >
+        <div class="form-readonly flex h-11 w-full items-center dark:bg-white/[0.02]">
           {{ props.supplierLabel || 'Diwarisi dari GR sumber' }}
         </div>
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
-          Diwarisi dari GR sumber (tidak dapat diubah).
-        </p>
+        <p class="mt-1 text-muted-xs">Diwarisi dari GR sumber (tidak dapat diubah).</p>
       </div>
 
       <!-- Outlet (inherited from GR, read-only) -->
       <div>
         <label :class="labelClass">Outlet</label>
-        <div
-          class="flex h-11 w-full items-center rounded-lg border border-gray-200 bg-gray-50 px-4 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/[0.02] dark:text-gray-300"
-        >
+        <div class="form-readonly flex h-11 w-full items-center dark:bg-white/[0.02]">
           {{ props.outletLabel || 'Diwarisi dari GR sumber' }}
         </div>
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
-          Diwarisi dari GR sumber (tidak dapat diubah).
-        </p>
+        <p class="mt-1 text-muted-xs">Diwarisi dari GR sumber (tidak dapat diubah).</p>
       </div>
     </div>
 

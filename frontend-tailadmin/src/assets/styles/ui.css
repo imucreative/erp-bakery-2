@@ -36,6 +36,12 @@
   @apply text-theme-sm text-gray-800 dark:text-white/90;
 }
 
+/* Paragraf isi — teks yang lebih lunak dari `text-value` (isi komentar,
+   baris "oleh <nama>" pada timeline, catatan pada kartu Summary). */
+@utility text-body {
+  @apply text-theme-sm text-gray-700 dark:text-gray-300;
+}
+
 /* Form */
 @utility form-label {
   @apply mb-1.5 block text-theme-sm font-medium text-gray-700 dark:text-gray-400;
@@ -89,6 +95,13 @@
   @apply rounded-2xl border border-gray-200 bg-white p-10 text-center text-theme-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400;
 }
 
+/* Pembatas + wadah form input di dalam panel lampiran/komentar: garis atas,
+   jarak, lalu field-nya. Selalu dipakai berpasangan dengan `panel-card`/
+   `panel-muted` di atasnya. */
+@utility form-divider {
+  @apply space-y-3 border-t border-gray-100 pt-5 dark:border-gray-800;
+}
+
 /* Kotak ikon (tile) di depan item daftar — ikon lampiran, avatar, status. Ukurannya
    tetap 10 (40px); kalau perlu ukuran lain, timpa `h-*`/`w-*` di call-site (utility
    core dipancarkan setelah `@utility`). */
@@ -107,6 +120,14 @@
    deretan field (bar filter) atau field + tombol yang dibiarkan mengalir. */
 @utility stack-row {
   @apply flex flex-col gap-3 sm:flex-row sm:items-center;
+}
+
+/* Deretan tombol yang rata ke ujung — footer modal dan baris aksi form. Tidak
+   membawa `items-center` (biar tata letak lama persis sama); kalau perlu jarak
+   tambahan, `pt-*` dipasang di call-site, dan `gap-*` lain tinggal ditimpa di
+   call-site karena utility core dipancarkan setelah `@utility`. */
+@utility button-row {
+  @apply flex justify-end gap-3;
 }
 
 /* Kisi dua kolom untuk pasangan field form atau label/nilai ringkasan: menumpuk

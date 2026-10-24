@@ -111,7 +111,7 @@ function onConfirm(): void {
 
     <BaseAlert :message="localError || errorMessage" size="sm" class="mb-4" />
 
-    <div class="flex justify-end gap-3">
+    <div class="button-row">
       <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
         Batal
       </BaseButton>
