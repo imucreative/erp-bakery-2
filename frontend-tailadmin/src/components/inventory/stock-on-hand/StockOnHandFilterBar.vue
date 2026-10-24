@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
  * StockOnHandFilterBar — search (product name/SKU) + outlet filter + a
- * "low stock only" toggle for the Stock On Hand list. Native select wrapped
- * with a ChevronDownIcon per the UI standard; the boolean filter uses
- * ToggleSwitch (never a checkbox). Two-way binds `search`, `outletId`, and
- * `lowOnly`. Outlet options are resolved by the parent (fetched once).
+ * "low stock only" toggle for the Stock On Hand list. Uses BaseSelect for the
+ * outlet filter and ToggleSwitch for the boolean filter (never a checkbox).
+ * Two-way binds `search`, `outletId`, and `lowOnly`. Outlet options are
+ * resolved by the parent (fetched once).
  */
 import { BaseInput, BaseSelect, BaseToggle } from '@/components/ui'
 

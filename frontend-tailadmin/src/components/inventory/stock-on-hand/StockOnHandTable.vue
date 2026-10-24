@@ -44,7 +44,7 @@ function uomLabel(row: StockOnHandRow): string {
       <BaseTableRow v-for="row in items" :key="`${row.productId}-${row.outletId}`">
         <BaseTableCell>
           <div class="flex flex-col">
-            <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+            <span class="text-strong">
               {{ row.productName }}
             </span>
             <span class="text-theme-xs text-gray-500 dark:text-gray-400">

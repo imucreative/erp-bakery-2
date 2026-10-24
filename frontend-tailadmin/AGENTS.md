@@ -112,7 +112,9 @@ src/
 - **Core snippet classes** (`src/assets/styles/ui.css`, declared with `@utility`): use
   `page-title` / `card-title` / `modal-title` for headings, `text-muted` for secondary text
   (`text-muted-xs` for dimmer placeholders like an empty-cell `—`, `text-strong` for the primary
-  text of a list row such as an attachment name or comment author, `text-value` for the read-only
+  text of a list row such as an attachment name, comment author, or the product name on a list
+  table — the SKU sub-line under it stays `text-theme-xs text-gray-500 dark:text-gray-400`, which
+  is NOT `text-muted-xs` (that snippet swaps the two grays and would read dimmer), `text-value` for the read-only
   value of a summary list — same as `text-strong` without `font-medium`, `text-body` for the
   paragraph tone one step softer (`whitespace-pre-wrap` comment body, the "oleh <nama>" line in a
   timeline, the notes `<dd>` of a summary card),
