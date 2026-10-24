@@ -1,0 +1,310 @@
+import { Pool } from 'pg';
+import { DashboardRepository } from '../../Domains/dashboard/DashboardRepository';
+import {
+  OwnerDashboardSummary,
+  OutletDashboardSummary,
+  SalesTrendPoint,
+  ExpiringBatch,
+  TopSellingProduct,
+} from '../../Domains/dashboard/entities/DashboardSummary';
+import { INVENTORY_EXPIRY_SOON_DAYS } from '../../Domains/inventory/batchStatus';
+
+/**
+ * PostgreSQL implementation — DashboardRepository (doc 54).
+ * Read-only aggregates dari Sales + Inventory tables.
+ */
+export class DashboardRepositoryPostgres extends DashboardRepository {
+  constructor(private readonly pool: Pool) {
+    super();
+  }
+
+  async getOwnerSummary(
+    companyId: string,
+    businessDate: Date = new Date(),
+  ): Promise<OwnerDashboardSummary> {
+    const bizDate = businessDate.toISOString().slice(0, 10);
+    const soonBoundary = new Date(businessDate);
+    soonBoundary.setUTCDate(soonBoundary.getUTCDate() + INVENTORY_EXPIRY_SOON_DAYS);
+    const soonDate = soonBoundary.toISOString().slice(0, 10);
+
+    // 7 days ago for trend
+    const trendStart = new Date(businessDate);
+    trendStart.setUTCDate(trendStart.getUTCDate() - 6);
+    const trendStartDate = trendStart.toISOString().slice(0, 10);
+
+    // Parallel queries untuk performance
+    const [salesMetrics, inventoryMetrics, salesTrend, expiringSoon, topProducts] =
+      await Promise.all([
+        this.getSalesMetrics(companyId, bizDate),
+        this.getInventoryMetrics(companyId, bizDate, soonDate),
+        this.getSalesTrend(companyId, trendStartDate, bizDate),
+        this.getExpiringSoonBatches(companyId, bizDate, soonDate),
+        this.getTopSellingProducts(companyId, trendStartDate, bizDate),
+      ]);
+
+    return new OwnerDashboardSummary({
+      revenueToday: salesMetrics.revenueToday,
+      salesToday: salesMetrics.salesToday,
+      lowStockCount: inventoryMetrics.lowStockCount,
+      expiredCount: inventoryMetrics.expiredCount,
+      salesTrend,
+      expiringSoon,
+      topProducts,
+    });
+  }
+
+  async getOutletSummary(
+    companyId: string,
+    outletId: string,
+    businessDate: Date = new Date(),
+  ): Promise<OutletDashboardSummary> {
+    const bizDate = businessDate.toISOString().slice(0, 10);
+    const soonBoundary = new Date(businessDate);
+    soonBoundary.setUTCDate(soonBoundary.getUTCDate() + INVENTORY_EXPIRY_SOON_DAYS);
+    const soonDate = soonBoundary.toISOString().slice(0, 10);
+
+    // Parallel queries
+    const [salesMetrics, inventoryMetrics, outletInfo] = await Promise.all([
+      this.getOutletSalesMetrics(companyId, outletId, bizDate),
+      this.getOutletInventoryMetrics(companyId, outletId, bizDate, soonDate),
+      this.getOutletName(outletId),
+    ]);
+
+    return new OutletDashboardSummary({
+      outletId,
+      outletName: outletInfo,
+      salesToday: salesMetrics.salesToday,
+      revenueToday: salesMetrics.revenueToday,
+      lowStockCount: inventoryMetrics.lowStockCount,
+      pendingRequests: 0, // placeholder untuk replenishment
+    });
+  }
+
+  private async getSalesMetrics(
+    companyId: string,
+    bizDate: string,
+  ): Promise<{ revenueToday: number; salesToday: number }> {
+    const result = await this.pool.query<{ revenue: string; count: string }>(
+      `SELECT
+         COALESCE(SUM(grand_total), 0) AS revenue,
+         COUNT(*) AS count
+       FROM sales_orders
+       WHERE company_id = $1
+         AND status = 'PAID'
+         AND DATE(paid_at AT TIME ZONE 'Asia/Jakarta') = $2::date`,
+      [companyId, bizDate],
+    );
+
+    return {
+      revenueToday: parseFloat(result.rows[0].revenue),
+      salesToday: parseInt(result.rows[0].count, 10),
+    };
+  }
+
+  private async getInventoryMetrics(
+    companyId: string,
+    bizDate: string,
+    soonDate: string,
+  ): Promise<{ lowStockCount: number; expiredCount: number }> {
+    // Low stock: product+outlet groups whose summed active balance < minimum_stock
+    const lowStock = await this.pool.query<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM (
+         SELECT b.product_id, b.outlet_id
+         FROM inventory_batches b
+         JOIN products p ON p.id = b.product_id
+         WHERE b.company_id = $1 AND b.status = 'ACTIVE'
+           AND p.minimum_stock > 0
+         GROUP BY b.product_id, b.outlet_id, p.minimum_stock
+         HAVING SUM(b.qty_available) < p.minimum_stock
+       ) AS low`,
+      [companyId],
+    );
+
+    // Expired batches
+    const expired = await this.pool.query<{ count: string }>(
+      `SELECT COUNT(*) AS count
+       FROM inventory_batches
+       WHERE company_id = $1
+         AND status = 'ACTIVE'
+         AND qty_available > 0
+         AND expired_date IS NOT NULL
+         AND expired_date < $2::date`,
+      [companyId, bizDate],
+    );
+
+    return {
+      lowStockCount: parseInt(lowStock.rows[0].count, 10),
+      expiredCount: parseInt(expired.rows[0].count, 10),
+    };
+  }
+
+  private async getSalesTrend(
+    companyId: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<SalesTrendPoint[]> {
+    const result = await this.pool.query<{
+      date: string;
+      revenue: string;
+      order_count: string;
+    }>(
+      `SELECT
+         DATE(paid_at AT TIME ZONE 'Asia/Jakarta') AS date,
+         COALESCE(SUM(grand_total), 0) AS revenue,
+         COUNT(*) AS order_count
+       FROM sales_orders
+       WHERE company_id = $1
+         AND status = 'PAID'
+         AND DATE(paid_at AT TIME ZONE 'Asia/Jakarta') BETWEEN $2::date AND $3::date
+       GROUP BY DATE(paid_at AT TIME ZONE 'Asia/Jakarta')
+       ORDER BY date`,
+      [companyId, startDate, endDate],
+    );
+
+    return result.rows.map((row) => ({
+      date: row.date,
+      revenue: parseFloat(row.revenue),
+      orderCount: parseInt(row.order_count, 10),
+    }));
+  }
+
+  private async getExpiringSoonBatches(
+    companyId: string,
+    bizDate: string,
+    soonDate: string,
+    limit: number = 10,
+  ): Promise<ExpiringBatch[]> {
+    const result = await this.pool.query<{
+      product_id: string;
+      product_name: string;
+      batch_no: string;
+      expiry_date: string;
+      qty: string;
+      uom_name: string;
+    }>(
+      `SELECT
+         b.product_id,
+         p.name AS product_name,
+         b.batch_no,
+         b.expired_date AS expiry_date,
+         b.qty_available AS qty,
+         u.name AS uom_name
+       FROM inventory_batches b
+       JOIN products p ON p.id = b.product_id
+       JOIN uoms u ON u.id = p.uom_id
+       WHERE b.company_id = $1
+         AND b.status = 'ACTIVE'
+         AND b.qty_available > 0
+         AND b.expired_date IS NOT NULL
+         AND b.expired_date >= $2::date
+         AND b.expired_date <= $3::date
+       ORDER BY b.expired_date ASC
+       LIMIT $4`,
+      [companyId, bizDate, soonDate, limit],
+    );
+
+    return result.rows.map((row) => ({
+      productId: row.product_id,
+      productName: row.product_name,
+      batchNo: row.batch_no,
+      expiryDate: row.expiry_date,
+      qty: parseFloat(row.qty),
+      uomName: row.uom_name,
+    }));
+  }
+
+  private async getTopSellingProducts(
+    companyId: string,
+    startDate: string,
+    endDate: string,
+    limit: number = 10,
+  ): Promise<TopSellingProduct[]> {
+    const result = await this.pool.query<{
+      product_id: string;
+      product_name: string;
+      qty_sold: string;
+      revenue: string;
+    }>(
+      `SELECT
+         soi.product_id,
+         soi.product_name_snapshot AS product_name,
+         SUM(soi.qty) AS qty_sold,
+         SUM(soi.line_total) AS revenue
+       FROM sales_order_items soi
+       JOIN sales_orders so ON so.id = soi.sales_order_id
+       WHERE so.company_id = $1
+         AND so.status = 'PAID'
+         AND DATE(so.paid_at AT TIME ZONE 'Asia/Jakarta') BETWEEN $2::date AND $3::date
+       GROUP BY soi.product_id, soi.product_name_snapshot
+       ORDER BY qty_sold DESC
+       LIMIT $4`,
+      [companyId, startDate, endDate, limit],
+    );
+
+    return result.rows.map((row) => ({
+      productId: row.product_id,
+      productName: row.product_name,
+      qtySold: parseFloat(row.qty_sold),
+      revenue: parseFloat(row.revenue),
+    }));
+  }
+
+  private async getOutletSalesMetrics(
+    companyId: string,
+    outletId: string,
+    bizDate: string,
+  ): Promise<{ revenueToday: number; salesToday: number }> {
+    const result = await this.pool.query<{ revenue: string; count: string }>(
+      `SELECT
+         COALESCE(SUM(grand_total), 0) AS revenue,
+         COUNT(*) AS count
+       FROM sales_orders
+       WHERE company_id = $1
+         AND outlet_id = $2
+         AND status = 'PAID'
+         AND DATE(paid_at AT TIME ZONE 'Asia/Jakarta') = $3::date`,
+      [companyId, outletId, bizDate],
+    );
+
+    return {
+      revenueToday: parseFloat(result.rows[0].revenue),
+      salesToday: parseInt(result.rows[0].count, 10),
+    };
+  }
+
+  private async getOutletInventoryMetrics(
+    companyId: string,
+    outletId: string,
+    bizDate: string,
+    soonDate: string,
+  ): Promise<{ lowStockCount: number }> {
+    // Low stock for this outlet
+    const lowStock = await this.pool.query<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM (
+         SELECT b.product_id
+         FROM inventory_batches b
+         JOIN products p ON p.id = b.product_id
+         WHERE b.company_id = $1
+           AND b.outlet_id = $2
+           AND b.status = 'ACTIVE'
+           AND p.minimum_stock > 0
+         GROUP BY b.product_id, p.minimum_stock
+         HAVING SUM(b.qty_available) < p.minimum_stock
+       ) AS low`,
+      [companyId, outletId],
+    );
+
+    return {
+      lowStockCount: parseInt(lowStock.rows[0].count, 10),
+    };
+  }
+
+  private async getOutletName(outletId: string): Promise<string> {
+    const result = await this.pool.query<{ name: string }>(
+      `SELECT name FROM outlets WHERE id = $1`,
+      [outletId],
+    );
+
+    return result.rows[0]?.name || 'Unknown Outlet';
+  }
+}

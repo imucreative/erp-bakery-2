@@ -23,6 +23,8 @@ import { StockTransferRepository } from '../Domains/stock-transfers/StockTransfe
 import { StockOpnameRepository } from '../Domains/stock-opnames/StockOpnameRepository';
 import { ShiftRepository } from '../Domains/shifts/ShiftRepository';
 import { SalesOrderRepository } from '../Domains/sales/SalesOrderRepository';
+import { DashboardRepository } from '../Domains/dashboard/DashboardRepository';
+import { ReportsRepository } from '../Domains/reports/ReportsRepository';
 import { RecipeRepository } from '../Domains/recipes/RecipeRepository';
 import { ProductionOrderRepository } from '../Domains/production/ProductionOrderRepository';
 import { PurchaseRequestRepository } from '../Domains/purchase-requests/PurchaseRequestRepository';
@@ -57,6 +59,8 @@ import { StockTransferRepositoryPostgres } from './repository/StockTransferRepos
 import { StockOpnameRepositoryPostgres } from './repository/StockOpnameRepositoryPostgres';
 import { ShiftRepositoryPostgres } from './repository/ShiftRepositoryPostgres';
 import { SalesOrderRepositoryPostgres } from './repository/SalesOrderRepositoryPostgres';
+import { DashboardRepositoryPostgres } from './repository/DashboardRepositoryPostgres';
+import { ReportsRepositoryPostgres } from './repository/ReportsRepositoryPostgres';
 import { RecipeRepositoryPostgres } from './repository/RecipeRepositoryPostgres';
 import { ProductionOrderRepositoryPostgres } from './repository/ProductionOrderRepositoryPostgres';
 import { PurchaseRequestRepositoryPostgres } from './repository/PurchaseRequestRepositoryPostgres';
@@ -140,6 +144,11 @@ import { VoidSalesOrderUseCase } from '../Applications/use_case/sales/VoidSalesO
 import { RefundSalesOrderUseCase } from '../Applications/use_case/sales/RefundSalesOrderUseCase';
 import { GetSalesOrdersUseCase } from '../Applications/use_case/sales/GetSalesOrdersUseCase';
 import { GetInventoryDashboardUseCase } from '../Applications/use_case/inventory/GetInventoryDashboardUseCase';
+import { GetOwnerDashboardUseCase } from '../Applications/use_case/dashboard/GetOwnerDashboardUseCase';
+import { GetOutletDashboardUseCase } from '../Applications/use_case/dashboard/GetOutletDashboardUseCase';
+import { GetSalesReportUseCase } from '../Applications/use_case/reports/GetSalesReportUseCase';
+import { GetInventoryReportUseCase } from '../Applications/use_case/reports/GetInventoryReportUseCase';
+import { GetProductionReportUseCase } from '../Applications/use_case/reports/GetProductionReportUseCase';
 import { CreateRecipeUseCase } from '../Applications/use_case/recipes/CreateRecipeUseCase';
 import { UpdateRecipeUseCase } from '../Applications/use_case/recipes/UpdateRecipeUseCase';
 import { ActivateRecipeUseCase } from '../Applications/use_case/recipes/ActivateRecipeUseCase';
@@ -312,6 +321,14 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     {
       provide: SalesOrderRepository,
       useFactory: () => new SalesOrderRepositoryPostgres(pool),
+    },
+    {
+      provide: DashboardRepository,
+      useFactory: () => new DashboardRepositoryPostgres(pool),
+    },
+    {
+      provide: ReportsRepository,
+      useFactory: () => new ReportsRepositoryPostgres(pool),
     },
     {
       provide: RecipeRepository,
@@ -810,6 +827,33 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
       inject: [InventoryRepository],
     },
     {
+      provide: GetOwnerDashboardUseCase,
+      useFactory: (dashboardRepo: DashboardRepository) =>
+        new GetOwnerDashboardUseCase(dashboardRepo),
+      inject: [DashboardRepository],
+    },
+    {
+      provide: GetOutletDashboardUseCase,
+      useFactory: (dashboardRepo: DashboardRepository) =>
+        new GetOutletDashboardUseCase(dashboardRepo),
+      inject: [DashboardRepository],
+    },
+    {
+      provide: GetSalesReportUseCase,
+      useFactory: (reportsRepo: ReportsRepository) => new GetSalesReportUseCase(reportsRepo),
+      inject: [ReportsRepository],
+    },
+    {
+      provide: GetInventoryReportUseCase,
+      useFactory: (reportsRepo: ReportsRepository) => new GetInventoryReportUseCase(reportsRepo),
+      inject: [ReportsRepository],
+    },
+    {
+      provide: GetProductionReportUseCase,
+      useFactory: (reportsRepo: ReportsRepository) => new GetProductionReportUseCase(reportsRepo),
+      inject: [ReportsRepository],
+    },
+    {
       provide: CreateRecipeUseCase,
       useFactory: (
         recipeRepo: RecipeRepository,
@@ -1298,6 +1342,8 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     StockOpnameRepository,
     ShiftRepository,
     SalesOrderRepository,
+    DashboardRepository,
+    ReportsRepository,
     RecipeRepository,
     ProductionOrderRepository,
     PurchaseRequestRepository,
@@ -1376,6 +1422,11 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     RefundSalesOrderUseCase,
     GetSalesOrdersUseCase,
     GetInventoryDashboardUseCase,
+    GetOwnerDashboardUseCase,
+    GetOutletDashboardUseCase,
+    GetSalesReportUseCase,
+    GetInventoryReportUseCase,
+    GetProductionReportUseCase,
     CreateRecipeUseCase,
     UpdateRecipeUseCase,
     ActivateRecipeUseCase,
