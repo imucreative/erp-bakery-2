@@ -137,7 +137,7 @@ function statusColor(status: string): BatchStatusColor {
           </span>
         </div>
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div class="field-grid">
           <div class="flex flex-col">
             <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">Outlet</span>
             <span class="text-theme-sm text-gray-800 dark:text-white/90">{{ outletName }}</span>

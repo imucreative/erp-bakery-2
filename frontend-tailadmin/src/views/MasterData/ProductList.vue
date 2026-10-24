@@ -209,7 +209,7 @@ onMounted(() => {
       desc="Kelola produk (dengan grup, kategori, UOM, dan supplier)."
     >
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <div class="relative w-full sm:max-w-xs">
           <BaseInput
             id="product-search"

@@ -36,7 +36,7 @@ const labelClass = 'form-label'
 
 <template>
   <div class="space-y-6">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div class="field-grid">
       <!-- Source Goods Receipt -->
       <div>
         <label :class="labelClass">GR Sumber<span class="text-error-500">*</span></label>

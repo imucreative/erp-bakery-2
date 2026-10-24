@@ -97,7 +97,7 @@ onMounted(() => {
       desc="Kelola order pembelian (PO) ke vendor beserta persetujuannya."
     >
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <PurchaseOrderFilterBar
           v-model:search="search"
           v-model:status="statusFilter"

@@ -90,7 +90,7 @@ onMounted(() => {
       desc="Kelola dokumen koreksi stok (penyesuaian masuk/keluar) dengan posting stok saat diselesaikan."
     >
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <StockAdjustmentFilterBar
           v-model:search="search"
           v-model:status="statusFilter"

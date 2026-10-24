@@ -35,9 +35,9 @@ function paymentTermLabel(po: PurchaseOrder): string {
 </script>
 
 <template>
-  <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+  <dl class="field-grid">
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Status</dt>
+      <dt class="text-muted-xs uppercase">Status</dt>
       <dd class="mt-1">
         <Badge :color="statusBadgeColor(props.po.status)">
           {{ PURCHASE_ORDER_STATUS_LABELS[props.po.status] }}
@@ -45,44 +45,44 @@ function paymentTermLabel(po: PurchaseOrder): string {
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">PR Sumber</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">PR Sumber</dt>
+      <dd class="mt-1 text-value">
         {{ props.prNumber(props.po.purchaseRequestId) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Vendor</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Vendor</dt>
+      <dd class="mt-1 text-value">
         {{ props.supplierName(props.po.supplierId) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Outlet Tujuan</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Outlet Tujuan</dt>
+      <dd class="mt-1 text-value">
         {{ props.outletName(props.po.destinationOutletId) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Tanggal Order</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Tanggal Order</dt>
+      <dd class="mt-1 text-value">
         {{ formatDate(props.po.orderDate) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Termin Pembayaran</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Termin Pembayaran</dt>
+      <dd class="mt-1 text-value">
         {{ paymentTermLabel(props.po) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Estimasi Jatuh Tempo</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Estimasi Jatuh Tempo</dt>
+      <dd class="mt-1 text-value">
         {{ formatDate(props.po.estimatedPaymentDueDate) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Dibuat</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Dibuat</dt>
+      <dd class="mt-1 text-value">
         {{ formatDateTime(props.po.createdAt) }}
       </dd>
     </div>
@@ -90,23 +90,23 @@ function paymentTermLabel(po: PurchaseOrder): string {
     <!-- Totals -->
     <div class="sm:col-span-2">
       <div
-        class="mt-2 grid grid-cols-1 gap-2 rounded-xl border border-gray-200 p-4 dark:border-gray-800 sm:grid-cols-3"
+        class="mt-2 field-grid gap-2 rounded-xl border border-gray-200 p-4 dark:border-gray-800 sm:grid-cols-3"
       >
         <div>
-          <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Subtotal</dt>
-          <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+          <dt class="text-muted-xs uppercase">Subtotal</dt>
+          <dd class="mt-1 text-value">
             {{ formatRupiah(props.po.totalAmount) }}
           </dd>
         </div>
         <div>
-          <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Pajak</dt>
-          <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+          <dt class="text-muted-xs uppercase">Pajak</dt>
+          <dd class="mt-1 text-value">
             {{ formatRupiah(props.po.taxTotal) }}
           </dd>
         </div>
         <div>
-          <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Grand Total</dt>
-          <dd class="mt-1 text-theme-sm font-semibold text-gray-800 dark:text-white/90">
+          <dt class="text-muted-xs uppercase">Grand Total</dt>
+          <dd class="mt-1 text-value font-semibold">
             {{ formatRupiah(props.po.grandTotal) }}
           </dd>
         </div>
@@ -114,8 +114,8 @@ function paymentTermLabel(po: PurchaseOrder): string {
     </div>
 
     <div v-if="props.po.notes" class="sm:col-span-2">
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Catatan</dt>
-      <dd class="mt-1 text-theme-sm text-gray-700 dark:text-gray-300">{{ props.po.notes }}</dd>
+      <dt class="text-muted-xs uppercase">Catatan</dt>
+      <dd class="mt-1 text-value text-gray-700 dark:text-gray-300">{{ props.po.notes }}</dd>
     </div>
   </dl>
 </template>

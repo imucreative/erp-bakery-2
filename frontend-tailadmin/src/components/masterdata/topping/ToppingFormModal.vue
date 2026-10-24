@@ -167,7 +167,7 @@ function onSubmit(): void {
       </BaseFormField>
 
       <!-- Takaran + harga -->
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div class="field-grid">
         <BaseFormField label="Takaran / Item" field-id="topping-quantity" required>
           <div class="relative">
             <BaseInput

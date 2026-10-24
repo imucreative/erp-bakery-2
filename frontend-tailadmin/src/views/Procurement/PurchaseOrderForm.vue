@@ -41,7 +41,7 @@ import { ChevronLeft } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import { BaseButton } from '@/components/ui'
+import { BaseAlert, BaseButton } from '@/components/ui'
 import {
   PurchaseOrderHeaderFields,
   PurchaseOrderItemsEditor,
@@ -447,7 +447,7 @@ function onCancel(): void {
         icon-only
         aria-label="Kembali ke Daftar"
         title="Kembali ke Daftar"
-        class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
+        class="h-10 w-10"
         @click="onCancel"
       >
         <ChevronLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
@@ -460,9 +460,7 @@ function onCancel(): void {
     <ComponentCard :title="pageTitle">
       <div v-if="loading" class="text-muted py-10 text-center">Memuat data...</div>
 
-      <div v-else-if="loadError" class="alert-error px-4 py-3" role="alert">
-        {{ loadError }}
-      </div>
+      <BaseAlert v-else-if="loadError" :message="loadError" size="md" />
 
       <form v-else class="space-y-6" @submit.prevent="onSubmit">
         <p
@@ -509,9 +507,7 @@ function onCancel(): void {
           />
         </div>
 
-        <p v-if="formError" class="alert-error px-3 py-2">
-          {{ formError }}
-        </p>
+        <BaseAlert v-if="formError" :message="formError" size="sm" />
 
         <div class="flex justify-end gap-3 pt-2">
           <BaseButton size="sm" variant="outline" :disabled="submitting" @click="onCancel">

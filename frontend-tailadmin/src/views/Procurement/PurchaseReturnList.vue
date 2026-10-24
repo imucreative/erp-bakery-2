@@ -99,7 +99,7 @@ onMounted(() => {
       desc="Kelola retur pembelian (reversal GR) ke vendor beserta posting pengembalian stok."
     >
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <PurchaseReturnFilterBar
           v-model:search="search"
           v-model:status="statusFilter"

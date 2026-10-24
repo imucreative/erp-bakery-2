@@ -166,7 +166,7 @@ onMounted(() => {
       desc="Pemantauan batch inventaris beserta status kedaluwarsanya per produk dan outlet."
     >
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <BatchFilterBar
           v-model:outlet-id="outletId"
           v-model:product-id="productId"

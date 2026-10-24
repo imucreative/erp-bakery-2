@@ -45,7 +45,7 @@ const poPickerDisabled = computed<boolean>(() => props.disabled || props.poLocke
 
 <template>
   <div class="space-y-6">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div class="field-grid">
       <!-- Source Purchase Order -->
       <div>
         <label :class="labelClass">PO Sumber<span class="text-error-500">*</span></label>

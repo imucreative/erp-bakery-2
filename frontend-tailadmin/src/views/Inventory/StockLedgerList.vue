@@ -142,7 +142,7 @@ onMounted(() => {
       desc="Riwayat pergerakan stok (inventory movement) per produk dan outlet."
     >
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <StockLedgerFilterBar
           v-model:outlet-id="outletId"
           v-model:product-id="productId"

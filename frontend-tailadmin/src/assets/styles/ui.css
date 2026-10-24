@@ -29,6 +29,13 @@
   @apply text-theme-sm font-medium text-gray-800 dark:text-white/90;
 }
 
+/* Nilai read-only pada daftar ringkasan (`<dd>` di kartu Summary) — setegas
+   `text-strong` tapi tanpa `font-medium`, karena label di atasnya yang sudah
+   memberi penegasan. */
+@utility text-value {
+  @apply text-theme-sm text-gray-800 dark:text-white/90;
+}
+
 /* Form */
 @utility form-label {
   @apply mb-1.5 block text-theme-sm font-medium text-gray-700 dark:text-gray-400;
@@ -73,6 +80,34 @@
 
 @utility panel-card {
   @apply rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.02];
+}
+
+/* Kotak ikon (tile) di depan item daftar — ikon lampiran, avatar, status. Ukurannya
+   tetap 10 (40px); kalau perlu ukuran lain, timpa `h-*`/`w-*` di call-site (utility
+   core dipancarkan setelah `@utility`). */
+@utility icon-tile {
+  @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500 dark:bg-white/[0.05] dark:text-gray-400;
+}
+
+/* Baris toolbar — kumpulan filter/field di awal, tombol aksi di akhir; menumpuk
+   vertikal di layar sempit. Margin sengaja tidak disertakan (`mt-3` di call-site
+   kalau perlu) sama seperti snippet heading. */
+@utility toolbar-row {
+  @apply flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between;
+}
+
+/* Kisi dua kolom untuk pasangan field form atau label/nilai ringkasan: menumpuk
+   di layar sempit, dua kolom mulai 640px. Varisan yang butuh lebih banyak kolom
+   tinggal menambah `xl:grid-cols-3` dan sejenisnya di call-site. */
+@utility field-grid {
+  @apply grid grid-cols-1 gap-4 sm:grid-cols-2;
+}
+
+/* Bar konfirmasi inline (mis. hapus lampiran) — kulit error di atas tata letak
+   toolbar-row. `alert-error` tidak dipakai di sini karena bingkainya `/40` dan
+   sengaja tidak berisi tata letak; bar ini justru butuh `flex` + `gap`. */
+@utility confirm-bar {
+  @apply flex flex-col gap-3 rounded-lg border border-error-500/30 bg-error-50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between dark:bg-error-500/10;
 }
 
 /* Timeline — garis vertikal (rail) dan titik per entri (dot). Keduanya selalu

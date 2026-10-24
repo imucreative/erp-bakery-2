@@ -116,7 +116,7 @@ void fetchList()
 
     <ComponentCard title="Units of Measure" desc="Kelola satuan ukur untuk perusahaan Anda.">
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <div class="relative w-full sm:max-w-xs">
           <BaseInput id="uom-search" v-model="search" placeholder="Cari satuan..." />
         </div>

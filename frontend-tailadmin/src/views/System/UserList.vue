@@ -174,7 +174,7 @@ onMounted(() => {
     <PageBreadcrumb :pageTitle="pageTitle" />
 
     <ComponentCard title="Users" desc="Kelola pengguna, role, dan akses outlet perusahaan Anda.">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <div class="relative w-full sm:max-w-xs">
           <BaseInput id="user-search" v-model="search" placeholder="Cari user (nama / email)..." />
         </div>

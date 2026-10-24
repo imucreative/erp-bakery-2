@@ -26,6 +26,7 @@ import {
   SalesOrderActionModals,
   type SalesOrderAction,
 } from '@/components/sales'
+import { BaseButton } from '@/components/ui'
 import { usePermission } from '@/composables/usePermission'
 import { toMessage } from '@/composables/useSalesOrders'
 import { salesService, type SalesOrder } from '@/services/sales.service'
@@ -145,15 +146,16 @@ async function onConfirmAction(reason: string): Promise<void> {
       <!-- Page header: back (icon-only) + title on the start, lifecycle actions on the end -->
       <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <button
-            type="button"
+          <BaseButton
+            variant="outline"
+            icon-only
             aria-label="Kembali ke Daftar"
             title="Kembali ke Daftar"
-            class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
+            class="h-10 w-10"
             @click="goToList"
           >
             <ChevronLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
-          </button>
+          </BaseButton>
           <h3 class="card-title">
             {{ order.invoiceNumber }}
           </h3>

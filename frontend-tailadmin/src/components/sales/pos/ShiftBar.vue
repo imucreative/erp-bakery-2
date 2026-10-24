@@ -23,7 +23,7 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between dark:border-gray-800 dark:bg-white/[0.03]"
+    class="toolbar-row rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]"
   >
     <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-theme-sm">
       <span class="flex items-center gap-2 text-gray-700 dark:text-gray-300">

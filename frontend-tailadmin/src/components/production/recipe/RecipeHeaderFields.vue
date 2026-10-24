@@ -96,7 +96,7 @@ function selectProduct(product: Product): void {
 
 <template>
   <div class="space-y-6">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div class="field-grid">
       <!-- Recipe name -->
       <div class="sm:col-span-2">
         <label :class="labelClass">Nama Resep<span class="text-error-500">*</span></label>

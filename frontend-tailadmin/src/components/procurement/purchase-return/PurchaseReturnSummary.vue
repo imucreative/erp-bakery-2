@@ -23,7 +23,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+  <dl class="field-grid">
     <div>
       <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Status</dt>
       <dd class="mt-1">

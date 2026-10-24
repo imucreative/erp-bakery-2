@@ -47,7 +47,7 @@ function actorLabel(log: PurchaseOrderStatusLog): string {
             oleh <span class="font-medium">{{ actorLabel(log) }}</span>
           </p>
           <p v-if="log.note" class="text-muted">"{{ log.note }}"</p>
-          <p class="text-theme-xs text-gray-400 dark:text-gray-500">
+          <p class="text-muted-xs">
             {{ formatDateTime(log.createdAt) }}
           </p>
         </div>

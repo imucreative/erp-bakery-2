@@ -31,7 +31,7 @@ const outletOptions = (outlets: Outlet[]) =>
 
 <template>
   <div class="space-y-6">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div class="field-grid">
       <div>
         <label :class="labelClass">Outlet Tujuan<span class="text-error-500">*</span></label>
         <BaseSelect

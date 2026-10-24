@@ -81,7 +81,7 @@ const prPickerDisabled = computed<boolean>(() => props.disabled || props.prLocke
 
 <template>
   <div class="space-y-6">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div class="field-grid">
       <!-- Source Purchase Request — text autocomplete over the pre-filtered list -->
       <div>
         <label :class="labelClass">PR Sumber<span class="text-error-500">*</span></label>
@@ -98,7 +98,7 @@ const prPickerDisabled = computed<boolean>(() => props.disabled || props.prLocke
           :disabled="prPickerDisabled"
           @update:model-value="emit('update:purchaseRequestId', $event)"
         />
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
+        <p class="mt-1 text-muted-xs">
           Hanya PR berstatus disetujui yang dapat dijadikan sumber PO.
         </p>
       </div>
@@ -106,14 +106,10 @@ const prPickerDisabled = computed<boolean>(() => props.disabled || props.prLocke
       <!-- Destination outlet (inherited from PR, read-only) -->
       <div>
         <label :class="labelClass">Outlet Tujuan</label>
-        <div
-          class="flex h-11 w-full items-center rounded-lg border border-gray-200 bg-gray-50 px-4 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/[0.02] dark:text-gray-300"
-        >
+        <div class="form-readonly flex h-11 w-full items-center dark:bg-white/[0.02]">
           {{ props.destinationOutletLabel || 'Diwarisi dari PR sumber' }}
         </div>
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
-          Diwarisi dari PR sumber (tidak dapat diubah).
-        </p>
+        <p class="mt-1 text-muted-xs">Diwarisi dari PR sumber (tidak dapat diubah).</p>
       </div>
 
       <!-- Supplier / Vendor — text autocomplete -->
@@ -162,7 +158,7 @@ const prPickerDisabled = computed<boolean>(() => props.disabled || props.prLocke
           :disabled="props.disabled"
           @update:model-value="emit('update:paymentTermId', $event)"
         />
-        <p v-if="props.duePreview" class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
+        <p v-if="props.duePreview" class="mt-1 text-muted-xs">
           {{ props.duePreview }}
         </p>
       </div>

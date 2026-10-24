@@ -112,23 +112,42 @@ src/
 - **Core snippet classes** (`src/assets/styles/ui.css`, declared with `@utility`): use
   `page-title` / `card-title` / `modal-title` for headings, `text-muted` for secondary text
   (`text-muted-xs` for dimmer placeholders like an empty-cell `—`, `text-strong` for the primary
-  text of a list row such as an attachment name or comment author),
+  text of a list row such as an attachment name or comment author, `text-value` for the read-only
+  value of a summary list — same as `text-strong` without `font-medium`),
   `form-label` / `form-hint` / `form-error` for field text, `form-readonly` for a read-only
   value shown in place of an input (SKU, email, code, parent group name),
   `alert-error` / `alert-success` /
   `alert-warning` / `alert-info` for banners, `panel-muted` for empty/loading panels
   (add `border-dashed` at the call site when needed), `panel-card` for nested item cards
-  (attachment/comment rows), `timeline-rail` + `timeline-dot` for status timelines (rail on the
+  (attachment/comment rows), `icon-tile` for the square icon in front of a list row (attachment
+  icon, avatar — 40px tile, override `h-*`/`w-*` at the call site for another size),
+  `toolbar-row` for a filter/actions bar (stacks under 640px; add margin at the call site),
+  `field-grid` for a two-column form/summary grid (stacks under 640px; `gap-*` and `sm:grid-cols-*`
+  are plain core utilities, so overriding them at the call site works and keeps the snippet's
+  `display`/`grid-cols-1` base — `PurchaseOrderSummary` uses `field-grid gap-2 sm:grid-cols-3` for
+  the totals box),
+  `confirm-bar` for an inline destructive confirmation (pair it with `mt-3`; do not use
+  `alert-error` here — that snippet carries text color and no layout because it pairs with
+  `BaseAlert`),
+  `timeline-rail` + `timeline-dot` for status timelines (rail on the
   `<ol>`, dot on the first `<span>` inside each `relative` `<li>`; always use them as a pair),
   and `no-scrollbar` / `custom-scrollbar` for
   scroll containers. Prefer these over retyping the long class chain. Custom utilities are
   emitted BEFORE core utilities, so a call-site utility always wins
-  (e.g. `class="modal-title mt-4"`) without `!important`. Snippets deliberately exclude
+  (e.g. `class="modal-title mt-4"`) without `!important`. Ordering is per property category,
+  though — plain layout utilities like `.flex`/`.h-11` are emitted earlier, which is still safe
+  because snippets such as `form-readonly` set no `display`/`height` (`PurchaseOrderHeaderFields`
+  overrides it with `form-readonly flex h-11 w-full items-center dark:bg-white/[0.02]`).
+  Snippets deliberately exclude
   margin (headings) and padding (alerts) so callers can set density.
 - **Shared components win**: banner = `BaseAlert`, modal = `BaseModal` (backdrop, Esc-close,
   `role="dialog"`, `size` and `scrollable` are already handled), table shell/error = `BaseTable`,
   form field text = `BaseFormField`. Do not re-create `fixed inset-0` modal wrappers or
-  hand-written `alert-*` divs in feature components.
+  hand-written `alert-*` divs in feature components. The same applies to `class` on `BaseButton`:
+  a `variant` already ships its own layout/color/ring/hover classes, so pass only what differs
+  (e.g. `class="h-10 w-10"` on an `icon-only` back button) instead of re-typing the variant's
+  chain — later core utilities win over `@utility` rules, so repeating it can silently lose to
+  the component's own classes.
 - **Theme Tokens**: Always use predefined theme tokens:
   - **Colors**: `brand` (`25`–`950`), `gray` (`25`–`950`), `blue-light` (`25`–`950`), `orange` (`25`–`950`), `success`, `error`, `warning`.
   - **Typography**: `font-outfit`, `text-theme-xs/sm/xl`, `text-title-sm/md/lg/xl/2xl`.

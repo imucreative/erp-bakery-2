@@ -20,7 +20,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+  <dl class="field-grid">
     <div>
       <dt class="text-muted-xs uppercase">Status</dt>
       <dd class="mt-1">

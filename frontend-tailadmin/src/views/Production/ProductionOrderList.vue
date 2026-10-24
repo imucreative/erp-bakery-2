@@ -88,7 +88,7 @@ onMounted(() => {
       desc="Perintah produksi instan: konversi bahan baku menjadi barang jadi melalui resep (BOM) dalam satu aksi."
     >
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <ProductionOrderFilterBar
           v-model:search="search"
           v-model:outlet="outletFilter"

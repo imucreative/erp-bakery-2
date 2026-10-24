@@ -121,7 +121,7 @@ onMounted(() => {
       desc="Kelola resep produksi (Bill of Materials) berversi: susun bahan, aktifkan, atau arsipkan."
     >
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <RecipeFilterBar
           v-model:search="search"
           v-model:status="statusFilter"

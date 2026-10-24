@@ -156,7 +156,7 @@ function onSubmit(): void {
         <BaseInput id="user-name" v-model="name" placeholder="Nama lengkap" />
       </BaseFormField>
 
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div class="field-grid">
         <BaseFormField label="Email" field-id="user-email" :required="!isEdit">
           <BaseInput
             v-if="!isEdit"

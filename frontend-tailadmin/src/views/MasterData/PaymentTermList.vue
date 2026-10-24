@@ -133,7 +133,7 @@ void fetchList()
       desc="Kelola termin pembayaran untuk supplier & transaksi."
     >
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div class="w-full sm:max-w-xs">
             <BaseInput

@@ -130,7 +130,7 @@ function onSubmit(): void {
     </h4>
 
     <form class="space-y-4" @submit.prevent="onSubmit">
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div class="field-grid">
         <BaseFormField label="Kode" field-id="role-code" :required="!isEdit">
           <BaseInput
             v-if="isEdit"

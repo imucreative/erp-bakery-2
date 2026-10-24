@@ -68,7 +68,7 @@ onMounted(() => {
 
     <ComponentCard title="Stock On Hand" desc="Pantau saldo stok tersedia per produk dan outlet.">
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <StockOnHandFilterBar
           v-model:search="search"
           v-model:outlet-id="outletId"

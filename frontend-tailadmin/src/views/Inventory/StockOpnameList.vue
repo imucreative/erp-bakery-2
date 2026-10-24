@@ -87,7 +87,7 @@ onMounted(() => {
       desc="Kelola dokumen penghitungan stok fisik per outlet; selisih direkonsiliasi otomatis saat diselesaikan."
     >
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <StockOpnameFilterBar
           v-model:search="search"
           v-model:status="statusFilter"

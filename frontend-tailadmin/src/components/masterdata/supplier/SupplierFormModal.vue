@@ -160,7 +160,7 @@ function onSubmit(): void {
         <BaseInput id="supplier-name" v-model="name" placeholder="mis. PT Tepung Sejahtera" />
       </BaseFormField>
 
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div class="field-grid">
         <BaseFormField label="PIC" field-id="supplier-pic">
           <BaseInput id="supplier-pic" v-model="picName" placeholder="Nama penanggung jawab" />
         </BaseFormField>

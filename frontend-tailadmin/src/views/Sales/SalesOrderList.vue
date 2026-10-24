@@ -81,7 +81,7 @@ onMounted(() => {
       title="Sales Orders"
       desc="Riwayat transaksi penjualan POS beserta status pembayaran dan refund."
     >
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <SalesOrderFilterBar
           v-model:search="search"
           v-model:status="statusFilter"

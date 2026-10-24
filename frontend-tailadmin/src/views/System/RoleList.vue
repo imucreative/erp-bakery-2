@@ -157,7 +157,7 @@ onMounted(() => {
     <PageBreadcrumb :pageTitle="pageTitle" />
 
     <ComponentCard title="Roles" desc="Kelola role beserta permission-nya.">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <div class="relative w-full sm:max-w-xs">
           <BaseInput id="role-search" v-model="search" placeholder="Cari role..." />
         </div>

@@ -222,7 +222,7 @@ function onSubmit(): void {
     </h4>
 
     <form class="space-y-4" @submit.prevent="onSubmit">
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div class="field-grid">
         <!-- SKU -->
         <BaseFormField label="SKU" field-id="product-sku" required>
           <BaseInput v-if="!isEdit" id="product-sku" v-model="sku" placeholder="SKU-ROTI-001" />
@@ -240,7 +240,7 @@ function onSubmit(): void {
       </BaseFormField>
 
       <!-- Relations -->
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div class="field-grid">
         <BaseFormField label="Grup Produk" field-id="product-group" required>
           <BaseSelect
             v-if="!isEdit"
@@ -293,7 +293,7 @@ function onSubmit(): void {
       </div>
 
       <!-- Type + prices -->
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div class="field-grid">
         <BaseFormField label="Tipe Produk" field-id="product-type">
           <BaseSelect id="product-type" v-model="productType" :options="productTypeOptions" />
         </BaseFormField>

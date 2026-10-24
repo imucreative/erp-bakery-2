@@ -150,7 +150,7 @@ onMounted(() => {
       desc="Katalog topping global untuk produk made-to-order di POS."
     >
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <div class="relative w-full sm:max-w-xs">
           <BaseInput
             id="topping-search"

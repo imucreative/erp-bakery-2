@@ -176,7 +176,7 @@ onMounted(() => {
         />
       </div>
 
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <div class="relative w-full sm:w-48">
           <BaseSelect
             id="gr-comment-category"

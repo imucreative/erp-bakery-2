@@ -86,7 +86,7 @@ onMounted(() => {
       desc="Kelola permintaan pembelian (PR) beserta persetujuannya."
     >
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <PurchaseRequestFilterBar v-model:search="search" v-model:status="statusFilter" />
         <BaseButton v-if="canCreate" size="sm" variant="primary" @click="goToCreate">
           <template #start-icon>

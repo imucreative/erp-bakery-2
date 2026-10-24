@@ -73,7 +73,7 @@ const hasStock = computed<boolean>(() => (props.info?.producibleQty ?? 0) > 0)
     <!-- Loaded info -->
     <div v-else-if="props.info" class="space-y-4">
       <!-- Recipe + max producible -->
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div class="field-grid">
         <div>
           <p class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">Resep Aktif</p>
           <p class="mt-1 text-theme-sm font-medium text-gray-800 dark:text-white/90">

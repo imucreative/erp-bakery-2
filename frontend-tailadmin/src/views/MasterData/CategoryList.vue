@@ -142,7 +142,7 @@ onMounted(() => {
       desc="Kelola kategori produk (dikelompokkan per grup produk)."
     >
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <div class="relative w-full sm:max-w-xs">
           <BaseInput id="category-search" v-model="search" placeholder="Cari kategori..." />
         </div>

@@ -392,7 +392,7 @@ async function onDelete(row: ProductUomConversion): Promise<void> {
       <h5 class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
         Tambah satuan alternatif
       </h5>
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div class="field-grid">
         <BaseFormField label="Satuan alternatif" field-id="conversion-uom" required>
           <BaseSelect
             id="conversion-uom"

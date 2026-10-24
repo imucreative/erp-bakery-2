@@ -256,10 +256,10 @@ function removeRow(index: number): void {
           <!-- Product (read-only — dictated by the source PR item) -->
           <BaseTableCell class="align-top">
             <div class="flex min-h-11 flex-col justify-center">
-              <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+              <span class="text-strong">
                 {{ productLabel(row.productId) }}
               </span>
-              <span class="text-theme-xs text-gray-400 dark:text-gray-500"> Dari item PR </span>
+              <span class="text-muted-xs"> Dari item PR </span>
             </div>
           </BaseTableCell>
           <!-- Quantity (capped at the matching PR item quantity) -->
@@ -274,10 +274,7 @@ function removeRow(index: number): void {
               :disabled="disabled"
               @update:model-value="updateRow(index, { quantity: Number($event) })"
             />
-            <span
-              v-if="maxQtyForRow(row) > 0"
-              class="mt-1 block text-theme-xs text-gray-400 dark:text-gray-500"
-            >
+            <span v-if="maxQtyForRow(row) > 0" class="mt-1 block text-muted-xs">
               Maks {{ maxQtyForRow(row) }} (sisa PR)
             </span>
           </BaseTableCell>
@@ -293,7 +290,7 @@ function removeRow(index: number): void {
             />
             <span
               v-if="row.productId && validUoms.isLoading(row.productId)"
-              class="mt-1 block text-theme-xs text-gray-400 dark:text-gray-500"
+              class="mt-1 block text-muted-xs"
             >
               Memuat satuan...
             </span>
@@ -397,7 +394,7 @@ function removeRow(index: number): void {
       <Plus class="h-4 w-4 text-gray-400 dark:text-gray-500" aria-hidden="true" />
     </div>
 
-    <p class="text-theme-xs text-gray-400 dark:text-gray-500">
+    <p class="text-muted-xs">
       Item hanya dapat dipilih dari item PR sumber. Kuantitas tidak boleh melebihi sisa
       (outstanding) PR setelah dikurangi PO lain yang masih aktif. Subtotal, pajak & total di atas
       hanya pratinjau; nilai final dihitung oleh server.

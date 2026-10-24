@@ -209,9 +209,7 @@ onMounted(() => {
           class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.02]"
         >
           <div class="flex items-start gap-3">
-            <span
-              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500 dark:bg-white/[0.05] dark:text-gray-400"
-            >
+            <span class="icon-tile">
               <ImageIcon v-if="isImage(attachment.mimeType)" class="h-5 w-5" aria-hidden="true" />
               <FileText v-else class="h-5 w-5" aria-hidden="true" />
             </span>
@@ -255,10 +253,7 @@ onMounted(() => {
           </div>
 
           <!-- Inline delete confirmation -->
-          <div
-            v-if="canManage && confirmDeleteId === attachment.id"
-            class="mt-3 flex flex-col gap-3 rounded-lg border border-error-500/30 bg-error-50 px-3 py-2.5 dark:bg-error-500/10 sm:flex-row sm:items-center sm:justify-between"
-          >
+          <div v-if="canManage && confirmDeleteId === attachment.id" class="mt-3 confirm-bar">
             <span class="text-theme-sm text-error-600 dark:text-error-400">
               Hapus lampiran ini? Tindakan ini permanen.
             </span>
