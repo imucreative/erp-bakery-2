@@ -32,9 +32,16 @@
  *   total    = subtotal + tax
  */
 import { computed, onMounted, watch } from 'vue'
-import { Trash2 } from 'lucide-vue-next'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
-import { PlusIcon } from '@/icons'
+import { Plus, Trash2 } from 'lucide-vue-next'
+import {
+  BaseButton,
+  BaseInput,
+  BaseSelect,
+  BaseTable,
+  BaseTableCell,
+  BaseTableHead,
+  BaseTableRow,
+} from '@/components/ui'
 import { formatRupiah } from '@/lib/format'
 import type { Product } from '@/services/product.service'
 import type { Uom } from '@/services/uom.service'
@@ -77,9 +84,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'update:modelValue', rows: EditorItemRow[]): void
 }>()
-
-const inputClass =
-  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
 
 const productMap = computed<Map<string, Product>>(
   () => new Map(props.products.map((p) => [p.id, p])),
@@ -231,217 +235,169 @@ function removeRow(index: number): void {
 
 <template>
   <div class="space-y-3">
-    <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
-      <table class="min-w-full">
-        <thead>
-          <tr class="border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]">
-            <th class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Produk
-            </th>
-            <th class="w-28 px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Qty
-            </th>
-            <th class="w-32 px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              UOM
-            </th>
-            <th class="w-36 px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Harga Satuan
-            </th>
-            <th class="w-24 px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Pajak %
-            </th>
-            <th class="w-40 px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Total
-            </th>
-            <th class="w-16 px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Aksi
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(row, index) in modelValue"
-            :key="row.productId || index"
-            class="border-b border-gray-100 last:border-0 dark:border-gray-800"
-          >
-            <!-- Product (read-only — dictated by the source PR item) -->
-            <td class="px-4 py-3 align-top">
-              <div class="flex min-h-11 flex-col justify-center">
-                <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
-                  {{ productLabel(row.productId) }}
-                </span>
-                <span class="text-theme-xs text-gray-400 dark:text-gray-500">
-                  Dari item PR
-                </span>
-              </div>
-            </td>
-            <!-- Quantity (capped at the matching PR item quantity) -->
-            <td class="px-4 py-3 align-top">
-              <input
-                :value="row.quantity"
-                type="number"
-                min="0"
-                :max="maxQtyForRow(row) || undefined"
-                step="any"
-                :disabled="disabled"
-                :class="inputClass"
-                @input="updateRow(index, { quantity: Number(($event.target as HTMLInputElement).value) })"
-              />
-              <span
-                v-if="maxQtyForRow(row) > 0"
-                class="mt-1 block text-theme-xs text-gray-400 dark:text-gray-500"
-              >
-                Maks {{ maxQtyForRow(row) }} (sisa PR)
+    <BaseTable aria-label="Editor item purchase order">
+      <template #header>
+        <BaseTableRow variant="header">
+          <BaseTableHead>Produk</BaseTableHead>
+          <BaseTableHead>Qty</BaseTableHead>
+          <BaseTableHead>UOM</BaseTableHead>
+          <BaseTableHead>Harga Satuan</BaseTableHead>
+          <BaseTableHead>Pajak %</BaseTableHead>
+          <BaseTableHead align="end">Total</BaseTableHead>
+          <BaseTableHead align="end">Aksi</BaseTableHead>
+        </BaseTableRow>
+      </template>
+      <template #body>
+        <BaseTableRow
+          v-for="(row, index) in modelValue"
+          :key="row.productId || index"
+          class="border-b border-gray-100 last:border-0 dark:border-gray-800"
+        >
+          <!-- Product (read-only — dictated by the source PR item) -->
+          <BaseTableCell class="align-top">
+            <div class="flex min-h-11 flex-col justify-center">
+              <span class="text-strong">
+                {{ productLabel(row.productId) }}
               </span>
-            </td>
-            <!-- UOM -->
-            <td class="px-4 py-3 align-top">
-              <div class="relative">
-                <select
-                  :value="row.uomId"
-                  :disabled="disabled"
-                  :class="[inputClass, 'appearance-none pe-10']"
-                  @change="updateRow(index, { uomId: ($event.target as HTMLSelectElement).value })"
-                >
-                  <option value="" disabled>Pilih UOM</option>
-                  <option v-for="u in uomOptionsForRow(row)" :key="u.id" :value="u.id">
-                    {{ u.label }}
-                  </option>
-                </select>
-                <ChevronDownIcon
-                  class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-                />
-              </div>
-              <span
-                v-if="row.productId && validUoms.isLoading(row.productId)"
-                class="mt-1 block text-theme-xs text-gray-400 dark:text-gray-500"
-              >
-                Memuat satuan...
-              </span>
-            </td>
-            <!-- Unit Price -->
-            <td class="px-4 py-3 align-top">
-              <input
-                :value="row.unitPrice"
-                type="number"
-                min="0"
-                step="any"
-                :disabled="disabled"
-                :class="inputClass"
-                @input="updateRow(index, { unitPrice: Number(($event.target as HTMLInputElement).value) })"
-              />
-            </td>
-            <!-- Tax % -->
-            <td class="px-4 py-3 align-top">
-              <input
-                :value="row.taxPercent"
-                type="number"
-                min="0"
-                step="any"
-                :disabled="disabled"
-                :class="inputClass"
-                @input="updateRow(index, { taxPercent: Number(($event.target as HTMLInputElement).value) })"
-              />
-            </td>
-            <!-- Total (preview, read-only) -->
-            <td class="px-4 py-3 text-end align-middle text-theme-sm text-gray-700 dark:text-gray-300">
-              {{ formatRupiah(rowTotal(row)) }}
-            </td>
-            <!-- Remove -->
-            <td class="px-4 py-3 text-end align-middle">
-              <button
-                type="button"
-                aria-label="Hapus baris"
-                title="Hapus baris"
-                :disabled="disabled"
-                class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-error-500 ring-1 ring-inset ring-error-200 transition hover:bg-error-50 hover:text-error-600 disabled:cursor-not-allowed disabled:opacity-40 dark:ring-error-500/30 dark:hover:bg-error-500/10"
-                @click="removeRow(index)"
-              >
-                <Trash2 class="h-4 w-4" aria-hidden="true" />
-              </button>
-            </td>
-          </tr>
+              <span class="text-muted-xs"> Dari item PR </span>
+            </div>
+          </BaseTableCell>
+          <!-- Quantity (capped at the matching PR item quantity) -->
+          <BaseTableCell class="align-top">
+            <BaseInput
+              :id="`purchase-order-quantity-${index}`"
+              :model-value="row.quantity"
+              type="number"
+              min="0"
+              :max="maxQtyForRow(row) || undefined"
+              step="any"
+              :disabled="disabled"
+              @update:model-value="updateRow(index, { quantity: Number($event) })"
+            />
+            <span v-if="maxQtyForRow(row) > 0" class="mt-1 block text-muted-xs">
+              Maks {{ maxQtyForRow(row) }} (sisa PR)
+            </span>
+          </BaseTableCell>
+          <!-- UOM -->
+          <BaseTableCell class="align-top">
+            <BaseSelect
+              :id="`purchase-order-uom-${index}`"
+              :model-value="row.uomId"
+              :options="uomOptionsForRow(row).map((u) => ({ value: u.id, label: u.label }))"
+              placeholder="Pilih UOM"
+              :disabled="disabled"
+              @update:model-value="updateRow(index, { uomId: $event })"
+            />
+            <span
+              v-if="row.productId && validUoms.isLoading(row.productId)"
+              class="mt-1 block text-muted-xs"
+            >
+              Memuat satuan...
+            </span>
+          </BaseTableCell>
+          <!-- Unit Price -->
+          <BaseTableCell class="align-top">
+            <BaseInput
+              :id="`purchase-order-price-${index}`"
+              :model-value="row.unitPrice"
+              type="number"
+              min="0"
+              step="any"
+              :disabled="disabled"
+              @update:model-value="updateRow(index, { unitPrice: Number($event) })"
+            />
+          </BaseTableCell>
+          <!-- Tax % -->
+          <BaseTableCell class="align-top">
+            <BaseInput
+              :id="`purchase-order-tax-${index}`"
+              :model-value="row.taxPercent"
+              type="number"
+              min="0"
+              step="any"
+              :disabled="disabled"
+              @update:model-value="updateRow(index, { taxPercent: Number($event) })"
+            />
+          </BaseTableCell>
+          <!-- Total (preview, read-only) -->
+          <BaseTableCell align="end" class="align-middle">
+            {{ formatRupiah(rowTotal(row)) }}
+          </BaseTableCell>
+          <!-- Remove -->
+          <BaseTableCell align="end" class="align-middle">
+            <BaseButton
+              size="sm"
+              variant="danger"
+              icon-only
+              aria-label="Hapus baris"
+              title="Hapus baris"
+              :disabled="disabled"
+              @click="removeRow(index)"
+            >
+              <Trash2 class="h-4 w-4" aria-hidden="true" />
+            </BaseButton>
+          </BaseTableCell>
+        </BaseTableRow>
 
-          <tr v-if="modelValue.length === 0">
-            <td
-              colspan="7"
-              class="px-4 py-6 text-center text-theme-sm text-gray-500 dark:text-gray-400"
-            >
-              <template v-if="prItems.length === 0">
-                Pilih PR sumber untuk memuat item yang masih tersisa (outstanding).
-              </template>
-              <template v-else>
-                Belum ada item. Tambahkan dari item PR di bawah.
-              </template>
-            </td>
-          </tr>
-        </tbody>
-        <tfoot v-if="modelValue.length > 0">
-          <tr class="border-t border-gray-100 dark:border-gray-800">
-            <td
-              colspan="5"
-              class="px-4 py-2 text-end text-theme-sm font-medium text-gray-600 dark:text-gray-300"
-            >
-              Subtotal
-            </td>
-            <td class="px-4 py-2 text-end text-theme-sm text-gray-700 dark:text-gray-300">
-              {{ formatRupiah(subtotalSum) }}
-            </td>
-            <td></td>
-          </tr>
-          <tr>
-            <td
-              colspan="5"
-              class="px-4 py-2 text-end text-theme-sm font-medium text-gray-600 dark:text-gray-300"
-            >
-              Pajak
-            </td>
-            <td class="px-4 py-2 text-end text-theme-sm text-gray-700 dark:text-gray-300">
-              {{ formatRupiah(taxSum) }}
-            </td>
-            <td></td>
-          </tr>
-          <tr class="border-t border-gray-200 dark:border-gray-800">
-            <td
-              colspan="5"
-              class="px-4 py-3 text-end text-theme-sm font-semibold text-gray-700 dark:text-gray-200"
-            >
-              Grand Total
-            </td>
-            <td class="px-4 py-3 text-end text-theme-sm font-semibold text-gray-800 dark:text-white/90">
-              {{ formatRupiah(grandTotal) }}
-            </td>
-            <td></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
+        <BaseTableRow v-if="modelValue.length === 0">
+          <BaseTableCell colspan="7" align="center">
+            <template v-if="prItems.length === 0">
+              Pilih PR sumber untuk memuat item yang masih tersisa (outstanding).
+            </template>
+            <template v-else> Belum ada item. Tambahkan dari item PR di bawah. </template>
+          </BaseTableCell>
+        </BaseTableRow>
+      </template>
+      <template v-if="modelValue.length > 0" #footer>
+        <BaseTableRow>
+          <BaseTableCell colspan="5" align="end" emphasis="medium">Subtotal</BaseTableCell>
+          <BaseTableCell align="end">
+            {{ formatRupiah(subtotalSum) }}
+          </BaseTableCell>
+          <BaseTableCell />
+        </BaseTableRow>
+        <BaseTableRow>
+          <BaseTableCell colspan="5" align="end" emphasis="medium">Pajak</BaseTableCell>
+          <BaseTableCell align="end">
+            {{ formatRupiah(taxSum) }}
+          </BaseTableCell>
+          <BaseTableCell />
+        </BaseTableRow>
+        <BaseTableRow>
+          <BaseTableCell colspan="5" align="end" emphasis="medium">Grand Total</BaseTableCell>
+          <BaseTableCell align="end" emphasis="medium">
+            {{ formatRupiah(grandTotal) }}
+          </BaseTableCell>
+          <BaseTableCell />
+        </BaseTableRow>
+      </template>
+    </BaseTable>
 
     <!-- Add from PR items — only items not already in the table; never a product catalog -->
     <div v-if="!disabled && addableItems.length > 0" class="flex items-center gap-2">
       <div class="relative w-full max-w-xs">
-        <select
-          value=""
-          :class="[inputClass, 'appearance-none pe-10']"
+        <BaseSelect
+          id="purchase-order-add-item"
+          model-value=""
+          :options="
+            addableItems.map((item) => ({
+              value: item.productId,
+              label: productLabel(item.productId),
+            }))
+          "
+          placeholder="Tambah dari item PR..."
           aria-label="Tambah dari item PR"
-          @change="onAddFromPr(($event.target as HTMLSelectElement).value); ($event.target as HTMLSelectElement).value = ''"
+          @update:model-value="onAddFromPr($event)"
         >
-          <option value="" disabled>Tambah dari item PR...</option>
-          <option v-for="item in addableItems" :key="item.productId" :value="item.productId">
-            {{ productLabel(item.productId) }}
-          </option>
-        </select>
-        <ChevronDownIcon
-          class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-        />
+        </BaseSelect>
       </div>
-      <PlusIcon class="h-4 w-4 text-gray-400 dark:text-gray-500" aria-hidden="true" />
+      <Plus class="h-4 w-4 text-gray-400 dark:text-gray-500" aria-hidden="true" />
     </div>
 
-    <p class="text-theme-xs text-gray-400 dark:text-gray-500">
-      Item hanya dapat dipilih dari item PR sumber. Kuantitas tidak boleh melebihi
-      sisa (outstanding) PR setelah dikurangi PO lain yang masih aktif.
-      Subtotal, pajak & total di atas hanya pratinjau; nilai final dihitung oleh server.
+    <p class="text-muted-xs">
+      Item hanya dapat dipilih dari item PR sumber. Kuantitas tidak boleh melebihi sisa
+      (outstanding) PR setelah dikurangi PO lain yang masih aktif. Subtotal, pajak & total di atas
+      hanya pratinjau; nilai final dihitung oleh server.
     </p>
   </div>
 </template>

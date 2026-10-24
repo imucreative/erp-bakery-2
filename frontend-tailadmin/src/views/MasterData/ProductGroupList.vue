@@ -5,10 +5,11 @@
  * components. This view wires them and owns modal open/mode state.
  */
 import { computed, ref } from 'vue'
+import { Plus } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import Button from '@/components/ui/Button.vue'
+import { BaseButton, BaseInput, BaseTablePagination } from '@/components/ui'
 import ProductGroupTable from '@/components/masterdata/product-group/ProductGroupTable.vue'
 import ProductGroupFormModal from '@/components/masterdata/product-group/ProductGroupFormModal.vue'
 import ProductGroupDeleteModal from '@/components/masterdata/product-group/ProductGroupDeleteModal.vue'
@@ -126,18 +127,16 @@ void fetchList()
 
     <ComponentCard title="Product Groups" desc="Kelola grup produk untuk perusahaan Anda.">
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <div class="relative w-full sm:max-w-xs">
-          <input
-            v-model="search"
-            type="text"
-            placeholder="Cari grup produk..."
-            class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-          />
+          <BaseInput id="product-group-search" v-model="search" placeholder="Cari grup produk..." />
         </div>
-        <Button v-if="canManage" size="sm" variant="primary" :on-click="openCreate">
-          + Tambah Grup
-        </Button>
+        <BaseButton v-if="canManage" size="sm" variant="primary" @click="openCreate">
+          <template #start-icon>
+            <Plus class="h-4 w-4" aria-hidden="true" />
+          </template>
+          Tambah Grup
+        </BaseButton>
       </div>
 
       <ProductGroupTable
@@ -150,25 +149,17 @@ void fetchList()
       />
 
       <!-- Pagination -->
-      <div
+      <BaseTablePagination
         v-if="!loading && !errorMessage && items.length > 0"
-        class="flex flex-col items-center justify-between gap-3 pt-2 sm:flex-row"
-      >
-        <span class="text-theme-sm text-gray-500 dark:text-gray-400">
-          Menampilkan {{ items.length }} dari {{ meta.total }} data
-        </span>
-        <div class="flex items-center gap-2">
-          <Button size="sm" variant="outline" :disabled="!canPrev" :on-click="prevPage">
-            Sebelumnya
-          </Button>
-          <span class="text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ page }} / {{ totalPages }}
-          </span>
-          <Button size="sm" variant="outline" :disabled="!canNext" :on-click="nextPage">
-            Berikutnya
-          </Button>
-        </div>
-      </div>
+        :current-count="items.length"
+        :total-items="meta.total"
+        :current-page="page"
+        :total-pages="totalPages"
+        :has-previous="canPrev"
+        :has-next="canNext"
+        @previous="prevPage"
+        @next="nextPage"
+      />
     </ComponentCard>
 
     <ProductGroupFormModal

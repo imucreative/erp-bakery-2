@@ -182,9 +182,7 @@ export interface CreateProductionOrderPayload {
   notes?: string
 }
 
-function toQuery(
-  params: ProductionOrderListParams,
-): Record<string, string | number> {
+function toQuery(params: ProductionOrderListParams): Record<string, string | number> {
   const query: Record<string, string | number> = {
     page: params.page,
     limit: params.limit,
@@ -205,27 +203,20 @@ function toQuery(
 }
 
 export const productionOrderService = {
-  async list(
-    params: ProductionOrderListParams,
-  ): Promise<ProductionOrderListResult> {
-    const response = await httpClient.get<ApiListResponse<ProductionOrder>>(
-      '/production/orders',
-      { params: toQuery(params) },
-    )
+  async list(params: ProductionOrderListParams): Promise<ProductionOrderListResult> {
+    const response = await httpClient.get<ApiListResponse<ProductionOrder>>('/production/orders', {
+      params: toQuery(params),
+    })
     return { items: response.data.data, meta: response.data.meta }
   },
 
   async getById(id: string): Promise<ProductionOrder> {
-    const response = await httpClient.get<ApiSuccess<ProductionOrder>>(
-      `/production/orders/${id}`,
-    )
+    const response = await httpClient.get<ApiSuccess<ProductionOrder>>(`/production/orders/${id}`)
     return response.data.data
   },
 
   // Run a production (instant-complete). The UI submits productId.
-  async create(
-    payload: CreateProductionOrderPayload,
-  ): Promise<ProductionOrder> {
+  async create(payload: CreateProductionOrderPayload): Promise<ProductionOrder> {
     const response = await httpClient.post<ApiSuccess<ProductionOrder>>(
       '/production/orders',
       payload,
@@ -239,14 +230,10 @@ export const productionOrderService = {
    * stock. Throws ApiClientError 404 when the product has no ACTIVE recipe
    * (RECIPE.NO_ACTIVE_RECIPE) or the outlet is invalid (OUTLET.NOT_FOUND).
    */
-  async getProducible(
-    productId: string,
-    outletId: string,
-  ): Promise<ProducibleInfo> {
-    const response = await httpClient.get<ApiSuccess<ProducibleInfo>>(
-      '/production/producible',
-      { params: { productId, outletId } },
-    )
+  async getProducible(productId: string, outletId: string): Promise<ProducibleInfo> {
+    const response = await httpClient.get<ApiSuccess<ProducibleInfo>>('/production/producible', {
+      params: { productId, outletId },
+    })
     return response.data.data
   },
 }

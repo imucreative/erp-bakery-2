@@ -1,12 +1,13 @@
 <script setup lang="ts">
 /**
  * StockAdjustmentFilterBar — search (adjustmentNumber/notes) + status filter +
- * outlet filter toolbar for the Stock Adjustment list. Native selects wrapped
- * with a ChevronDownIcon per the UI standard. Two-way binds `search`, `status`,
- * and `outlet` via v-model:search / v-model:status / v-model:outlet. Outlet
- * options are resolved once by the parent.
+ * outlet filter for the Stock Adjustment list, laid out as a `stack-row` of
+ * `BaseSelect`/`BaseInput` fields. Two-way binds `search`, `status`, and `outlet`
+ * via v-model:search / v-model:status / v-model:outlet. Outlet options are
+ * resolved once by the parent, which also owns the `toolbar-row` that pairs this
+ * bar with the "Buat" button.
  */
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
+import { BaseInput, BaseSelect } from '@/components/ui'
 import {
   STOCK_ADJUSTMENT_STATUSES,
   STOCK_ADJUSTMENT_STATUS_LABELS,
@@ -30,45 +31,43 @@ const emit = defineEmits<{
   (event: 'update:status', value: StatusFilter): void
   (event: 'update:outlet', value: string): void
 }>()
+
+const statusOptions = [
+  { value: 'all' as const, label: 'Semua Status' },
+  ...STOCK_ADJUSTMENT_STATUSES.map((status: keyof typeof STOCK_ADJUSTMENT_STATUS_LABELS) => ({
+    value: status,
+    label: STOCK_ADJUSTMENT_STATUS_LABELS[status],
+  })),
+]
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-    <div class="relative w-full sm:max-w-xs">
-      <input
-        :value="search"
-        type="text"
+  <div class="stack-row">
+    <div class="w-full sm:max-w-xs">
+      <BaseInput
+        id="stock-adjustment-search"
+        :model-value="search"
         placeholder="Cari nomor / catatan..."
-        class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-        @input="emit('update:search', ($event.target as HTMLInputElement).value)"
+        @update:model-value="emit('update:search', $event)"
       />
     </div>
-    <div class="relative w-full sm:w-48">
-      <select
-        :value="status"
-        class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-        @change="emit('update:status', ($event.target as HTMLSelectElement).value as StatusFilter)"
-      >
-        <option value="all">Semua Status</option>
-        <option v-for="s in STOCK_ADJUSTMENT_STATUSES" :key="s" :value="s">
-          {{ STOCK_ADJUSTMENT_STATUS_LABELS[s] }}
-        </option>
-      </select>
-      <ChevronDownIcon
-        class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+    <div class="w-full sm:w-48">
+      <BaseSelect
+        id="stock-adjustment-status"
+        :model-value="status"
+        :options="statusOptions"
+        @update:model-value="emit('update:status', $event as StatusFilter)"
       />
     </div>
-    <div class="relative w-full sm:w-56">
-      <select
-        :value="outlet"
-        class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-        @change="emit('update:outlet', ($event.target as HTMLSelectElement).value)"
-      >
-        <option value="">Semua Outlet</option>
-        <option v-for="o in outlets" :key="o.id" :value="o.id">{{ o.name }}</option>
-      </select>
-      <ChevronDownIcon
-        class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+    <div class="w-full sm:w-56">
+      <BaseSelect
+        id="stock-adjustment-outlet"
+        :model-value="outlet"
+        :options="[
+          { value: '', label: 'Semua Outlet' },
+          ...outlets.map((item) => ({ value: item.id, label: item.name })),
+        ]"
+        @update:model-value="emit('update:outlet', $event)"
       />
     </div>
   </div>

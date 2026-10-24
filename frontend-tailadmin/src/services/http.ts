@@ -7,11 +7,7 @@
  *  - Refresh-on-401: call `PUT /auth/refresh` once (single in-flight) and retry.
  */
 
-import axios, {
-  AxiosError,
-  type AxiosInstance,
-  type InternalAxiosRequestConfig,
-} from 'axios'
+import axios, { AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 import {
   clearTokens,
   getAccessToken,

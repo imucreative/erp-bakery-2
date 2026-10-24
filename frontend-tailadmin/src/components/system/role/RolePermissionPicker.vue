@@ -16,6 +16,7 @@
  */
 import { computed } from 'vue'
 import type { Permission } from '@/services/permission.service'
+import { BaseAlert, BaseCheckbox } from '@/components/ui'
 
 const props = withDefaults(
   defineProps<{
@@ -255,31 +256,18 @@ const totalSelected = computed<number>(() => props.modelValue.length)
 
 <template>
   <div>
-    <div v-if="loading" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-      Memuat katalog permission...
-    </div>
+    <div v-if="loading" class="text-muted py-8 text-center">Memuat katalog permission...</div>
 
-    <div
-      v-else-if="errorMessage"
-      class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      role="alert"
-    >
-      {{ errorMessage }}
-    </div>
+    <BaseAlert v-else-if="errorMessage" size="sm">{{ errorMessage }}</BaseAlert>
 
-    <div
-      v-else-if="domains.length === 0"
-      class="py-8 text-center text-sm text-gray-500 dark:text-gray-400"
-    >
+    <div v-else-if="domains.length === 0" class="text-muted py-8 text-center">
       Katalog permission kosong.
     </div>
 
     <div v-else class="space-y-4">
       <div class="flex items-center justify-between px-0.5">
         <p class="text-sm font-medium text-gray-700 dark:text-gray-400">Permission</p>
-        <span class="text-theme-xs text-gray-500 dark:text-gray-400">
-          {{ totalSelected }} dipilih
-        </span>
+        <span class="text-meta"> {{ totalSelected }} dipilih </span>
       </div>
 
       <div
@@ -288,9 +276,12 @@ const totalSelected = computed<number>(() => props.modelValue.length)
         class="overflow-hidden rounded-2xl border"
         :class="domain.accent.card"
       >
-        <div class="flex items-center justify-between gap-3 px-4 py-3" :class="domain.accent.header">
+        <div
+          class="flex items-center justify-between gap-3 px-4 py-3"
+          :class="domain.accent.header"
+        >
           <div class="flex items-center gap-2.5">
-            <span class="inline-block h-3 w-3 rounded-full" :class="domain.accent.dot"/>
+            <span class="inline-block h-3 w-3 rounded-full" :class="domain.accent.dot" />
             <h5 class="text-sm font-semibold capitalize" :class="domain.accent.title">
               {{ domain.label }}
             </h5>
@@ -306,7 +297,7 @@ const totalSelected = computed<number>(() => props.modelValue.length)
 
         <div class="space-y-3 px-4 py-3">
           <div v-for="mod in domain.modules" :key="mod.key">
-            <p class="mb-2 text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            <p class="mb-2 text-meta font-medium uppercase">
               {{ mod.name }}
             </p>
             <div class="flex flex-wrap gap-2">
@@ -320,12 +311,10 @@ const totalSelected = computed<number>(() => props.modelValue.length)
                   isLocked(perm.code) ? 'cursor-not-allowed opacity-90' : '',
                 ]"
               >
-                <input
-                  type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500/20 disabled:cursor-not-allowed dark:border-gray-600 dark:bg-gray-800"
-                  :checked="isChecked(perm.code)"
+                <BaseCheckbox
+                  :model-value="isChecked(perm.code)"
                   :disabled="isLocked(perm.code)"
-                  @change="toggle(perm.code)"
+                  @update:model-value="toggle(perm.code)"
                 />
                 <span class="capitalize text-gray-700 dark:text-gray-300">
                   {{ actionLabel(perm) }}

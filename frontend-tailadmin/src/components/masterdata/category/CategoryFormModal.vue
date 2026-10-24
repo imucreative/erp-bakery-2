@@ -6,9 +6,17 @@
  * Transparent backdrop per UI standard.
  */
 import { computed, ref, watch } from 'vue'
-import Button from '@/components/ui/Button.vue'
-import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
+import { Save, X } from 'lucide-vue-next'
+import {
+  BaseAlert,
+  BaseButton,
+  BaseFormField,
+  BaseInput,
+  BaseModal,
+  BaseSelect,
+  BaseTextarea,
+  BaseToggle,
+} from '@/components/ui'
 import type { Category } from '@/services/category.service'
 import type { ProductGroup } from '@/services/product-group.service'
 
@@ -39,6 +47,9 @@ const isActive = ref<boolean>(true)
 const localError = ref<string | null>(null)
 
 const isEdit = computed<boolean>(() => props.mode === 'edit')
+const groupOptions = computed(() =>
+  props.groups.map((group) => ({ label: group.name, value: group.id })),
+)
 
 const currentGroupName = computed<string>(() => {
   const id = props.category?.productGroupId
@@ -62,9 +73,6 @@ watch(
   { immediate: true },
 )
 
-const inputClass =
-  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
-
 function onSubmit(): void {
   const trimmed = name.value.trim()
   if (!isEdit.value && productGroupId.value.length === 0) {
@@ -86,84 +94,72 @@ function onSubmit(): void {
 </script>
 
 <template>
-  <div v-if="open" class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4">
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-      @click="emit('close')"
-    ></div>
+  <BaseModal :open="open" @close="emit('close')">
+    <h4 class="modal-title mb-4">
+      {{ isEdit ? 'Edit Kategori' : 'Tambah Kategori' }}
+    </h4>
 
-    <div
-      class="relative w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
-      <h4 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
-        {{ isEdit ? 'Edit Kategori' : 'Tambah Kategori' }}
-      </h4>
+    <form class="space-y-4" @submit.prevent="onSubmit">
+      <!-- Product group: selectable on create, read-only on edit -->
+      <BaseFormField
+        label="Grup Produk"
+        field-id="category-product-group"
+        :required="!isEdit"
+        :error="!isEdit && localError && !productGroupId ? localError : null"
+      >
+        <BaseSelect
+          v-if="!isEdit"
+          id="category-product-group"
+          v-model="productGroupId"
+          :options="groupOptions"
+          placeholder="Pilih grup produk"
+        />
+        <p v-else class="form-readonly">{{ currentGroupName }}</p>
+      </BaseFormField>
 
-      <form class="space-y-4" @submit.prevent="onSubmit">
-        <!-- Product group: selectable on create, read-only on edit -->
-        <div>
-          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Grup Produk<span v-if="!isEdit" class="text-error-500">*</span>
-          </label>
-          <div v-if="!isEdit" class="relative">
-            <select v-model="productGroupId" :class="[inputClass, 'appearance-none pe-10']">
-              <option value="" disabled>Pilih grup produk</option>
-              <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
-            </select>
-            <ChevronDownIcon
-              class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-            />
-          </div>
-          <p
-            v-else
-            class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300"
-          >
-            {{ currentGroupName }}
-          </p>
-        </div>
+      <BaseFormField
+        label="Nama"
+        field-id="category-name"
+        required
+        :error="localError && !name.trim() ? localError : null"
+      >
+        <BaseInput id="category-name" v-model="name" placeholder="mis. Roti Manis" />
+      </BaseFormField>
 
-        <div>
-          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Nama<span class="text-error-500">*</span>
-          </label>
-          <input v-model="name" type="text" placeholder="mis. Roti Manis" :class="inputClass" />
-        </div>
+      <BaseFormField label="Deskripsi" field-id="category-description">
+        <BaseTextarea
+          id="category-description"
+          v-model="description"
+          :rows="2"
+          placeholder="Deskripsi singkat (opsional)"
+        />
+      </BaseFormField>
 
-        <div>
-          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Deskripsi
-          </label>
-          <textarea
-            v-model="description"
-            rows="2"
-            placeholder="Deskripsi singkat (opsional)"
-            class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-          ></textarea>
-        </div>
+      <BaseToggle v-if="isEdit" v-model="isActive" label="Aktif" />
 
-        <ToggleSwitch v-if="isEdit" v-model="isActive" label="Aktif" />
+      <BaseAlert :message="localError || errorMessage" size="sm" />
 
-        <p
-          v-if="localError || errorMessage"
-          class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
+      <div class="button-row pt-2">
+        <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
+          <template #start-icon>
+            <X class="h-4 w-4" aria-hidden="true" />
+          </template>
+          Batal
+        </BaseButton>
+        <BaseButton
+          type="submit"
+          size="sm"
+          variant="success"
+          :loading="submitting"
+          loading-text="Menyimpan..."
+          :disabled="submitting"
         >
-          {{ localError || errorMessage }}
-        </p>
-
-        <div class="flex justify-end gap-3 pt-2">
-          <Button size="sm" variant="outline" :disabled="submitting" :on-click="() => emit('close')">
-            Batal
-          </Button>
-          <button
-            type="submit"
-            :disabled="submitting"
-            class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {{ submitting ? 'Menyimpan...' : 'Simpan' }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+          <template #start-icon>
+            <Save class="h-4 w-4" aria-hidden="true" />
+          </template>
+          Simpan
+        </BaseButton>
+      </div>
+    </form>
+  </BaseModal>
 </template>

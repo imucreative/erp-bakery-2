@@ -7,7 +7,15 @@
 ```
 src/
 ├── assets/
-│   └── main.css                  # Tailwind CSS v4 theme (@theme), global utility classes & 3rd party overrides
+│   ├── main.css                  # ENTRY CSS saja: @import font + 'tailwindcss' + partial + @custom-variant
+│   └── styles/                   # Partial CSS per kategori (diimpor berurutan dari main.css)
+│       ├── theme.css             # @theme design token (font, breakpoint, warna, shadow, z-index)
+│       ├── base.css              # @layer base (border compat, cursor, body)
+│       ├── menu.css              # @utility menu-* untuk AppSidebar
+│       ├── ui.css                # @utility snippet inti: *-title, text-muted, form-*, alert-*
+│       ├── inputs.css            # aturan elemen input[type=date]/[type=time]
+│       ├── vendor.css            # override library (apexcharts, jsvectormap, flatpickr)
+│       └── rtl.css               # koreksi arah [dir='rtl']
 ├── components/
 │   ├── charts/                   # ApexChart subcomponents (BarChart, LineChart)
 │   ├── common/                   # Shared wrappers (ComponentCard, PageBreadcrumb, ThemeToggler)
@@ -37,7 +45,8 @@ src/
 
 - **Vue 3** with **Composition API** (`<script setup lang="ts">`) and **Vue Router 4**.
 - **TypeScript ~5.7**: Strict type safety throughout components, composables, and router.
-- **Tailwind CSS v4**: Configured with `@tailwindcss/postcss` and `@theme` tokens in `src/assets/main.css`. No `tailwind.config.js`.
+- **Tailwind CSS v4**: Configured with `@tailwindcss/postcss`; `@theme` tokens live in
+  `src/assets/styles/theme.css`, imported by the `src/assets/main.css` entry. No `tailwind.config.js`.
 - Path alias: `@/*` → `src/*` (configured in `vite.config.ts`).
 - **Vite 6** with `@vitejs/plugin-vue` and `@vitejs/plugin-vue-jsx`.
 - **State Management via Composables**:
@@ -55,8 +64,13 @@ src/
   - `npm run dev` — starts the development server.
   - `npm run build` — runs type-check then builds the production bundle into `dist/`.
   - `npm run type-check` — runs `vue-tsc --build` for TypeScript validation.
-  - `npm run lint` — runs ESLint with auto-fix.
-  - `npm run format` — runs Prettier on `src/`.
+  - `npm run lint` — runs ESLint with auto-fix. **Do not run it**: `--fix` rewrites line
+    endings and import order across files unrelated to the task. Run plain `npx eslint <files>`
+    instead.
+  - `npm run format` — runs Prettier on `src/`. Prefer `npx prettier --write <file>` for the
+    files you touched, and verify with `npx prettier --check .` (it also covers the root
+    config files, which `npm run format` skips). `.prettierignore` keeps `dist/` and `.vite/`
+    out of the check.
 
 ## Conventions
 
@@ -89,10 +103,90 @@ src/
 
 ## Styling Rules & Dark Mode
 
-- **Tailwind CSS v4**: Configured via `src/assets/main.css` using `@theme`. There is **no** `tailwind.config.js`.
+- **Tailwind CSS v4**: `src/assets/main.css` is only the ENTRY (`@import` font + `'tailwindcss'`
+  - partial + `@custom-variant dark`). `@theme` lives in `src/assets/styles/theme.css`; other
+    concerns have their own partial (`base`, `menu`, `ui`, `inputs`, `vendor`, `rtl`). Put new
+    styles in the partial that matches their category, and keep the `@import` order in
+    `main.css` unchanged — the order is what the cascade depends on. There is **no**
+    `tailwind.config.js`.
+- **Core snippet classes** (`src/assets/styles/ui.css`, declared with `@utility`, 32 utilities): use
+  `page-title` / `card-title` / `modal-title` / `section-title` for headings (`section-title` is the
+  in-card sub-heading one level below the other two — `<h5>Item</h5>` on form/detail pages),
+  `text-muted` for secondary text
+  (`text-muted-xs` for dimmer placeholders like an empty-cell `—` and for the `<dt>` key labels of a
+  summary card, written `text-muted-xs uppercase`, `text-meta` for small metadata
+  sitting under a primary text — the SKU sub-line under a product name in a table row, the uppercase
+  key label of a modal detail's label/value pair, a modal header subtitle; it is the xs sibling of `text-muted`,
+  same `gray-500` → `gray-400` dark pair, and NOT `text-muted-xs`, whose swapped grays would read
+  dimmer — the two uppercase label styles are both correct in their own frame (summary `<dt>` =
+  `text-muted-xs uppercase`, modal detail label = `text-meta uppercase`); do not unify them, `text-strong` for the primary text of a list row such as an attachment name, comment
+  author, or the product name on a list table, `text-value` for the read-only
+  value of a summary list, a detail modal, or a read-only table cell — same as `text-strong` without `font-medium`, `text-body` for the
+  paragraph tone one step softer (`whitespace-pre-wrap` comment body, the "oleh <nama>" line in a
+  timeline, the notes `<dd>` of a summary card),
+  `form-label` / `form-hint` / `form-error` for field text, `form-readonly` for a read-only
+  value shown in place of an input (SKU, email, code, parent group name),
+  `alert-error` / `alert-success` /
+  `alert-warning` / `alert-info` for banners, `panel-muted` for empty/loading panels
+  (add `border-dashed` at the call site when needed), `panel-loading` for a page-level
+  "Memuat data…" card (full-width `rounded-2xl` white card, not the dimmed in-card `panel-muted`),
+  `panel-card` for nested item cards
+  (attachment/comment rows), `form-divider` for the input form that sits below such a panel
+  (`space-y-3` + top border — note `@apply space-y-*` emits its margin as a separate
+  `:where(.form-divider > :not(:last-child))` rule, exactly like `timeline-rail`),
+  `icon-tile` for the square icon in front of a list row (attachment
+  icon, avatar — 40px tile, override `h-*`/`w-*` at the call site for another size),
+  `toolbar-row` for a filter/actions bar (stacks under 640px; add margin at the call site),
+  `stack-row` for the same bar when it has no left/right split — a run of fields, or a field plus
+  the button that may keep flowing (`sm:justify-between` is what separates the two); add
+  `sm:flex-wrap` at the call site when the bar should wrap instead of staying on one row
+  (`BatchFilterBar`),
+  `button-row` for a run of buttons pushed to the end (modal footer, form Save/Cancel; it is
+  deliberately only `flex justify-end gap-3` — no `items-center`/`flex-wrap`, so the 9
+  `*ActionBar.vue` rows that use `flex flex-wrap items-center justify-end gap-3` keep their own
+  layout; a single-child footer still uses it, e.g. `mt-6 button-row` around one `Tutup` button;
+  add `pt-*`/`mt-*` at the call site),
+  `field-grid` for a two-column form/summary grid (stacks under 640px; `gap-*` and `sm:grid-cols-*`
+  are plain core utilities, so overriding them at the call site works and keeps the snippet's
+  `display`/`grid-cols-1` base — `PurchaseOrderSummary` uses `field-grid gap-2 sm:grid-cols-3` for
+  the totals box),
+  `confirm-bar` for an inline destructive confirmation (pair it with `mt-3`; do not use
+  `alert-error` here — that snippet carries text color and no layout because it pairs with
+  `BaseAlert`),
+  `timeline-rail` + `timeline-dot` for status timelines (rail on the
+  `<ol>`, dot on the first `<span>` inside each `relative` `<li>`; always use them as a pair),
+  and `no-scrollbar` / `custom-scrollbar` for
+  scroll containers. Prefer these over retyping the long class chain. Custom utilities are
+  emitted BEFORE core utilities, so a call-site utility always wins
+  (e.g. `class="modal-title mt-4"`) without `!important`. Ordering is per property category,
+  though — and within a category **shorthand loses to longhand**: in the built CSS
+  (`dist/assets/index-DOinNrgJ.css`) `.p-4` (39787)
+  is emitted before `.px-4` (40196) and `.py-3` (40645), so to override a snippet's or component's
+  padding use `px-*` / `py-*`, never `p-*` (`p-*` on top of `BaseAlert size="md"` silently kept
+  the component's `px-4 py-3`). Plain layout utilities like `.flex`/`.h-11` are emitted earlier,
+  which is still safe
+  because snippets such as `form-readonly` set no `display`/`height` (`PurchaseOrderHeaderFields`
+  overrides it with `form-readonly flex h-11 w-full items-center dark:bg-white/[0.02]`).
+  Snippets deliberately exclude
+  margin (headings) and padding (alerts) so callers can set density.
+- **Shared components win**: banner = `BaseAlert`, modal = `BaseModal` (backdrop, Esc-close,
+  `role="dialog"`, `size` and `scrollable` are already handled), table shell/error = `BaseTable`,
+  form field text = `BaseFormField`. Do not re-create `fixed inset-0` modal wrappers or
+  hand-written `alert-*` divs in feature components. The same applies to `class` on `BaseButton`:
+  a `variant` already ships its own layout/color/ring/hover classes, so pass only what differs
+  (e.g. `class="h-10 w-10"` on an `icon-only` back button) instead of re-typing the variant's
+  chain — later core utilities win over `@utility` rules, so repeating it can silently lose to
+  the component's own classes.
 - **Theme Tokens**: Always use predefined theme tokens:
   - **Colors**: `brand` (`25`–`950`), `gray` (`25`–`950`), `blue-light` (`25`–`950`), `orange` (`25`–`950`), `success`, `error`, `warning`.
   - **Typography**: `font-outfit`, `text-theme-xs/sm/xl`, `text-title-sm/md/lg/xl/2xl`.
+    `theme.css` opens `@theme` with `--font-*: initial` and defines only `--font-outfit`, so
+    **`font-mono` is never emitted** — writing it on a call site has no effect (5 dead sites remain,
+    see dok 48 §2.8); do not add new ones until `--font-mono` is defined or the class is removed.
+    Token vs core utility: `text-theme-sm` (14px/20px) equals `text-sm` (`.875rem` / line-height
+    `calc(1.25/.875)`, root is 16px), so sweeping a `text-sm` chain into a snippet may keep `text-sm`
+    (`section-title` does). `text-theme-xs` (12px/**18px**) does **not** equal `text-xs` (12px/16px),
+    so small text always goes through the theme token.
   - **Shadows**: `shadow-theme-xs/sm/md/lg/xl`.
   - **Breakpoints**: `2xsm` (375px), `xsm` (425px), `sm` (640px), `md` (768px), `lg` (1024px), `xl` (1280px), `2xl` (1536px).
 - **Dark Mode**:
@@ -117,7 +211,8 @@ src/
 ## Don'ts
 
 - Don't install new NPM packages without asking the user.
-- Don't create `tailwind.config.js` — Tailwind v4 configuration belongs in `src/assets/main.css`.
+- Don't create `tailwind.config.js` — Tailwind v4 configuration belongs in `src/assets/styles/*.css`
+  (tokens in `theme.css`), imported through the `src/assets/main.css` entry.
 - Don't use Options API or `defineComponent` boilerplate — always use `<script setup lang="ts">`.
 - Don't hardcode physical directional utilities (`ml-*`, `mr-*`, `pl-*`, `pr-*`, `left-*`, `right-*`, `border-l-*`, `border-r-*`, `rounded-l-*`, `rounded-r-*`, `text-left`, `text-right`) without providing RTL support (`ltr:` / `rtl:` or CSS logical equivalents).
 - Don't hardcode hex colors in `class=""` attributes — use `@theme` tokens.

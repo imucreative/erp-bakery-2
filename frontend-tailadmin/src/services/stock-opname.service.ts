@@ -135,9 +135,7 @@ export interface CreateStockOpnamePayload {
   notes?: string
 }
 
-function toQuery(
-  params: StockOpnameListParams,
-): Record<string, string | number> {
+function toQuery(params: StockOpnameListParams): Record<string, string | number> {
   const query: Record<string, string | number> = {
     page: params.page,
     limit: params.limit,
@@ -156,17 +154,14 @@ function toQuery(
 
 export const stockOpnameService = {
   async list(params: StockOpnameListParams): Promise<StockOpnameListResult> {
-    const response = await httpClient.get<ApiListResponse<StockOpname>>(
-      '/inventory/stock-counts',
-      { params: toQuery(params) },
-    )
+    const response = await httpClient.get<ApiListResponse<StockOpname>>('/inventory/stock-counts', {
+      params: toQuery(params),
+    })
     return { items: response.data.data, meta: response.data.meta }
   },
 
   async getById(id: string): Promise<StockOpname> {
-    const response = await httpClient.get<ApiSuccess<StockOpname>>(
-      `/inventory/stock-counts/${id}`,
-    )
+    const response = await httpClient.get<ApiSuccess<StockOpname>>(`/inventory/stock-counts/${id}`)
     return response.data.data
   },
 
@@ -187,11 +182,7 @@ export const stockOpnameService = {
   },
 
   // Record a physical count for one item (COUNTING only). Returns full opname.
-  async recordCount(
-    id: string,
-    itemId: string,
-    countedQty: number,
-  ): Promise<StockOpname> {
+  async recordCount(id: string, itemId: string, countedQty: number): Promise<StockOpname> {
     const response = await httpClient.put<ApiSuccess<StockOpname>>(
       `/inventory/stock-counts/${id}/items/${itemId}/count`,
       { countedQty },
@@ -254,9 +245,7 @@ export function statusBadgeColor(
  * Badge color for an item's difference quantity: positive (surplus) → success,
  * negative (shortage) → error, zero / not-yet-counted → light.
  */
-export function differenceBadgeColor(
-  difference: number | null,
-): 'success' | 'error' | 'light' {
+export function differenceBadgeColor(difference: number | null): 'success' | 'error' | 'light' {
   if (difference === null || difference === 0) {
     return 'light'
   }

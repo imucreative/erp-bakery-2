@@ -37,7 +37,7 @@
       <div
         class="flex items-center justify-between pb-3 mb-3 border-b border-gray-100 dark:border-gray-800"
       >
-        <h5 class="text-lg font-semibold text-gray-800 dark:text-white/90">Notification</h5>
+        <h5 class="card-title">Notification</h5>
 
         <button @click="closeDropdown" class="text-gray-500 dark:text-gray-400">
           <svg
@@ -73,7 +73,7 @@
             </span>
 
             <span class="block">
-              <span class="mb-1.5 block text-theme-sm text-gray-500 dark:text-gray-400">
+              <span class="text-muted mb-1.5 block">
                 <span class="font-medium text-gray-800 dark:text-white/90">
                   {{ notification.userName }}
                 </span>

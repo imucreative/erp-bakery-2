@@ -67,4 +67,28 @@ describe('CreateOutlet', () => {
       'CREATE_OUTLET.PHONE_LIMIT_CHAR',
     );
   });
+
+  it('should default code to null when omitted or blank', () => {
+    expect(new CreateOutlet({ name: 'Outlet A' }).code).toBeNull();
+    expect(new CreateOutlet({ name: 'Outlet A', code: '   ' }).code).toBeNull();
+    expect(new CreateOutlet({ name: 'Outlet A', code: null }).code).toBeNull();
+  });
+
+  it('should trim and uppercase a supplied code', () => {
+    const entity = new CreateOutlet({ name: 'Outlet A', code: '  out-bdg-01  ' });
+
+    expect(entity.code).toBe('OUT-BDG-01');
+  });
+
+  it('should throw NOT_MEET_DATA_TYPE_SPECIFICATION when code is not a string', () => {
+    expect(() => new CreateOutlet({ name: 'A', code: 123 })).toThrow(
+      'CREATE_OUTLET.NOT_MEET_DATA_TYPE_SPECIFICATION',
+    );
+  });
+
+  it('should throw CODE_LIMIT_CHAR when code exceeds 20 characters', () => {
+    expect(() => new CreateOutlet({ name: 'A', code: 'X'.repeat(21) })).toThrow(
+      'CREATE_OUTLET.CODE_LIMIT_CHAR',
+    );
+  });
 });

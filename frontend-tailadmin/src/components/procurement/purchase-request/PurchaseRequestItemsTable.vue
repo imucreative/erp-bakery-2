@@ -6,6 +6,7 @@
  * product/UOM ids → names via injected resolver callbacks.
  */
 import { formatRupiah } from '@/lib/format'
+import { BaseTable, BaseTableCell, BaseTableHead, BaseTableRow } from '@/components/ui'
 import type { PurchaseRequest } from '@/services/purchase-request.service'
 
 const props = defineProps<{
@@ -16,63 +17,34 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
-    <table class="min-w-full">
-      <thead>
-        <tr class="border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]">
-          <th class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-            Produk
-          </th>
-          <th class="px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-            Qty
-          </th>
-          <th class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-            UOM
-          </th>
-          <th class="px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-            Estimasi Harga
-          </th>
-          <th class="px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-            Subtotal
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="item in props.pr.items"
-          :key="item.id"
-          class="border-b border-gray-100 last:border-0 dark:border-gray-800"
-        >
-          <td class="px-4 py-3 text-theme-sm text-gray-800 dark:text-white/90">
-            {{ props.productName(item.productId) }}
-          </td>
-          <td class="px-4 py-3 text-end text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ item.quantity }}
-          </td>
-          <td class="px-4 py-3 text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ props.uomName(item.uomId) }}
-          </td>
-          <td class="px-4 py-3 text-end text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ formatRupiah(item.estimatedPrice) }}
-          </td>
-          <td class="px-4 py-3 text-end text-theme-sm text-gray-800 dark:text-white/90">
-            {{ formatRupiah(item.subtotal) }}
-          </td>
-        </tr>
-      </tbody>
-      <tfoot>
-        <tr class="border-t border-gray-200 dark:border-gray-800">
-          <td
-            colspan="4"
-            class="px-4 py-3 text-end text-theme-sm font-medium text-gray-600 dark:text-gray-300"
-          >
-            Total Estimasi
-          </td>
-          <td class="px-4 py-3 text-end text-theme-sm font-semibold text-gray-800 dark:text-white/90">
-            {{ formatRupiah(props.pr.totalEstimatedAmount) }}
-          </td>
-        </tr>
-      </tfoot>
-    </table>
-  </div>
+  <BaseTable aria-label="Daftar item purchase request">
+    <template #header>
+      <BaseTableRow variant="header">
+        <BaseTableHead>Produk</BaseTableHead>
+        <BaseTableHead align="end">Qty</BaseTableHead>
+        <BaseTableHead>UOM</BaseTableHead>
+        <BaseTableHead align="end">Estimasi Harga</BaseTableHead>
+        <BaseTableHead align="end">Subtotal</BaseTableHead>
+      </BaseTableRow>
+    </template>
+    <template #body>
+      <BaseTableRow v-for="item in props.pr.items" :key="item.id">
+        <BaseTableCell emphasis="medium">{{ props.productName(item.productId) }}</BaseTableCell>
+        <BaseTableCell align="end">{{ item.quantity }}</BaseTableCell>
+        <BaseTableCell>{{ props.uomName(item.uomId) }}</BaseTableCell>
+        <BaseTableCell align="end">{{ formatRupiah(item.estimatedPrice) }}</BaseTableCell>
+        <BaseTableCell align="end" emphasis="medium">
+          {{ formatRupiah(item.subtotal) }}
+        </BaseTableCell>
+      </BaseTableRow>
+    </template>
+    <template #footer>
+      <BaseTableRow>
+        <BaseTableCell colspan="4" align="end" emphasis="medium">Total Estimasi</BaseTableCell>
+        <BaseTableCell align="end" emphasis="medium">
+          {{ formatRupiah(props.pr.totalEstimatedAmount) }}
+        </BaseTableCell>
+      </BaseTableRow>
+    </template>
+  </BaseTable>
 </template>

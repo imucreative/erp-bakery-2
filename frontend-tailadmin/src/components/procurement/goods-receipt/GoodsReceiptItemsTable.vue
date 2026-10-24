@@ -14,6 +14,7 @@
  * computes stock itself; this is purely for clarity.
  */
 import { formatDate } from '@/lib/format'
+import { BaseTable, BaseTableCell, BaseTableHead, BaseTableRow } from '@/components/ui'
 import type { GoodsReceipt, GoodsReceiptItem } from '@/services/goods-receipt.service'
 
 const props = defineProps<{
@@ -51,74 +52,35 @@ function conversionHint(item: GoodsReceiptItem): string | null {
 </script>
 
 <template>
-  <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
-    <table class="min-w-full">
-      <thead>
-        <tr class="border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]">
-          <th class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-            Produk
-          </th>
-          <th class="px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-            Dipesan
-          </th>
-          <th class="px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-            Diterima
-          </th>
-          <th class="px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-            Ditolak
-          </th>
-          <th class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-            UOM
-          </th>
-          <th class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-            Batch
-          </th>
-          <th class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-            Kadaluarsa
-          </th>
-          <th class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-            Lot
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="item in props.gr.items"
-          :key="item.id"
-          class="border-b border-gray-100 last:border-0 dark:border-gray-800"
-        >
-          <td class="px-4 py-3 text-theme-sm text-gray-800 dark:text-white/90">
-            {{ props.productName(item.productId) }}
-          </td>
-          <td class="px-4 py-3 text-end text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ item.orderedQuantity }}
-          </td>
-          <td class="px-4 py-3 text-end text-theme-sm text-gray-800 dark:text-white/90">
-            {{ item.acceptedQuantity }}
-            <span
-              v-if="conversionHint(item)"
-              class="mt-0.5 block text-theme-xs font-normal text-gray-400 dark:text-gray-500"
-            >
-              {{ conversionHint(item) }}
-            </span>
-          </td>
-          <td class="px-4 py-3 text-end text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ item.rejectedQuantity }}
-          </td>
-          <td class="px-4 py-3 text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ props.uomName(item.uomId) }}
-          </td>
-          <td class="px-4 py-3 text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ item.batchNumber || '-' }}
-          </td>
-          <td class="px-4 py-3 text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ item.expiryDate ? formatDate(item.expiryDate) : '-' }}
-          </td>
-          <td class="px-4 py-3 text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ item.lotNumber || '-' }}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <BaseTable aria-label="Daftar item goods receipt">
+    <template #header>
+      <BaseTableRow variant="header">
+        <BaseTableHead>Produk</BaseTableHead>
+        <BaseTableHead align="end">Dipesan</BaseTableHead>
+        <BaseTableHead align="end">Diterima</BaseTableHead>
+        <BaseTableHead align="end">Ditolak</BaseTableHead>
+        <BaseTableHead>UOM</BaseTableHead>
+        <BaseTableHead>Batch</BaseTableHead>
+        <BaseTableHead>Kadaluarsa</BaseTableHead>
+        <BaseTableHead>Lot</BaseTableHead>
+      </BaseTableRow>
+    </template>
+    <template #body>
+      <BaseTableRow v-for="item in props.gr.items" :key="item.id">
+        <BaseTableCell emphasis="medium">{{ props.productName(item.productId) }}</BaseTableCell>
+        <BaseTableCell align="end">{{ item.orderedQuantity }}</BaseTableCell>
+        <BaseTableCell align="end" emphasis="medium">
+          {{ item.acceptedQuantity }}
+          <span v-if="conversionHint(item)" class="mt-0.5 block font-normal text-muted-xs">
+            {{ conversionHint(item) }}
+          </span>
+        </BaseTableCell>
+        <BaseTableCell align="end">{{ item.rejectedQuantity }}</BaseTableCell>
+        <BaseTableCell>{{ props.uomName(item.uomId) }}</BaseTableCell>
+        <BaseTableCell>{{ item.batchNumber || '-' }}</BaseTableCell>
+        <BaseTableCell>{{ item.expiryDate ? formatDate(item.expiryDate) : '-' }}</BaseTableCell>
+        <BaseTableCell>{{ item.lotNumber || '-' }}</BaseTableCell>
+      </BaseTableRow>
+    </template>
+  </BaseTable>
 </template>

@@ -11,11 +11,8 @@ import { onMounted, ref } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import Button from '@/components/ui/Button.vue'
-import {
-  StockLedgerFilterBar,
-  StockLedgerTable,
-} from '@/components/inventory/stock-ledger'
+import { BaseTablePagination } from '@/components/ui'
+import { StockLedgerFilterBar, StockLedgerTable } from '@/components/inventory/stock-ledger'
 import { useStockLedger } from '@/composables/useStockLedger'
 import { outletService } from '@/services/outlet.service'
 import { productService } from '@/services/product.service'
@@ -85,9 +82,7 @@ async function loadOutlets(): Promise<void> {
 // Fetch all UOMs once and build the uomId → name map used to resolve units.
 async function loadUoms(): Promise<void> {
   try {
-    const allUoms = await fetchAllPaginated((page) =>
-      uomService.list({ page, limit: PAGE_LIMIT }),
-    )
+    const allUoms = await fetchAllPaginated((page) => uomService.list({ page, limit: PAGE_LIMIT }))
     uomNames.value = new Map(allUoms.map((u) => [u.id, u.name]))
   } catch {
     // Non-fatal: the ledger simply shows quantities without a unit.
@@ -102,9 +97,7 @@ async function loadProducts(): Promise<void> {
       productService.list({ page, limit: PAGE_LIMIT }),
     )
     products.value = allProducts.map((p) => ({ id: p.id, name: p.name, sku: p.sku }))
-    productNames.value = new Map(
-      allProducts.map((p) => [p.id, { name: p.name, sku: p.sku }]),
-    )
+    productNames.value = new Map(allProducts.map((p) => [p.id, { name: p.name, sku: p.sku }]))
     // Keep the raw product→uom pairing so the label map can be rebuilt once the
     // UOM names arrive (whichever fetch finishes last wins).
     productUomIds.value = new Map(allProducts.map((p) => [p.id, p.uomId]))
@@ -149,7 +142,7 @@ onMounted(() => {
       desc="Riwayat pergerakan stok (inventory movement) per produk dan outlet."
     >
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <StockLedgerFilterBar
           v-model:outlet-id="outletId"
           v-model:product-id="productId"
@@ -169,25 +162,17 @@ onMounted(() => {
       />
 
       <!-- Pagination -->
-      <div
+      <BaseTablePagination
         v-if="!loading && !errorMessage && items.length > 0"
-        class="flex flex-col items-center justify-between gap-3 pt-2 sm:flex-row"
-      >
-        <span class="text-theme-sm text-gray-500 dark:text-gray-400">
-          Menampilkan {{ items.length }} dari {{ meta.total }} data
-        </span>
-        <div class="flex items-center gap-2">
-          <Button size="sm" variant="outline" :disabled="!canPrev" :on-click="prevPage">
-            Sebelumnya
-          </Button>
-          <span class="text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ page }} / {{ totalPages }}
-          </span>
-          <Button size="sm" variant="outline" :disabled="!canNext" :on-click="nextPage">
-            Berikutnya
-          </Button>
-        </div>
-      </div>
+        :current-count="items.length"
+        :total-items="meta.total"
+        :current-page="page"
+        :total-pages="totalPages"
+        :has-previous="canPrev"
+        :has-next="canNext"
+        @previous="prevPage"
+        @next="nextPage"
+      />
     </ComponentCard>
   </AdminLayout>
 </template>

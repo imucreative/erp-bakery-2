@@ -29,7 +29,7 @@
         <span class="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
           {{ auth.companyName || 'Bakery ERP' }}
         </span>
-        <span class="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
+        <span class="mt-0.5 block text-meta">
           {{ auth.userEmail || '—' }}
         </span>
       </div>
@@ -106,9 +106,7 @@
               <span>Language</span>
             </span>
 
-            <span
-              class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-theme-xs font-medium text-gray-700 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300"
-            >
+            <span class="form-readonly flex items-center gap-1.5 px-2 py-1 text-theme-xs">
               <span>{{ currentLang.shortName }}</span>
               <img
                 :src="'/images/icons/' + currentLang.flag"
@@ -131,7 +129,7 @@
                   class="flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-theme-sm font-medium transition-colors cursor-pointer ltr:text-left rtl:text-right"
                   :class="
                     currentLocale === language.id
-                      ? 'bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400'
+                      ? 'tone-brand'
                       : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white'
                   "
                 >

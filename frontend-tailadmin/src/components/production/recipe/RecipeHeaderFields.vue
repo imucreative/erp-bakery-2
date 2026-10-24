@@ -30,7 +30,7 @@
  * auto-defaulted when it is still empty, never overwriting an existing value.
  */
 import { computed } from 'vue'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
+import { BaseInput, BaseSelect, BaseTextarea } from '@/components/ui'
 import EntityCombobox from '@/components/ui/EntityCombobox.vue'
 import type { Product } from '@/services/product.service'
 import type { Uom } from '@/services/uom.service'
@@ -72,9 +72,7 @@ const emit = defineEmits<{
   (e: 'product-clear'): void
 }>()
 
-const inputClass =
-  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
-const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
+const labelClass = 'form-label'
 
 // ── Finished-product autocomplete adapters ───────────────────────────
 // The interaction itself (chip, search, dropdown, keyboard nav, aria) lives in
@@ -98,17 +96,17 @@ function selectProduct(product: Product): void {
 
 <template>
   <div class="space-y-6">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div class="field-grid">
       <!-- Recipe name -->
       <div class="sm:col-span-2">
         <label :class="labelClass">Nama Resep<span class="text-error-500">*</span></label>
-        <input
-          :value="props.name"
+        <BaseInput
+          id="recipe-name"
+          :model-value="props.name"
           type="text"
           :disabled="props.disabled"
           placeholder="mis. Roti Tawar Klasik"
-          :class="inputClass"
-          @input="emit('update:name', ($event.target as HTMLInputElement).value)"
+          @update:model-value="emit('update:name', $event)"
         />
       </div>
 
@@ -144,57 +142,47 @@ function selectProduct(product: Product): void {
           </template>
         </EntityCombobox>
 
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
-          Produk jadi yang dihasilkan oleh resep ini.
-        </p>
+        <p class="mt-1 text-muted-xs">Produk jadi yang dihasilkan oleh resep ini.</p>
       </div>
 
       <!-- Yield qty + yield UOM -->
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label :class="labelClass">Hasil / Batch<span class="text-error-500">*</span></label>
-          <input
-            :value="props.yieldQty"
+          <BaseInput
+            id="recipe-yield-qty"
+            :model-value="props.yieldQty"
             type="number"
             min="0"
             step="any"
             :disabled="props.disabled"
-            :class="inputClass"
-            @input="emit('update:yieldQty', Number(($event.target as HTMLInputElement).value))"
+            @update:model-value="emit('update:yieldQty', Number($event))"
           />
         </div>
         <div>
           <label :class="labelClass">UOM Hasil<span class="text-error-500">*</span></label>
-          <div class="relative">
-            <select
-              :value="props.yieldUomId"
-              :disabled="props.disabled"
-              :class="[inputClass, 'appearance-none pe-10']"
-              @change="emit('update:yieldUomId', ($event.target as HTMLSelectElement).value)"
-            >
-              <option value="" disabled>Pilih UOM</option>
-              <option v-for="uom in props.uoms" :key="uom.id" :value="uom.id">
-                {{ uom.name }}
-              </option>
-            </select>
-            <ChevronDownIcon
-              class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-            />
-          </div>
+          <BaseSelect
+            id="recipe-yield-uom"
+            :model-value="props.yieldUomId"
+            :options="props.uoms.map((uom) => ({ value: uom.id, label: uom.name }))"
+            :disabled="props.disabled"
+            placeholder="Pilih UOM"
+            @update:model-value="emit('update:yieldUomId', $event)"
+          />
         </div>
       </div>
     </div>
 
     <div>
       <label :class="labelClass">Instruksi</label>
-      <textarea
-        :value="props.instructions"
-        rows="3"
+      <BaseTextarea
+        id="recipe-instructions"
+        :model-value="props.instructions"
+        :rows="3"
         :disabled="props.disabled"
         placeholder="Instruksi persiapan / langkah produksi (opsional)..."
-        class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-        @input="emit('update:instructions', ($event.target as HTMLTextAreaElement).value)"
-      ></textarea>
+        @update:model-value="emit('update:instructions', $event)"
+      />
     </div>
   </div>
 </template>

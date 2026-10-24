@@ -27,6 +27,7 @@ import { ChevronLeft } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
+import { BaseAlert, BaseButton } from '@/components/ui'
 import {
   StockAdjustmentSummary,
   StockAdjustmentItemsTable,
@@ -104,10 +105,7 @@ async function loadLookups(outletId: string): Promise<void> {
   outletNames.value = new Map(allOutlets.map((o) => [o.id, o.name]))
   productNames.value = new Map(allProducts.map((p) => [p.id, `${p.name} (${p.sku})`]))
   batchNumbers.value = new Map(
-    allBatches.map((entry) => [
-      entry.batch.id,
-      entry.batch.batchNumber || '(tanpa batch)',
-    ]),
+    allBatches.map((entry) => [entry.batch.id, entry.batch.batchNumber || '(tanpa batch)']),
   )
 }
 
@@ -180,35 +178,25 @@ async function onConfirmAction(): Promise<void> {
   <AdminLayout>
     <PageBreadcrumb :pageTitle="'Detail Stock Adjustment'" />
 
-    <div
-      v-if="loading"
-      class="rounded-2xl border border-gray-200 bg-white p-10 text-center text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400"
-    >
-      Memuat data...
-    </div>
+    <div v-if="loading" class="panel-loading">Memuat data...</div>
 
-    <div
-      v-else-if="loadError"
-      class="rounded-2xl border border-error-500/40 bg-error-50 p-4 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      role="alert"
-    >
-      {{ loadError }}
-    </div>
+    <BaseAlert v-else-if="loadError" :message="loadError" size="md" class="rounded-2xl py-4" />
 
     <template v-else-if="adjustment">
       <!-- Page header: back (icon-only) + title on the start, lifecycle actions on the end -->
       <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <button
-            type="button"
+          <BaseButton
+            variant="outline"
+            icon-only
             aria-label="Kembali ke Daftar"
             title="Kembali ke Daftar"
-            class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
+            class="h-10 w-10"
             @click="goToList"
           >
             <ChevronLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
-          </button>
-          <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
+          </BaseButton>
+          <h3 class="card-title">
             {{ adjustment.adjustmentNumber }}
           </h3>
         </div>
@@ -232,12 +220,7 @@ async function onConfirmAction(): Promise<void> {
       <div class="grid grid-cols-1 gap-5">
         <ComponentCard title="Informasi Penyesuaian Stok">
           <!-- Action error banner (mutation failures keep user here) -->
-          <p
-            v-if="actionError"
-            class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-          >
-            {{ actionError }}
-          </p>
+          <BaseAlert v-if="actionError" :message="actionError" size="sm" class="mb-4" />
 
           <StockAdjustmentSummary :adjustment="adjustment" :outlet-name="outletName" />
 
@@ -249,10 +232,7 @@ async function onConfirmAction(): Promise<void> {
             />
           </div>
 
-          <p
-            v-if="!hasAnyAction"
-            class="mt-6 text-theme-sm text-gray-400 dark:text-gray-500"
-          >
+          <p v-if="!hasAnyAction" class="mt-6 text-theme-sm text-gray-400 dark:text-gray-500">
             Tidak ada aksi untuk status ini.
           </p>
         </ComponentCard>

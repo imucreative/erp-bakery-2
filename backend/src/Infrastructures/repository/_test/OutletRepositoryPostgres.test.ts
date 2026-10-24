@@ -2,6 +2,7 @@ import { OutletRepositoryPostgres } from '../OutletRepositoryPostgres';
 import { Pool } from 'pg';
 import { Outlet } from '../../../Domains/outlets/entities/Outlet';
 import { NotFoundError } from '../../../Commons/exceptions/NotFoundError';
+import { ConflictError } from '../../../Commons/exceptions/ConflictError';
 
 const mockPool = { query: jest.fn() } as unknown as Pool;
 
@@ -36,6 +37,28 @@ describe('OutletRepositoryPostgres', () => {
 
       expect(result).toBeInstanceOf(Outlet);
       expect(result.code).toBe('OUT-001');
+    });
+
+    it('should translate a unique violation into OUTLET.CODE_DUPLICATE', async () => {
+      (mockPool.query as jest.Mock).mockRejectedValue({ code: '23505' });
+
+      await expect(
+        repo.addOutlet(
+          { code: 'OUT-001', name: 'Outlet A', address: null, phone: null },
+          'company-uuid',
+        ),
+      ).rejects.toThrow(new ConflictError('OUTLET.CODE_DUPLICATE'));
+    });
+
+    it('should rethrow non-unique database errors', async () => {
+      (mockPool.query as jest.Mock).mockRejectedValue(new Error('connection lost'));
+
+      await expect(
+        repo.addOutlet(
+          { code: 'OUT-001', name: 'Outlet A', address: null, phone: null },
+          'company-uuid',
+        ),
+      ).rejects.toThrow('connection lost');
     });
   });
 

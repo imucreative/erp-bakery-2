@@ -9,7 +9,8 @@ import { computed, onMounted, ref } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import Button from '@/components/ui/Button.vue'
+import { BaseButton, BaseInput } from '@/components/ui'
+import { Plus } from 'lucide-vue-next'
 import RoleTable from '@/components/system/role/RoleTable.vue'
 import RoleDetailModal from '@/components/system/role/RoleDetailModal.vue'
 import RoleFormModal from '@/components/system/role/RoleFormModal.vue'
@@ -156,18 +157,14 @@ onMounted(() => {
     <PageBreadcrumb :pageTitle="pageTitle" />
 
     <ComponentCard title="Roles" desc="Kelola role beserta permission-nya.">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <div class="relative w-full sm:max-w-xs">
-          <input
-            v-model="search"
-            type="text"
-            placeholder="Cari role..."
-            class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-          />
+          <BaseInput id="role-search" v-model="search" placeholder="Cari role..." />
         </div>
-        <Button v-if="canManage" size="sm" variant="primary" :on-click="openCreate">
-          + Tambah Role
-        </Button>
+        <BaseButton v-if="canManage" size="sm" variant="primary" @click="openCreate">
+          <template #start-icon><Plus class="h-4 w-4" aria-hidden="true" /></template>
+          Tambah Role
+        </BaseButton>
       </div>
 
       <RoleTable

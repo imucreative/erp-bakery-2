@@ -13,6 +13,7 @@
  */
 import { Eye } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
+import { BaseButton, BaseTable, BaseTableCell, BaseTableHead, BaseTableRow } from '@/components/ui'
 import { formatDate, formatQtyWithUom } from '@/lib/format'
 import {
   batchStatusLabel,
@@ -85,113 +86,80 @@ function expiryColor(state: ExpiryState): ExpiryColor {
 </script>
 
 <template>
-  <div>
-    <div v-if="loading" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-      Memuat data...
-    </div>
-
-    <div
-      v-else-if="errorMessage"
-      class="rounded-lg border border-error-500/40 bg-error-50 px-4 py-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      role="alert"
-    >
-      {{ errorMessage }}
-    </div>
-
-    <div
-      v-else-if="items.length === 0"
-      class="py-10 text-center text-sm text-gray-500 dark:text-gray-400"
-    >
-      Belum ada data batch.
-    </div>
-
-    <div v-else class="overflow-x-auto">
-      <table class="min-w-full">
-        <thead>
-          <tr class="border-b border-gray-100 dark:border-gray-800">
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Produk
-            </th>
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Outlet
-            </th>
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              No. Batch
-            </th>
-            <th class="px-5 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Qty
-            </th>
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Tgl Kedaluwarsa
-            </th>
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Status
-            </th>
-            <th class="px-5 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Kedaluwarsa
-            </th>
-            <th class="px-5 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Aksi
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="row in items"
-            :key="row.batch.id"
-            class="border-b border-gray-100 dark:border-gray-800"
+  <BaseTable
+    :loading="loading"
+    :error-message="errorMessage"
+    :is-empty="items.length === 0"
+    empty-message="Belum ada data batch."
+    aria-label="Daftar batch dan expiry"
+  >
+    <template #header>
+      <BaseTableRow variant="header">
+        <BaseTableHead>Produk</BaseTableHead>
+        <BaseTableHead>Outlet</BaseTableHead>
+        <BaseTableHead>No. Batch</BaseTableHead>
+        <BaseTableHead align="end">Qty</BaseTableHead>
+        <BaseTableHead>Tgl Kedaluwarsa</BaseTableHead>
+        <BaseTableHead>Status</BaseTableHead>
+        <BaseTableHead>Kedaluwarsa</BaseTableHead>
+        <BaseTableHead align="end">Aksi</BaseTableHead>
+      </BaseTableRow>
+    </template>
+    <template #body>
+      <BaseTableRow v-for="row in items" :key="row.batch.id">
+        <BaseTableCell>
+          <div class="flex flex-col">
+            <span class="text-strong">
+              {{ productDisplay(row.batch.productId).name }}
+            </span>
+            <span class="text-meta">
+              {{ productDisplay(row.batch.productId).sku }}
+            </span>
+          </div>
+        </BaseTableCell>
+        <BaseTableCell>
+          {{ outletLabel(row.batch.outletId) }}
+        </BaseTableCell>
+        <BaseTableCell>
+          <span
+            v-if="row.batch.isNonBatch || !row.batch.batchNumber"
+            class="text-gray-400 dark:text-gray-500"
           >
-            <td class="px-5 py-4">
-              <div class="flex flex-col">
-                <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
-                  {{ productDisplay(row.batch.productId).name }}
-                </span>
-                <span class="text-theme-xs text-gray-500 dark:text-gray-400">
-                  {{ productDisplay(row.batch.productId).sku }}
-                </span>
-              </div>
-            </td>
-            <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
-              {{ outletLabel(row.batch.outletId) }}
-            </td>
-            <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
-              <span v-if="row.batch.isNonBatch || !row.batch.batchNumber" class="text-gray-400 dark:text-gray-500">
-                Non-batch
-              </span>
-              <span v-else>{{ row.batch.batchNumber }}</span>
-            </td>
-            <td class="px-5 py-4 text-end text-theme-sm font-medium text-gray-800 dark:text-white/90">
-              {{ formatQtyWithUom(row.batch.qtyAvailable, uomLabel(row.batch.productId)) }}
-            </td>
-            <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">
-              {{ row.batch.expiredDate ? formatDate(row.batch.expiredDate) : '—' }}
-            </td>
-            <td class="px-5 py-4">
-              <Badge :color="statusColor(row.batch.status)">
-                {{ batchStatusLabel(row.batch.status) }}
-              </Badge>
-            </td>
-            <td class="px-5 py-4">
-              <Badge :color="expiryColor(row.expiryState)">
-                {{ expiryStateLabel(row.expiryState) }}
-              </Badge>
-            </td>
-            <td class="px-5 py-4">
-              <div class="flex justify-end">
-                <button
-                  type="button"
-                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white/90"
-                  aria-label="Lihat detail batch"
-                  title="Lihat detail batch"
-                  @click="emit('view', row.batch.id)"
-                >
-                  <Eye class="h-4 w-4" />
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+            Non-batch
+          </span>
+          <span v-else>{{ row.batch.batchNumber }}</span>
+        </BaseTableCell>
+        <BaseTableCell align="end" emphasis="medium">
+          {{ formatQtyWithUom(row.batch.qtyAvailable, uomLabel(row.batch.productId)) }}
+        </BaseTableCell>
+        <BaseTableCell>
+          {{ row.batch.expiredDate ? formatDate(row.batch.expiredDate) : '—' }}
+        </BaseTableCell>
+        <BaseTableCell>
+          <Badge :color="statusColor(row.batch.status)">
+            {{ batchStatusLabel(row.batch.status) }}
+          </Badge>
+        </BaseTableCell>
+        <BaseTableCell>
+          <Badge :color="expiryColor(row.expiryState)">
+            {{ expiryStateLabel(row.expiryState) }}
+          </Badge>
+        </BaseTableCell>
+        <BaseTableCell align="end">
+          <div class="button-row">
+            <BaseButton
+              size="sm"
+              variant="outline"
+              icon-only
+              aria-label="Lihat detail batch"
+              title="Lihat detail batch"
+              @click="emit('view', row.batch.id)"
+            >
+              <Eye class="h-4 w-4" />
+            </BaseButton>
+          </div>
+        </BaseTableCell>
+      </BaseTableRow>
+    </template>
+  </BaseTable>
 </template>

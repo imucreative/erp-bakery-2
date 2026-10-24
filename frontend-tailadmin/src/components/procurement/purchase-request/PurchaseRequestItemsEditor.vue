@@ -18,10 +18,17 @@
  * base unit. See `useProductValidUoms`.
  */
 import { computed, onMounted, watch } from 'vue'
-import { Trash2 } from 'lucide-vue-next'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
-import { PlusIcon } from '@/icons'
+import { Plus, Trash2 } from 'lucide-vue-next'
 import EntityCombobox from '@/components/ui/EntityCombobox.vue'
+import {
+  BaseButton,
+  BaseInput,
+  BaseSelect,
+  BaseTable,
+  BaseTableCell,
+  BaseTableHead,
+  BaseTableRow,
+} from '@/components/ui'
 import { formatRupiah } from '@/lib/format'
 import type { Product } from '@/services/product.service'
 import type { Uom } from '@/services/uom.service'
@@ -45,9 +52,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'update:modelValue', rows: EditorItemRow[]): void
 }>()
-
-const inputClass =
-  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
 
 const productMap = computed<Map<string, Product>>(
   () => new Map(props.products.map((p) => [p.id, p])),
@@ -211,163 +215,125 @@ function chosenLabel(row: EditorItemRow): string {
     <!-- Horizontal scroll only. The height follows the row count, and
          `overflow-y-hidden` keeps this wrapper from ever becoming a vertical
          scroll container (CSS computes overflow-y to auto once overflow-x is set). -->
-    <div class="overflow-x-auto overflow-y-hidden rounded-xl border border-gray-200 dark:border-gray-800">
-      <table class="min-w-full">
-        <thead>
-          <tr class="border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]">
-            <th class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Produk
-            </th>
-            <th class="w-28 px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Qty
-            </th>
-            <th class="w-36 px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              UOM
-            </th>
-            <th class="w-40 px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Estimasi Harga
-            </th>
-            <th class="w-40 px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Subtotal
-            </th>
-            <th class="w-16 px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-              Aksi
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(row, index) in modelValue"
-            :key="index"
-            class="border-b border-gray-100 last:border-0 dark:border-gray-800"
-          >
-            <!-- Product — text autocomplete, client-filtered -->
-            <td class="px-4 py-3 align-top">
-              <EntityCombobox
-                :model-value="row.productId"
-                :selected-label="chosenLabel(row)"
-                :items="sortedProducts"
-                :item-id="(product) => product.id"
-                :item-label="labelValue"
-                :item-disabled="makeBlockedTest(index)"
-                item-disabled-hint="sudah dipakai di baris lain"
-                mode="client"
-                :max-suggestions="50"
-                :visible-item-count="10"
-                placeholder="Ketik untuk mencari produk..."
-                empty-text="Produk tidak ditemukan."
-                :aria-label="`Produk baris ${index + 1}`"
-                :clear-aria-label="`Hapus produk baris ${index + 1}`"
-                :disabled="disabled"
-                @select="onProductSelect(index, $event)"
-                @clear="clearItemProduct(index)"
-              />
-            </td>
-            <!-- Quantity -->
-            <td class="px-4 py-3 align-top">
-              <input
-                :value="row.quantity"
-                type="number"
-                min="0"
-                step="any"
-                :disabled="disabled"
-                :class="inputClass"
-                @input="updateRow(index, { quantity: Number(($event.target as HTMLInputElement).value) })"
-              />
-            </td>
-            <!-- UOM -->
-            <td class="px-4 py-3 align-top">
-              <div class="relative">
-                <select
-                  :value="row.uomId"
-                  :disabled="disabled"
-                  :class="[inputClass, 'appearance-none pe-10']"
-                  @change="updateRow(index, { uomId: ($event.target as HTMLSelectElement).value })"
-                >
-                  <option value="" disabled>Pilih UOM</option>
-                  <option v-for="u in uomOptionsForRow(row)" :key="u.id" :value="u.id">
-                    {{ u.label }}
-                  </option>
-                </select>
-                <ChevronDownIcon
-                  class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-                />
-              </div>
-              <span
-                v-if="row.productId && validUoms.isLoading(row.productId)"
-                class="mt-1 block text-theme-xs text-gray-400 dark:text-gray-500"
-              >
-                Memuat satuan...
-              </span>
-            </td>
-            <!-- Estimated Price -->
-            <td class="px-4 py-3 align-top">
-              <input
-                :value="row.estimatedPrice"
-                type="number"
-                min="0"
-                step="any"
-                :disabled="disabled"
-                :class="inputClass"
-                @input="updateRow(index, { estimatedPrice: Number(($event.target as HTMLInputElement).value) })"
-              />
-            </td>
-            <!-- Subtotal (preview, read-only) -->
-            <td class="px-4 py-3 text-end align-middle text-theme-sm text-gray-700 dark:text-gray-300">
-              {{ formatRupiah(subtotal(row)) }}
-            </td>
-            <!-- Remove -->
-            <td class="px-4 py-3 text-end align-middle">
-              <button
-                type="button"
-                aria-label="Hapus baris"
-                title="Hapus baris"
-                :disabled="disabled"
-                class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-error-500 ring-1 ring-inset ring-error-200 transition hover:bg-error-50 hover:text-error-600 disabled:cursor-not-allowed disabled:opacity-40 dark:ring-error-500/30 dark:hover:bg-error-500/10"
-                @click="removeRow(index)"
-              >
-                <Trash2 class="h-4 w-4" aria-hidden="true" />
-              </button>
-            </td>
-          </tr>
-
-          <tr v-if="modelValue.length === 0">
-            <td
-              colspan="6"
-              class="px-4 py-6 text-center text-theme-sm text-gray-500 dark:text-gray-400"
+    <BaseTable aria-label="Editor item purchase request">
+      <template #header>
+        <BaseTableRow variant="header">
+          <BaseTableHead>Produk</BaseTableHead>
+          <BaseTableHead>Qty</BaseTableHead>
+          <BaseTableHead>UOM</BaseTableHead>
+          <BaseTableHead>Estimasi Harga</BaseTableHead>
+          <BaseTableHead align="end">Subtotal</BaseTableHead>
+          <BaseTableHead align="end">Aksi</BaseTableHead>
+        </BaseTableRow>
+      </template>
+      <template #body>
+        <BaseTableRow v-for="(row, index) in modelValue" :key="index">
+          <!-- Product — text autocomplete, client-filtered -->
+          <BaseTableCell class="align-top">
+            <EntityCombobox
+              :model-value="row.productId"
+              :selected-label="chosenLabel(row)"
+              :items="sortedProducts"
+              :item-id="(product) => product.id"
+              :item-label="labelValue"
+              :item-disabled="makeBlockedTest(index)"
+              item-disabled-hint="sudah dipakai di baris lain"
+              mode="client"
+              :max-suggestions="50"
+              :visible-item-count="10"
+              placeholder="Ketik untuk mencari produk..."
+              empty-text="Produk tidak ditemukan."
+              :aria-label="`Produk baris ${index + 1}`"
+              :clear-aria-label="`Hapus produk baris ${index + 1}`"
+              :disabled="disabled"
+              @select="onProductSelect(index, $event)"
+              @clear="clearItemProduct(index)"
+            />
+          </BaseTableCell>
+          <!-- Quantity -->
+          <BaseTableCell class="align-top">
+            <BaseInput
+              :id="`purchase-request-quantity-${index}`"
+              :model-value="row.quantity"
+              type="number"
+              min="0"
+              step="any"
+              :disabled="disabled"
+              @update:model-value="updateRow(index, { quantity: Number($event) })"
+            />
+          </BaseTableCell>
+          <!-- UOM -->
+          <BaseTableCell class="align-top">
+            <BaseSelect
+              :id="`purchase-request-uom-${index}`"
+              :model-value="row.uomId"
+              :options="uomOptionsForRow(row).map((u) => ({ value: u.id, label: u.label }))"
+              placeholder="Pilih UOM"
+              :disabled="disabled"
+              @update:model-value="updateRow(index, { uomId: $event })"
+            />
+            <span
+              v-if="row.productId && validUoms.isLoading(row.productId)"
+              class="mt-1 block text-muted-xs"
             >
-              Belum ada item. Tambahkan minimal satu item.
-            </td>
-          </tr>
-        </tbody>
-        <tfoot v-if="modelValue.length > 0">
-          <tr class="border-t border-gray-200 dark:border-gray-800">
-            <td
-              colspan="4"
-              class="px-4 py-3 text-end text-theme-sm font-medium text-gray-600 dark:text-gray-300"
+              Memuat satuan...
+            </span>
+          </BaseTableCell>
+          <!-- Estimated Price -->
+          <BaseTableCell class="align-top">
+            <BaseInput
+              :id="`purchase-request-price-${index}`"
+              :model-value="row.estimatedPrice"
+              type="number"
+              min="0"
+              step="any"
+              :disabled="disabled"
+              @update:model-value="updateRow(index, { estimatedPrice: Number($event) })"
+            />
+          </BaseTableCell>
+          <!-- Subtotal (preview, read-only) -->
+          <BaseTableCell align="end" class="align-middle">
+            {{ formatRupiah(subtotal(row)) }}
+          </BaseTableCell>
+          <!-- Remove -->
+          <BaseTableCell align="end" class="align-middle">
+            <BaseButton
+              size="sm"
+              variant="danger"
+              icon-only
+              aria-label="Hapus baris"
+              title="Hapus baris"
+              :disabled="disabled"
+              @click="removeRow(index)"
             >
-              Total Estimasi
-            </td>
-            <td class="px-4 py-3 text-end text-theme-sm font-semibold text-gray-800 dark:text-white/90">
-              {{ formatRupiah(grandTotal) }}
-            </td>
-            <td></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
+              <Trash2 class="h-4 w-4" aria-hidden="true" />
+            </BaseButton>
+          </BaseTableCell>
+        </BaseTableRow>
 
-    <button
-      v-if="!disabled"
-      type="button"
-      class="inline-flex items-center gap-2 rounded-lg border border-dashed border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:border-brand-300 hover:text-brand-500 dark:border-gray-700 dark:text-gray-300 dark:hover:border-brand-500/50"
-      @click="addRow"
-    >
-      <PlusIcon class="h-4 w-4" aria-hidden="true" />
+        <BaseTableRow v-if="modelValue.length === 0">
+          <BaseTableCell colspan="6" align="center">
+            Belum ada item. Tambahkan minimal satu item.
+          </BaseTableCell>
+        </BaseTableRow>
+      </template>
+      <template v-if="modelValue.length > 0" #footer>
+        <BaseTableRow>
+          <BaseTableCell colspan="4" align="end" emphasis="medium">Total Estimasi</BaseTableCell>
+          <BaseTableCell align="end" emphasis="medium">
+            {{ formatRupiah(grandTotal) }}
+          </BaseTableCell>
+          <BaseTableCell />
+        </BaseTableRow>
+      </template>
+    </BaseTable>
+
+    <BaseButton v-if="!disabled" variant="outline" @click="addRow">
+      <template #start-icon><Plus class="h-4 w-4" aria-hidden="true" /></template>
       Tambah Item
-    </button>
+    </BaseButton>
 
-    <p class="text-theme-xs text-gray-400 dark:text-gray-500">
+    <p class="text-muted-xs">
       Subtotal & total di atas hanya pratinjau; nilai final dihitung oleh server.
     </p>
   </div>

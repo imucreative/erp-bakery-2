@@ -6,10 +6,11 @@
  * first relation-backed master module).
  */
 import { computed, onMounted, ref } from 'vue'
+import { Plus } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import Button from '@/components/ui/Button.vue'
+import { BaseButton, BaseInput, BaseTablePagination } from '@/components/ui'
 import CategoryTable from '@/components/masterdata/category/CategoryTable.vue'
 import CategoryFormModal from '@/components/masterdata/category/CategoryFormModal.vue'
 import CategoryDeleteModal from '@/components/masterdata/category/CategoryDeleteModal.vue'
@@ -136,20 +137,21 @@ onMounted(() => {
   <AdminLayout>
     <PageBreadcrumb :pageTitle="pageTitle" />
 
-    <ComponentCard title="Categories" desc="Kelola kategori produk (dikelompokkan per grup produk).">
+    <ComponentCard
+      title="Categories"
+      desc="Kelola kategori produk (dikelompokkan per grup produk)."
+    >
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <div class="relative w-full sm:max-w-xs">
-          <input
-            v-model="search"
-            type="text"
-            placeholder="Cari kategori..."
-            class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-          />
+          <BaseInput id="category-search" v-model="search" placeholder="Cari kategori..." />
         </div>
-        <Button v-if="canManage" size="sm" variant="primary" :on-click="openCreate">
-          + Tambah Kategori
-        </Button>
+        <BaseButton v-if="canManage" size="sm" variant="primary" @click="openCreate">
+          <template #start-icon>
+            <Plus class="h-4 w-4" aria-hidden="true" />
+          </template>
+          Tambah Kategori
+        </BaseButton>
       </div>
 
       <CategoryTable
@@ -163,25 +165,17 @@ onMounted(() => {
       />
 
       <!-- Pagination -->
-      <div
+      <BaseTablePagination
         v-if="!loading && !errorMessage && items.length > 0"
-        class="flex flex-col items-center justify-between gap-3 pt-2 sm:flex-row"
-      >
-        <span class="text-theme-sm text-gray-500 dark:text-gray-400">
-          Menampilkan {{ items.length }} dari {{ meta.total }} data
-        </span>
-        <div class="flex items-center gap-2">
-          <Button size="sm" variant="outline" :disabled="!canPrev" :on-click="prevPage">
-            Sebelumnya
-          </Button>
-          <span class="text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ page }} / {{ totalPages }}
-          </span>
-          <Button size="sm" variant="outline" :disabled="!canNext" :on-click="nextPage">
-            Berikutnya
-          </Button>
-        </div>
-      </div>
+        :current-count="items.length"
+        :total-items="meta.total"
+        :current-page="page"
+        :total-pages="totalPages"
+        :has-previous="canPrev"
+        :has-next="canNext"
+        @previous="prevPage"
+        @next="nextPage"
+      />
     </ComponentCard>
 
     <CategoryFormModal

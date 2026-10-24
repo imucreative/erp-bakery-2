@@ -14,10 +14,7 @@
     @mouseleave="isHovered = false"
   >
     <div
-      :class="[
-        'pt-8 pb-7 flex',
-        !isExpanded && !isHovered ? 'xl:justify-center' : 'justify-start',
-      ]"
+      :class="['pt-8 pb-7 flex', !isExpanded && !isHovered ? 'xl:justify-center' : 'justify-start']"
     >
       <router-link to="/">
         <img
@@ -36,30 +33,17 @@
           width="150"
           height="40"
         />
-        <img
-          v-else
-          src="/images/logo/logo-icon.svg"
-          alt="Logo"
-          width="32"
-          height="32"
-        />
+        <img v-else src="/images/logo/logo-icon.svg" alt="Logo" width="32" height="32" />
       </router-link>
     </div>
-    <div
-      class="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar"
-    >
+    <div class="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
       <nav class="mb-6">
         <div class="flex flex-col gap-4">
-          <div
-            v-for="(menuGroup, groupIndex) in visibleMenuGroups"
-            :key="menuGroup.title"
-          >
+          <div v-for="(menuGroup, groupIndex) in visibleMenuGroups" :key="menuGroup.title">
             <h2
               :class="[
                 'mb-4 text-xs uppercase flex leading-5 text-gray-400',
-                !isExpanded && !isHovered
-                  ? 'xl:justify-center'
-                  : 'justify-start',
+                !isExpanded && !isHovered ? 'xl:justify-center' : 'justify-start',
               ]"
             >
               <template v-if="isExpanded || isHovered || isMobileOpen">
@@ -78,9 +62,7 @@
                       'menu-item-active': isSubmenuOpen(groupIndex, index),
                       'menu-item-inactive': !isSubmenuOpen(groupIndex, index),
                     },
-                    !isExpanded && !isHovered
-                      ? 'xl:justify-center'
-                      : 'xl:justify-start',
+                    !isExpanded && !isHovered ? 'xl:justify-center' : 'xl:justify-start',
                   ]"
                 >
                   <span
@@ -102,10 +84,7 @@
                     :class="[
                       'ms-auto w-5 h-5 transition-transform duration-200',
                       {
-                        'rotate-180 text-brand-500': isSubmenuOpen(
-                          groupIndex,
-                          index
-                        ),
+                        'rotate-180 text-brand-500': isSubmenuOpen(groupIndex, index),
                       },
                     ]"
                   />
@@ -123,18 +102,14 @@
                 >
                   <span
                     :class="[
-                      isActive(item.path)
-                        ? 'menu-item-icon-active'
-                        : 'menu-item-icon-inactive',
+                      isActive(item.path) ? 'menu-item-icon-active' : 'menu-item-icon-inactive',
                     ]"
                   >
                     <component :is="item.icon" />
                   </span>
-                  <span
-                    v-if="isExpanded || isHovered || isMobileOpen"
-                    class="menu-item-text"
-                    >{{ item.name }}</span
-                  >
+                  <span v-if="isExpanded || isHovered || isMobileOpen" class="menu-item-text">{{
+                    item.name
+                  }}</span>
                   <span
                     v-if="item.soon && (isExpanded || isHovered || isMobileOpen)"
                     class="ms-auto rounded-full bg-gray-100 px-2 py-0.5 text-theme-xs font-medium text-gray-500 dark:bg-white/10 dark:text-gray-400"
@@ -150,8 +125,7 @@
                 >
                   <div
                     v-show="
-                      isSubmenuOpen(groupIndex, index) &&
-                      (isExpanded || isHovered || isMobileOpen)
+                      isSubmenuOpen(groupIndex, index) && (isExpanded || isHovered || isMobileOpen)
                     "
                   >
                     <ul class="mt-2 space-y-1 ms-9">
@@ -161,12 +135,8 @@
                           :class="[
                             'menu-dropdown-item',
                             {
-                              'menu-dropdown-item-active': isActive(
-                                subItem.path
-                              ),
-                              'menu-dropdown-item-inactive': !isActive(
-                                subItem.path
-                              ),
+                              'menu-dropdown-item-active': isActive(subItem.path),
+                              'menu-dropdown-item-inactive': !isActive(subItem.path),
                             },
                           ]"
                         >
@@ -183,12 +153,8 @@
                               :class="[
                                 'menu-dropdown-badge',
                                 {
-                                  'menu-dropdown-badge-active': isActive(
-                                    subItem.path
-                                  ),
-                                  'menu-dropdown-badge-inactive': !isActive(
-                                    subItem.path
-                                  ),
+                                  'menu-dropdown-badge-active': isActive(subItem.path),
+                                  'menu-dropdown-badge-inactive': !isActive(subItem.path),
                                 },
                               ]"
                             >
@@ -199,12 +165,8 @@
                               :class="[
                                 'menu-dropdown-badge',
                                 {
-                                  'menu-dropdown-badge-active': isActive(
-                                    subItem.path
-                                  ),
-                                  'menu-dropdown-badge-inactive': !isActive(
-                                    subItem.path
-                                  ),
+                                  'menu-dropdown-badge-active': isActive(subItem.path),
+                                  'menu-dropdown-badge-inactive': !isActive(subItem.path),
                                 },
                               ]"
                             >
@@ -297,7 +259,6 @@ interface MenuGroup {
 }
 
 const menuGroups: MenuGroup[] = [
-    
   {
     title: 'Menu',
     items: [
@@ -530,8 +491,7 @@ const menuGroups: MenuGroup[] = [
  * dropped entirely. Computed so it re-runs when the auth store changes.
  */
 const visibleMenuGroups = computed<MenuGroup[]>(() => {
-  const isItemVisible = (item: MenuItem): boolean =>
-    !item.permission || can(item.permission)
+  const isItemVisible = (item: MenuItem): boolean => !item.permission || can(item.permission)
 
   return menuGroups
     .map((group) => {

@@ -100,13 +100,9 @@ export function useProducts() {
       productGroupService
         .list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' })
         .catch(() => null),
-      categoryService
-        .list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' })
-        .catch(() => null),
+      categoryService.list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' }).catch(() => null),
       uomService.list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' }).catch(() => null),
-      supplierService
-        .list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' })
-        .catch(() => null),
+      supplierService.list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' }).catch(() => null),
     ])
     if (g) groups.value = g.items
     if (c) categories.value = c.items

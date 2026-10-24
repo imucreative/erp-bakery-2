@@ -13,7 +13,7 @@
  * warning is shown if a same-outlet selection ever slips through.
  */
 import { computed } from 'vue'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
+import { BaseInput, BaseSelect, BaseTextarea } from '@/components/ui'
 import type { Outlet } from '@/services/outlet.service'
 
 const props = defineProps<{
@@ -40,39 +40,27 @@ const destinationOutlets = computed<Outlet[]>(() =>
 
 /** True when source and destination are the same (invalid). */
 const sameOutlet = computed<boolean>(
-  () =>
-    Boolean(props.sourceOutletId) &&
-    props.sourceOutletId === props.destinationOutletId,
+  () => Boolean(props.sourceOutletId) && props.sourceOutletId === props.destinationOutletId,
 )
 
-const inputClass =
-  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
-const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
+const labelClass = 'form-label'
 </script>
 
 <template>
   <div class="space-y-6">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div class="field-grid">
       <!-- Source outlet -->
       <div>
         <label :class="labelClass">Outlet Sumber<span class="text-error-500">*</span></label>
-        <div class="relative">
-          <select
-            :value="props.sourceOutletId"
-            :disabled="props.disabled || props.sourceLocked"
-            :class="[inputClass, 'appearance-none pe-10']"
-            @change="emit('update:sourceOutletId', ($event.target as HTMLSelectElement).value)"
-          >
-            <option value="" disabled>Pilih outlet sumber</option>
-            <option v-for="outlet in props.outlets" :key="outlet.id" :value="outlet.id">
-              {{ outlet.name }}
-            </option>
-          </select>
-          <ChevronDownIcon
-            class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-          />
-        </div>
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
+        <BaseSelect
+          id="stock-transfer-source"
+          :model-value="props.sourceOutletId"
+          :options="props.outlets.map((outlet) => ({ value: outlet.id, label: outlet.name }))"
+          :disabled="props.disabled || props.sourceLocked"
+          placeholder="Pilih outlet sumber"
+          @update:model-value="emit('update:sourceOutletId', $event)"
+        />
+        <p class="mt-1 text-muted-xs">
           Outlet sumber menentukan batch stok yang dapat dipilih pada item.
           <template v-if="props.sourceLocked">
             Hapus semua item untuk mengganti outlet sumber.
@@ -83,26 +71,15 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
       <!-- Destination outlet -->
       <div>
         <label :class="labelClass">Outlet Tujuan<span class="text-error-500">*</span></label>
-        <div class="relative">
-          <select
-            :value="props.destinationOutletId"
-            :disabled="props.disabled"
-            :class="[inputClass, 'appearance-none pe-10']"
-            @change="emit('update:destinationOutletId', ($event.target as HTMLSelectElement).value)"
-          >
-            <option value="" disabled>Pilih outlet tujuan</option>
-            <option v-for="outlet in destinationOutlets" :key="outlet.id" :value="outlet.id">
-              {{ outlet.name }}
-            </option>
-          </select>
-          <ChevronDownIcon
-            class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-          />
-        </div>
-        <p
-          v-if="sameOutlet"
-          class="mt-1 text-theme-xs text-error-500"
-        >
+        <BaseSelect
+          id="stock-transfer-destination"
+          :model-value="props.destinationOutletId"
+          :options="destinationOutlets.map((outlet) => ({ value: outlet.id, label: outlet.name }))"
+          :disabled="props.disabled"
+          placeholder="Pilih outlet tujuan"
+          @update:model-value="emit('update:destinationOutletId', $event)"
+        />
+        <p v-if="sameOutlet" class="mt-1 text-theme-xs text-error-500">
           Outlet tujuan harus berbeda dari outlet sumber.
         </p>
       </div>
@@ -110,28 +87,26 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gra
       <!-- Transfer date -->
       <div>
         <label :class="labelClass">Tanggal Transfer<span class="text-error-500">*</span></label>
-        <input
-          :value="props.transferDate"
+        <BaseInput
+          id="stock-transfer-date"
+          :model-value="props.transferDate"
           type="date"
           :disabled="props.disabled"
-          :class="inputClass"
-          @click="($event.target as HTMLInputElement).showPicker?.()"
-          @focus="($event.target as HTMLInputElement).showPicker?.()"
-          @input="emit('update:transferDate', ($event.target as HTMLInputElement).value)"
+          @update:model-value="emit('update:transferDate', $event)"
         />
       </div>
     </div>
 
     <div>
       <label :class="labelClass">Catatan</label>
-      <textarea
-        :value="props.notes"
-        rows="2"
+      <BaseTextarea
+        id="stock-transfer-notes"
+        :model-value="props.notes"
+        :rows="2"
         :disabled="props.disabled"
         placeholder="Catatan opsional untuk transfer ini..."
-        class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-        @input="emit('update:notes', ($event.target as HTMLTextAreaElement).value)"
-      ></textarea>
+        @update:model-value="emit('update:notes', $event)"
+      />
     </div>
   </div>
 </template>

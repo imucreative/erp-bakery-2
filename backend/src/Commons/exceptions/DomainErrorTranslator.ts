@@ -47,6 +47,9 @@ const DomainErrorTranslator = {
     'CREATE_OUTLET.PHONE_LIMIT_CHAR': new InvariantError(
       'Gagal membuat outlet: nomor telepon maksimal 30 karakter',
     ),
+    'CREATE_OUTLET.CODE_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat outlet: kode maksimal 20 karakter',
+    ),
 
     // ── UpdateOutlet ─────────────────────────────────────────────
     'UPDATE_OUTLET.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
@@ -65,6 +68,9 @@ const DomainErrorTranslator = {
     // ── Outlet ───────────────────────────────────────────────────
     'OUTLET.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
       'Data outlet tidak lengkap',
+    ),
+    'OUTLET.CODE_DUPLICATE': new ConflictError(
+      'Kode outlet sudah digunakan. Pilih kode lain, atau kosongkan untuk membuat kode otomatis.',
     ),
 
     // ── CreateProductGroup ───────────────────────────────────────

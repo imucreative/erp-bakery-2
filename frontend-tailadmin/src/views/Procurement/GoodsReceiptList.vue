@@ -11,17 +11,15 @@ import { useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import Button from '@/components/ui/Button.vue'
-import {
-  GoodsReceiptFilterBar,
-  GoodsReceiptTable,
-} from '@/components/procurement/goods-receipt'
+import { BaseButton, BaseTablePagination } from '@/components/ui'
+import { GoodsReceiptFilterBar, GoodsReceiptTable } from '@/components/procurement/goods-receipt'
 import { usePermission } from '@/composables/usePermission'
 import { useGoodsReceipts } from '@/composables/useGoodsReceipts'
 import { supplierService } from '@/services/supplier.service'
 import { purchaseOrderService, type PurchaseOrder } from '@/services/purchase-order.service'
 import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import type { GoodsReceipt } from '@/services/goods-receipt.service'
+import { Plus } from 'lucide-vue-next'
 
 const pageTitle = 'Goods Receipts'
 const router = useRouter()
@@ -99,16 +97,19 @@ onMounted(() => {
       desc="Kelola penerimaan barang (GR) dari PO beserta posting stok ke inventory."
     >
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <GoodsReceiptFilterBar
           v-model:search="search"
           v-model:status="statusFilter"
           v-model:purchase-order="purchaseOrderFilter"
           :purchase-orders="purchaseOrders"
         />
-        <Button v-if="canCreate" size="sm" variant="primary" :on-click="goToCreate">
-          + Buat Goods Receipt
-        </Button>
+        <BaseButton v-if="canCreate" size="sm" variant="primary" @click="goToCreate">
+          <template #start-icon>
+            <Plus class="h-4 w-4" aria-hidden="true" />
+          </template>
+          Buat Goods Receipt
+        </BaseButton>
       </div>
 
       <GoodsReceiptTable
@@ -121,25 +122,17 @@ onMounted(() => {
       />
 
       <!-- Pagination -->
-      <div
+      <BaseTablePagination
         v-if="!loading && !errorMessage && items.length > 0"
-        class="flex flex-col items-center justify-between gap-3 pt-2 sm:flex-row"
-      >
-        <span class="text-theme-sm text-gray-500 dark:text-gray-400">
-          Menampilkan {{ items.length }} dari {{ meta.total }} data
-        </span>
-        <div class="flex items-center gap-2">
-          <Button size="sm" variant="outline" :disabled="!canPrev" :on-click="prevPage">
-            Sebelumnya
-          </Button>
-          <span class="text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ page }} / {{ totalPages }}
-          </span>
-          <Button size="sm" variant="outline" :disabled="!canNext" :on-click="nextPage">
-            Berikutnya
-          </Button>
-        </div>
-      </div>
+        :current-count="items.length"
+        :total-items="meta.total"
+        :current-page="page"
+        :total-pages="totalPages"
+        :has-previous="canPrev"
+        :has-next="canNext"
+        @previous="prevPage"
+        @next="nextPage"
+      />
     </ComponentCard>
   </AdminLayout>
 </template>

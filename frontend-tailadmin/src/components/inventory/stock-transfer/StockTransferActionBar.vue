@@ -15,6 +15,7 @@
  * no action is available the parent hides the whole bar (see hasAnyAction).
  */
 import { Pencil, Send, Truck, PackageCheck, Ban } from 'lucide-vue-next'
+import { BaseButton } from '@/components/ui'
 
 const props = defineProps<{
   showEdit: boolean
@@ -36,53 +37,45 @@ const emit = defineEmits<{
 
 <template>
   <div class="flex flex-wrap items-center justify-end gap-3">
-    <button
-      v-if="props.showEdit"
-      type="button"
-      class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
-      @click="emit('edit')"
-    >
-      <Pencil class="h-4 w-4" aria-hidden="true" />
+    <BaseButton v-if="props.showEdit" variant="outline" @click="emit('edit')">
+      <template #start-icon><Pencil class="h-4 w-4" aria-hidden="true" /></template>
       Edit
-    </button>
-    <button
+    </BaseButton>
+    <BaseButton
       v-if="props.showSubmit"
-      type="button"
+      variant="primary"
       :disabled="props.submitting"
-      class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
       @click="emit('submit')"
     >
-      <Send class="h-4 w-4" aria-hidden="true" />
+      <template #start-icon><Send class="h-4 w-4" aria-hidden="true" /></template>
       Ajukan
-    </button>
-    <button
+    </BaseButton>
+    <BaseButton
       v-if="props.showDispatch"
-      type="button"
+      variant="primary"
       :disabled="props.submitting"
-      class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
       @click="emit('dispatch')"
     >
-      <Truck class="h-4 w-4" aria-hidden="true" />
+      <template #start-icon><Truck class="h-4 w-4" aria-hidden="true" /></template>
       Kirim
-    </button>
-    <button
+    </BaseButton>
+    <BaseButton
       v-if="props.showReceive"
-      type="button"
+      variant="success"
       :disabled="props.submitting"
-      class="inline-flex items-center gap-2 rounded-lg bg-success-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-success-600 disabled:cursor-not-allowed disabled:opacity-60"
       @click="emit('receive')"
     >
-      <PackageCheck class="h-4 w-4" aria-hidden="true" />
+      <template #start-icon><PackageCheck class="h-4 w-4" aria-hidden="true" /></template>
       Terima
-    </button>
-    <button
+    </BaseButton>
+    <BaseButton
       v-if="props.showCancel"
-      type="button"
-      class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-error-600 ring-1 ring-inset ring-error-200 transition hover:bg-error-50 dark:bg-transparent dark:ring-error-500/30 dark:hover:bg-error-500/10"
+      variant="danger"
+      :disabled="props.submitting"
       @click="emit('cancel')"
     >
-      <Ban class="h-4 w-4" aria-hidden="true" />
+      <template #start-icon><Ban class="h-4 w-4" aria-hidden="true" /></template>
       Batalkan
-    </button>
+    </BaseButton>
   </div>
 </template>

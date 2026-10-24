@@ -5,11 +5,20 @@
  * `code` read-only (immutable) and edits name/description/permissions, seeding
  * the picker from the loaded RoleDetail. Permissions are FULL-replaced on
  * submit. Self-contained form state; emits `submit`, parent runs the mutation.
- * Transparent backdrop, wide body for the picker. OWNER guardrail is delegated
- * to RolePermissionPicker (role.manage forced checked+disabled).
+ * Backdrop, Esc-close, and panel chrome come from BaseModal (wide body for the
+ * picker). OWNER guardrail is delegated to RolePermissionPicker (role.manage
+ * forced checked+disabled).
  */
 import { computed, ref, watch } from 'vue'
-import Button from '@/components/ui/Button.vue'
+import {
+  BaseAlert,
+  BaseButton,
+  BaseFormField,
+  BaseInput,
+  BaseModal,
+  BaseTextarea,
+} from '@/components/ui'
+import { Save, X } from 'lucide-vue-next'
 import RolePermissionPicker from './RolePermissionPicker.vue'
 import { usePermissions } from '@/composables/usePermissions'
 import type { Role, RoleDetail } from '@/services/role.service'
@@ -43,8 +52,12 @@ const emit = defineEmits<{
   ): void
 }>()
 
-const { permissions, loading: catalogLoading, errorMessage: catalogError, fetchCatalog } =
-  usePermissions()
+const {
+  permissions,
+  loading: catalogLoading,
+  errorMessage: catalogError,
+  fetchCatalog,
+} = usePermissions()
 
 const code = ref<string>('')
 const name = ref<string>('')
@@ -90,12 +103,6 @@ watch(
   { immediate: true },
 )
 
-const inputClass =
-  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
-const readonlyClass =
-  'h-11 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 text-sm font-mono text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400'
-const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
-
 function onSubmit(): void {
   const trimmedName = name.value.trim()
   if (trimmedName.length === 0) {
@@ -117,97 +124,75 @@ function onSubmit(): void {
 </script>
 
 <template>
-  <div v-if="open" class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4">
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-      @click="emit('close')"
-    ></div>
+  <BaseModal :open="open" size="2xl" scrollable @close="emit('close')">
+    <h4 class="modal-title mb-4">
+      {{ isEdit ? 'Edit Role' : 'Tambah Role' }}
+    </h4>
 
-    <div
-      class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
-      <h4 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
-        {{ isEdit ? 'Edit Role' : 'Tambah Role' }}
-      </h4>
+    <form class="space-y-4" @submit.prevent="onSubmit">
+      <div class="field-grid">
+        <BaseFormField label="Kode" field-id="role-code" :required="!isEdit">
+          <BaseInput
+            v-if="isEdit"
+            id="role-code"
+            v-model="code"
+            readonly
+            aria-label="Kode role (tidak dapat diubah)"
+          />
+          <BaseInput
+            v-else
+            id="role-code"
+            v-model="code"
+            placeholder="mis. GUDANG"
+            class="uppercase"
+          />
+          <p v-if="isEdit" class="mt-1 text-muted-xs">
+            Kode tidak dapat diubah.
+          </p>
+        </BaseFormField>
+        <BaseFormField label="Nama" field-id="role-name" required>
+          <BaseInput id="role-name" v-model="name" placeholder="mis. Staf Gudang" />
+        </BaseFormField>
+      </div>
 
-      <form class="space-y-4" @submit.prevent="onSubmit">
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label :class="labelClass">
-              Kode<span v-if="!isEdit" class="text-error-500">*</span>
-            </label>
-            <input
-              v-if="isEdit"
-              :value="code"
-              type="text"
-              readonly
-              :class="readonlyClass"
-              aria-label="Kode role (tidak dapat diubah)"
-            />
-            <input
-              v-else
-              v-model="code"
-              type="text"
-              placeholder="mis. GUDANG"
-              class="uppercase"
-              :class="inputClass"
-            />
-            <p v-if="isEdit" class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
-              Kode tidak dapat diubah.
-            </p>
-          </div>
-          <div>
-            <label :class="labelClass">Nama<span class="text-error-500">*</span></label>
-            <input v-model="name" type="text" placeholder="mis. Staf Gudang" :class="inputClass" />
-          </div>
-        </div>
-
-        <div>
-          <label :class="labelClass">Deskripsi</label>
-          <textarea
-            v-model="description"
-            rows="2"
-            placeholder="Deskripsi singkat peran"
-            class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-          ></textarea>
-        </div>
-
-        <div
-          v-if="isEdit && detailLoading"
-          class="py-4 text-center text-sm text-gray-500 dark:text-gray-400"
-        >
-          Memuat permission role...
-        </div>
-        <RolePermissionPicker
-          v-else
-          v-model="selectedPermissions"
-          :catalog="permissions"
-          :is-owner="isOwner"
-          :loading="catalogLoading"
-          :error-message="catalogError"
+      <BaseFormField label="Deskripsi" field-id="role-description">
+        <BaseTextarea
+          id="role-description"
+          v-model="description"
+          :rows="2"
+          placeholder="Deskripsi singkat peran"
         />
+      </BaseFormField>
 
-        <p
-          v-if="localError || errorMessage"
-          class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
+      <div v-if="isEdit && detailLoading" class="text-muted py-4 text-center">
+        Memuat permission role...
+      </div>
+      <RolePermissionPicker
+        v-else
+        v-model="selectedPermissions"
+        :catalog="permissions"
+        :is-owner="isOwner"
+        :loading="catalogLoading"
+        :error-message="catalogError"
+      />
+
+      <BaseAlert :message="localError || errorMessage" size="sm" />
+
+      <div class="button-row pt-2">
+        <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
+          <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
+          Batal
+        </BaseButton>
+        <BaseButton
+          type="submit"
+          variant="success"
+          :loading="submitting"
+          loading-text="Menyimpan..."
         >
-          {{ localError || errorMessage }}
-        </p>
-
-        <div class="flex justify-end gap-3 pt-2">
-          <Button size="sm" variant="outline" :disabled="submitting" :on-click="() => emit('close')">
-            Batal
-          </Button>
-          <button
-            type="submit"
-            :disabled="submitting"
-            class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {{ submitting ? 'Menyimpan...' : 'Simpan' }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+          <template #start-icon><Save class="h-4 w-4" aria-hidden="true" /></template>
+          Simpan
+        </BaseButton>
+      </div>
+    </form>
+  </BaseModal>
 </template>

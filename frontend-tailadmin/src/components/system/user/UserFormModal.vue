@@ -4,12 +4,19 @@
  *   CREATE: name + email + password(min 8) + phone? + role (required) + outlets.
  *   EDIT: email read-only, no password; editable name/phone/role/active + outlets
  *     (full-sync). Outlet assignment via a toggle-switch list.
- * Transparent backdrop per UI standard.
+ * Backdrop, Esc-close, and panel chrome come from BaseModal.
  */
 import { computed, ref, watch } from 'vue'
-import Button from '@/components/ui/Button.vue'
-import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
+import {
+  BaseAlert,
+  BaseButton,
+  BaseFormField,
+  BaseInput,
+  BaseModal,
+  BaseSelect,
+  BaseToggle,
+} from '@/components/ui'
+import { Save, X } from 'lucide-vue-next'
 import type { UserDetail } from '@/services/user.service'
 import type { Role } from '@/services/role.service'
 import type { Outlet } from '@/services/outlet.service'
@@ -88,9 +95,9 @@ function toggleOutlet(id: string): void {
   }
 }
 
-const inputClass =
-  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
-const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
+const roleOptions = computed(() =>
+  props.roles.map((role) => ({ label: role.name, value: role.id })),
+)
 
 function onSubmit(): void {
   if (name.value.trim().length === 0) {
@@ -135,106 +142,98 @@ function onSubmit(): void {
 </script>
 
 <template>
-  <div v-if="open" class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4">
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-      @click="emit('close')"
-    ></div>
+  <BaseModal :open="open" size="lg" scrollable @close="emit('close')">
+    <h4 class="modal-title mb-4">
+      {{ isEdit ? 'Edit User' : 'Tambah User' }}
+    </h4>
 
-    <div
-      class="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
-      <h4 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
-        {{ isEdit ? 'Edit User' : 'Tambah User' }}
-      </h4>
+    <div v-if="isEdit && detailLoading" class="text-muted py-8 text-center">
+      Memuat data user...
+    </div>
 
-      <div v-if="isEdit && detailLoading" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-        Memuat data user...
+    <form v-else class="space-y-4" @submit.prevent="onSubmit">
+      <BaseFormField label="Nama" field-id="user-name" required>
+        <BaseInput id="user-name" v-model="name" placeholder="Nama lengkap" />
+      </BaseFormField>
+
+      <div class="field-grid">
+        <BaseFormField label="Email" field-id="user-email" :required="!isEdit">
+          <BaseInput
+            v-if="!isEdit"
+            id="user-email"
+            v-model="email"
+            type="email"
+            placeholder="nama@company.com"
+          />
+          <p v-else class="form-readonly">{{ email }}</p>
+        </BaseFormField>
+        <BaseFormField label="Telepon" field-id="user-phone">
+          <BaseInput id="user-phone" v-model="phone" type="tel" placeholder="0812-3456-7890" />
+        </BaseFormField>
       </div>
 
-      <form v-else class="space-y-4" @submit.prevent="onSubmit">
-        <div>
-          <label :class="labelClass">Nama<span class="text-error-500">*</span></label>
-          <input v-model="name" type="text" placeholder="Nama lengkap" :class="inputClass" />
-        </div>
+      <BaseFormField v-if="!isEdit" label="Password" field-id="user-password" required>
+        <BaseInput
+          id="user-password"
+          v-model="password"
+          type="password"
+          placeholder="Minimal 8 karakter"
+          autocomplete="new-password"
+        />
+      </BaseFormField>
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label :class="labelClass">Email<span v-if="!isEdit" class="text-error-500">*</span></label>
-            <input v-if="!isEdit" v-model="email" type="email" placeholder="nama@company.com" :class="inputClass" />
-            <p v-else class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300">
-              {{ email }}
-            </p>
-          </div>
-          <div>
-            <label :class="labelClass">Telepon</label>
-            <input v-model="phone" type="text" placeholder="0812-3456-7890" :class="inputClass" />
-          </div>
-        </div>
+      <BaseFormField label="Role" field-id="user-role" required>
+        <BaseSelect
+          id="user-role"
+          v-model="roleId"
+          :options="roleOptions"
+          placeholder="Pilih role"
+        />
+      </BaseFormField>
 
-        <div v-if="!isEdit">
-          <label :class="labelClass">Password<span class="text-error-500">*</span></label>
-          <input v-model="password" type="password" placeholder="Minimal 8 karakter" autocomplete="new-password" :class="inputClass" />
-        </div>
-
-        <div>
-          <label :class="labelClass">Role<span class="text-error-500">*</span></label>
-          <div class="relative">
-            <select v-model="roleId" :class="[inputClass, 'appearance-none pe-10']">
-              <option value="" disabled>Pilih role</option>
-              <option v-for="r in roles" :key="r.id" :value="r.id">{{ r.name }}</option>
-            </select>
-            <ChevronDownIcon
-              class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
+      <BaseFormField label="Akses Outlet" field-id="user-outlets">
+        <div
+          class="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-gray-200 p-3 dark:border-gray-800"
+        >
+          <p v-if="outlets.length === 0" class="text-muted-xs">
+            Tidak ada outlet tersedia.
+          </p>
+          <div
+            v-for="o in outlets"
+            :key="o.id"
+            class="flex items-center justify-between gap-3 py-1 text-sm text-gray-700 dark:text-gray-300"
+          >
+            <span>
+              {{ o.name }}
+              <span class="font-mono text-theme-xs text-gray-400">({{ o.code }})</span>
+            </span>
+            <BaseToggle
+              :model-value="outletIds.includes(o.id)"
+              @update:model-value="toggleOutlet(o.id)"
             />
           </div>
         </div>
+      </BaseFormField>
 
-        <div>
-          <label :class="labelClass">Akses Outlet</label>
-          <div class="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-gray-200 p-3 dark:border-gray-800">
-            <p v-if="outlets.length === 0" class="text-theme-xs text-gray-400 dark:text-gray-500">
-              Tidak ada outlet tersedia.
-            </p>
-            <div
-              v-for="o in outlets"
-              :key="o.id"
-              class="flex items-center justify-between gap-3 py-1 text-sm text-gray-700 dark:text-gray-300"
-            >
-              <span>
-                {{ o.name }} <span class="font-mono text-theme-xs text-gray-400">({{ o.code }})</span>
-              </span>
-              <ToggleSwitch
-                :model-value="outletIds.includes(o.id)"
-                @update:model-value="toggleOutlet(o.id)"
-              />
-            </div>
-          </div>
-        </div>
+      <BaseToggle v-if="isEdit" v-model="isActive" label="Aktif" />
 
-        <ToggleSwitch v-if="isEdit" v-model="isActive" label="Aktif" />
+      <BaseAlert :message="localError || errorMessage" size="sm" />
 
-        <p
-          v-if="localError || errorMessage"
-          class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
+      <div class="button-row pt-2">
+        <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
+          <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
+          Batal
+        </BaseButton>
+        <BaseButton
+          type="submit"
+          variant="success"
+          :loading="submitting"
+          loading-text="Menyimpan..."
         >
-          {{ localError || errorMessage }}
-        </p>
-
-        <div class="flex justify-end gap-3 pt-2">
-          <Button size="sm" variant="outline" :disabled="submitting" :on-click="() => emit('close')">
-            Batal
-          </Button>
-          <button
-            type="submit"
-            :disabled="submitting"
-            class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {{ submitting ? 'Menyimpan...' : 'Simpan' }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+          <template #start-icon><Save class="h-4 w-4" aria-hidden="true" /></template>
+          Simpan
+        </BaseButton>
+      </div>
+    </form>
+  </BaseModal>
 </template>

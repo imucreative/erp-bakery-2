@@ -13,13 +13,11 @@
                 <img src="/images/user/owner.png" class="size-20" alt="user" />
               </div>
               <div class="ltr:text-left rtl:text-right">
-                <h4 class="mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">
-                  Musharof Chowdhury
-                </h4>
+                <h4 class="card-title mb-2">Musharof Chowdhury</h4>
                 <div class="flex items-center gap-1 sm:gap-3">
-                  <p class="text-sm text-gray-500 dark:text-gray-400">Team Manager</p>
+                  <p class="text-muted">Team Manager</p>
                   <div class="hidden h-3.5 w-px bg-gray-300 sm:block dark:bg-gray-700"></div>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">Arizona, United States.</p>
+                  <p class="text-muted">Arizona, United States.</p>
                 </div>
               </div>
             </div>
@@ -190,7 +188,7 @@
             <h4 class="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
               Edit Personal Information
             </h4>
-            <p class="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
+            <p class="text-muted mb-6 lg:mb-7">
               Update your details to keep your profile up-to-date.
             </p>
           </div>
@@ -237,7 +235,7 @@
                     </label>
                   </div>
                   <div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <p class="text-muted">
                       Upload a square image (200×200 px) in JPEG or PNG format.
                     </p>
                   </div>
@@ -250,11 +248,7 @@
 
                 <div class="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                   <div class="col-span-2 lg:col-span-1">
-                    <label
-                      class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-                    >
-                      First Name
-                    </label>
+                    <label class="form-label"> First Name </label>
                     <input
                       type="text"
                       value="Musharof"
@@ -263,11 +257,7 @@
                   </div>
 
                   <div class="col-span-2 lg:col-span-1">
-                    <label
-                      class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-                    >
-                      Last Name
-                    </label>
+                    <label class="form-label"> Last Name </label>
                     <input
                       type="text"
                       value="Chowdhury"
@@ -276,11 +266,7 @@
                   </div>
 
                   <div class="col-span-2 lg:col-span-1">
-                    <label
-                      class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-                    >
-                      Email Address
-                    </label>
+                    <label class="form-label"> Email Address </label>
                     <input
                       type="text"
                       value="randomuser@pimjo.com"
@@ -289,11 +275,7 @@
                   </div>
 
                   <div class="col-span-2 lg:col-span-1">
-                    <label
-                      class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-                    >
-                      Phone
-                    </label>
+                    <label class="form-label"> Phone </label>
                     <input
                       type="text"
                       value="+09 363 398 46"
@@ -302,11 +284,7 @@
                   </div>
 
                   <div class="col-span-2">
-                    <label
-                      class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-                    >
-                      Bio
-                    </label>
+                    <label class="form-label"> Bio </label>
                     <input
                       type="text"
                       value="Team Manager"
@@ -322,11 +300,7 @@
 
                 <div class="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                   <div>
-                    <label
-                      class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-                    >
-                      Facebook
-                    </label>
+                    <label class="form-label"> Facebook </label>
                     <input
                       type="text"
                       value="https://www.facebook.com/PimjoHQ"
@@ -335,11 +309,7 @@
                   </div>
 
                   <div>
-                    <label
-                      class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-                    >
-                      X.com
-                    </label>
+                    <label class="form-label"> X.com </label>
                     <input
                       type="text"
                       value="https://x.com/PimjoHQ"
@@ -348,11 +318,7 @@
                   </div>
 
                   <div>
-                    <label
-                      class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-                    >
-                      Linkedin
-                    </label>
+                    <label class="form-label"> Linkedin </label>
                     <input
                       type="text"
                       value="https://www.linkedin.com/company/pimjo/posts/?feedView=all"
@@ -361,11 +327,7 @@
                   </div>
 
                   <div>
-                    <label
-                      class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-                    >
-                      Instagram
-                    </label>
+                    <label class="form-label"> Instagram </label>
                     <input
                       type="text"
                       value="https://instagram.com/emirhan55"

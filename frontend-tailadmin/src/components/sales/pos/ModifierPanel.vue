@@ -13,7 +13,8 @@ import { ref, watch } from 'vue'
 import { Plus, X } from 'lucide-vue-next'
 import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
 import Badge from '@/components/ui/Badge.vue'
-import { formatRupiah, formatNumber } from '@/lib/format'
+import { BaseButton } from '@/components/ui'
+import { formatRupiah } from '@/lib/format'
 import type { PosProduct, PosToppingOption } from '@/services/sales.service'
 
 const props = defineProps<{
@@ -93,27 +94,27 @@ function onAdd(): void {
   >
     <div class="mb-3 flex items-start justify-between gap-2">
       <div>
-        <h4 class="text-theme-sm font-semibold text-gray-800 dark:text-white/90">
+        <h4 class="section-title">
           {{ props.product.name }}
         </h4>
         <p class="mt-0.5 text-base font-semibold text-brand-600 dark:text-brand-400">
           {{ formatRupiah(props.product.sellingPrice) }}
         </p>
       </div>
-      <button
-        type="button"
+      <BaseButton
+        variant="outline"
+        icon-only
         aria-label="Tutup panel topping"
         title="Tutup panel topping"
-        class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
         @click="emit('cancel')"
       >
         <X class="h-4 w-4" aria-hidden="true" />
-      </button>
+      </BaseButton>
     </div>
 
     <div class="mb-2 flex items-center justify-between gap-2">
-      <p class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Topping</p>
-      <span class="text-theme-xs text-gray-400 dark:text-gray-500">Opsional</span>
+      <p class="text-muted-xs uppercase">Topping</p>
+      <span class="text-muted-xs">Opsional</span>
     </div>
 
     <div class="flex-1 overflow-y-auto">
@@ -162,17 +163,15 @@ function onAdd(): void {
       </div>
     </div>
 
-    <p class="mt-3 text-theme-xs text-gray-400 dark:text-gray-500">
+    <p class="mt-3 text-muted-xs">
       Topping opsional — bisa langsung tambah ke cart tanpa memilih topping.
     </p>
 
-    <button
-      type="button"
-      class="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600"
-      @click="onAdd"
-    >
-      <Plus class="h-4 w-4" aria-hidden="true" />
+    <BaseButton full-width class="mt-2" @click="onAdd">
+      <template #start-icon>
+        <Plus class="h-4 w-4" aria-hidden="true" />
+      </template>
       Tambah ke Cart
-    </button>
+    </BaseButton>
   </div>
 </template>

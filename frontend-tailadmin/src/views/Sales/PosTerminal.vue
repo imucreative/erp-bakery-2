@@ -28,11 +28,11 @@
  * mutation submitting flags, and surfaces backend errors via `toMessage`.
  */
 import { computed, onMounted, ref } from 'vue'
-import { DoorOpen, X } from 'lucide-vue-next'
+import { DoorOpen } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
+import { BaseAlert, BaseButton, BaseSelect } from '@/components/ui'
 import {
   ProductGrid,
   ModifierPanel,
@@ -455,22 +455,16 @@ onMounted(() => {
     <PageBreadcrumb :pageTitle="pageTitle" />
 
     <!-- Bootstrapping -->
-    <div
-      v-if="bootstrapping"
-      class="rounded-2xl border border-gray-200 bg-white p-10 text-center text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400"
-    >
-      Memuat terminal POS...
-    </div>
+    <div v-if="bootstrapping" class="panel-loading">Memuat terminal POS...</div>
 
     <template v-else>
       <!-- Bootstrap error -->
-      <div
+      <BaseAlert
         v-if="bootstrapError"
-        class="mb-5 rounded-2xl border border-error-500/40 bg-error-50 p-4 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-        role="alert"
-      >
-        {{ bootstrapError }}
-      </div>
+        :message="bootstrapError"
+        size="md"
+        class="mb-5 rounded-2xl py-4"
+      />
 
       <!-- No accessible outlet -->
       <ComponentCard v-if="outlets.length === 0" title="Point of Sale">
@@ -487,18 +481,19 @@ onMounted(() => {
       <template v-else>
         <!-- Outlet selector + shift bar -->
         <div class="mb-5 flex flex-col gap-4">
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <label class="text-theme-sm font-medium text-gray-700 dark:text-gray-400">Outlet</label>
-            <div class="relative w-full sm:w-64">
-              <select
-                :value="selectedOutletId"
-                class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                @change="onOutletChange(($event.target as HTMLSelectElement).value)"
-              >
-                <option v-for="o in outlets" :key="o.id" :value="o.id">{{ o.name }}</option>
-              </select>
-              <ChevronDownIcon
-                class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+          <div class="stack-row">
+            <label
+              for="pos-outlet"
+              class="text-theme-sm font-medium text-gray-700 dark:text-gray-400"
+            >
+              Outlet
+            </label>
+            <div class="w-full sm:w-64">
+              <BaseSelect
+                id="pos-outlet"
+                :model-value="selectedOutletId"
+                :options="outlets.map((o) => ({ label: o.name, value: o.id }))"
+                @update:model-value="onOutletChange"
               />
             </div>
           </div>
@@ -522,15 +517,12 @@ onMounted(() => {
             <p class="mt-1 mb-6 text-theme-sm text-gray-400 dark:text-gray-500">
               Buka shift untuk mulai menerima transaksi di outlet {{ selectedOutletName }}.
             </p>
-            <button
-              v-if="canManageShift"
-              type="button"
-              class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-5 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600"
-              @click="openOpenShiftModal"
-            >
-              <DoorOpen class="h-4 w-4" aria-hidden="true" />
+            <BaseButton v-if="canManageShift" @click="openOpenShiftModal">
+              <template #start-icon>
+                <DoorOpen class="h-4 w-4" aria-hidden="true" />
+              </template>
               Buka Shift
-            </button>
+            </BaseButton>
           </div>
         </ComponentCard>
 
@@ -541,23 +533,15 @@ onMounted(() => {
             class="rounded-2xl border border-gray-200 bg-white p-4 lg:col-span-7 dark:border-gray-800 dark:bg-white/[0.03]"
           >
             <!-- Blocked (expired / out-of-stock) product alert — dismissible,
-                 never clears the cart. Reuses the view's error-banner style. -->
-            <div
+                 never clears the cart. -->
+            <BaseAlert
               v-if="blockedAlert"
-              class="mb-4 flex items-start justify-between gap-3 rounded-lg border border-warning-500/40 bg-warning-50 px-4 py-3 text-sm text-warning-700 dark:bg-warning-500/10 dark:text-warning-400"
-              role="alert"
-            >
-              <span>{{ blockedAlert }}</span>
-              <button
-                type="button"
-                aria-label="Tutup peringatan"
-                title="Tutup peringatan"
-                class="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md text-warning-600 transition hover:bg-warning-100 dark:text-warning-400 dark:hover:bg-warning-500/20"
-                @click="blockedAlert = null"
-              >
-                <X class="h-4 w-4" aria-hidden="true" />
-              </button>
-            </div>
+              variant="warning"
+              :message="blockedAlert"
+              dismissible
+              class="mb-4"
+              @dismiss="blockedAlert = null"
+            />
 
             <ProductGrid
               :products="products"

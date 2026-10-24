@@ -65,4 +65,24 @@ describe('CreateOutletUseCase', () => {
     );
     expect(mockOutletRepository.addOutlet).not.toHaveBeenCalled();
   });
+
+  it('should use a supplied code and skip generation', async () => {
+    await useCase.execute({ name: 'Outlet A', code: 'out-bdg-01' }, companyId);
+
+    expect(mockOutletRepository.generateOutletCode).not.toHaveBeenCalled();
+    expect(mockOutletRepository.addOutlet).toHaveBeenCalledWith(
+      { code: 'OUT-BDG-01', name: 'Outlet A', address: null, phone: null },
+      companyId,
+    );
+  });
+
+  it('should generate a code when the supplied one is blank', async () => {
+    await useCase.execute({ name: 'Outlet A', code: '   ' }, companyId);
+
+    expect(mockOutletRepository.generateOutletCode).toHaveBeenCalledWith(companyId);
+    expect(mockOutletRepository.addOutlet).toHaveBeenCalledWith(
+      { code: 'OUT-001', name: 'Outlet A', address: null, phone: null },
+      companyId,
+    );
+  });
 });

@@ -12,9 +12,16 @@
  * Transparent backdrop per UI standard.
  */
 import { computed, ref, watch } from 'vue'
-import Button from '@/components/ui/Button.vue'
-import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
+import { Save, X } from 'lucide-vue-next'
+import {
+  BaseAlert,
+  BaseButton,
+  BaseFormField,
+  BaseInput,
+  BaseModal,
+  BaseSelect,
+  BaseToggle,
+} from '@/components/ui'
 import {
   PRODUCT_TYPES,
   PRODUCT_TYPE_LABELS,
@@ -138,11 +145,20 @@ watch(
   { immediate: true },
 )
 
-const inputClass =
-  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
-const readonlyClass =
-  'rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300'
-const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400'
+const groupOptions = computed(() =>
+  props.groups.map((group) => ({ label: group.name, value: group.id })),
+)
+const categorySelectOptions = computed(() =>
+  categoryOptions.value.map((category) => ({ label: category.name, value: category.id })),
+)
+const uomOptions = computed(() => props.uoms.map((uom) => ({ label: uom.name, value: uom.id })))
+const supplierOptions = computed(() =>
+  props.suppliers.map((supplier) => ({ label: supplier.name, value: supplier.id })),
+)
+const productTypeOptions = PRODUCT_TYPES.map((type) => ({
+  label: PRODUCT_TYPE_LABELS[type],
+  value: type,
+}))
 
 function onSubmit(): void {
   if (isEdit.value) {
@@ -200,157 +216,138 @@ function onSubmit(): void {
 </script>
 
 <template>
-  <div v-if="open" class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4">
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-      @click="emit('close')"
-    ></div>
+  <BaseModal :open="open" size="2xl" scrollable @close="emit('close')">
+    <h4 class="modal-title mb-4">
+      {{ isEdit ? 'Edit Produk' : 'Tambah Produk' }}
+    </h4>
 
-    <div
-      class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
-      <h4 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
-        {{ isEdit ? 'Edit Produk' : 'Tambah Produk' }}
-      </h4>
+    <form class="space-y-4" @submit.prevent="onSubmit">
+      <div class="field-grid">
+        <!-- SKU -->
+        <BaseFormField label="SKU" field-id="product-sku" required>
+          <BaseInput v-if="!isEdit" id="product-sku" v-model="sku" placeholder="SKU-ROTI-001" />
+          <p v-else class="form-readonly">{{ sku }}</p>
+        </BaseFormField>
+        <!-- Barcode -->
+        <BaseFormField label="Barcode" field-id="product-barcode">
+          <BaseInput id="product-barcode" v-model="barcode" placeholder="8991234567890" />
+        </BaseFormField>
+      </div>
 
-      <form class="space-y-4" @submit.prevent="onSubmit">
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <!-- SKU -->
-          <div>
-            <label :class="labelClass">SKU<span v-if="!isEdit" class="text-error-500">*</span></label>
-            <input v-if="!isEdit" v-model="sku" type="text" placeholder="SKU-ROTI-001" :class="inputClass" />
-            <p v-else :class="readonlyClass">{{ sku }}</p>
-          </div>
-          <!-- Barcode -->
-          <div>
-            <label :class="labelClass">Barcode</label>
-            <input v-model="barcode" type="text" placeholder="8991234567890" :class="inputClass" />
-          </div>
+      <!-- Name -->
+      <BaseFormField label="Nama" field-id="product-name" required>
+        <BaseInput id="product-name" v-model="name" placeholder="Roti Tawar Gandum" />
+      </BaseFormField>
+
+      <!-- Relations -->
+      <div class="field-grid">
+        <BaseFormField label="Grup Produk" field-id="product-group" required>
+          <BaseSelect
+            v-if="!isEdit"
+            id="product-group"
+            v-model="productGroupId"
+            :options="groupOptions"
+            placeholder="Pilih grup"
+          />
+          <p v-else class="text-sm text-gray-600 dark:text-gray-300">
+            {{ relationName(groups, productGroupId) }}
+          </p>
+        </BaseFormField>
+        <BaseFormField label="Kategori" field-id="product-category" required>
+          <BaseSelect
+            v-if="!isEdit"
+            id="product-category"
+            v-model="categoryId"
+            :options="categorySelectOptions"
+            :disabled="!productGroupId"
+            :placeholder="productGroupId ? 'Pilih kategori' : 'Pilih grup dulu'"
+          />
+          <p v-else class="text-sm text-gray-600 dark:text-gray-300">
+            {{ relationName(categories, categoryId) }}
+          </p>
+        </BaseFormField>
+        <BaseFormField label="UOM" field-id="product-uom" required>
+          <BaseSelect
+            v-if="!isEdit"
+            id="product-uom"
+            v-model="uomId"
+            :options="uomOptions"
+            placeholder="Pilih UOM"
+          />
+          <p v-else class="text-sm text-gray-600 dark:text-gray-300">
+            {{ relationName(uoms, uomId) }}
+          </p>
+        </BaseFormField>
+        <BaseFormField label="Supplier" field-id="product-supplier" required>
+          <BaseSelect
+            v-if="!isEdit"
+            id="product-supplier"
+            v-model="supplierId"
+            :options="supplierOptions"
+            placeholder="Pilih supplier"
+          />
+          <p v-else class="text-sm text-gray-600 dark:text-gray-300">
+            {{ relationName(suppliers, supplierId) }}
+          </p>
+        </BaseFormField>
+      </div>
+
+      <!-- Type + prices -->
+      <div class="field-grid">
+        <BaseFormField label="Tipe Produk" field-id="product-type">
+          <BaseSelect id="product-type" v-model="productType" :options="productTypeOptions" />
+        </BaseFormField>
+        <BaseFormField label="Stok Minimum" field-id="product-minimum-stock">
+          <BaseInput
+            id="product-minimum-stock"
+            v-model.number="minimumStock"
+            type="number"
+            min="0"
+          />
+        </BaseFormField>
+        <BaseFormField label="Harga Beli" field-id="product-purchase-price">
+          <BaseInput
+            id="product-purchase-price"
+            v-model.number="purchasePrice"
+            type="number"
+            min="0"
+          />
+        </BaseFormField>
+        <BaseFormField label="Harga Jual" field-id="product-selling-price">
+          <BaseInput
+            id="product-selling-price"
+            v-model.number="sellingPrice"
+            type="number"
+            min="0"
+          />
+        </BaseFormField>
+        <BaseFormField label="Masa Simpan (hari)" field-id="product-shelf-life">
+          <BaseInput id="product-shelf-life" v-model.number="shelfLifeDays" type="number" min="0" />
+        </BaseFormField>
+        <div class="flex flex-wrap items-end gap-6">
+          <BaseToggle v-model="isBatchTracked" label="Lacak batch" />
+          <BaseToggle v-model="hasToppings" label="Punya Topping" />
+          <BaseToggle v-if="isEdit" v-model="isActive" label="Aktif" />
         </div>
+      </div>
 
-        <!-- Name -->
-        <div>
-          <label :class="labelClass">Nama<span class="text-error-500">*</span></label>
-          <input v-model="name" type="text" placeholder="Roti Tawar Gandum" :class="inputClass" />
-        </div>
+      <BaseAlert :message="localError || errorMessage" size="sm" />
 
-        <!-- Relations -->
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label :class="labelClass">Grup Produk<span v-if="!isEdit" class="text-error-500">*</span></label>
-            <div v-if="!isEdit" class="relative">
-              <select v-model="productGroupId" :class="[inputClass, 'appearance-none pe-10']">
-                <option value="" disabled>Pilih grup</option>
-                <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
-              </select>
-              <ChevronDownIcon
-                class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-              />
-            </div>
-            <p v-else :class="readonlyClass">{{ relationName(groups, productGroupId) }}</p>
-          </div>
-          <div>
-            <label :class="labelClass">Kategori<span v-if="!isEdit" class="text-error-500">*</span></label>
-            <div v-if="!isEdit" class="relative">
-              <select
-                v-model="categoryId"
-                :disabled="!productGroupId"
-                :class="[inputClass, 'appearance-none pe-10', !productGroupId ? 'cursor-not-allowed opacity-60' : '']"
-              >
-                <option value="" disabled>{{ productGroupId ? 'Pilih kategori' : 'Pilih grup dulu' }}</option>
-                <option v-for="c in categoryOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
-              </select>
-              <ChevronDownIcon
-                class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-              />
-            </div>
-            <p v-else :class="readonlyClass">{{ relationName(categories, categoryId) }}</p>
-          </div>
-          <div>
-            <label :class="labelClass">UOM<span v-if="!isEdit" class="text-error-500">*</span></label>
-            <div v-if="!isEdit" class="relative">
-              <select v-model="uomId" :class="[inputClass, 'appearance-none pe-10']">
-                <option value="" disabled>Pilih UOM</option>
-                <option v-for="u in uoms" :key="u.id" :value="u.id">{{ u.name }}</option>
-              </select>
-              <ChevronDownIcon
-                class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-              />
-            </div>
-            <p v-else :class="readonlyClass">{{ relationName(uoms, uomId) }}</p>
-          </div>
-          <div>
-            <label :class="labelClass">Supplier<span v-if="!isEdit" class="text-error-500">*</span></label>
-            <div v-if="!isEdit" class="relative">
-              <select v-model="supplierId" :class="[inputClass, 'appearance-none pe-10']">
-                <option value="" disabled>Pilih supplier</option>
-                <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
-              </select>
-              <ChevronDownIcon
-                class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-              />
-            </div>
-            <p v-else :class="readonlyClass">{{ relationName(suppliers, supplierId) }}</p>
-          </div>
-        </div>
-
-        <!-- Type + prices -->
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label :class="labelClass">Tipe Produk</label>
-            <div class="relative">
-              <select v-model="productType" :class="[inputClass, 'appearance-none pe-10']">
-                <option v-for="t in PRODUCT_TYPES" :key="t" :value="t">{{ PRODUCT_TYPE_LABELS[t] }}</option>
-              </select>
-              <ChevronDownIcon
-                class="pointer-events-none absolute inset-y-0 end-3 my-auto h-5 w-5 text-gray-500 dark:text-gray-400"
-              />
-            </div>
-          </div>
-          <div>
-            <label :class="labelClass">Stok Minimum</label>
-            <input v-model.number="minimumStock" type="number" min="0" :class="inputClass" />
-          </div>
-          <div>
-            <label :class="labelClass">Harga Beli</label>
-            <input v-model.number="purchasePrice" type="number" min="0" :class="inputClass" />
-          </div>
-          <div>
-            <label :class="labelClass">Harga Jual</label>
-            <input v-model.number="sellingPrice" type="number" min="0" :class="inputClass" />
-          </div>
-          <div>
-            <label :class="labelClass">Masa Simpan (hari)</label>
-            <input v-model.number="shelfLifeDays" type="number" min="0" :class="inputClass" />
-          </div>
-          <div class="flex flex-wrap items-end gap-6">
-            <ToggleSwitch v-model="isBatchTracked" label="Lacak batch" />
-            <ToggleSwitch v-model="hasToppings" label="Punya Topping" />
-            <ToggleSwitch v-if="isEdit" v-model="isActive" label="Aktif" />
-          </div>
-        </div>
-
-        <p
-          v-if="localError || errorMessage"
-          class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
+      <div class="button-row pt-2">
+        <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
+          <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
+          Batal
+        </BaseButton>
+        <BaseButton
+          type="submit"
+          variant="success"
+          :loading="submitting"
+          loading-text="Menyimpan..."
         >
-          {{ localError || errorMessage }}
-        </p>
-
-        <div class="flex justify-end gap-3 pt-2">
-          <Button size="sm" variant="outline" :disabled="submitting" :on-click="() => emit('close')">
-            Batal
-          </Button>
-          <button
-            type="submit"
-            :disabled="submitting"
-            class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {{ submitting ? 'Menyimpan...' : 'Simpan' }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+          <template #start-icon><Save class="h-4 w-4" aria-hidden="true" /></template>
+          Simpan
+        </BaseButton>
+      </div>
+    </form>
+  </BaseModal>
 </template>

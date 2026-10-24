@@ -10,7 +10,8 @@ import { computed, onMounted, ref } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import Button from '@/components/ui/Button.vue'
+import { BaseButton, BaseInput } from '@/components/ui'
+import { Plus } from 'lucide-vue-next'
 import ToppingTable from '@/components/masterdata/topping/ToppingTable.vue'
 import ToppingFormModal from '@/components/masterdata/topping/ToppingFormModal.vue'
 import ToppingDeleteModal from '@/components/masterdata/topping/ToppingDeleteModal.vue'
@@ -149,18 +150,18 @@ onMounted(() => {
       desc="Katalog topping global untuk produk made-to-order di POS."
     >
       <!-- Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <div class="relative w-full sm:max-w-xs">
-          <input
+          <BaseInput
+            id="topping-search"
             v-model="search"
-            type="text"
             placeholder="Cari topping (nama / SKU)..."
-            class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
           />
         </div>
-        <Button v-if="canManage" size="sm" variant="primary" :on-click="openCreate">
-          + Tambah Topping
-        </Button>
+        <BaseButton v-if="canManage" size="sm" variant="primary" @click="openCreate">
+          <template #start-icon><Plus class="h-4 w-4" aria-hidden="true" /></template>
+          Tambah Topping
+        </BaseButton>
       </div>
 
       <ToppingTable
@@ -173,10 +174,7 @@ onMounted(() => {
       />
 
       <!-- Count footer -->
-      <div
-        v-if="!loading && !errorMessage && items.length > 0"
-        class="pt-2 text-theme-sm text-gray-500 dark:text-gray-400"
-      >
+      <div v-if="!loading && !errorMessage && items.length > 0" class="text-muted pt-2">
         Menampilkan {{ items.length }} dari {{ total }} topping
       </div>
     </ComponentCard>

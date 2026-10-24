@@ -19,8 +19,8 @@
  */
 import { onMounted, ref } from 'vue'
 import { ApiClientError } from '@/services/http'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
 import Badge from '@/components/ui/Badge.vue'
+import { BaseAlert, BaseButton, BaseSelect, BaseTextarea } from '@/components/ui'
 import { formatDateTime } from '@/lib/format'
 import {
   purchaseRequestService,
@@ -43,6 +43,11 @@ const body = ref<string>('')
 const category = ref<PurchaseRequestCommentCategory>('INTERNAL')
 const submitting = ref<boolean>(false)
 const formError = ref<string | null>(null)
+
+const commentCategoryOptions = PURCHASE_REQUEST_COMMENT_CATEGORIES.map((categoryValue) => ({
+  value: categoryValue,
+  label: PURCHASE_REQUEST_COMMENT_CATEGORY_LABELS[categoryValue],
+}))
 
 function toMessage(error: unknown): string {
   if (error instanceof ApiClientError) {
@@ -109,50 +114,30 @@ onMounted(() => {
 <template>
   <div class="space-y-5">
     <!-- Loading -->
-    <p
-      v-if="loading"
-      class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-6 text-center text-theme-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.02] dark:text-gray-400"
-    >
-      Memuat komentar...
-    </p>
+    <p v-if="loading" class="panel-muted">Memuat komentar...</p>
 
     <!-- Load error -->
-    <p
-      v-else-if="loadError"
-      class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-theme-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      role="alert"
-    >
-      {{ loadError }}
-    </p>
+    <BaseAlert v-else-if="loadError" :message="loadError" size="sm" />
 
     <template v-else>
       <!-- Empty -->
-      <p
-        v-if="comments.length === 0"
-        class="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-6 text-center text-theme-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.02] dark:text-gray-400"
-      >
-        Belum ada komentar.
-      </p>
+      <p v-if="comments.length === 0" class="panel-muted border-dashed">Belum ada komentar.</p>
 
       <!-- Comment list (chronological) -->
       <ul v-else class="space-y-4">
-        <li
-          v-for="comment in comments"
-          :key="comment.id"
-          class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.02]"
-        >
+        <li v-for="comment in comments" :key="comment.id" class="panel-card">
           <div class="mb-2 flex flex-wrap items-center gap-2">
-            <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+            <span class="text-strong">
               {{ authorLabel(comment) }}
             </span>
             <Badge :color="commentCategoryBadgeColor(comment.category)">
               {{ PURCHASE_REQUEST_COMMENT_CATEGORY_LABELS[comment.category] }}
             </Badge>
-            <span class="text-theme-xs text-gray-400 dark:text-gray-500 ms-auto">
+            <span class="text-muted-xs ms-auto">
               {{ formatDateTime(comment.createdAt) }}
             </span>
           </div>
-          <p class="whitespace-pre-wrap text-theme-sm text-gray-700 dark:text-gray-300">
+          <p class="whitespace-pre-wrap text-body">
             {{ comment.body }}
           </p>
         </li>
@@ -160,55 +145,40 @@ onMounted(() => {
     </template>
 
     <!-- Add-comment form -->
-    <form class="space-y-3 border-t border-gray-100 pt-5 dark:border-gray-800" @submit.prevent="submitComment">
+    <form class="form-divider" @submit.prevent="submitComment">
       <div>
-        <label
-          for="pr-comment-body"
-          class="mb-1.5 block text-theme-sm font-medium text-gray-700 dark:text-gray-400"
-        >
-          Tambah Komentar
-        </label>
-        <textarea
+        <label for="pr-comment-body" class="form-label"> Tambah Komentar </label>
+        <BaseTextarea
           id="pr-comment-body"
-          v-model="body"
-          rows="3"
+          :model-value="body"
+          :rows="3"
           placeholder="Tulis komentar..."
-          class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-        ></textarea>
+          @update:model-value="body = $event"
+        />
       </div>
 
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="toolbar-row">
         <div class="relative w-full sm:w-48">
-          <select
-            v-model="category"
+          <BaseSelect
+            id="pr-comment-category"
+            :model-value="category"
+            :options="commentCategoryOptions"
             aria-label="Kategori komentar"
-            class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-          >
-            <option v-for="c in PURCHASE_REQUEST_COMMENT_CATEGORIES" :key="c" :value="c">
-              {{ PURCHASE_REQUEST_COMMENT_CATEGORY_LABELS[c] }}
-            </option>
-          </select>
-          <ChevronDownIcon
-            class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+            @update:model-value="category = $event as PurchaseRequestCommentCategory"
           />
         </div>
 
-        <button
+        <BaseButton
           type="submit"
-          :disabled="submitting"
-          class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+          variant="primary"
+          :loading="submitting"
+          loading-text="Mengirim..."
         >
-          {{ submitting ? 'Mengirim...' : 'Kirim' }}
-        </button>
+          Kirim
+        </BaseButton>
       </div>
 
-      <p
-        v-if="formError"
-        class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-theme-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-        role="alert"
-      >
-        {{ formError }}
-      </p>
+      <BaseAlert v-if="formError" :message="formError" size="sm" />
     </form>
   </div>
 </template>

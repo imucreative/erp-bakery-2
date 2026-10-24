@@ -161,25 +161,18 @@ export const recipeService = {
   },
 
   async update(id: string, payload: SaveRecipePayload): Promise<Recipe> {
-    const response = await httpClient.put<ApiSuccess<Recipe>>(
-      `/production/recipes/${id}`,
-      payload,
-    )
+    const response = await httpClient.put<ApiSuccess<Recipe>>(`/production/recipes/${id}`, payload)
     return response.data.data
   },
 
   // Lifecycle actions take no request body (backend-verified).
   async activate(id: string): Promise<Recipe> {
-    const response = await httpClient.post<ApiSuccess<Recipe>>(
-      `/production/recipes/${id}/activate`,
-    )
+    const response = await httpClient.post<ApiSuccess<Recipe>>(`/production/recipes/${id}/activate`)
     return response.data.data
   },
 
   async archive(id: string): Promise<Recipe> {
-    const response = await httpClient.post<ApiSuccess<Recipe>>(
-      `/production/recipes/${id}/archive`,
-    )
+    const response = await httpClient.post<ApiSuccess<Recipe>>(`/production/recipes/${id}/archive`)
     return response.data.data
   },
 
@@ -194,9 +187,7 @@ export const recipeService = {
 }
 
 /** Badge color mapping per status (aligns with the ui/Badge `color` palette). */
-export function statusBadgeColor(
-  status: RecipeStatus,
-): 'light' | 'success' | 'error' {
+export function statusBadgeColor(status: RecipeStatus): 'light' | 'success' | 'error' {
   switch (status) {
     case 'ACTIVE':
       return 'success'

@@ -18,7 +18,7 @@ import { ChevronLeft } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import Button from '@/components/ui/Button.vue'
+import { BaseAlert, BaseButton } from '@/components/ui'
 import {
   PurchaseRequestItemsEditor,
   PurchaseRequestHeaderFields,
@@ -45,7 +45,9 @@ const editId = computed<string | null>(() => {
   return typeof id === 'string' && id.length > 0 ? id : null
 })
 const isEdit = computed<boolean>(() => editId.value !== null)
-const pageTitle = computed<string>(() => (isEdit.value ? 'Edit Purchase Request' : 'Buat Purchase Request'))
+const pageTitle = computed<string>(() =>
+  isEdit.value ? 'Edit Purchase Request' : 'Buat Purchase Request',
+)
 
 // ── Supporting data ──────────────────────────────────────────────────
 const outlets = ref<Outlet[]>([])
@@ -68,7 +70,11 @@ const loadedStatus = ref<PurchaseRequest['status'] | null>(null)
 
 // Edit is only permitted for DRAFT/REJECTED; otherwise show read-only.
 const isReadOnly = computed<boolean>(
-  () => isEdit.value && loadedStatus.value !== null && loadedStatus.value !== 'DRAFT' && loadedStatus.value !== 'REJECTED',
+  () =>
+    isEdit.value &&
+    loadedStatus.value !== null &&
+    loadedStatus.value !== 'DRAFT' &&
+    loadedStatus.value !== 'REJECTED',
 )
 
 async function loadSupportingData(): Promise<void> {
@@ -85,8 +91,10 @@ async function loadSupportingData(): Promise<void> {
     fetchAllPaginated((page) => uomService.list({ page, limit: PAGE_LIMIT, isActive: 'true' })),
   ])
   outlets.value = allOutlets
-  products.value = allProducts.filter(p => PURCHASABLE_PRODUCT_TYPES.includes(p.productType as any))
-  
+  products.value = allProducts.filter((p) =>
+    PURCHASABLE_PRODUCT_TYPES.includes(p.productType as any),
+  )
+
   uoms.value = allUoms
 }
 
@@ -203,40 +211,35 @@ function onCancel(): void {
 
     <!-- Page header: back (icon-only) + title on the start -->
     <div class="mb-5 flex flex-wrap items-center gap-3">
-      <button
-        type="button"
+      <BaseButton
+        variant="outline"
+        icon-only
         aria-label="Kembali ke Daftar"
         title="Kembali ke Daftar"
-        class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
+        class="h-10 w-10"
         @click="onCancel"
       >
         <ChevronLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
-      </button>
-      <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
+      </BaseButton>
+      <h3 class="card-title">
         {{ pageTitle }}
       </h3>
     </div>
 
     <ComponentCard :title="pageTitle">
-      <div v-if="loading" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-        Memuat data...
-      </div>
+      <div v-if="loading" class="text-muted py-10 text-center">Memuat data...</div>
 
-      <div
-        v-else-if="loadError"
-        class="rounded-lg border border-error-500/40 bg-error-50 px-4 py-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-        role="alert"
-      >
-        {{ loadError }}
-      </div>
+      <BaseAlert v-else-if="loadError" :message="loadError" size="md" />
 
       <form v-else class="space-y-6" @submit.prevent="onSubmit">
-        <p
+        <BaseAlert
           v-if="isReadOnly"
-          class="rounded-lg border border-warning-500/40 bg-warning-50 px-4 py-3 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
+          variant="warning"
+          size="md"
+          class="dark:text-orange-400"
         >
           PR ini tidak dapat diedit pada status saat ini. Ditampilkan sebagai baca-saja.
-        </p>
+        </BaseAlert>
 
         <!-- Header -->
         <PurchaseRequestHeaderFields
@@ -250,7 +253,7 @@ function onCancel(): void {
 
         <!-- Line items -->
         <div>
-          <h5 class="mb-3 text-sm font-semibold text-gray-800 dark:text-white/90">Item</h5>
+          <h5 class="mb-3 section-title">Item</h5>
           <PurchaseRequestItemsEditor
             v-model="items"
             :products="products"
@@ -259,25 +262,22 @@ function onCancel(): void {
           />
         </div>
 
-        <p
-          v-if="formError"
-          class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-        >
-          {{ formError }}
-        </p>
+        <BaseAlert v-if="formError" :message="formError" size="sm" />
 
-        <div class="flex justify-end gap-3 pt-2">
-          <Button size="sm" variant="outline" :disabled="submitting" :on-click="onCancel">
+        <div class="button-row pt-2">
+          <BaseButton size="sm" variant="outline" :disabled="submitting" @click="onCancel">
             {{ isReadOnly ? 'Kembali' : 'Batal' }}
-          </Button>
-          <button
+          </BaseButton>
+          <BaseButton
             v-if="!isReadOnly"
             type="submit"
+            variant="primary"
             :disabled="submitting"
-            class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+            :loading="submitting"
+            loading-text="Menyimpan..."
           >
-            {{ submitting ? 'Menyimpan...' : 'Simpan sebagai Draft' }}
-          </button>
+            Simpan sebagai Draft
+          </BaseButton>
         </div>
       </form>
     </ComponentCard>

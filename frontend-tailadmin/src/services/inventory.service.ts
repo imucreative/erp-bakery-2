@@ -76,9 +76,7 @@ export interface StockOnHandListResult {
   meta: ListMeta
 }
 
-function toStockOnHandQuery(
-  params: StockOnHandListParams,
-): Record<string, string | number> {
+function toStockOnHandQuery(params: StockOnHandListParams): Record<string, string | number> {
   const query: Record<string, string | number> = {
     page: params.page,
     limit: params.limit,
@@ -154,10 +152,7 @@ const OUTBOUND_MOVEMENT_TYPES: ReadonlySet<string> = new Set<string>([
 ])
 
 /** Movement types that are legacy/diagnostic only (direction not asserted). */
-const LEGACY_MOVEMENT_TYPES: ReadonlySet<string> = new Set<string>([
-  'ADJUSTMENT',
-  'OPNAME',
-])
+const LEGACY_MOVEMENT_TYPES: ReadonlySet<string> = new Set<string>(['ADJUSTMENT', 'OPNAME'])
 
 export type MovementDirection = 'INBOUND' | 'OUTBOUND' | 'LEGACY'
 
@@ -227,9 +222,7 @@ export interface LedgerListResult {
   meta: ListMeta
 }
 
-function toLedgerQuery(
-  params: LedgerListParams,
-): Record<string, string | number> {
+function toLedgerQuery(params: LedgerListParams): Record<string, string | number> {
   const query: Record<string, string | number> = {
     page: params.page,
     limit: params.limit,
@@ -275,12 +268,7 @@ export function batchStatusLabel(status: string): string {
  * (expiring-soon = within 30 days; non-batch or null expiry = NOT_APPLICABLE).
  * The frontend must NOT recompute this — it displays the backend value.
  */
-export const EXPIRY_STATES = [
-  'EXPIRED',
-  'EXPIRING_SOON',
-  'OK',
-  'NOT_APPLICABLE',
-] as const
+export const EXPIRY_STATES = ['EXPIRED', 'EXPIRING_SOON', 'OK', 'NOT_APPLICABLE'] as const
 export type ExpiryState = (typeof EXPIRY_STATES)[number]
 
 /** Indonesian display labels for each expiry state. */
@@ -344,9 +332,7 @@ export interface BatchesListResult {
   meta: ListMeta
 }
 
-function toBatchesQuery(
-  params: BatchesListParams,
-): Record<string, string | number> {
+function toBatchesQuery(params: BatchesListParams): Record<string, string | number> {
   const query: Record<string, string | number> = {
     page: params.page,
     limit: params.limit,
@@ -372,9 +358,7 @@ interface ApiItemResponse<T> {
 }
 
 export const inventoryService = {
-  async getStockOnHand(
-    params: StockOnHandListParams,
-  ): Promise<StockOnHandListResult> {
+  async getStockOnHand(params: StockOnHandListParams): Promise<StockOnHandListResult> {
     const response = await httpClient.get<ApiListResponse<StockOnHandRow>>(
       '/inventory/stock-on-hand',
       { params: toStockOnHandQuery(params) },
@@ -391,10 +375,9 @@ export const inventoryService = {
   },
 
   async getBatches(params: BatchesListParams): Promise<BatchesListResult> {
-    const response = await httpClient.get<ApiListResponse<BatchWithExpiry>>(
-      '/inventory/batches',
-      { params: toBatchesQuery(params) },
-    )
+    const response = await httpClient.get<ApiListResponse<BatchWithExpiry>>('/inventory/batches', {
+      params: toBatchesQuery(params),
+    })
     return { items: response.data.data, meta: response.data.meta }
   },
 

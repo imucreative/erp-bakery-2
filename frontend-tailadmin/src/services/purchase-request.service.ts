@@ -77,18 +77,11 @@ export interface PurchaseRequestStatusLog {
  * Comment categories. INTERNAL/APPROVAL/EXTERNAL are user-selectable and sent to
  * the backend; SYSTEM is display-only (backend-authored) and never submitted.
  */
-export const PURCHASE_REQUEST_COMMENT_CATEGORIES = [
-  'INTERNAL',
-  'APPROVAL',
-  'EXTERNAL',
-] as const
-export type PurchaseRequestCommentCategory =
-  (typeof PURCHASE_REQUEST_COMMENT_CATEGORIES)[number]
+export const PURCHASE_REQUEST_COMMENT_CATEGORIES = ['INTERNAL', 'APPROVAL', 'EXTERNAL'] as const
+export type PurchaseRequestCommentCategory = (typeof PURCHASE_REQUEST_COMMENT_CATEGORIES)[number]
 
 /** Full set including SYSTEM, used only for rendering existing comments. */
-export type PurchaseRequestCommentCategoryDisplay =
-  | PurchaseRequestCommentCategory
-  | 'SYSTEM'
+export type PurchaseRequestCommentCategoryDisplay = PurchaseRequestCommentCategory | 'SYSTEM'
 
 export const PURCHASE_REQUEST_COMMENT_CATEGORY_LABELS: Record<
   PurchaseRequestCommentCategoryDisplay,
@@ -328,17 +321,12 @@ export const purchaseRequestService = {
    * `Content-Disposition` header (fallback `originalName`), then trigger a
    * browser download via a temporary object URL.
    */
-  async downloadAttachment(
-    id: string,
-    attId: string,
-    fallbackName: string,
-  ): Promise<void> {
+  async downloadAttachment(id: string, attId: string, fallbackName: string): Promise<void> {
     const response = await httpClient.get<Blob>(
       `/purchase-requests/${id}/attachments/${attId}/download`,
       { responseType: 'blob' },
     )
-    const disposition =
-      (response.headers['content-disposition'] as string | undefined) ?? null
+    const disposition = (response.headers['content-disposition'] as string | undefined) ?? null
     const fileName = filenameFromContentDisposition(disposition) ?? fallbackName
     triggerBlobDownload(response.data, fileName)
   },

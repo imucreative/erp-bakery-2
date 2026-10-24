@@ -24,6 +24,7 @@ import { ChevronLeft } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
+import { BaseAlert, BaseButton } from '@/components/ui'
 import {
   PurchaseRequestSummary,
   PurchaseRequestItemsTable,
@@ -40,10 +41,7 @@ import { fetchAllPaginated, PAGE_LIMIT } from '@/lib/fetchAll'
 import { outletService } from '@/services/outlet.service'
 import { productService } from '@/services/product.service'
 import { uomService } from '@/services/uom.service'
-import {
-  purchaseRequestService,
-  type PurchaseRequest,
-} from '@/services/purchase-request.service'
+import { purchaseRequestService, type PurchaseRequest } from '@/services/purchase-request.service'
 
 const route = useRoute()
 const router = useRouter()
@@ -89,11 +87,7 @@ const showApprove = computed<boolean>(() => canApprove.value && status.value ===
 const showReject = computed<boolean>(() => canApprove.value && status.value === 'SUBMITTED')
 const hasAnyAction = computed<boolean>(
   () =>
-    showEdit.value ||
-    showSubmit.value ||
-    showCancel.value ||
-    showApprove.value ||
-    showReject.value,
+    showEdit.value || showSubmit.value || showCancel.value || showApprove.value || showReject.value,
 )
 
 // ── Load ─────────────────────────────────────────────────────────────
@@ -186,32 +180,25 @@ async function onConfirmAction(note: string): Promise<void> {
   <AdminLayout>
     <PageBreadcrumb :pageTitle="'Detail Purchase Request'" />
 
-    <div v-if="loading" class="rounded-2xl border border-gray-200 bg-white p-10 text-center text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400">
-      Memuat data...
-    </div>
+    <div v-if="loading" class="panel-loading">Memuat data...</div>
 
-    <div
-      v-else-if="loadError"
-      class="rounded-2xl border border-error-500/40 bg-error-50 p-4 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      role="alert"
-    >
-      {{ loadError }}
-    </div>
+    <BaseAlert v-else-if="loadError" :message="loadError" size="md" class="rounded-2xl py-4" />
 
     <template v-else-if="pr">
       <!-- Page header: back (icon-only) + title on the start, lifecycle actions on the end -->
       <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <button
-            type="button"
+          <BaseButton
+            variant="outline"
+            icon-only
             aria-label="Kembali ke Daftar"
             title="Kembali ke Daftar"
-            class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
+            class="h-10 w-10"
             @click="goToList"
           >
             <ChevronLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
-          </button>
-          <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
+          </BaseButton>
+          <h3 class="card-title">
             {{ pr.prNumber }}
           </h3>
         </div>
@@ -237,27 +224,15 @@ async function onConfirmAction(note: string): Promise<void> {
         <div class="space-y-5 lg:col-span-2">
           <ComponentCard title="Informasi Purchase Request">
             <!-- Action error banner (mutation failures keep user here) -->
-            <p
-              v-if="actionError"
-              class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-            >
-              {{ actionError }}
-            </p>
+            <BaseAlert v-if="actionError" :message="actionError" size="sm" class="mb-4" />
 
             <PurchaseRequestSummary :pr="pr" :outlet-name="outletName" />
 
             <div class="mt-6">
-              <PurchaseRequestItemsTable
-                :pr="pr"
-                :product-name="productName"
-                :uom-name="uomName"
-              />
+              <PurchaseRequestItemsTable :pr="pr" :product-name="productName" :uom-name="uomName" />
             </div>
 
-            <p
-              v-if="!hasAnyAction"
-              class="mt-6 text-theme-sm text-gray-400 dark:text-gray-500"
-            >
+            <p v-if="!hasAnyAction" class="mt-6 text-theme-sm text-gray-400 dark:text-gray-500">
               Tidak ada aksi untuk status ini.
             </p>
           </ComponentCard>

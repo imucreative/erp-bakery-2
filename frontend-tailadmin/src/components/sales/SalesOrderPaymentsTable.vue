@@ -5,11 +5,9 @@
  * empty state when the order has not been paid yet.
  */
 import Badge from '@/components/ui/Badge.vue'
+import { BaseTable, BaseTableCell, BaseTableHead, BaseTableRow } from '@/components/ui'
 import { formatRupiah, formatDateTime } from '@/lib/format'
-import {
-  PAYMENT_METHOD_LABELS,
-  type SalesPayment,
-} from '@/services/sales.service'
+import { PAYMENT_METHOD_LABELS, type SalesPayment } from '@/services/sales.service'
 
 const props = defineProps<{
   payments: SalesPayment[]
@@ -17,53 +15,32 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div
-    v-if="props.payments.length === 0"
-    class="py-6 text-center text-theme-sm text-gray-500 dark:text-gray-400"
+  <BaseTable
+    :is-empty="props.payments.length === 0"
+    empty-message="Belum ada pembayaran."
+    aria-label="Daftar pembayaran sales order"
   >
-    Belum ada pembayaran.
-  </div>
-
-  <div v-else class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
-    <table class="min-w-full">
-      <thead>
-        <tr class="border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]">
-          <th class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-            Metode
-          </th>
-          <th class="px-4 py-3 text-end text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-            Jumlah
-          </th>
-          <th class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-            No. Referensi
-          </th>
-          <th class="px-4 py-3 text-start text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-            Dibayar
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="payment in props.payments"
-          :key="payment.id"
-          class="border-b border-gray-100 last:border-0 dark:border-gray-800"
-        >
-          <td class="px-4 py-3">
-            <Badge size="sm" color="light">
-              {{ PAYMENT_METHOD_LABELS[payment.paymentMethod] }}
-            </Badge>
-          </td>
-          <td class="px-4 py-3 text-end text-theme-sm font-medium text-gray-800 dark:text-white/90">
-            {{ formatRupiah(payment.amount) }}
-          </td>
-          <td class="px-4 py-3 text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ payment.referenceNo || '—' }}
-          </td>
-          <td class="px-4 py-3 text-theme-sm text-gray-600 dark:text-gray-300">
-            {{ formatDateTime(payment.paidAt) }}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+    <template #header>
+      <BaseTableRow variant="header">
+        <BaseTableHead>Metode</BaseTableHead>
+        <BaseTableHead align="end">Jumlah</BaseTableHead>
+        <BaseTableHead>No. Referensi</BaseTableHead>
+        <BaseTableHead>Dibayar</BaseTableHead>
+      </BaseTableRow>
+    </template>
+    <template #body>
+      <BaseTableRow v-for="payment in props.payments" :key="payment.id">
+        <BaseTableCell>
+          <Badge size="sm" color="light">
+            {{ PAYMENT_METHOD_LABELS[payment.paymentMethod] }}
+          </Badge>
+        </BaseTableCell>
+        <BaseTableCell align="end" emphasis="medium">
+          {{ formatRupiah(payment.amount) }}
+        </BaseTableCell>
+        <BaseTableCell>{{ payment.referenceNo || '—' }}</BaseTableCell>
+        <BaseTableCell>{{ formatDateTime(payment.paidAt) }}</BaseTableCell>
+      </BaseTableRow>
+    </template>
+  </BaseTable>
 </template>

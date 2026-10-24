@@ -21,9 +21,9 @@ const props = defineProps<{
 </script>
 
 <template>
-  <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+  <dl class="field-grid">
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Status</dt>
+      <dt class="text-muted-xs uppercase">Status</dt>
       <dd class="mt-1">
         <Badge :color="statusBadgeColor(props.transfer.status)">
           {{ TRANSFER_STATUS_LABELS[props.transfer.status] }}
@@ -31,45 +31,45 @@ const props = defineProps<{
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Tanggal Transfer</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Tanggal Transfer</dt>
+      <dd class="mt-1 text-value">
         {{ formatDate(props.transfer.transferDate) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Outlet Sumber</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Outlet Sumber</dt>
+      <dd class="mt-1 text-value">
         {{ props.outletName(props.transfer.sourceOutletId) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Outlet Tujuan</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Outlet Tujuan</dt>
+      <dd class="mt-1 text-value">
         {{ props.outletName(props.transfer.destinationOutletId) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Jumlah Item</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Jumlah Item</dt>
+      <dd class="mt-1 text-value">
         {{ props.transfer.items.length }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Dibuat</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Dibuat</dt>
+      <dd class="mt-1 text-value">
         {{ formatDateTime(props.transfer.createdAt) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Diperbarui</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Diperbarui</dt>
+      <dd class="mt-1 text-value">
         {{ formatDateTime(props.transfer.updatedAt) }}
       </dd>
     </div>
 
     <div v-if="props.transfer.notes" class="sm:col-span-2">
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Catatan</dt>
-      <dd class="mt-1 text-theme-sm text-gray-700 dark:text-gray-300">
+      <dt class="text-muted-xs uppercase">Catatan</dt>
+      <dd class="mt-1 text-body">
         {{ props.transfer.notes }}
       </dd>
     </div>

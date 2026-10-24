@@ -5,11 +5,8 @@
  * the UI standard. Two-way binds `search`, `status`, and `purchaseOrder` via
  * v-model:search / v-model:status / v-model:purchaseOrder.
  */
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
-import {
-  GOODS_RECEIPT_STATUSES,
-  GOODS_RECEIPT_STATUS_LABELS,
-} from '@/services/goods-receipt.service'
+import { BaseInput, BaseSelect } from '@/components/ui'
+import { GOODS_RECEIPT_STATUS_LABELS } from '@/services/goods-receipt.service'
 import type { StatusFilter } from '@/composables/useGoodsReceipts'
 import type { PurchaseOrder } from '@/services/purchase-order.service'
 
@@ -25,45 +22,43 @@ const emit = defineEmits<{
   (event: 'update:status', value: StatusFilter): void
   (event: 'update:purchaseOrder', value: string): void
 }>()
+
+const statusOptions = [
+  { value: 'all', label: 'Semua Status' },
+  ...Object.entries(GOODS_RECEIPT_STATUS_LABELS).map(([value, label]) => ({
+    value,
+    label,
+  })),
+]
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+  <div class="stack-row">
     <div class="relative w-full sm:max-w-xs">
-      <input
-        :value="search"
-        type="text"
+      <BaseInput
+        id="goods-receipt-search"
+        :model-value="search"
         placeholder="Cari nomor GR..."
-        class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-        @input="emit('update:search', ($event.target as HTMLInputElement).value)"
+        @update:model-value="emit('update:search', $event)"
       />
     </div>
     <div class="relative w-full sm:w-48">
-      <select
-        :value="status"
-        class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-        @change="emit('update:status', ($event.target as HTMLSelectElement).value as StatusFilter)"
-      >
-        <option value="all">Semua Status</option>
-        <option v-for="s in GOODS_RECEIPT_STATUSES" :key="s" :value="s">
-          {{ GOODS_RECEIPT_STATUS_LABELS[s] }}
-        </option>
-      </select>
-      <ChevronDownIcon
-        class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+      <BaseSelect
+        id="goods-receipt-status"
+        :model-value="status"
+        :options="statusOptions"
+        @update:model-value="emit('update:status', $event as StatusFilter)"
       />
     </div>
     <div class="relative w-full sm:w-56">
-      <select
-        :value="purchaseOrder"
-        class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-        @change="emit('update:purchaseOrder', ($event.target as HTMLSelectElement).value)"
-      >
-        <option value="">Semua PO</option>
-        <option v-for="po in purchaseOrders" :key="po.id" :value="po.id">{{ po.poNumber }}</option>
-      </select>
-      <ChevronDownIcon
-        class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+      <BaseSelect
+        id="goods-receipt-purchase-order"
+        :model-value="purchaseOrder"
+        :options="[
+          { value: '', label: 'Semua PO' },
+          ...purchaseOrders.map((po) => ({ value: po.id, label: po.poNumber })),
+        ]"
+        @update:model-value="emit('update:purchaseOrder', $event)"
       />
     </div>
   </div>

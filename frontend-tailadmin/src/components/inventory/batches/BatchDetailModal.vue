@@ -1,14 +1,14 @@
 <script setup lang="ts">
 /**
  * BatchDetailModal — read-only detail view of a single inventory batch.
- * Transparent backdrop + rounded-3xl panel per the UI standard. Shows the
+ * Panel and backdrop come from `BaseModal` (`size="lg"`, `scrollable`). Shows the
  * product (name + SKU), outlet, batch number, lot number, available quantity,
  * received/expiry dates, batch status, the backend-derived expiry state, and
  * the non-batch flag. Product/outlet names are resolved by the parent via
  * lookup maps (raw-id fallback). Read-only — no actions beyond closing.
  */
 import { computed } from 'vue'
-import Button from '@/components/ui/Button.vue'
+import { BaseAlert, BaseButton, BaseModal } from '@/components/ui'
 import Badge from '@/components/ui/Badge.vue'
 import { formatDate, formatQtyWithUom } from '@/lib/format'
 import {
@@ -63,9 +63,7 @@ const outletName = computed<string>(() => {
   if (!props.detail) {
     return ''
   }
-  return (
-    props.outletNames.get(props.detail.batch.outletId) ?? props.detail.batch.outletId
-  )
+  return props.outletNames.get(props.detail.batch.outletId) ?? props.detail.batch.outletId
 })
 
 type ExpiryColor = 'success' | 'error' | 'warning' | 'light'
@@ -100,117 +98,97 @@ function statusColor(status: string): BatchStatusColor {
 </script>
 
 <template>
-  <div v-if="open" class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4">
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-      @click="emit('close')"
-    ></div>
-
-    <div
-      class="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
-      <div class="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90">Detail Batch</h4>
-          <p class="mt-0.5 text-theme-xs text-gray-500 dark:text-gray-400">
-            Informasi batch inventaris (hanya-baca).
-          </p>
-        </div>
-      </div>
-
-      <div v-if="loading" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-        Memuat detail batch...
-      </div>
-
-      <div
-        v-else-if="errorMessage"
-        class="rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      >
-        {{ errorMessage }}
-      </div>
-
-      <div v-else-if="detail" class="space-y-4">
-        <div class="flex flex-col">
-          <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">Produk</span>
-          <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
-            {{ product?.name }}
-          </span>
-          <span v-if="product?.sku" class="text-theme-xs text-gray-500 dark:text-gray-400">
-            {{ product?.sku }}
-          </span>
-        </div>
-
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div class="flex flex-col">
-            <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">Outlet</span>
-            <span class="text-theme-sm text-gray-800 dark:text-white/90">{{ outletName }}</span>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">No. Batch</span>
-            <span class="text-theme-sm text-gray-800 dark:text-white/90">
-              {{ detail.batch.isNonBatch || !detail.batch.batchNumber ? 'Non-batch' : detail.batch.batchNumber }}
-            </span>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">No. Lot</span>
-            <span class="text-theme-sm text-gray-800 dark:text-white/90">
-              {{ detail.batch.lotNumber ?? '—' }}
-            </span>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">Qty Tersedia</span>
-            <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
-              {{ formatQtyWithUom(detail.batch.qtyAvailable, uomLabel) }}
-            </span>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">Tgl Diterima</span>
-            <span class="text-theme-sm text-gray-800 dark:text-white/90">
-              {{ detail.batch.receivedDate ? formatDate(detail.batch.receivedDate) : '—' }}
-            </span>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">Tgl Kedaluwarsa</span>
-            <span class="text-theme-sm text-gray-800 dark:text-white/90">
-              {{ detail.batch.expiredDate ? formatDate(detail.batch.expiredDate) : '—' }}
-            </span>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">Status</span>
-            <span>
-              <Badge :color="statusColor(detail.batch.status)">
-                {{ batchStatusLabel(detail.batch.status) }}
-              </Badge>
-            </span>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">Kedaluwarsa</span>
-            <span>
-              <Badge :color="expiryColor(detail.expiryState)">
-                {{ expiryStateLabel(detail.expiryState) }}
-              </Badge>
-            </span>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">Non-batch</span>
-            <span class="text-theme-sm text-gray-800 dark:text-white/90">
-              {{ detail.batch.isNonBatch ? 'Ya' : 'Tidak' }}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div
-        v-else
-        class="py-8 text-center text-sm text-gray-500 dark:text-gray-400"
-      >
-        Data batch tidak tersedia.
-      </div>
-
-      <div class="mt-6 flex justify-end">
-        <Button size="sm" variant="outline" :on-click="() => emit('close')">Tutup</Button>
+  <BaseModal :open="open" size="lg" scrollable @close="emit('close')">
+    <div class="mb-4 flex items-start justify-between gap-3">
+      <div>
+        <h4 class="modal-title">Detail Batch</h4>
+        <p class="mt-0.5 text-meta">Informasi batch inventaris (hanya-baca).</p>
       </div>
     </div>
-  </div>
+
+    <div v-if="loading" class="text-muted py-8 text-center">Memuat detail batch...</div>
+
+    <BaseAlert v-else-if="errorMessage" size="sm">{{ errorMessage }}</BaseAlert>
+
+    <div v-else-if="detail" class="space-y-4">
+      <div class="flex flex-col">
+        <span class="text-meta uppercase">Produk</span>
+        <span class="text-strong">
+          {{ product?.name }}
+        </span>
+        <span v-if="product?.sku" class="text-meta">
+          {{ product?.sku }}
+        </span>
+      </div>
+
+      <div class="field-grid">
+        <div class="flex flex-col">
+          <span class="text-meta uppercase">Outlet</span>
+          <span class="text-value">{{ outletName }}</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-meta uppercase">No. Batch</span>
+          <span class="text-value">
+            {{
+              detail.batch.isNonBatch || !detail.batch.batchNumber
+                ? 'Non-batch'
+                : detail.batch.batchNumber
+            }}
+          </span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-meta uppercase">No. Lot</span>
+          <span class="text-value">
+            {{ detail.batch.lotNumber ?? '—' }}
+          </span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-meta uppercase">Qty Tersedia</span>
+          <span class="text-strong">
+            {{ formatQtyWithUom(detail.batch.qtyAvailable, uomLabel) }}
+          </span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-meta uppercase">Tgl Diterima</span>
+          <span class="text-value">
+            {{ detail.batch.receivedDate ? formatDate(detail.batch.receivedDate) : '—' }}
+          </span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-meta uppercase">Tgl Kedaluwarsa</span>
+          <span class="text-value">
+            {{ detail.batch.expiredDate ? formatDate(detail.batch.expiredDate) : '—' }}
+          </span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-meta uppercase">Status</span>
+          <span>
+            <Badge :color="statusColor(detail.batch.status)">
+              {{ batchStatusLabel(detail.batch.status) }}
+            </Badge>
+          </span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-meta uppercase">Kedaluwarsa</span>
+          <span>
+            <Badge :color="expiryColor(detail.expiryState)">
+              {{ expiryStateLabel(detail.expiryState) }}
+            </Badge>
+          </span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-meta uppercase">Non-batch</span>
+          <span class="text-value">
+            {{ detail.batch.isNonBatch ? 'Ya' : 'Tidak' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div v-else class="text-muted py-8 text-center">Data batch tidak tersedia.</div>
+
+    <div class="mt-6 button-row">
+      <BaseButton size="sm" variant="outline" @click="emit('close')">Tutup</BaseButton>
+    </div>
+  </BaseModal>
 </template>

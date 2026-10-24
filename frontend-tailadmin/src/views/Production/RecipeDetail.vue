@@ -26,6 +26,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import Badge from '@/components/ui/Badge.vue'
+import { BaseAlert, BaseButton } from '@/components/ui'
 import {
   RecipeSummary,
   RecipeItemsTable,
@@ -59,8 +60,9 @@ function productName(id: string): string {
   if (recipe.value?.productId === id && recipe.value.productName) {
     return recipe.value.productName
   }
-  return recipe.value?.items.find((item) => item.ingredientProductId === id)
-    ?.ingredientProductName ?? id
+  return (
+    recipe.value?.items.find((item) => item.ingredientProductId === id)?.ingredientProductName ?? id
+  )
 }
 function uomName(id: string): string {
   if (recipe.value?.yieldUomId === id) {
@@ -148,9 +150,7 @@ async function onConfirmAction(): Promise<void> {
       return
     }
     const updated =
-      action === 'activate'
-        ? await recipeService.activate(id)
-        : await recipeService.archive(id)
+      action === 'activate' ? await recipeService.activate(id) : await recipeService.archive(id)
     recipe.value = {
       ...updated,
       productName: current.productName,
@@ -160,9 +160,7 @@ async function onConfirmAction(): Promise<void> {
         ingredientProductName: current.items.find(
           (current) => current.ingredientProductId === item.ingredientProductId,
         )?.ingredientProductName,
-        uomName: current.items.find(
-          (currentItem) => currentItem.uomId === item.uomId,
-        )?.uomName,
+        uomName: current.items.find((currentItem) => currentItem.uomId === item.uomId)?.uomName,
       })),
     }
     activeAction.value = null
@@ -206,42 +204,30 @@ function onDuplicate(): void {
   <AdminLayout>
     <PageBreadcrumb :pageTitle="'Detail Resep'" />
 
-    <div
-      v-if="loading"
-      class="rounded-2xl border border-gray-200 bg-white p-10 text-center text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400"
-    >
-      Memuat data...
-    </div>
+    <div v-if="loading" class="panel-loading">Memuat data...</div>
 
-    <div
-      v-else-if="loadError"
-      class="rounded-2xl border border-error-500/40 bg-error-50 p-4 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      role="alert"
-    >
-      {{ loadError }}
-    </div>
+    <BaseAlert v-else-if="loadError" :message="loadError" size="md" class="rounded-2xl py-4" />
 
     <template v-else-if="recipe">
       <!-- Page header: back (icon-only) + title/number/status/version on the start, actions on the end -->
       <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <button
-            type="button"
+          <BaseButton
+            variant="outline"
+            icon-only
             aria-label="Kembali ke Daftar"
             title="Kembali ke Daftar"
-            class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
+            class="h-10 w-10"
             @click="goToList"
           >
             <ChevronLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
-          </button>
+          </BaseButton>
           <div class="flex flex-col gap-1">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
+            <h3 class="card-title">
               {{ recipe.name }}
             </h3>
             <div class="flex items-center gap-2">
-              <span class="text-theme-sm text-gray-500 dark:text-gray-400">
-                {{ recipe.recipeNumber }} · v{{ recipe.version }}
-              </span>
+              <span class="text-muted"> {{ recipe.recipeNumber }} · v{{ recipe.version }} </span>
               <Badge :color="statusBadgeColor(recipe.status)">
                 {{ RECIPE_STATUS_LABELS[recipe.status] }}
               </Badge>
@@ -268,28 +254,16 @@ function onDuplicate(): void {
       <div class="grid grid-cols-1 gap-5">
         <ComponentCard title="Informasi Resep">
           <!-- Action error banner (mutation failures keep user here) -->
-          <p
-            v-if="actionError"
-            class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-          >
-            {{ actionError }}
-          </p>
+          <BaseAlert v-if="actionError" :message="actionError" size="sm" class="mb-4" />
 
           <RecipeSummary :recipe="recipe" :product-name="productName" :uom-name="uomName" />
 
           <div class="mt-6">
-            <h5 class="mb-3 text-sm font-semibold text-gray-800 dark:text-white/90">Bahan</h5>
-            <RecipeItemsTable
-              :recipe="recipe"
-              :product-name="productName"
-              :uom-name="uomName"
-            />
+            <h5 class="mb-3 section-title">Bahan</h5>
+            <RecipeItemsTable :recipe="recipe" :product-name="productName" :uom-name="uomName" />
           </div>
 
-          <p
-            v-if="!hasAnyAction"
-            class="mt-6 text-theme-sm text-gray-400 dark:text-gray-500"
-          >
+          <p v-if="!hasAnyAction" class="mt-6 text-theme-sm text-gray-400 dark:text-gray-500">
             Tidak ada aksi untuk status ini.
           </p>
         </ComponentCard>

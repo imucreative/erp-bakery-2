@@ -7,8 +7,14 @@
  */
 import { ref, watch } from 'vue'
 import { DoorOpen } from 'lucide-vue-next'
-import Button from '@/components/ui/Button.vue'
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
+import {
+  BaseAlert,
+  BaseButton,
+  BaseInput,
+  BaseModal,
+  BaseSelect,
+  BaseTextarea,
+} from '@/components/ui'
 import type { Outlet } from '@/services/outlet.service'
 
 const props = withDefaults(
@@ -48,95 +54,67 @@ function onConfirm(): void {
   }
   emit('confirm', {
     outletId: outletId.value,
-    openingCash: openingCash.value >= 0 ? openingCash.value : 0,
+    openingCash: Number(openingCash.value) >= 0 ? Number(openingCash.value) : 0,
     notes: notes.value.trim(),
   })
 }
 </script>
 
 <template>
-  <div
-    v-if="props.open"
-    class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4"
-  >
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-      @click="emit('close')"
-    ></div>
+  <BaseModal :open="props.open" @close="emit('close')">
+    <h4 class="modal-title mb-2">Buka Shift Kasir</h4>
+    <p class="text-muted mb-4">Pilih outlet dan masukkan kas awal untuk memulai shift.</p>
 
-    <div
-      class="relative w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
-      <h4 class="mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">Buka Shift Kasir</h4>
-      <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
-        Pilih outlet dan masukkan kas awal untuk memulai shift.
-      </p>
-
-      <div class="mb-4">
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-          Outlet
-        </label>
-        <div class="relative">
-          <select
-            v-model="outletId"
-            class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-          >
-            <option value="" disabled>Pilih outlet</option>
-            <option v-for="o in props.outlets" :key="o.id" :value="o.id">{{ o.name }}</option>
-          </select>
-          <ChevronDownIcon
-            class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
-          />
-        </div>
-      </div>
-
-      <div class="mb-4">
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-          Kas Awal (Rp)
-        </label>
-        <input
-          v-model.number="openingCash"
-          type="number"
-          min="0"
-          step="1000"
-          class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-        />
-      </div>
-
-      <div class="mb-4">
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-          Catatan
-        </label>
-        <textarea
-          v-model="notes"
-          rows="2"
-          placeholder="Catatan opsional..."
-          class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-        ></textarea>
-      </div>
-
-      <p
-        v-if="props.errorMessage"
-        class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      >
-        {{ props.errorMessage }}
-      </p>
-
-      <div class="flex justify-end gap-3">
-        <Button size="sm" variant="outline" :disabled="props.submitting" :on-click="() => emit('close')">
-          Batal
-        </Button>
-        <button
-          type="button"
-          :disabled="props.submitting || !outletId"
-          class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
-          @click="onConfirm"
-        >
-          <DoorOpen class="h-4 w-4" aria-hidden="true" />
-          {{ props.submitting ? 'Memproses...' : 'Buka Shift' }}
-        </button>
-      </div>
+    <div class="mb-4">
+      <label class="form-label"> Outlet </label>
+      <BaseSelect
+        id="open-shift-outlet"
+        v-model="outletId"
+        :options="props.outlets.map((outlet) => ({ label: outlet.name, value: outlet.id }))"
+        placeholder="Pilih outlet"
+      />
     </div>
-  </div>
+
+    <div class="mb-4">
+      <label class="form-label"> Kas Awal (Rp) </label>
+      <BaseInput
+        id="open-shift-opening-cash"
+        :model-value="openingCash"
+        type="number"
+        min="0"
+        step="1000"
+        @update:model-value="openingCash = Number($event)"
+      />
+    </div>
+
+    <div class="mb-4">
+      <label class="form-label"> Catatan </label>
+      <BaseTextarea
+        id="open-shift-notes"
+        v-model="notes"
+        :rows="2"
+        placeholder="Catatan opsional..."
+      />
+    </div>
+
+    <BaseAlert :message="props.errorMessage" size="sm" class="mb-4" />
+
+    <div class="button-row">
+      <BaseButton size="sm" variant="outline" :disabled="props.submitting" @click="emit('close')">
+        Batal
+      </BaseButton>
+      <BaseButton
+        size="sm"
+        :loading="props.submitting"
+        loading-text="Memproses..."
+        :disabled="props.submitting || !outletId"
+        @click="onConfirm"
+      >
+        <template #start-icon>
+          <DoorOpen class="h-4 w-4" aria-hidden="true" />
+        </template>
+        Buka Shift
+      </BaseButton>
+    </div>
+  </BaseModal>
 </template>

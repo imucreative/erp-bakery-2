@@ -1,24 +1,29 @@
 <script setup lang="ts">
 /**
  * SalesOrderFilterBar — search (invoiceNumber) + status + outlet + shift filter
- * toolbar for the Sales Order list. Native selects wrapped with a
- * ChevronDownIcon per the UI standard. Two-way binds `search`, `status`,
- * `outlet`, and `shift`.
+ * toolbar for the Sales Order list, built on `BaseInput`/`BaseSelect`. Two-way
+ * binds `search`, `status`, `outlet`, and `shift`.
  */
-import ChevronDownIcon from '@/icons/ChevronDownIcon.vue'
+import { computed } from 'vue'
 import {
   SALES_ORDER_STATUSES,
   SALES_ORDER_STATUS_LABELS,
   type Shift,
 } from '@/services/sales.service'
-import type { SalesOrderStatusFilter } from '@/composables/useSalesOrders'
+import type {
+  SalesOrderStatusFilter,
+  SalesOrderOutletFilter,
+  SalesOrderShiftFilter,
+} from '@/composables/useSalesOrders'
 import type { Outlet } from '@/services/outlet.service'
+import BaseInput from '../ui/BaseInput.vue'
+import BaseSelect from '../ui/BaseSelect.vue'
 
-defineProps<{
+const props = defineProps<{
   search: string
   status: SalesOrderStatusFilter
-  outlet: string
-  shift: string
+  outlet: SalesOrderOutletFilter
+  shift: SalesOrderShiftFilter
   outlets: Outlet[]
   shifts: Shift[]
 }>()
@@ -26,63 +31,77 @@ defineProps<{
 const emit = defineEmits<{
   (event: 'update:search', value: string): void
   (event: 'update:status', value: SalesOrderStatusFilter): void
-  (event: 'update:outlet', value: string): void
-  (event: 'update:shift', value: string): void
+  (event: 'update:outlet', value: SalesOrderOutletFilter): void
+  (event: 'update:shift', value: SalesOrderShiftFilter): void
 }>()
+
+const statusOptions = [
+  { value: 'all', label: 'Semua Status' },
+  ...SALES_ORDER_STATUSES.map((status) => ({
+    value: status,
+    label: SALES_ORDER_STATUS_LABELS[status],
+  })),
+]
+
+const distinctShifts = computed<Shift[]>(() => {
+  const seenCashiers = new Set<string>()
+
+  return props.shifts.filter((shift) => {
+    const cashierKey = shift.cashierUserId || shift.cashierName || shift.id
+    if (seenCashiers.has(cashierKey)) {
+      return false
+    }
+    seenCashiers.add(cashierKey)
+    return true
+  })
+})
+
+const outletsOptions = computed(() => [
+  { value: '', label: 'Semua Outlet' },
+  ...props.outlets.map((outlet) => ({ value: outlet.id, label: outlet.name })),
+])
+
+const shiftsOptions = computed(() => [
+  { value: '', label: 'Semua Shift' },
+  ...distinctShifts.value.map((shift) => ({
+    value: shift.id,
+    label: `${shift.cashierName || 'Unknown Cashier'}`,
+  })),
+])
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+  <div class="stack-row">
     <div class="relative w-full sm:max-w-xs">
-      <input
-        :value="search"
-        type="text"
+      <BaseInput
+        id="sales-order-search"
+        :model-value="search"
         placeholder="Cari nomor invoice..."
-        class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-        @input="emit('update:search', ($event.target as HTMLInputElement).value)"
+        @update:model-value="emit('update:search', $event)"
       />
     </div>
     <div class="relative w-full sm:w-48">
-      <select
-        :value="status"
-        class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-        @change="emit('update:status', ($event.target as HTMLSelectElement).value as SalesOrderStatusFilter)"
-      >
-        <option value="all">Semua Status</option>
-        <option v-for="s in SALES_ORDER_STATUSES" :key="s" :value="s">
-          {{ SALES_ORDER_STATUS_LABELS[s] }}
-        </option>
-      </select>
-      <ChevronDownIcon
-        class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+      <BaseSelect
+        id="sales-order-status"
+        :model-value="status"
+        :options="statusOptions"
+        @update:model-value="emit('update:status', $event as SalesOrderStatusFilter)"
       />
     </div>
     <div class="relative w-full sm:w-56">
-      <select
-        :value="outlet"
-        class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-        @change="emit('update:outlet', ($event.target as HTMLSelectElement).value)"
-      >
-        <option value="">Semua Outlet</option>
-        <option v-for="o in outlets" :key="o.id" :value="o.id">{{ o.name }}</option>
-      </select>
-      <ChevronDownIcon
-        class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+      <BaseSelect
+        id="sales-order-outlet"
+        :model-value="outlet"
+        :options="outletsOptions"
+        @update:model-value="emit('update:outlet', $event as SalesOrderOutletFilter)"
       />
     </div>
     <div class="relative w-full sm:w-56">
-      <select
-        :value="shift"
-        class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 pe-10 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-        @change="emit('update:shift', ($event.target as HTMLSelectElement).value)"
-      >
-        <option value="">Semua Shift</option>
-        <option v-for="sh in shifts" :key="sh.id" :value="sh.id">
-          {{ sh.id.slice(0, 8) }}
-        </option>
-      </select>
-      <ChevronDownIcon
-        class="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+      <BaseSelect
+        id="sales-order-shift"
+        :model-value="shift"
+        :options="shiftsOptions"
+        @update:model-value="emit('update:shift', $event as SalesOrderShiftFilter)"
       />
     </div>
   </div>

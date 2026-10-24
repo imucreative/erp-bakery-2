@@ -134,9 +134,7 @@ export interface SaveStockTransferPayload {
   items: StockTransferItemPayload[]
 }
 
-function toQuery(
-  params: StockTransferListParams,
-): Record<string, string | number> {
+function toQuery(params: StockTransferListParams): Record<string, string | number> {
   const query: Record<string, string | number> = {
     page: params.page,
     limit: params.limit,
@@ -158,17 +156,14 @@ function toQuery(
 
 export const stockTransferService = {
   async list(params: StockTransferListParams): Promise<StockTransferListResult> {
-    const response = await httpClient.get<ApiListResponse<StockTransfer>>(
-      '/inventory/transfers',
-      { params: toQuery(params) },
-    )
+    const response = await httpClient.get<ApiListResponse<StockTransfer>>('/inventory/transfers', {
+      params: toQuery(params),
+    })
     return { items: response.data.data, meta: response.data.meta }
   },
 
   async getById(id: string): Promise<StockTransfer> {
-    const response = await httpClient.get<ApiSuccess<StockTransfer>>(
-      `/inventory/transfers/${id}`,
-    )
+    const response = await httpClient.get<ApiSuccess<StockTransfer>>(`/inventory/transfers/${id}`)
     return response.data.data
   },
 
@@ -180,10 +175,7 @@ export const stockTransferService = {
     return response.data.data
   },
 
-  async update(
-    id: string,
-    payload: SaveStockTransferPayload,
-  ): Promise<StockTransfer> {
+  async update(id: string, payload: SaveStockTransferPayload): Promise<StockTransfer> {
     const response = await httpClient.put<ApiSuccess<StockTransfer>>(
       `/inventory/transfers/${id}`,
       payload,

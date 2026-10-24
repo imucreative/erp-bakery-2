@@ -26,6 +26,7 @@ import {
   SalesOrderActionModals,
   type SalesOrderAction,
 } from '@/components/sales'
+import { BaseAlert, BaseButton } from '@/components/ui'
 import { usePermission } from '@/composables/usePermission'
 import { toMessage } from '@/composables/useSalesOrders'
 import { salesService, type SalesOrder } from '@/services/sales.service'
@@ -43,10 +44,10 @@ const loadError = ref<string | null>(null)
 const actionError = ref<string | null>(null)
 
 function outletName(id: string): string {
-  return order.value?.outletId === id ? order.value.outletName ?? id : id
+  return order.value?.outletId === id ? (order.value.outletName ?? id) : id
 }
 function cashierName(id: string): string {
-  return order.value?.cashierUserId === id ? order.value.cashierName ?? id : id
+  return order.value?.cashierUserId === id ? (order.value.cashierName ?? id) : id
 }
 
 // ── Permission + status → available actions ──────────────────────────
@@ -126,35 +127,25 @@ async function onConfirmAction(reason: string): Promise<void> {
   <AdminLayout>
     <PageBreadcrumb :pageTitle="'Detail Sales Order'" />
 
-    <div
-      v-if="loading"
-      class="rounded-2xl border border-gray-200 bg-white p-10 text-center text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400"
-    >
-      Memuat data...
-    </div>
+    <div v-if="loading" class="panel-loading">Memuat data...</div>
 
-    <div
-      v-else-if="loadError"
-      class="rounded-2xl border border-error-500/40 bg-error-50 p-4 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      role="alert"
-    >
-      {{ loadError }}
-    </div>
+    <BaseAlert v-else-if="loadError" :message="loadError" size="md" class="rounded-2xl py-4" />
 
     <template v-else-if="order">
       <!-- Page header: back (icon-only) + title on the start, lifecycle actions on the end -->
       <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <button
-            type="button"
+          <BaseButton
+            variant="outline"
+            icon-only
             aria-label="Kembali ke Daftar"
             title="Kembali ke Daftar"
-            class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-white/[0.03]"
+            class="h-10 w-10"
             @click="goToList"
           >
             <ChevronLeft class="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
-          </button>
-          <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
+          </BaseButton>
+          <h3 class="card-title">
             {{ order.invoiceNumber }}
           </h3>
         </div>
@@ -173,12 +164,7 @@ async function onConfirmAction(reason: string): Promise<void> {
         <!-- Main column: summary + items -->
         <div class="space-y-5 lg:col-span-2">
           <ComponentCard title="Informasi Sales Order">
-            <p
-              v-if="actionError"
-              class="mb-4 rounded-lg border border-error-500/40 bg-error-50 px-3 py-2 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-            >
-              {{ actionError }}
-            </p>
+            <BaseAlert :message="actionError" size="sm" class="mb-4" />
 
             <SalesOrderSummary
               :order="order"
@@ -187,16 +173,11 @@ async function onConfirmAction(reason: string): Promise<void> {
             />
 
             <div class="mt-6">
-              <h4 class="mb-3 text-theme-sm font-semibold text-gray-800 dark:text-white/90">
-                Item
-              </h4>
+              <h4 class="mb-3 section-title">Item</h4>
               <SalesOrderItemsTable :order="order" />
             </div>
 
-            <p
-              v-if="!hasAnyAction"
-              class="mt-6 text-theme-sm text-gray-400 dark:text-gray-500"
-            >
+            <p v-if="!hasAnyAction" class="mt-6 text-theme-sm text-gray-400 dark:text-gray-500">
               Tidak ada aksi untuk status ini.
             </p>
           </ComponentCard>
@@ -208,26 +189,23 @@ async function onConfirmAction(reason: string): Promise<void> {
             <SalesOrderPaymentsTable :payments="order.payments" />
           </ComponentCard>
 
-          <ComponentCard
-            v-if="order.status === 'REFUNDED' && order.salesReturn"
-            title="Refund"
-          >
+          <ComponentCard v-if="order.status === 'REFUNDED' && order.salesReturn" title="Refund">
             <dl class="space-y-3">
               <div class="flex items-center justify-between text-theme-sm">
-                <dt class="text-gray-500 dark:text-gray-400">Jumlah Refund</dt>
-                <dd class="font-medium text-gray-800 dark:text-white/90">
+                <dt class="text-muted">Jumlah Refund</dt>
+                <dd class="text-strong">
                   {{ formatRupiah(order.salesReturn.refundAmount) }}
                 </dd>
               </div>
               <div class="flex items-center justify-between text-theme-sm">
-                <dt class="text-gray-500 dark:text-gray-400">Tanggal</dt>
-                <dd class="text-gray-800 dark:text-white/90">
+                <dt class="text-muted">Tanggal</dt>
+                <dd class="text-value">
                   {{ formatDateTime(order.salesReturn.createdAt) }}
                 </dd>
               </div>
               <div v-if="order.salesReturn.reason">
-                <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Alasan</dt>
-                <dd class="mt-1 text-theme-sm text-gray-700 dark:text-gray-300">
+                <dt class="text-muted-xs uppercase">Alasan</dt>
+                <dd class="mt-1 text-body">
                   {{ order.salesReturn.reason }}
                 </dd>
               </div>

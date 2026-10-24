@@ -15,6 +15,7 @@
  * no action is available the parent hides the whole bar (see hasAnyAction).
  */
 import { Play, Send, CheckCheck, PackageCheck, Ban } from 'lucide-vue-next'
+import { BaseButton } from '@/components/ui'
 
 const props = defineProps<{
   showStart: boolean
@@ -36,55 +37,50 @@ const emit = defineEmits<{
 
 <template>
   <div class="flex flex-wrap items-center justify-end gap-3">
-    <button
+    <BaseButton
       v-if="props.showStart"
-      type="button"
+      variant="primary"
       :disabled="props.submitting"
-      class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
       @click="emit('start')"
     >
-      <Play class="h-4 w-4" aria-hidden="true" />
+      <template #start-icon><Play class="h-4 w-4" aria-hidden="true" /></template>
       Mulai Penghitungan
-    </button>
-    <button
+    </BaseButton>
+    <BaseButton
       v-if="props.showSubmit"
-      type="button"
+      variant="primary"
       :disabled="props.submitting"
-      class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
       @click="emit('submit')"
     >
-      <Send class="h-4 w-4" aria-hidden="true" />
+      <template #start-icon><Send class="h-4 w-4" aria-hidden="true" /></template>
       Ajukan
-    </button>
-    <button
+    </BaseButton>
+    <BaseButton
       v-if="props.showApprove"
-      type="button"
+      variant="success"
       :disabled="props.submitting"
-      class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
       @click="emit('approve')"
     >
-      <CheckCheck class="h-4 w-4" aria-hidden="true" />
+      <template #start-icon><CheckCheck class="h-4 w-4" aria-hidden="true" /></template>
       Setujui
-    </button>
-    <button
+    </BaseButton>
+    <BaseButton
       v-if="props.showComplete"
-      type="button"
+      variant="success"
       :disabled="props.submitting"
-      class="inline-flex items-center gap-2 rounded-lg bg-success-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-success-600 disabled:cursor-not-allowed disabled:opacity-60"
       @click="emit('complete')"
     >
-      <PackageCheck class="h-4 w-4" aria-hidden="true" />
+      <template #start-icon><PackageCheck class="h-4 w-4" aria-hidden="true" /></template>
       Selesaikan
-    </button>
-    <button
+    </BaseButton>
+    <BaseButton
       v-if="props.showCancel"
-      type="button"
+      variant="danger"
       :disabled="props.submitting"
-      class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-error-600 ring-1 ring-inset ring-error-200 transition hover:bg-error-50 dark:bg-transparent dark:ring-error-500/30 dark:hover:bg-error-500/10"
       @click="emit('cancel')"
     >
-      <Ban class="h-4 w-4" aria-hidden="true" />
+      <template #start-icon><Ban class="h-4 w-4" aria-hidden="true" /></template>
       Batalkan
-    </button>
+    </BaseButton>
   </div>
 </template>

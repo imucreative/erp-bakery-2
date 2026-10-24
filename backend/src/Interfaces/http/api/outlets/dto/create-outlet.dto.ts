@@ -2,6 +2,18 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateOutletDto {
+  @ApiProperty({
+    example: 'OUT-001',
+    required: false,
+    maxLength: 20,
+    description:
+      'Optional custom outlet code (stored uppercase, unique per company). Omit or leave blank to auto-generate OUT-###.',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(20)
+  code?: string;
+
   @ApiProperty({ example: 'Outlet Sudirman', description: 'Outlet name (max 100 chars)' })
   @IsString()
   @IsNotEmpty()
