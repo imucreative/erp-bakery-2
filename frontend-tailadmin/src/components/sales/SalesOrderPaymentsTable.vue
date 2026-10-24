@@ -35,9 +35,9 @@ const props = defineProps<{
             {{ PAYMENT_METHOD_LABELS[payment.paymentMethod] }}
           </Badge>
         </BaseTableCell>
-        <BaseTableCell align="end" emphasis="medium">{{
-          formatRupiah(payment.amount)
-        }}</BaseTableCell>
+        <BaseTableCell align="end" emphasis="medium">
+          {{ formatRupiah(payment.amount) }}
+        </BaseTableCell>
         <BaseTableCell>{{ payment.referenceNo || '—' }}</BaseTableCell>
         <BaseTableCell>{{ formatDateTime(payment.paidAt) }}</BaseTableCell>
       </BaseTableRow>

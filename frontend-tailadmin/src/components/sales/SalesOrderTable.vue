@@ -54,9 +54,9 @@ defineEmits<{
         <BaseTableCell>{{ order.customerName || '—' }}</BaseTableCell>
         <BaseTableCell>{{ formatDateTime(order.orderDate) }}</BaseTableCell>
         <BaseTableCell align="end">{{ order.itemCount }}</BaseTableCell>
-        <BaseTableCell align="end" emphasis="medium">{{
-          formatRupiah(order.grandTotal)
-        }}</BaseTableCell>
+        <BaseTableCell align="end" emphasis="medium">
+          {{ formatRupiah(order.grandTotal) }}
+        </BaseTableCell>
         <BaseTableCell>
           <Badge :color="salesOrderStatusBadgeColor(order.status)">
             {{ SALES_ORDER_STATUS_LABELS[order.status] }}

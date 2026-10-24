@@ -94,7 +94,7 @@ function onAdd(): void {
   >
     <div class="mb-3 flex items-start justify-between gap-2">
       <div>
-        <h4 class="text-theme-sm font-semibold text-gray-800 dark:text-white/90">
+        <h4 class="section-title">
           {{ props.product.name }}
         </h4>
         <p class="mt-0.5 text-base font-semibold text-brand-600 dark:text-brand-400">
@@ -113,8 +113,8 @@ function onAdd(): void {
     </div>
 
     <div class="mb-2 flex items-center justify-between gap-2">
-      <p class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Topping</p>
-      <span class="text-theme-xs text-gray-400 dark:text-gray-500">Opsional</span>
+      <p class="text-muted-xs uppercase">Topping</p>
+      <span class="text-muted-xs">Opsional</span>
     </div>
 
     <div class="flex-1 overflow-y-auto">
@@ -163,7 +163,7 @@ function onAdd(): void {
       </div>
     </div>
 
-    <p class="mt-3 text-theme-xs text-gray-400 dark:text-gray-500">
+    <p class="mt-3 text-muted-xs">
       Topping opsional — bisa langsung tambah ke cart tanpa memilih topping.
     </p>
 

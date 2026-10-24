@@ -23,7 +23,7 @@ const props = defineProps<{
 <template>
   <dl class="field-grid">
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Status</dt>
+      <dt class="text-muted-xs uppercase">Status</dt>
       <dd class="mt-1">
         <Badge :color="salesOrderStatusBadgeColor(props.order.status)">
           {{ SALES_ORDER_STATUS_LABELS[props.order.status] }}
@@ -31,32 +31,32 @@ const props = defineProps<{
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Outlet</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Outlet</dt>
+      <dd class="mt-1 text-value">
         {{ props.outletName(props.order.outletId) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Customer</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Customer</dt>
+      <dd class="mt-1 text-value">
         {{ props.order.customerName || '—' }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Kasir</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Kasir</dt>
+      <dd class="mt-1 text-value">
         {{ props.cashierName(props.order.cashierUserId) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Tanggal Order</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Tanggal Order</dt>
+      <dd class="mt-1 text-value">
         {{ formatDateTime(props.order.orderDate) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Dibayar</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Dibayar</dt>
+      <dd class="mt-1 text-value">
         {{ props.order.paidAt ? formatDateTime(props.order.paidAt) : '—' }}
       </dd>
     </div>
@@ -64,20 +64,16 @@ const props = defineProps<{
     <div class="sm:col-span-2">
       <div class="mt-2 space-y-2 rounded-xl border border-gray-200 p-4 dark:border-gray-800">
         <div class="flex items-center justify-between text-theme-sm">
-          <span class="text-gray-500 dark:text-gray-400">Subtotal</span>
-          <span class="text-gray-800 dark:text-white/90">{{
-            formatRupiah(props.order.subtotal)
-          }}</span>
+          <span class="text-muted">Subtotal</span>
+          <span class="text-value">{{ formatRupiah(props.order.subtotal) }}</span>
         </div>
         <div class="flex items-center justify-between text-theme-sm">
-          <span class="text-gray-500 dark:text-gray-400">Diskon Order</span>
-          <span class="text-gray-800 dark:text-white/90">{{
-            formatRupiah(props.order.orderDiscount)
-          }}</span>
+          <span class="text-muted">Diskon Order</span>
+          <span class="text-value">{{ formatRupiah(props.order.orderDiscount) }}</span>
         </div>
         <div class="flex items-center justify-between text-theme-sm">
-          <span class="text-gray-500 dark:text-gray-400">Pajak</span>
-          <span class="text-gray-800 dark:text-white/90">{{ formatRupiah(props.order.tax) }}</span>
+          <span class="text-muted">Pajak</span>
+          <span class="text-value">{{ formatRupiah(props.order.tax) }}</span>
         </div>
         <div
           class="flex items-center justify-between border-t border-gray-200 pt-2 text-base font-semibold dark:border-gray-800"

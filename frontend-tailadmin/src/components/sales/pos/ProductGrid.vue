@@ -29,7 +29,7 @@
 import { computed } from 'vue'
 import { Plus, DonutIcon } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
-import { BaseInput } from '@/components/ui'
+import { BaseAlert, BaseInput } from '@/components/ui'
 import { formatRupiah } from '@/lib/format'
 import type { PosProduct } from '@/services/sales.service'
 
@@ -131,9 +131,7 @@ function onCardClick(product: PosProduct): void {
 
     <div v-if="props.loading" class="text-muted py-10 text-center">Memuat produk...</div>
 
-    <div v-else-if="props.errorMessage" class="alert-error px-4 py-3" role="alert">
-      {{ props.errorMessage }}
-    </div>
+    <BaseAlert v-else-if="props.errorMessage" :message="props.errorMessage" size="md" />
 
     <div
       v-else-if="props.products.length === 0"
@@ -170,12 +168,10 @@ function onCardClick(product: PosProduct): void {
             <Plus class="h-4 w-4" aria-hidden="true" />
           </span>
         </div>
-        <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+        <span class="text-strong">
           {{ card.product.name }}
         </span>
-        <span class="mt-0.5 text-theme-xs text-gray-400 dark:text-gray-500">{{
-          card.product.sku
-        }}</span>
+        <span class="mt-0.5 text-muted-xs">{{ card.product.sku }}</span>
         <span class="mt-2 text-base font-semibold text-brand-600 dark:text-brand-400">
           {{ formatRupiah(card.product.sellingPrice) }}
         </span>

@@ -64,7 +64,7 @@ const emit = defineEmits<{
         >
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0">
-              <p class="truncate text-theme-sm font-medium text-gray-800 dark:text-white/90">
+              <p class="truncate text-strong">
                 {{ line.product.name }}
               </p>
               <ul v-if="line.selectedToppings.length > 0" class="mt-1 space-y-0.5">
@@ -103,9 +103,7 @@ const emit = defineEmits<{
               >
                 <Minus class="h-4 w-4" aria-hidden="true" />
               </BaseButton>
-              <span
-                class="w-8 text-center text-theme-sm font-medium text-gray-800 dark:text-white/90"
-              >
+              <span class="w-8 text-center text-strong">
                 {{ line.qty }}
               </span>
               <BaseButton
@@ -118,7 +116,7 @@ const emit = defineEmits<{
                 <Plus class="h-4 w-4" aria-hidden="true" />
               </BaseButton>
             </div>
-            <p class="text-theme-sm font-semibold text-gray-800 dark:text-white/90">
+            <p class="text-value font-semibold">
               {{ formatRupiah(props.lineTotal(line)) }}
             </p>
           </div>
@@ -157,8 +155,8 @@ const emit = defineEmits<{
         </div>
       </div>
       <div class="flex items-center justify-between text-theme-sm">
-        <span class="text-gray-500 dark:text-gray-400">Subtotal</span>
-        <span class="text-gray-800 dark:text-white/90">{{ formatRupiah(props.subtotal) }}</span>
+        <span class="text-muted">Subtotal</span>
+        <span class="text-value">{{ formatRupiah(props.subtotal) }}</span>
       </div>
       <div class="flex items-center justify-between text-base font-semibold">
         <span class="text-gray-800 dark:text-white/90">Total</span>

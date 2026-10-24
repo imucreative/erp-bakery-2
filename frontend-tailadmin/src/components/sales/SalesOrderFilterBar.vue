@@ -1,9 +1,8 @@
 <script setup lang="ts">
 /**
  * SalesOrderFilterBar — search (invoiceNumber) + status + outlet + shift filter
- * toolbar for the Sales Order list. Native selects wrapped with a
- * ChevronDownIcon per the UI standard. Two-way binds `search`, `status`,
- * `outlet`, and `shift`.
+ * toolbar for the Sales Order list, built on `BaseInput`/`BaseSelect`. Two-way
+ * binds `search`, `status`, `outlet`, and `shift`.
  */
 import { computed } from 'vue'
 import {

@@ -459,13 +459,12 @@ onMounted(() => {
 
     <template v-else>
       <!-- Bootstrap error -->
-      <div
+      <BaseAlert
         v-if="bootstrapError"
-        class="mb-5 rounded-2xl border border-error-500/40 bg-error-50 p-4 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-        role="alert"
-      >
-        {{ bootstrapError }}
-      </div>
+        :message="bootstrapError"
+        size="md"
+        class="mb-5 rounded-2xl py-4"
+      />
 
       <!-- No accessible outlet -->
       <ComponentCard v-if="outlets.length === 0" title="Point of Sale">

@@ -6,8 +6,9 @@
  * closes. Stateless: the parent passes the PAID order and the computed change.
  * Transparent backdrop per UI standard.
  */
+import { computed } from 'vue'
 import { CheckCircle2, Printer } from 'lucide-vue-next'
-import { BaseButton } from '@/components/ui'
+import { BaseButton, BaseModal } from '@/components/ui'
 import { formatRupiah, formatNumber, formatDateTime } from '@/lib/format'
 import { PAYMENT_METHOD_LABELS, type SalesOrder } from '@/services/sales.service'
 
@@ -25,24 +26,16 @@ const emit = defineEmits<{
   (event: 'done'): void
 }>()
 
+const isOpen = computed<boolean>(() => props.open && props.order !== null)
+
 function onPrint(): void {
   window.print()
 }
 </script>
 
 <template>
-  <div
-    v-if="props.open && props.order"
-    class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4"
-  >
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-    ></div>
-
-    <div
-      class="relative flex max-h-[90vh] w-full max-w-md flex-col rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
+  <BaseModal :open="isOpen" :dismissible="false" class="flex max-h-[90vh] flex-col">
+    <template v-if="props.order">
       <div class="mb-4 flex items-center gap-2 text-success-600 dark:text-success-500">
         <CheckCircle2 class="h-6 w-6" aria-hidden="true" />
         <h4 class="modal-title">Pembayaran Berhasil</h4>
@@ -53,7 +46,7 @@ function onPrint(): void {
         <p class="text-base font-semibold text-gray-800 dark:text-white/90">
           {{ props.order.invoiceNumber }}
         </p>
-        <p class="mt-0.5 text-theme-xs text-gray-400 dark:text-gray-500">
+        <p class="mt-0.5 text-muted-xs">
           {{ formatDateTime(props.order.paidAt ?? props.order.orderDate) }}
         </p>
       </div>
@@ -66,12 +59,10 @@ function onPrint(): void {
             class="border-b border-gray-100 py-2 last:border-0 dark:border-gray-800"
           >
             <div class="flex items-start justify-between gap-2 text-theme-sm">
-              <span class="text-gray-800 dark:text-white/90">
+              <span class="text-value">
                 {{ formatNumber(item.qty) }}× {{ item.productNameSnapshot }}
               </span>
-              <span class="text-gray-800 dark:text-white/90">{{
-                formatRupiah(item.lineTotal)
-              }}</span>
+              <span class="text-value">{{ formatRupiah(item.lineTotal) }}</span>
             </div>
             <ul v-if="item.toppings.length > 0" class="mt-0.5 space-y-0.5">
               <li v-for="topping in item.toppings" :key="topping.id" class="text-meta">
@@ -83,16 +74,12 @@ function onPrint(): void {
 
         <div class="mt-4 space-y-2 text-theme-sm">
           <div class="flex items-center justify-between">
-            <span class="text-gray-500 dark:text-gray-400">Subtotal</span>
-            <span class="text-gray-800 dark:text-white/90">{{
-              formatRupiah(props.order.subtotal)
-            }}</span>
+            <span class="text-muted">Subtotal</span>
+            <span class="text-value">{{ formatRupiah(props.order.subtotal) }}</span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-gray-500 dark:text-gray-400">Diskon Order</span>
-            <span class="text-gray-800 dark:text-white/90">{{
-              formatRupiah(props.order.orderDiscount)
-            }}</span>
+            <span class="text-muted">Diskon Order</span>
+            <span class="text-value">{{ formatRupiah(props.order.orderDiscount) }}</span>
           </div>
           <div
             class="flex items-center justify-between border-t border-gray-200 pt-2 text-base font-semibold dark:border-gray-800"
@@ -110,17 +97,17 @@ function onPrint(): void {
             :key="payment.id"
             class="flex items-center justify-between"
           >
-            <span class="text-gray-500 dark:text-gray-400">
+            <span class="text-muted">
               {{ PAYMENT_METHOD_LABELS[payment.paymentMethod] }}
             </span>
-            <span class="text-gray-800 dark:text-white/90">{{ formatRupiah(payment.amount) }}</span>
+            <span class="text-value">{{ formatRupiah(payment.amount) }}</span>
           </div>
           <div
             v-if="props.change > 0"
             class="flex items-center justify-between border-t border-gray-200 pt-2 font-medium dark:border-gray-700"
           >
-            <span class="text-gray-500 dark:text-gray-400">Kembalian</span>
-            <span class="text-gray-800 dark:text-white/90">{{ formatRupiah(props.change) }}</span>
+            <span class="text-muted">Kembalian</span>
+            <span class="text-value">{{ formatRupiah(props.change) }}</span>
           </div>
         </div>
       </div>
@@ -134,6 +121,6 @@ function onPrint(): void {
         </BaseButton>
         <BaseButton size="sm" variant="primary" @click="emit('done')">Selesai</BaseButton>
       </div>
-    </div>
-  </div>
+    </template>
+  </BaseModal>
 </template>
