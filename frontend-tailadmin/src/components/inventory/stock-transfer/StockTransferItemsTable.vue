@@ -12,9 +12,10 @@ const showDestination = computed<boolean>(() => props.transfer.status === 'COMPL
   <BaseTable aria-label="Item stock transfer">
     <template #header>
       <BaseTableRow variant="header">
-        <BaseTableHead>Produk</BaseTableHead><BaseTableHead>Batch</BaseTableHead
-        ><BaseTableHead align="end">Qty</BaseTableHead
-        ><BaseTableHead v-if="showDestination">Batch Tujuan</BaseTableHead>
+        <BaseTableHead>Produk</BaseTableHead>
+        <BaseTableHead>Batch</BaseTableHead>
+        <BaseTableHead align="end">Qty</BaseTableHead>
+        <BaseTableHead v-if="showDestination">Batch Tujuan</BaseTableHead>
       </BaseTableRow>
     </template>
     <template #body>
@@ -22,14 +23,12 @@ const showDestination = computed<boolean>(() => props.transfer.status === 'COMPL
         <BaseTableCell emphasis="medium">{{ props.productName(item.productId) }}</BaseTableCell>
         <BaseTableCell>
           <div class="flex flex-col gap-0.5">
-            <span>{{ item.batchNumber || '(tanpa batch)' }}</span
-            ><span class="text-theme-xs text-gray-400 dark:text-gray-500"
-              ><template v-if="item.lotNumber">Lot: {{ item.lotNumber }}</template
-              ><template v-if="item.lotNumber && item.expiredDate"> · </template
-              ><template v-if="item.expiredDate"
-                >Exp: {{ formatDate(item.expiredDate) }}</template
-              ></span
-            >
+            <span>{{ item.batchNumber || '(tanpa batch)' }}</span>
+            <span class="text-muted-xs">
+              <template v-if="item.lotNumber">Lot: {{ item.lotNumber }}</template>
+              <template v-if="item.lotNumber && item.expiredDate">{{ ' · ' }}</template>
+              <template v-if="item.expiredDate">Exp: {{ formatDate(item.expiredDate) }}</template>
+            </span>
           </div>
         </BaseTableCell>
         <BaseTableCell align="end" emphasis="medium">{{ formatNumber(item.qty) }}</BaseTableCell>

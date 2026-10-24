@@ -28,10 +28,13 @@ defineEmits<{ (event: 'view', transfer: StockTransfer): void }>()
   >
     <template #header>
       <BaseTableRow variant="header">
-        <BaseTableHead>Nomor</BaseTableHead><BaseTableHead>Outlet Sumber</BaseTableHead
-        ><BaseTableHead>Outlet Tujuan</BaseTableHead><BaseTableHead>Tanggal</BaseTableHead
-        ><BaseTableHead align="end">Jumlah Item</BaseTableHead><BaseTableHead>Status</BaseTableHead
-        ><BaseTableHead align="end">Aksi</BaseTableHead>
+        <BaseTableHead>Nomor</BaseTableHead>
+        <BaseTableHead>Outlet Sumber</BaseTableHead>
+        <BaseTableHead>Outlet Tujuan</BaseTableHead>
+        <BaseTableHead>Tanggal</BaseTableHead>
+        <BaseTableHead align="end">Jumlah Item</BaseTableHead>
+        <BaseTableHead>Status</BaseTableHead>
+        <BaseTableHead align="end">Aksi</BaseTableHead>
       </BaseTableRow>
     </template>
     <template #body>
@@ -41,11 +44,11 @@ defineEmits<{ (event: 'view', transfer: StockTransfer): void }>()
         <BaseTableCell>{{ outletName(transfer.destinationOutletId) }}</BaseTableCell>
         <BaseTableCell>{{ formatDate(transfer.transferDate) }}</BaseTableCell>
         <BaseTableCell align="end">{{ transfer.items.length }}</BaseTableCell>
-        <BaseTableCell
-          ><Badge :color="statusBadgeColor(transfer.status)">{{
-            TRANSFER_STATUS_LABELS[transfer.status]
-          }}</Badge></BaseTableCell
-        >
+        <BaseTableCell>
+          <Badge :color="statusBadgeColor(transfer.status)">
+            {{ TRANSFER_STATUS_LABELS[transfer.status] }}
+          </Badge>
+        </BaseTableCell>
         <BaseTableCell align="end">
           <BaseButton
             size="sm"

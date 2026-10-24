@@ -73,12 +73,13 @@ function removeRow(index: number): void {
 <template>
   <div class="space-y-3">
     <BaseTable aria-label="Editor item stock transfer">
-      <template #header
-        ><BaseTableRow variant="header"
-          ><BaseTableHead>Batch Sumber</BaseTableHead><BaseTableHead>Qty</BaseTableHead
-          ><BaseTableHead align="end">Aksi</BaseTableHead></BaseTableRow
-        ></template
-      >
+      <template #header>
+        <BaseTableRow variant="header">
+          <BaseTableHead>Batch Sumber</BaseTableHead>
+          <BaseTableHead>Qty</BaseTableHead>
+          <BaseTableHead align="end">Aksi</BaseTableHead>
+        </BaseTableRow>
+      </template>
       <template #body>
         <BaseTableRow v-for="(row, index) in modelValue" :key="index">
           <BaseTableCell class="align-top">
@@ -93,16 +94,13 @@ function removeRow(index: number): void {
               @update:model-value="onPickBatch(index, $event)"
             />
             <div v-if="row.sourceBatchId" class="mt-1 flex flex-col gap-0.5">
-              <span class="text-meta">{{ productLabel(row.productId) }}</span
-              ><span
-                v-if="availableForRow(row) !== null"
-                class="text-theme-xs text-gray-400 dark:text-gray-500"
-                >Tersedia saat ini: {{ formatNumber(availableForRow(row))
-                }}<template v-if="batchMap.get(row.sourceBatchId)?.batch.expiredDate">
-                  · Exp:
-                  {{ formatDate(batchMap.get(row.sourceBatchId)?.batch.expiredDate) }}</template
-                ></span
-              >
+              <span class="text-meta">{{ productLabel(row.productId) }}</span>
+              <span v-if="availableForRow(row) !== null" class="text-muted-xs">
+                Tersedia saat ini: {{ formatNumber(availableForRow(row)) }}
+                <template v-if="batchMap.get(row.sourceBatchId)?.batch.expiredDate">
+                  · Exp: {{ formatDate(batchMap.get(row.sourceBatchId)?.batch.expiredDate) }}
+                </template>
+              </span>
             </div>
           </BaseTableCell>
           <BaseTableCell class="align-top">
@@ -115,12 +113,12 @@ function removeRow(index: number): void {
               :disabled="disabled"
               @update:model-value="updateRow(index, { qty: Number($event) })"
             />
-            <span v-if="overAvailable(row)" class="mt-1 block text-theme-xs text-error-500"
-              >Melebihi stok tersedia ({{ formatNumber(availableForRow(row)) }})</span
-            >
+            <span v-if="overAvailable(row)" class="mt-1 block text-theme-xs text-error-500">
+              Melebihi stok tersedia ({{ formatNumber(availableForRow(row)) }})
+            </span>
           </BaseTableCell>
-          <BaseTableCell align="end" class="align-top"
-            ><BaseButton
+          <BaseTableCell align="end" class="align-top">
+            <BaseButton
               size="sm"
               variant="danger"
               icon-only
@@ -128,22 +126,23 @@ function removeRow(index: number): void {
               title="Hapus baris"
               :disabled="disabled"
               @click="removeRow(index)"
-              ><Trash2 class="h-4 w-4" aria-hidden="true" /></BaseButton
-          ></BaseTableCell>
+            >
+              <Trash2 class="h-4 w-4" aria-hidden="true" />
+            </BaseButton>
+          </BaseTableCell>
         </BaseTableRow>
-        <BaseTableRow v-if="modelValue.length === 0"
-          ><BaseTableCell colspan="3" align="center"
-            ><template v-if="!sourceChosen"
-              >Pilih outlet sumber terlebih dahulu untuk memuat batch yang dapat
-              ditransfer.</template
-            ><template v-else-if="batchesLoading">Memuat batch outlet sumber...</template
-            ><template v-else-if="batches.length === 0"
-              >Tidak ada batch stok pada outlet sumber ini.</template
-            ><template v-else
-              >Belum ada item. Tambahkan baris lalu pilih batch.</template
-            ></BaseTableCell
-          ></BaseTableRow
-        >
+        <BaseTableRow v-if="modelValue.length === 0">
+          <BaseTableCell colspan="3" align="center">
+            <template v-if="!sourceChosen">
+              Pilih outlet sumber terlebih dahulu untuk memuat batch yang dapat ditransfer.
+            </template>
+            <template v-else-if="batchesLoading">Memuat batch outlet sumber...</template>
+            <template v-else-if="batches.length === 0">
+              Tidak ada batch stok pada outlet sumber ini.
+            </template>
+            <template v-else>Belum ada item. Tambahkan baris lalu pilih batch.</template>
+          </BaseTableCell>
+        </BaseTableRow>
       </template>
     </BaseTable>
     <div v-if="!disabled">
@@ -152,11 +151,12 @@ function removeRow(index: number): void {
         variant="outline"
         :disabled="!sourceChosen || batchesLoading || batches.length === 0"
         @click="addRow"
-        ><template #start-icon><Plus class="h-4 w-4" aria-hidden="true" /></template>Tambah
-        Item</BaseButton
       >
+        <template #start-icon><Plus class="h-4 w-4" aria-hidden="true" /></template>
+        Tambah Item
+      </BaseButton>
     </div>
-    <p class="text-theme-xs text-gray-400 dark:text-gray-500">
+    <p class="text-muted-xs">
       Setiap item memindahkan qty dari satu batch stok outlet sumber. Stok sumber baru berkurang
       saat transfer dikirim (Dispatch), dan masuk ke outlet tujuan saat diterima (Receive).
     </p>

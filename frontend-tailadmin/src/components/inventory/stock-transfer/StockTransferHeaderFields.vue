@@ -60,7 +60,7 @@ const labelClass = 'form-label'
           placeholder="Pilih outlet sumber"
           @update:model-value="emit('update:sourceOutletId', $event)"
         />
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
+        <p class="mt-1 text-muted-xs">
           Outlet sumber menentukan batch stok yang dapat dipilih pada item.
           <template v-if="props.sourceLocked">
             Hapus semua item untuk mengganti outlet sumber.

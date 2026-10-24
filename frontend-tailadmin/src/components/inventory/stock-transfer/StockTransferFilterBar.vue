@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
  * StockTransferFilterBar — search (transferNumber/notes) + status filter +
- * source-outlet filter + destination-outlet filter toolbar for the Stock
- * Transfer list. Native selects wrapped with a ChevronDownIcon per the UI
- * standard. Two-way binds `search`, `status`, `sourceOutlet`, and
- * `destinationOutlet` via v-model. Outlet options are resolved once by the
- * parent.
+ * source-outlet filter + destination-outlet filter for the Stock Transfer list,
+ * laid out as a `stack-row` of `BaseSelect`/`BaseInput` fields. Two-way binds
+ * `search`, `status`, `sourceOutlet`, and `destinationOutlet` via v-model. Outlet
+ * options are resolved once by the parent, which also owns the `toolbar-row`
+ * that pairs this bar with the "Buat Transfer" button.
  */
 import { BaseInput, BaseSelect } from '@/components/ui'
 import { TRANSFER_STATUS_LABELS } from '@/services/stock-transfer.service'
