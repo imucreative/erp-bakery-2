@@ -12,6 +12,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import Badge from '@/components/ui/Badge.vue'
+import { BaseAlert } from '@/components/ui'
 import { useDashboard } from '@/composables/useDashboard'
 
 const pageTitle = 'Dashboard'
@@ -95,9 +96,11 @@ onMounted(() => {
         title="Ringkasan Inventory"
         desc="Data langsung dari inventory perusahaan Anda."
       >
-        <div v-if="errorMessage" class="alert-error px-4 py-3" role="alert">
-          {{ errorMessage }}
-        </div>
+        <BaseAlert
+          v-if="errorMessage"
+          :message="errorMessage"
+          size="md"
+        />
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <div

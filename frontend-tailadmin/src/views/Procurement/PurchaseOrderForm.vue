@@ -463,12 +463,14 @@ function onCancel(): void {
       <BaseAlert v-else-if="loadError" :message="loadError" size="md" />
 
       <form v-else class="space-y-6" @submit.prevent="onSubmit">
-        <p
+        <BaseAlert
           v-if="isReadOnly"
-          class="rounded-lg border border-warning-500/40 bg-warning-50 px-4 py-3 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
+          variant="warning"
+          size="md"
+          class="dark:text-orange-400"
         >
           PO ini tidak dapat diedit pada status saat ini. Ditampilkan sebagai baca-saja.
-        </p>
+        </BaseAlert>
 
         <!-- Header -->
         <PurchaseOrderHeaderFields
@@ -490,14 +492,15 @@ function onCancel(): void {
         <!-- Line items -->
         <div>
           <h5 class="mb-3 section-title">Item</h5>
-          <p
+          <BaseAlert
             v-if="allConsumed"
-            class="mb-3 rounded-lg border border-warning-500/40 bg-warning-50 px-4 py-3 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
-            role="alert"
+            variant="warning"
+            size="sm"
+            class="mb-3 dark:text-orange-400"
           >
             Semua item PR ini sudah habis dipesan pada PO lain. Tidak ada sisa (outstanding) yang
             bisa dipesan, sehingga PO tidak dapat dibuat.
-          </p>
+          </BaseAlert>
           <PurchaseOrderItemsEditor
             v-model="items"
             :pr-items="prItems"

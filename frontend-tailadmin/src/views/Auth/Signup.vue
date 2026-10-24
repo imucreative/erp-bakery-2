@@ -28,13 +28,12 @@
               </p>
             </div>
             <div>
-              <div
+              <BaseAlert
                 v-if="errorMessage"
-                class="alert-error mb-4 px-4 py-3 dark:border-error-500/40"
-                role="alert"
-              >
-                {{ errorMessage }}
-              </div>
+                :message="errorMessage"
+                size="md"
+                class="mb-4"
+              />
               <form @submit.prevent="handleSubmit">
                 <div class="space-y-4">
                   <!-- Company Name -->
@@ -164,7 +163,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { authService } from '@/services/auth.service'
 import { ApiClientError } from '@/services/http'
-import { BaseButton, BaseFormField, BaseInput } from '@/components/ui'
+import { BaseAlert, BaseButton, BaseFormField, BaseInput } from '@/components/ui'
 import { ArrowLeft, Eye, EyeOff } from 'lucide-vue-next'
 
 const router = useRouter()

@@ -232,12 +232,14 @@ function onCancel(): void {
       <BaseAlert v-else-if="loadError" :message="loadError" size="md" />
 
       <form v-else class="space-y-6" @submit.prevent="onSubmit">
-        <p
+        <BaseAlert
           v-if="isReadOnly"
-          class="rounded-lg border border-warning-500/40 bg-warning-50 px-4 py-3 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
+          variant="warning"
+          size="md"
+          class="dark:text-orange-400"
         >
           PR ini tidak dapat diedit pada status saat ini. Ditampilkan sebagai baca-saja.
-        </p>
+        </BaseAlert>
 
         <!-- Header -->
         <PurchaseRequestHeaderFields

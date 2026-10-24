@@ -16,20 +16,20 @@
                 <p class="text-muted">Enter your email and password to sign in!</p>
               </div>
               <div>
-                <div
+                <BaseAlert
                   v-if="registeredNotice"
-                  class="mb-4 rounded-lg border border-success-500/40 bg-success-50 px-4 py-3 text-sm text-success-600 dark:border-success-500/40 dark:bg-success-500/10 dark:text-success-400"
-                  role="status"
+                  variant="success"
+                  size="md"
+                  class="mb-4"
                 >
                   Registrasi berhasil. Silakan masuk dengan akun owner Anda.
-                </div>
-                <div
+                </BaseAlert>
+                <BaseAlert
                   v-if="errorMessage"
-                  class="alert-error mb-4 px-4 py-3 dark:border-error-500/40"
-                  role="alert"
-                >
-                  {{ errorMessage }}
-                </div>
+                  :message="errorMessage"
+                  size="md"
+                  class="mb-4"
+                />
                 <form @submit.prevent="handleSubmit">
                   <div class="space-y-5">
                     <!-- Email -->
@@ -127,7 +127,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { ApiClientError } from '@/services/http'
-import { BaseButton, BaseFormField, BaseInput, BaseToggle } from '@/components/ui'
+import { BaseAlert, BaseButton, BaseFormField, BaseInput, BaseToggle } from '@/components/ui'
 import { Eye, EyeOff } from 'lucide-vue-next'
 
 const router = useRouter()
