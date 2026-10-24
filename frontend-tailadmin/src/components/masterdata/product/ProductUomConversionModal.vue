@@ -18,9 +18,11 @@ import { computed, ref, watch } from 'vue'
 import { Pencil, Trash2, Plus, Check, X } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
 import {
+  BaseAlert,
   BaseButton,
   BaseFormField,
   BaseInput,
+  BaseModal,
   BaseSelect,
   BaseTable,
   BaseTableCell,
@@ -249,225 +251,203 @@ async function onDelete(row: ProductUomConversion): Promise<void> {
 </script>
 
 <template>
-  <div
-    v-if="open"
-    class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4"
-  >
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-      @click="emit('close')"
-    ></div>
+  <BaseModal :open="open" size="2xl" scrollable @close="emit('close')">
+    <h4 class="modal-title">Satuan &amp; Konversi</h4>
+    <p class="text-muted mt-1">
+      {{ product?.name ?? '—' }}
+    </p>
 
-    <div
-      class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
-      <h4 class="modal-title">Satuan &amp; Konversi</h4>
-      <p class="text-muted mt-1">
-        {{ product?.name ?? '—' }}
+    <!-- Base unit info (read-only) -->
+    <div class="form-readonly py-3 mt-4">
+      <div class="flex items-center justify-between gap-3">
+        <span class="text-gray-600 dark:text-gray-300">Satuan dasar</span>
+        <span class="font-medium text-gray-800 dark:text-white/90">
+          {{ baseUomName }}
+          <span class="ms-1 text-theme-xs text-gray-500 dark:text-gray-400">(faktor 1)</span>
+        </span>
+      </div>
+      <p class="mt-2 text-theme-xs text-gray-500 dark:text-gray-400">
+        Faktor konversi berarti: 1 satuan alternatif = faktor &times; satuan dasar (<span
+          class="font-medium"
+          >{{ baseUomName }}</span
+        >).
       </p>
+    </div>
 
-      <!-- Base unit info (read-only) -->
-      <div class="form-readonly py-3 mt-4">
-        <div class="flex items-center justify-between gap-3">
-          <span class="text-gray-600 dark:text-gray-300">Satuan dasar</span>
-          <span class="font-medium text-gray-800 dark:text-white/90">
-            {{ baseUomName }}
-            <span class="ms-1 text-theme-xs text-gray-500 dark:text-gray-400">(faktor 1)</span>
-          </span>
-        </div>
-        <p class="mt-2 text-theme-xs text-gray-500 dark:text-gray-400">
-          Faktor konversi berarti: 1 satuan alternatif = faktor &times; satuan dasar (<span
-            class="font-medium"
-            >{{ baseUomName }}</span
-          >).
-        </p>
-      </div>
+    <!-- Existing conversions -->
+    <div class="mt-5">
+      <h5 class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Daftar konversi</h5>
 
-      <!-- Existing conversions -->
-      <div class="mt-5">
-        <h5 class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Daftar konversi</h5>
-
-        <BaseTable
-          :loading="loading"
-          :error-message="listError"
-          :is-empty="rows.length === 0"
-          empty-message="Belum ada satuan alternatif."
-          aria-label="Daftar konversi satuan"
-        >
-          <template #header>
-            <BaseTableRow variant="header">
-              <BaseTableHead>Satuan Alternatif</BaseTableHead>
-              <BaseTableHead align="end">Faktor</BaseTableHead>
-              <BaseTableHead>Status</BaseTableHead>
-              <BaseTableHead align="end">Aksi</BaseTableHead>
-            </BaseTableRow>
-          </template>
-          <template #body>
-            <BaseTableRow v-for="row in rows" :key="row.id">
-              <BaseTableCell emphasis="medium">
-                <span class="font-medium">{{ row.uomName }}</span>
-                <span class="ms-1 text-theme-xs text-gray-500 dark:text-gray-400">
-                  ({{ row.uomCode }})
-                </span>
-              </BaseTableCell>
-              <BaseTableCell align="end" emphasis="medium">
-                <template v-if="editingId === row.id">
-                  <BaseInput
-                    :id="`conversion-factor-${row.id}`"
-                    :model-value="editFactor ?? ''"
-                    type="number"
-                    min="0"
-                    step="any"
-                    class="h-9 w-32 text-end"
-                    @update:model-value="updateEditFactor"
-                  />
-                </template>
-                <template v-else>
-                  {{ formatFactor(row.factorToBase) }}
-                </template>
-              </BaseTableCell>
-              <BaseTableCell>
-                <template v-if="editingId === row.id">
-                  <BaseToggle v-model="editActive" label="Aktif" />
-                </template>
-                <template v-else>
-                  <Badge :color="row.isActive ? 'success' : 'error'">
-                    {{ row.isActive ? 'Aktif' : 'Nonaktif' }}
-                  </Badge>
-                </template>
-              </BaseTableCell>
-              <BaseTableCell align="end">
-                <div class="flex items-center justify-end gap-2">
-                  <template v-if="editingId === row.id">
-                    <BaseButton
-                      size="sm"
-                      variant="success"
-                      icon-only
-                      aria-label="Simpan"
-                      title="Simpan"
-                      :disabled="savingEdit"
-                      @click="onSaveEdit"
-                    >
-                      <Check class="h-4 w-4" aria-hidden="true" />
-                    </BaseButton>
-                    <BaseButton
-                      size="sm"
-                      variant="outline"
-                      icon-only
-                      aria-label="Batal"
-                      title="Batal"
-                      :disabled="savingEdit"
-                      @click="cancelEdit"
-                    >
-                      <X class="h-4 w-4" aria-hidden="true" />
-                    </BaseButton>
-                  </template>
-                  <template v-else-if="canManage">
-                    <BaseButton
-                      size="sm"
-                      variant="outline"
-                      icon-only
-                      aria-label="Edit"
-                      title="Edit"
-                      :disabled="deletingId === row.id || editingId !== null"
-                      @click="startEdit(row)"
-                    >
-                      <Pencil class="h-4 w-4" aria-hidden="true" />
-                    </BaseButton>
-                    <BaseButton
-                      size="sm"
-                      variant="danger"
-                      icon-only
-                      aria-label="Hapus"
-                      title="Hapus"
-                      :disabled="deletingId === row.id || editingId !== null"
-                      @click="onDelete(row)"
-                    >
-                      <Trash2 class="h-4 w-4" aria-hidden="true" />
-                    </BaseButton>
-                  </template>
-                  <span v-else class="text-theme-xs text-gray-400 dark:text-gray-500"> — </span>
-                </div>
-              </BaseTableCell>
-            </BaseTableRow>
-          </template>
-        </BaseTable>
-
-        <p v-if="rowError" class="alert-error mt-3 px-3 py-2" role="alert">
-          {{ rowError }}
-        </p>
-      </div>
-
-      <!-- Add conversion -->
-      <div
-        v-if="canManage"
-        class="mt-6 rounded-2xl border border-gray-200 p-4 dark:border-gray-800"
+      <BaseTable
+        :loading="loading"
+        :error-message="listError"
+        :is-empty="rows.length === 0"
+        empty-message="Belum ada satuan alternatif."
+        aria-label="Daftar konversi satuan"
       >
-        <h5 class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-          Tambah satuan alternatif
-        </h5>
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <BaseFormField label="Satuan alternatif" field-id="conversion-uom" required>
-            <BaseSelect
-              id="conversion-uom"
-              v-model="addUomId"
-              :options="availableUomOptions"
-              :disabled="availableUoms.length === 0"
-              :placeholder="
-                availableUoms.length === 0 ? 'Tidak ada satuan tersedia' : 'Pilih satuan'
-              "
-            />
-          </BaseFormField>
-          <BaseFormField label="Faktor ke satuan dasar" field-id="conversion-factor" required>
-            <BaseInput
-              id="conversion-factor"
-              :model-value="addFactor ?? ''"
-              type="number"
-              min="0"
-              step="any"
-              placeholder="mis. 25000"
-              @update:model-value="updateAddFactor"
-            />
-          </BaseFormField>
-        </div>
+        <template #header>
+          <BaseTableRow variant="header">
+            <BaseTableHead>Satuan Alternatif</BaseTableHead>
+            <BaseTableHead align="end">Faktor</BaseTableHead>
+            <BaseTableHead>Status</BaseTableHead>
+            <BaseTableHead align="end">Aksi</BaseTableHead>
+          </BaseTableRow>
+        </template>
+        <template #body>
+          <BaseTableRow v-for="row in rows" :key="row.id">
+            <BaseTableCell emphasis="medium">
+              <span class="font-medium">{{ row.uomName }}</span>
+              <span class="ms-1 text-theme-xs text-gray-500 dark:text-gray-400">
+                ({{ row.uomCode }})
+              </span>
+            </BaseTableCell>
+            <BaseTableCell align="end" emphasis="medium">
+              <template v-if="editingId === row.id">
+                <BaseInput
+                  :id="`conversion-factor-${row.id}`"
+                  :model-value="editFactor ?? ''"
+                  type="number"
+                  min="0"
+                  step="any"
+                  class="h-9 w-32 text-end"
+                  @update:model-value="updateEditFactor"
+                />
+              </template>
+              <template v-else>
+                {{ formatFactor(row.factorToBase) }}
+              </template>
+            </BaseTableCell>
+            <BaseTableCell>
+              <template v-if="editingId === row.id">
+                <BaseToggle v-model="editActive" label="Aktif" />
+              </template>
+              <template v-else>
+                <Badge :color="row.isActive ? 'success' : 'error'">
+                  {{ row.isActive ? 'Aktif' : 'Nonaktif' }}
+                </Badge>
+              </template>
+            </BaseTableCell>
+            <BaseTableCell align="end">
+              <div class="flex items-center justify-end gap-2">
+                <template v-if="editingId === row.id">
+                  <BaseButton
+                    size="sm"
+                    variant="success"
+                    icon-only
+                    aria-label="Simpan"
+                    title="Simpan"
+                    :disabled="savingEdit"
+                    @click="onSaveEdit"
+                  >
+                    <Check class="h-4 w-4" aria-hidden="true" />
+                  </BaseButton>
+                  <BaseButton
+                    size="sm"
+                    variant="outline"
+                    icon-only
+                    aria-label="Batal"
+                    title="Batal"
+                    :disabled="savingEdit"
+                    @click="cancelEdit"
+                  >
+                    <X class="h-4 w-4" aria-hidden="true" />
+                  </BaseButton>
+                </template>
+                <template v-else-if="canManage">
+                  <BaseButton
+                    size="sm"
+                    variant="outline"
+                    icon-only
+                    aria-label="Edit"
+                    title="Edit"
+                    :disabled="deletingId === row.id || editingId !== null"
+                    @click="startEdit(row)"
+                  >
+                    <Pencil class="h-4 w-4" aria-hidden="true" />
+                  </BaseButton>
+                  <BaseButton
+                    size="sm"
+                    variant="danger"
+                    icon-only
+                    aria-label="Hapus"
+                    title="Hapus"
+                    :disabled="deletingId === row.id || editingId !== null"
+                    @click="onDelete(row)"
+                  >
+                    <Trash2 class="h-4 w-4" aria-hidden="true" />
+                  </BaseButton>
+                </template>
+                <span v-else class="text-theme-xs text-gray-400 dark:text-gray-500"> — </span>
+              </div>
+            </BaseTableCell>
+          </BaseTableRow>
+        </template>
+      </BaseTable>
 
-        <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <BaseToggle v-model="addActive" label="Aktif" />
-          <p class="text-theme-xs text-gray-500 dark:text-gray-400">
-            1
-            <span class="font-medium">{{
-              availableUoms.find((u) => u.id === addUomId)?.name || 'satuan alternatif'
-            }}</span>
-            = {{ addFactor && addFactor > 0 ? formatFactor(Number(addFactor)) : '…' }}
-            <span class="font-medium">{{ baseUomName }}</span>
-          </p>
-        </div>
+      <BaseAlert :message="rowError" size="sm" class="mt-3" />
+    </div>
 
-        <p v-if="addError" class="alert-error mt-3 px-3 py-2" role="alert">
-          {{ addError }}
-        </p>
-
-        <div class="mt-4 flex justify-end">
-          <BaseButton
-            variant="success"
-            :disabled="adding || availableUoms.length === 0"
-            :loading="adding"
-            loading-text="Menambahkan..."
-            @click="onAdd"
-          >
-            <template #start-icon>
-              <Plus class="h-4 w-4" aria-hidden="true" />
-            </template>
-            Tambah Konversi
-          </BaseButton>
-        </div>
+    <!-- Add conversion -->
+    <div v-if="canManage" class="mt-6 rounded-2xl border border-gray-200 p-4 dark:border-gray-800">
+      <h5 class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+        Tambah satuan alternatif
+      </h5>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <BaseFormField label="Satuan alternatif" field-id="conversion-uom" required>
+          <BaseSelect
+            id="conversion-uom"
+            v-model="addUomId"
+            :options="availableUomOptions"
+            :disabled="availableUoms.length === 0"
+            :placeholder="availableUoms.length === 0 ? 'Tidak ada satuan tersedia' : 'Pilih satuan'"
+          />
+        </BaseFormField>
+        <BaseFormField label="Faktor ke satuan dasar" field-id="conversion-factor" required>
+          <BaseInput
+            id="conversion-factor"
+            :model-value="addFactor ?? ''"
+            type="number"
+            min="0"
+            step="any"
+            placeholder="mis. 25000"
+            @update:model-value="updateAddFactor"
+          />
+        </BaseFormField>
       </div>
 
-      <!-- Footer -->
-      <div class="mt-6 flex justify-end">
-        <BaseButton size="sm" variant="outline" @click="emit('close')">Tutup</BaseButton>
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <BaseToggle v-model="addActive" label="Aktif" />
+        <p class="text-theme-xs text-gray-500 dark:text-gray-400">
+          1
+          <span class="font-medium">{{
+            availableUoms.find((u) => u.id === addUomId)?.name || 'satuan alternatif'
+          }}</span>
+          = {{ addFactor && addFactor > 0 ? formatFactor(Number(addFactor)) : '…' }}
+          <span class="font-medium">{{ baseUomName }}</span>
+        </p>
+      </div>
+
+      <BaseAlert :message="addError" size="sm" class="mt-3" />
+
+      <div class="mt-4 flex justify-end">
+        <BaseButton
+          variant="success"
+          :disabled="adding || availableUoms.length === 0"
+          :loading="adding"
+          loading-text="Menambahkan..."
+          @click="onAdd"
+        >
+          <template #start-icon>
+            <Plus class="h-4 w-4" aria-hidden="true" />
+          </template>
+          Tambah Konversi
+        </BaseButton>
       </div>
     </div>
-  </div>
+
+    <!-- Footer -->
+    <div class="mt-6 flex justify-end">
+      <BaseButton size="sm" variant="outline" @click="emit('close')">Tutup</BaseButton>
+    </div>
+  </BaseModal>
 </template>

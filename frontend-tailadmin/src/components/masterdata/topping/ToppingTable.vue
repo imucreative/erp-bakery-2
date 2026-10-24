@@ -86,7 +86,7 @@ defineEmits<{
             >
               <Trash2 class="h-4 w-4" aria-hidden="true" />
             </BaseButton>
-            <span v-if="!canManage" class="text-theme-xs text-gray-400 dark:text-gray-500">—</span>
+            <span v-if="!canManage" class="text-muted-xs"> — </span>
           </div>
         </BaseTableCell>
       </BaseTableRow>

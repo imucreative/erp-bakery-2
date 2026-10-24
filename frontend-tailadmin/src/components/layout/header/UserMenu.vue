@@ -106,9 +106,7 @@
               <span>Language</span>
             </span>
 
-            <span
-              class="form-readonly flex items-center gap-1.5 px-2 py-1 text-theme-xs"
-            >
+            <span class="form-readonly flex items-center gap-1.5 px-2 py-1 text-theme-xs">
               <span>{{ currentLang.shortName }}</span>
               <img
                 :src="'/images/icons/' + currentLang.flag"

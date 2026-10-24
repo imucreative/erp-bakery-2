@@ -13,7 +13,15 @@
  */
 import { computed, ref, watch } from 'vue'
 import { Save, X } from 'lucide-vue-next'
-import { BaseButton, BaseFormField, BaseInput, BaseSelect, BaseToggle } from '@/components/ui'
+import {
+  BaseAlert,
+  BaseButton,
+  BaseFormField,
+  BaseInput,
+  BaseModal,
+  BaseSelect,
+  BaseToggle,
+} from '@/components/ui'
 import {
   PRODUCT_TYPES,
   PRODUCT_TYPE_LABELS,
@@ -208,158 +216,138 @@ function onSubmit(): void {
 </script>
 
 <template>
-  <div
-    v-if="open"
-    class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4"
-  >
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-      @click="emit('close')"
-    ></div>
+  <BaseModal :open="open" size="2xl" scrollable @close="emit('close')">
+    <h4 class="modal-title mb-4">
+      {{ isEdit ? 'Edit Produk' : 'Tambah Produk' }}
+    </h4>
 
-    <div
-      class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
-      <h4 class="modal-title mb-4">
-        {{ isEdit ? 'Edit Produk' : 'Tambah Produk' }}
-      </h4>
-
-      <form class="space-y-4" @submit.prevent="onSubmit">
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <!-- SKU -->
-          <BaseFormField label="SKU" field-id="product-sku" required>
-            <BaseInput v-if="!isEdit" id="product-sku" v-model="sku" placeholder="SKU-ROTI-001" />
-            <p v-else class="form-readonly">{{ sku }}</p>
-          </BaseFormField>
-          <!-- Barcode -->
-          <BaseFormField label="Barcode" field-id="product-barcode">
-            <BaseInput id="product-barcode" v-model="barcode" placeholder="8991234567890" />
-          </BaseFormField>
-        </div>
-
-        <!-- Name -->
-        <BaseFormField label="Nama" field-id="product-name" required>
-          <BaseInput id="product-name" v-model="name" placeholder="Roti Tawar Gandum" />
+    <form class="space-y-4" @submit.prevent="onSubmit">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <!-- SKU -->
+        <BaseFormField label="SKU" field-id="product-sku" required>
+          <BaseInput v-if="!isEdit" id="product-sku" v-model="sku" placeholder="SKU-ROTI-001" />
+          <p v-else class="form-readonly">{{ sku }}</p>
         </BaseFormField>
+        <!-- Barcode -->
+        <BaseFormField label="Barcode" field-id="product-barcode">
+          <BaseInput id="product-barcode" v-model="barcode" placeholder="8991234567890" />
+        </BaseFormField>
+      </div>
 
-        <!-- Relations -->
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <BaseFormField label="Grup Produk" field-id="product-group" required>
-            <BaseSelect
-              v-if="!isEdit"
-              id="product-group"
-              v-model="productGroupId"
-              :options="groupOptions"
-              placeholder="Pilih grup"
-            />
-            <p v-else class="text-sm text-gray-600 dark:text-gray-300">
-              {{ relationName(groups, productGroupId) }}
-            </p>
-          </BaseFormField>
-          <BaseFormField label="Kategori" field-id="product-category" required>
-            <BaseSelect
-              v-if="!isEdit"
-              id="product-category"
-              v-model="categoryId"
-              :options="categorySelectOptions"
-              :disabled="!productGroupId"
-              :placeholder="productGroupId ? 'Pilih kategori' : 'Pilih grup dulu'"
-            />
-            <p v-else class="text-sm text-gray-600 dark:text-gray-300">
-              {{ relationName(categories, categoryId) }}
-            </p>
-          </BaseFormField>
-          <BaseFormField label="UOM" field-id="product-uom" required>
-            <BaseSelect
-              v-if="!isEdit"
-              id="product-uom"
-              v-model="uomId"
-              :options="uomOptions"
-              placeholder="Pilih UOM"
-            />
-            <p v-else class="text-sm text-gray-600 dark:text-gray-300">
-              {{ relationName(uoms, uomId) }}
-            </p>
-          </BaseFormField>
-          <BaseFormField label="Supplier" field-id="product-supplier" required>
-            <BaseSelect
-              v-if="!isEdit"
-              id="product-supplier"
-              v-model="supplierId"
-              :options="supplierOptions"
-              placeholder="Pilih supplier"
-            />
-            <p v-else class="text-sm text-gray-600 dark:text-gray-300">
-              {{ relationName(suppliers, supplierId) }}
-            </p>
-          </BaseFormField>
+      <!-- Name -->
+      <BaseFormField label="Nama" field-id="product-name" required>
+        <BaseInput id="product-name" v-model="name" placeholder="Roti Tawar Gandum" />
+      </BaseFormField>
+
+      <!-- Relations -->
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <BaseFormField label="Grup Produk" field-id="product-group" required>
+          <BaseSelect
+            v-if="!isEdit"
+            id="product-group"
+            v-model="productGroupId"
+            :options="groupOptions"
+            placeholder="Pilih grup"
+          />
+          <p v-else class="text-sm text-gray-600 dark:text-gray-300">
+            {{ relationName(groups, productGroupId) }}
+          </p>
+        </BaseFormField>
+        <BaseFormField label="Kategori" field-id="product-category" required>
+          <BaseSelect
+            v-if="!isEdit"
+            id="product-category"
+            v-model="categoryId"
+            :options="categorySelectOptions"
+            :disabled="!productGroupId"
+            :placeholder="productGroupId ? 'Pilih kategori' : 'Pilih grup dulu'"
+          />
+          <p v-else class="text-sm text-gray-600 dark:text-gray-300">
+            {{ relationName(categories, categoryId) }}
+          </p>
+        </BaseFormField>
+        <BaseFormField label="UOM" field-id="product-uom" required>
+          <BaseSelect
+            v-if="!isEdit"
+            id="product-uom"
+            v-model="uomId"
+            :options="uomOptions"
+            placeholder="Pilih UOM"
+          />
+          <p v-else class="text-sm text-gray-600 dark:text-gray-300">
+            {{ relationName(uoms, uomId) }}
+          </p>
+        </BaseFormField>
+        <BaseFormField label="Supplier" field-id="product-supplier" required>
+          <BaseSelect
+            v-if="!isEdit"
+            id="product-supplier"
+            v-model="supplierId"
+            :options="supplierOptions"
+            placeholder="Pilih supplier"
+          />
+          <p v-else class="text-sm text-gray-600 dark:text-gray-300">
+            {{ relationName(suppliers, supplierId) }}
+          </p>
+        </BaseFormField>
+      </div>
+
+      <!-- Type + prices -->
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <BaseFormField label="Tipe Produk" field-id="product-type">
+          <BaseSelect id="product-type" v-model="productType" :options="productTypeOptions" />
+        </BaseFormField>
+        <BaseFormField label="Stok Minimum" field-id="product-minimum-stock">
+          <BaseInput
+            id="product-minimum-stock"
+            v-model.number="minimumStock"
+            type="number"
+            min="0"
+          />
+        </BaseFormField>
+        <BaseFormField label="Harga Beli" field-id="product-purchase-price">
+          <BaseInput
+            id="product-purchase-price"
+            v-model.number="purchasePrice"
+            type="number"
+            min="0"
+          />
+        </BaseFormField>
+        <BaseFormField label="Harga Jual" field-id="product-selling-price">
+          <BaseInput
+            id="product-selling-price"
+            v-model.number="sellingPrice"
+            type="number"
+            min="0"
+          />
+        </BaseFormField>
+        <BaseFormField label="Masa Simpan (hari)" field-id="product-shelf-life">
+          <BaseInput id="product-shelf-life" v-model.number="shelfLifeDays" type="number" min="0" />
+        </BaseFormField>
+        <div class="flex flex-wrap items-end gap-6">
+          <BaseToggle v-model="isBatchTracked" label="Lacak batch" />
+          <BaseToggle v-model="hasToppings" label="Punya Topping" />
+          <BaseToggle v-if="isEdit" v-model="isActive" label="Aktif" />
         </div>
+      </div>
 
-        <!-- Type + prices -->
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <BaseFormField label="Tipe Produk" field-id="product-type">
-            <BaseSelect id="product-type" v-model="productType" :options="productTypeOptions" />
-          </BaseFormField>
-          <BaseFormField label="Stok Minimum" field-id="product-minimum-stock">
-            <BaseInput
-              id="product-minimum-stock"
-              v-model.number="minimumStock"
-              type="number"
-              min="0"
-            />
-          </BaseFormField>
-          <BaseFormField label="Harga Beli" field-id="product-purchase-price">
-            <BaseInput
-              id="product-purchase-price"
-              v-model.number="purchasePrice"
-              type="number"
-              min="0"
-            />
-          </BaseFormField>
-          <BaseFormField label="Harga Jual" field-id="product-selling-price">
-            <BaseInput
-              id="product-selling-price"
-              v-model.number="sellingPrice"
-              type="number"
-              min="0"
-            />
-          </BaseFormField>
-          <BaseFormField label="Masa Simpan (hari)" field-id="product-shelf-life">
-            <BaseInput
-              id="product-shelf-life"
-              v-model.number="shelfLifeDays"
-              type="number"
-              min="0"
-            />
-          </BaseFormField>
-          <div class="flex flex-wrap items-end gap-6">
-            <BaseToggle v-model="isBatchTracked" label="Lacak batch" />
-            <BaseToggle v-model="hasToppings" label="Punya Topping" />
-            <BaseToggle v-if="isEdit" v-model="isActive" label="Aktif" />
-          </div>
-        </div>
+      <BaseAlert :message="localError || errorMessage" size="sm" />
 
-        <p v-if="localError || errorMessage" class="alert-error px-3 py-2">
-          {{ localError || errorMessage }}
-        </p>
-
-        <div class="flex justify-end gap-3 pt-2">
-          <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
-            <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
-            Batal
-          </BaseButton>
-          <BaseButton
-            type="submit"
-            variant="success"
-            :loading="submitting"
-            loading-text="Menyimpan..."
-          >
-            <template #start-icon><Save class="h-4 w-4" aria-hidden="true" /></template>
-            Simpan
-          </BaseButton>
-        </div>
-      </form>
-    </div>
-  </div>
+      <div class="flex justify-end gap-3 pt-2">
+        <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
+          <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
+          Batal
+        </BaseButton>
+        <BaseButton
+          type="submit"
+          variant="success"
+          :loading="submitting"
+          loading-text="Menyimpan..."
+        >
+          <template #start-icon><Save class="h-4 w-4" aria-hidden="true" /></template>
+          Simpan
+        </BaseButton>
+      </div>
+    </form>
+  </BaseModal>
 </template>

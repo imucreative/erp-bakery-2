@@ -13,7 +13,15 @@
  * `errorMessage`). Transparent backdrop per UI standard.
  */
 import { computed, ref, watch } from 'vue'
-import { BaseButton, BaseFormField, BaseInput, BaseSelect, BaseToggle } from '@/components/ui'
+import {
+  BaseAlert,
+  BaseButton,
+  BaseFormField,
+  BaseInput,
+  BaseModal,
+  BaseSelect,
+  BaseToggle,
+} from '@/components/ui'
 import { Save, X } from 'lucide-vue-next'
 import type { Topping } from '@/services/topping.service'
 import type { Product } from '@/services/product.service'
@@ -136,93 +144,76 @@ function onSubmit(): void {
 </script>
 
 <template>
-  <div
-    v-if="open"
-    class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4"
-  >
-    <!-- Transparent backdrop -->
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-      @click="emit('close')"
-    ></div>
+  <BaseModal :open="open" size="xl" scrollable @close="emit('close')">
+    <h4 class="modal-title mb-4">
+      {{ isEdit ? 'Edit Topping' : 'Tambah Topping' }}
+    </h4>
 
-    <!-- Panel -->
-    <div
-      class="relative max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
-      <h4 class="modal-title mb-4">
-        {{ isEdit ? 'Edit Topping' : 'Tambah Topping' }}
-      </h4>
-
-      <form class="space-y-4" @submit.prevent="onSubmit">
-        <!-- Product -->
-        <BaseFormField label="Produk Topping" field-id="topping-product" :required="!isEdit">
-          <BaseSelect
-            v-if="!isEdit"
-            id="topping-product"
-            v-model="toppingProductId"
-            :options="productSelectOptions"
-            placeholder="Pilih produk (bahan baku / setengah jadi)"
-          />
-          <p v-else class="form-readonly">{{ productLabel(toppingProductId) }}</p>
-          <p v-if="!isEdit && productOptions.length === 0" class="mt-1.5 text-muted-xs">
-            Semua produk bahan baku / setengah jadi aktif sudah terdaftar sebagai topping, atau
-            belum ada produk yang memenuhi.
-          </p>
-        </BaseFormField>
-
-        <!-- Takaran + harga -->
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <BaseFormField label="Takaran / Item" field-id="topping-quantity" required>
-            <div class="relative">
-              <BaseInput
-                id="topping-quantity"
-                v-model.number="defaultQtyPerItem"
-                type="number"
-                min="0"
-                step="any"
-                class="pe-20"
-              />
-              <span
-                class="absolute top-1/2 ltr:right-0 rtl:left-0 -translate-y-1/2 ltr:border-l rtl:border-r border-gray-200 px-3.5 py-3 text-gray-500 dark:border-gray-800 dark:text-gray-400"
-              >
-                <span class="text-theme-md text-gray-500 dark:text-gray-400">
-                  {{ defaultUomName }}
-                </span>
-              </span>
-            </div>
-          </BaseFormField>
-          <BaseFormField label="Harga Tambahan (Rp)" field-id="topping-extra-price">
-            <BaseInput id="topping-extra-price" v-model.number="extraPrice" type="number" min="0" />
-          </BaseFormField>
-        </div>
-
-        <!-- Status -->
-        <div>
-          <BaseToggle v-model="isActive" label="Aktif" />
-        </div>
-
-        <p v-if="localError || errorMessage" class="alert-error px-3 py-2">
-          {{ localError || errorMessage }}
+    <form class="space-y-4" @submit.prevent="onSubmit">
+      <!-- Product -->
+      <BaseFormField label="Produk Topping" field-id="topping-product" :required="!isEdit">
+        <BaseSelect
+          v-if="!isEdit"
+          id="topping-product"
+          v-model="toppingProductId"
+          :options="productSelectOptions"
+          placeholder="Pilih produk (bahan baku / setengah jadi)"
+        />
+        <p v-else class="form-readonly">{{ productLabel(toppingProductId) }}</p>
+        <p v-if="!isEdit && productOptions.length === 0" class="mt-1.5 text-muted-xs">
+          Semua produk bahan baku / setengah jadi aktif sudah terdaftar sebagai topping, atau belum
+          ada produk yang memenuhi.
         </p>
+      </BaseFormField>
 
-        <div class="flex justify-end gap-3 pt-2">
-          <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
-            <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
-            Batal
-          </BaseButton>
-          <BaseButton
-            type="submit"
-            variant="success"
-            :loading="submitting"
-            loading-text="Menyimpan..."
-          >
-            <template #start-icon><Save class="h-4 w-4" aria-hidden="true" /></template>
-            Simpan
-          </BaseButton>
-        </div>
-      </form>
-    </div>
-  </div>
+      <!-- Takaran + harga -->
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <BaseFormField label="Takaran / Item" field-id="topping-quantity" required>
+          <div class="relative">
+            <BaseInput
+              id="topping-quantity"
+              v-model.number="defaultQtyPerItem"
+              type="number"
+              min="0"
+              step="any"
+              class="pe-20"
+            />
+            <span
+              class="absolute top-1/2 ltr:right-0 rtl:left-0 -translate-y-1/2 ltr:border-l rtl:border-r border-gray-200 px-3.5 py-3 text-gray-500 dark:border-gray-800 dark:text-gray-400"
+            >
+              <span class="text-theme-md text-gray-500 dark:text-gray-400">
+                {{ defaultUomName }}
+              </span>
+            </span>
+          </div>
+        </BaseFormField>
+        <BaseFormField label="Harga Tambahan (Rp)" field-id="topping-extra-price">
+          <BaseInput id="topping-extra-price" v-model.number="extraPrice" type="number" min="0" />
+        </BaseFormField>
+      </div>
+
+      <!-- Status -->
+      <div>
+        <BaseToggle v-model="isActive" label="Aktif" />
+      </div>
+
+      <BaseAlert :message="localError || errorMessage" size="sm" />
+
+      <div class="flex justify-end gap-3 pt-2">
+        <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
+          <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
+          Batal
+        </BaseButton>
+        <BaseButton
+          type="submit"
+          variant="success"
+          :loading="submitting"
+          loading-text="Menyimpan..."
+        >
+          <template #start-icon><Save class="h-4 w-4" aria-hidden="true" /></template>
+          Simpan
+        </BaseButton>
+      </div>
+    </form>
+  </BaseModal>
 </template>
