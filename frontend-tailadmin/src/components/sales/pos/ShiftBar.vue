@@ -25,8 +25,8 @@ const emit = defineEmits<{
   <div
     class="toolbar-row rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]"
   >
-    <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-theme-sm">
-      <span class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+    <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-body">
+      <span class="flex items-center gap-2">
         <Store class="h-4 w-4 text-gray-400" aria-hidden="true" />
         {{ props.outletName }}
       </span>

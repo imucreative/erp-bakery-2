@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * ShiftFilterBar — status + outlet filter toolbar for the Shift list. Native
- * selects wrapped with a ChevronDownIcon per the UI standard. Two-way binds
- * `status` and `outlet` via v-model:status / v-model:outlet.
+ * ShiftFilterBar — status + outlet filter toolbar for the Shift list, built on
+ * `BaseSelect` (which owns the chevron). Two-way binds `status` and `outlet`
+ * via v-model:status / v-model:outlet.
  */
 import { BaseSelect } from '@/components/ui'
 import { SHIFT_STATUS_LABELS } from '@/services/sales.service'

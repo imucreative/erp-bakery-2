@@ -39,7 +39,9 @@ const props = defineProps<{
     </template>
     <template #body>
       <BaseTableRow v-for="shift in props.items" :key="shift.id">
-        <BaseTableCell emphasis="medium">{{ shift.outletName || shift.outletId }}</BaseTableCell>
+        <BaseTableCell emphasis="medium">
+          {{ shift.outletName || shift.outletId }}
+        </BaseTableCell>
         <BaseTableCell>{{ shift.cashierName || shift.cashierUserId }}</BaseTableCell>
         <BaseTableCell>{{ formatDateTime(shift.openedAt) }}</BaseTableCell>
         <BaseTableCell align="end">{{ formatRupiah(shift.openingCash) }}</BaseTableCell>
