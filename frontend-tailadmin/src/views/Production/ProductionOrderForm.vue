@@ -25,7 +25,7 @@ import { AlertTriangle, ChevronLeft, Factory } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import { BaseButton } from '@/components/ui'
+import { BaseAlert, BaseButton } from '@/components/ui'
 import {
   ProductionOrderHeaderFields,
   ProductionProduciblePanel,
@@ -335,17 +335,17 @@ onBeforeUnmount(() => {
     <ComponentCard :title="pageTitle">
       <div v-if="loading" class="text-muted py-10 text-center">Memuat data...</div>
 
-      <div v-else-if="loadError" class="alert-error px-4 py-3" role="alert">
-        {{ loadError }}
-      </div>
+      <BaseAlert v-else-if="loadError" :message="loadError" size="md" />
 
       <form v-else class="space-y-6" @submit.prevent="onSubmit">
-        <p
+        <BaseAlert
           v-if="outlets.length === 0"
-          class="rounded-lg border border-warning-500/40 bg-warning-50 px-4 py-3 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
+          variant="warning"
+          size="md"
+          class="dark:text-orange-400"
         >
           Anda belum memiliki akses ke outlet mana pun. Hubungi admin untuk penugasan outlet.
-        </p>
+        </BaseAlert>
 
         <ProductionOrderHeaderFields
           v-model:outlet-id="outletId"
@@ -377,20 +377,16 @@ onBeforeUnmount(() => {
           :error="producibleError"
         />
 
-        <p
-          v-if="overProducibleBlocked"
-          class="alert-error flex items-center gap-2 px-3 py-2"
-          role="alert"
-        >
-          <AlertTriangle class="h-4 w-4 shrink-0" aria-hidden="true" />
+        <BaseAlert v-if="overProducibleBlocked" variant="error" size="sm">
+          <template #icon>
+            <AlertTriangle class="h-4 w-4 shrink-0" aria-hidden="true" />
+          </template>
           Jumlah berhasil ({{ formatNumber(actualQty) }}) melebihi maksimal yang bisa diproduksi ({{
             formatNumber(producibleInfo?.producibleQty)
           }}). Kurangi jumlah atau tambah stok bahan.
-        </p>
+        </BaseAlert>
 
-        <p v-if="formError" class="alert-error px-3 py-2">
-          {{ formError }}
-        </p>
+        <BaseAlert v-if="formError" :message="formError" size="sm" />
 
         <div class="button-row pt-2">
           <BaseButton size="sm" variant="outline" :disabled="submitting" @click="onCancel">
@@ -398,13 +394,15 @@ onBeforeUnmount(() => {
           </BaseButton>
           <BaseButton
             type="submit"
+            size="sm"
             variant="primary"
             :disabled="outlets.length === 0 || overProducibleBlocked"
             :loading="submitting"
             loading-text="Memproses..."
-            class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <Factory class="h-4 w-4" aria-hidden="true" />
+            <template #start-icon>
+              <Factory class="h-4 w-4" aria-hidden="true" />
+            </template>
             Jalankan Produksi
           </BaseButton>
         </div>

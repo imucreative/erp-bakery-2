@@ -26,7 +26,7 @@ const props = defineProps<{
 <template>
   <dl class="field-grid">
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Status</dt>
+      <dt class="text-muted-xs uppercase">Status</dt>
       <dd class="mt-1">
         <Badge :color="statusBadgeColor(props.order.status)">
           {{ PRODUCTION_ORDER_STATUS_LABELS[props.order.status] }}
@@ -34,62 +34,62 @@ const props = defineProps<{
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Produk Jadi</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Produk Jadi</dt>
+      <dd class="mt-1 text-value">
         {{ props.order.productName || props.productName(props.order.productId) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Resep</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Resep</dt>
+      <dd class="mt-1 text-value">
         {{ props.order.recipeName || props.recipeName(props.order.recipeId) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Outlet</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Outlet</dt>
+      <dd class="mt-1 text-value">
         {{ props.order.outletName || props.outletName(props.order.outletId) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Target</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Target</dt>
+      <dd class="mt-1 text-value">
         {{ formatNumber(props.order.scheduledQty) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Berhasil</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Berhasil</dt>
+      <dd class="mt-1 text-value">
         {{ props.order.actualQty !== null ? formatNumber(props.order.actualQty) : '-' }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Gagal / Terbuang</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Gagal / Terbuang</dt>
+      <dd class="mt-1 text-value">
         {{ formatNumber(props.order.wasteQty) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Tanggal Produksi</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Tanggal Produksi</dt>
+      <dd class="mt-1 text-value">
         {{ formatDate(props.order.productionDate) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Kedaluwarsa Hasil</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Kedaluwarsa Hasil</dt>
+      <dd class="mt-1 text-value">
         {{ props.order.resultExpiredDate ? formatDate(props.order.resultExpiredDate) : '-' }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Dibuat</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Dibuat</dt>
+      <dd class="mt-1 text-value">
         {{ formatDateTime(props.order.createdAt) }}
       </dd>
     </div>
 
     <div v-if="props.order.notes" class="sm:col-span-2">
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Catatan</dt>
+      <dt class="text-muted-xs uppercase">Catatan</dt>
       <dd class="mt-1 text-body">
         {{ props.order.notes }}
       </dd>

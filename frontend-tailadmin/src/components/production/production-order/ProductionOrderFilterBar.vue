@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
  * ProductionOrderFilterBar — search (productionNumber) + outlet filter toolbar
- * for the Production Order list. Native select wrapped with a ChevronDownIcon
- * per the UI standard. Two-way binds `search` and `outlet` via v-model:search /
- * v-model:outlet. Outlet options are resolved once by the parent (accessible
- * outlets). The instant-complete model has a single status (COMPLETED), so there
- * is no status filter.
+ * for the Production Order list, built on `BaseInput`/`BaseSelect`. Two-way
+ * binds `search` and `outlet` via v-model:search / v-model:outlet. Outlet
+ * options are resolved once by the parent (accessible outlets). The
+ * instant-complete model has a single status (COMPLETED), so there is no status
+ * filter.
  */
 import { BaseInput, BaseSelect } from '@/components/ui'
 

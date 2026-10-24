@@ -11,7 +11,7 @@ import { useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import { BaseButton, BaseTablePagination } from '@/components/ui'
+import { BaseAlert, BaseButton, BaseTablePagination } from '@/components/ui'
 import {
   ProductionOrderFilterBar,
   ProductionOrderTable,
@@ -102,13 +102,13 @@ onMounted(() => {
         </BaseButton>
       </div>
 
-      <p
+      <BaseAlert
         v-if="lookupError"
-        class="mb-3 rounded-lg border border-warning-500/40 bg-warning-50 px-4 py-3 text-sm text-warning-700 dark:bg-warning-500/10 dark:text-warning-400"
-        role="status"
-      >
-        {{ lookupError }}
-      </p>
+        variant="warning"
+        :message="lookupError"
+        size="md"
+        class="mb-3 text-warning-700"
+      />
 
       <ProductionOrderTable
         :items="items"

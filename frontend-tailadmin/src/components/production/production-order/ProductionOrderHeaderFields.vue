@@ -134,7 +134,7 @@ function updateNullableQty(field: 'scheduledQty' | 'actualQty' | 'wasteQty', val
         >
           Produk ini belum memiliki resep aktif. Produksi kemungkinan ditolak backend.
         </p>
-        <p v-else class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
+        <p v-else class="mt-1 text-muted-xs">
           <template v-if="props.recipeInfo">
             Resep aktif:
             <span class="text-gray-600 dark:text-gray-300">{{ props.recipeInfo }}</span>
@@ -157,9 +157,7 @@ function updateNullableQty(field: 'scheduledQty' | 'actualQty' | 'wasteQty', val
           placeholder="0"
           @update:model-value="updateNullableQty('scheduledQty', $event)"
         />
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
-          Jumlah barang jadi yang ditargetkan.
-        </p>
+        <p class="mt-1 text-muted-xs">Jumlah barang jadi yang ditargetkan.</p>
       </div>
 
       <!-- Success (actual) -->
@@ -176,9 +174,7 @@ function updateNullableQty(field: 'scheduledQty' | 'actualQty' | 'wasteQty', val
           placeholder="0"
           @update:model-value="updateNullableQty('actualQty', $event)"
         />
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
-          Barang jadi yang berhasil dan masuk ke stok.
-        </p>
+        <p class="mt-1 text-muted-xs">Barang jadi yang berhasil dan masuk ke stok.</p>
       </div>
 
       <!-- Waste -->
@@ -195,9 +191,7 @@ function updateNullableQty(field: 'scheduledQty' | 'actualQty' | 'wasteQty', val
           placeholder="0"
           @update:model-value="updateNullableQty('wasteQty', $event)"
         />
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
-          Jumlah yang gagal/terbuang dan tidak masuk stok.
-        </p>
+        <p class="mt-1 text-muted-xs">Jumlah yang gagal/terbuang dan tidak masuk stok.</p>
       </div>
 
       <!-- Result expiry (required when actual > 0) -->
@@ -213,7 +207,7 @@ function updateNullableQty(field: 'scheduledQty' | 'actualQty' | 'wasteQty', val
           :disabled="props.disabled"
           @update:model-value="emit('update:resultExpiredDate', $event)"
         />
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
+        <p class="mt-1 text-muted-xs">
           Kedaluwarsa batch barang jadi (wajib bila Berhasil &gt; 0).
         </p>
       </div>

@@ -19,7 +19,7 @@
 import { computed } from 'vue'
 import { AlertTriangle, PackageCheck } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
-import { BaseTable, BaseTableCell, BaseTableHead, BaseTableRow } from '@/components/ui'
+import { BaseAlert, BaseTable, BaseTableCell, BaseTableHead, BaseTableRow } from '@/components/ui'
 import { formatNumber } from '@/lib/format'
 import type { ProducibleInfo } from '@/services/production-order.service'
 
@@ -57,18 +57,17 @@ const hasStock = computed<boolean>(() => (props.info?.producibleQty ?? 0) > 0)
     </div>
 
     <!-- No active recipe (404 RECIPE.NO_ACTIVE_RECIPE) -->
-    <p
+    <BaseAlert
       v-else-if="props.recipeMissing"
-      class="rounded-lg border border-warning-500/40 bg-warning-50 px-3 py-2 text-theme-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
-      role="alert"
+      variant="warning"
+      size="sm"
+      class="dark:text-orange-400"
     >
       Produk ini belum punya resep aktif. Produksi akan ditolak hingga resep aktif tersedia.
-    </p>
+    </BaseAlert>
 
     <!-- Other error -->
-    <p v-else-if="props.error" class="alert-error px-3 py-2" role="alert">
-      {{ props.error }}
-    </p>
+    <BaseAlert v-else-if="props.error" :message="props.error" size="sm" />
 
     <!-- Loaded info -->
     <div v-else-if="props.info" class="space-y-4">
@@ -76,7 +75,7 @@ const hasStock = computed<boolean>(() => (props.info?.producibleQty ?? 0) > 0)
       <div class="field-grid">
         <div>
           <p class="text-meta uppercase">Resep Aktif</p>
-          <p class="mt-1 text-theme-sm font-medium text-gray-800 dark:text-white/90">
+          <p class="mt-1 text-strong">
             {{ props.info.recipe.name }}
             <span class="font-normal text-gray-400">({{ props.info.recipe.recipeNumber }})</span>
           </p>
@@ -100,14 +99,12 @@ const hasStock = computed<boolean>(() => (props.info?.producibleQty ?? 0) > 0)
       </div>
 
       <!-- Out-of-stock warning -->
-      <p
-        v-if="!hasStock"
-        class="flex items-center gap-2 rounded-lg border border-warning-500/40 bg-warning-50 px-3 py-2 text-theme-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
-        role="alert"
-      >
-        <AlertTriangle class="h-4 w-4 shrink-0" aria-hidden="true" />
+      <BaseAlert v-if="!hasStock" variant="warning" size="sm" class="dark:text-orange-400">
+        <template #icon>
+          <AlertTriangle class="h-4 w-4 shrink-0" aria-hidden="true" />
+        </template>
         Stok bahan tidak cukup untuk produksi.
-      </p>
+      </BaseAlert>
 
       <!-- Ingredient table -->
       <div>
@@ -145,7 +142,7 @@ const hasStock = computed<boolean>(() => (props.info?.producibleQty ?? 0) > 0)
                 <Badge v-if="item.isLimiting" variant="light" color="warning" size="sm">
                   Pembatas
                 </Badge>
-                <span v-else class="text-theme-xs text-gray-400 dark:text-gray-500">—</span>
+                <span v-else class="text-muted-xs">—</span>
               </BaseTableCell>
             </BaseTableRow>
             <BaseTableRow v-if="props.info.items.length === 0">
