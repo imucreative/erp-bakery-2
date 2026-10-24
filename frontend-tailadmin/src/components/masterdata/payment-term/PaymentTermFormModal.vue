@@ -5,11 +5,18 @@
  *  - Edit:   `code` is shown READ-ONLY (immutable); editable name, dueDays, and
  *            active toggle.
  * Self-contained form state; emits `submit` and lets the parent run the
- * mutation. Transparent backdrop per UI standard.
+ * mutation. Backdrop, Esc-close, and panel chrome come from BaseModal.
  */
 import { ref, watch } from 'vue'
 import { Save, X } from 'lucide-vue-next'
-import { BaseButton, BaseFormField, BaseInput, BaseToggle } from '@/components/ui'
+import {
+  BaseAlert,
+  BaseButton,
+  BaseFormField,
+  BaseInput,
+  BaseModal,
+  BaseToggle,
+} from '@/components/ui'
 import type { PaymentTerm } from '@/services/payment-term.service'
 
 const props = withDefaults(
@@ -93,74 +100,57 @@ function onSubmit(): void {
 </script>
 
 <template>
-  <div
-    v-if="open"
-    class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4"
-  >
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-      @click="emit('close')"
-    ></div>
+  <BaseModal :open="open" size="lg" @close="emit('close')">
+    <h4 class="modal-title mb-4">
+      {{ mode === 'edit' ? 'Edit Payment Term' : 'Tambah Payment Term' }}
+    </h4>
 
-    <div
-      class="relative w-full max-w-lg rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
-      <h4 class="modal-title mb-4">
-        {{ mode === 'edit' ? 'Edit Payment Term' : 'Tambah Payment Term' }}
-      </h4>
+    <form class="space-y-4" @submit.prevent="onSubmit">
+      <BaseFormField label="Kode" field-id="payment-term-code" :required="mode === 'create'">
+        <BaseInput v-if="mode === 'edit'" id="payment-term-code" :model-value="code" readonly />
+        <BaseInput v-else id="payment-term-code" v-model="code" placeholder="mis. NET30, COD" />
+        <p v-if="mode === 'edit'" class="mt-1 text-muted-xs">Kode tidak dapat diubah.</p>
+      </BaseFormField>
 
-      <form class="space-y-4" @submit.prevent="onSubmit">
-        <BaseFormField label="Kode" field-id="payment-term-code" :required="mode === 'create'">
-          <BaseInput v-if="mode === 'edit'" id="payment-term-code" :model-value="code" readonly />
-          <BaseInput v-else id="payment-term-code" v-model="code" placeholder="mis. NET30, COD" />
-          <p v-if="mode === 'edit'" class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
-            Kode tidak dapat diubah.
-          </p>
-        </BaseFormField>
+      <BaseFormField
+        label="Nama"
+        field-id="payment-term-name"
+        required
+        :error="localError && !name.trim() ? localError : null"
+      >
+        <BaseInput id="payment-term-name" v-model="name" placeholder="mis. Net 30 Hari" />
+      </BaseFormField>
 
-        <BaseFormField
-          label="Nama"
-          field-id="payment-term-name"
-          required
-          :error="localError && !name.trim() ? localError : null"
+      <BaseFormField label="Jatuh Tempo (hari)" field-id="payment-term-due-days" required>
+        <BaseInput
+          id="payment-term-due-days"
+          v-model="dueDays"
+          type="number"
+          min="0"
+          step="1"
+          placeholder="mis. 30"
+        />
+      </BaseFormField>
+
+      <BaseToggle v-if="mode === 'edit'" v-model="isActive" label="Aktif" />
+
+      <BaseAlert :message="localError || errorMessage" size="sm" />
+
+      <div class="flex justify-end gap-3 pt-2">
+        <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
+          <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
+          Batal
+        </BaseButton>
+        <BaseButton
+          type="submit"
+          variant="success"
+          :loading="submitting"
+          loading-text="Menyimpan..."
         >
-          <BaseInput id="payment-term-name" v-model="name" placeholder="mis. Net 30 Hari" />
-        </BaseFormField>
-
-        <BaseFormField label="Jatuh Tempo (hari)" field-id="payment-term-due-days" required>
-          <BaseInput
-            id="payment-term-due-days"
-            v-model="dueDays"
-            type="number"
-            min="0"
-            step="1"
-            placeholder="mis. 30"
-          />
-        </BaseFormField>
-
-        <BaseToggle v-if="mode === 'edit'" v-model="isActive" label="Aktif" />
-
-        <p v-if="localError || errorMessage" class="alert-error px-3 py-2">
-          {{ localError || errorMessage }}
-        </p>
-
-        <div class="flex justify-end gap-3 pt-2">
-          <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
-            <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
-            Batal
-          </BaseButton>
-          <BaseButton
-            type="submit"
-            variant="success"
-            :loading="submitting"
-            loading-text="Menyimpan..."
-          >
-            <template #start-icon><Save class="h-4 w-4" aria-hidden="true" /></template>
-            Simpan
-          </BaseButton>
-        </div>
-      </form>
-    </div>
-  </div>
+          <template #start-icon><Save class="h-4 w-4" aria-hidden="true" /></template>
+          Simpan
+        </BaseButton>
+      </div>
+    </form>
+  </BaseModal>
 </template>

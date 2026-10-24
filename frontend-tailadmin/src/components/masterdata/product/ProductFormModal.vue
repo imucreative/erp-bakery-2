@@ -230,12 +230,7 @@ function onSubmit(): void {
           <!-- SKU -->
           <BaseFormField label="SKU" field-id="product-sku" required>
             <BaseInput v-if="!isEdit" id="product-sku" v-model="sku" placeholder="SKU-ROTI-001" />
-            <p
-              v-else
-              class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300"
-            >
-              {{ sku }}
-            </p>
+            <p v-else class="form-readonly">{{ sku }}</p>
           </BaseFormField>
           <!-- Barcode -->
           <BaseFormField label="Barcode" field-id="product-barcode">

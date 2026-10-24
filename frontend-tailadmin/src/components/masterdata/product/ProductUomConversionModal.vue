@@ -268,9 +268,7 @@ async function onDelete(row: ProductUomConversion): Promise<void> {
       </p>
 
       <!-- Base unit info (read-only) -->
-      <div
-        class="mt-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm dark:border-gray-800 dark:bg-white/[0.03]"
-      >
+      <div class="form-readonly py-3 mt-4">
         <div class="flex items-center justify-between gap-3">
           <span class="text-gray-600 dark:text-gray-300">Satuan dasar</span>
           <span class="font-medium text-gray-800 dark:text-white/90">

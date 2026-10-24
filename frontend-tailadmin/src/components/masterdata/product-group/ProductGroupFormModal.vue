@@ -1,11 +1,20 @@
 <script setup lang="ts">
 /**
  * ProductGroupFormModal — create/edit modal (name + description + active toggle
- * on edit). Self-contained form state; emits `submit`. Transparent backdrop.
+ * on edit). Self-contained form state; emits `submit`. Backdrop, Esc-close, and
+ * panel chrome come from BaseModal.
  */
 import { ref, watch } from 'vue'
 import { Save, X } from 'lucide-vue-next'
-import { BaseButton, BaseFormField, BaseInput, BaseTextarea, BaseToggle } from '@/components/ui'
+import {
+  BaseAlert,
+  BaseButton,
+  BaseFormField,
+  BaseInput,
+  BaseModal,
+  BaseTextarea,
+  BaseToggle,
+} from '@/components/ui'
 import type { ProductGroup } from '@/services/product-group.service'
 
 const props = withDefaults(
@@ -58,68 +67,53 @@ function onSubmit(): void {
 </script>
 
 <template>
-  <div
-    v-if="open"
-    class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4"
-  >
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-      @click="emit('close')"
-    ></div>
+  <BaseModal :open="open" @close="emit('close')">
+    <h4 class="modal-title mb-4">
+      {{ mode === 'edit' ? 'Edit Grup Produk' : 'Tambah Grup Produk' }}
+    </h4>
 
-    <div
-      class="relative w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
-      <h4 class="modal-title mb-4">
-        {{ mode === 'edit' ? 'Edit Grup Produk' : 'Tambah Grup Produk' }}
-      </h4>
+    <form class="space-y-4" @submit.prevent="onSubmit">
+      <BaseFormField
+        label="Nama"
+        field-id="product-group-name"
+        required
+        :error="localError && !name.trim() ? localError : null"
+      >
+        <BaseInput id="product-group-name" v-model="name" placeholder="mis. Bahan Baku" />
+      </BaseFormField>
 
-      <form class="space-y-4" @submit.prevent="onSubmit">
-        <BaseFormField
-          label="Nama"
-          field-id="product-group-name"
-          required
-          :error="localError && !name.trim() ? localError : null"
+      <BaseFormField label="Deskripsi" field-id="product-group-description">
+        <BaseTextarea
+          id="product-group-description"
+          v-model="description"
+          :rows="2"
+          placeholder="Deskripsi singkat (opsional)"
+        />
+      </BaseFormField>
+
+      <BaseToggle v-if="mode === 'edit'" v-model="isActive" label="Aktif" />
+
+      <BaseAlert :message="localError || errorMessage" size="sm" />
+
+      <div class="flex justify-end gap-3 pt-2">
+        <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
+          <template #start-icon>
+            <X class="h-4 w-4" aria-hidden="true" />
+          </template>
+          Batal
+        </BaseButton>
+        <BaseButton
+          type="submit"
+          variant="success"
+          :loading="submitting"
+          loading-text="Menyimpan..."
         >
-          <BaseInput id="product-group-name" v-model="name" placeholder="mis. Bahan Baku" />
-        </BaseFormField>
-
-        <BaseFormField label="Deskripsi" field-id="product-group-description">
-          <BaseTextarea
-            id="product-group-description"
-            v-model="description"
-            :rows="2"
-            placeholder="Deskripsi singkat (opsional)"
-          />
-        </BaseFormField>
-
-        <BaseToggle v-if="mode === 'edit'" v-model="isActive" label="Aktif" />
-
-        <p v-if="localError || errorMessage" class="alert-error px-3 py-2">
-          {{ localError || errorMessage }}
-        </p>
-
-        <div class="flex justify-end gap-3 pt-2">
-          <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
-            <template #start-icon>
-              <X class="h-4 w-4" aria-hidden="true" />
-            </template>
-            Batal
-          </BaseButton>
-          <BaseButton
-            type="submit"
-            variant="success"
-            :loading="submitting"
-            loading-text="Menyimpan..."
-          >
-            <template #start-icon>
-              <Save class="h-4 w-4" aria-hidden="true" />
-            </template>
-            Simpan
-          </BaseButton>
-        </div>
-      </form>
-    </div>
-  </div>
+          <template #start-icon>
+            <Save class="h-4 w-4" aria-hidden="true" />
+          </template>
+          Simpan
+        </BaseButton>
+      </div>
+    </form>
+  </BaseModal>
 </template>

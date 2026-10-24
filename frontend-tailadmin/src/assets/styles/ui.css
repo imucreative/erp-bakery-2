@@ -36,6 +36,11 @@
   @apply mt-1.5 text-theme-sm text-error-600 dark:text-error-400;
 }
 
+/* Nilai read-only di dalam form (kode, nama grup) — tampak seperti input tapi tidak bisa diedit. */
+@utility form-readonly {
+  @apply rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300;
+}
+
 /* Alert — padding di luar supaya pemakai bebas pilih px-3 py-2 (modal) atau px-4 py-3 (halaman) */
 @utility alert-error {
   @apply rounded-lg border border-error-500/40 bg-error-50 text-theme-sm text-error-600 dark:bg-error-500/10 dark:text-error-400;

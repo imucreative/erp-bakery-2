@@ -165,16 +165,8 @@ function onSubmit(): void {
             :options="productSelectOptions"
             placeholder="Pilih produk (bahan baku / setengah jadi)"
           />
-          <p
-            v-else
-            class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300"
-          >
-            {{ productLabel(toppingProductId) }}
-          </p>
-          <p
-            v-if="!isEdit && productOptions.length === 0"
-            class="mt-1.5 text-theme-xs text-gray-400 dark:text-gray-500"
-          >
+          <p v-else class="form-readonly">{{ productLabel(toppingProductId) }}</p>
+          <p v-if="!isEdit && productOptions.length === 0" class="mt-1.5 text-muted-xs">
             Semua produk bahan baku / setengah jadi aktif sudah terdaftar sebagai topping, atau
             belum ada produk yang memenuhi.
           </p>

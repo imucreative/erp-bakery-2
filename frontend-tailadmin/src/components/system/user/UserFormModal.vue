@@ -165,12 +165,7 @@ function onSubmit(): void {
             type="email"
             placeholder="nama@company.com"
           />
-          <p
-            v-else
-            class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300"
-          >
-            {{ email }}
-          </p>
+          <p v-else class="form-readonly">{{ email }}</p>
         </BaseFormField>
         <BaseFormField label="Telepon" field-id="user-phone">
           <BaseInput id="user-phone" v-model="phone" type="tel" placeholder="0812-3456-7890" />

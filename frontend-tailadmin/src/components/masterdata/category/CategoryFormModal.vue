@@ -8,9 +8,11 @@
 import { computed, ref, watch } from 'vue'
 import { Save, X } from 'lucide-vue-next'
 import {
+  BaseAlert,
   BaseButton,
   BaseFormField,
   BaseInput,
+  BaseModal,
   BaseSelect,
   BaseTextarea,
   BaseToggle,
@@ -92,92 +94,72 @@ function onSubmit(): void {
 </script>
 
 <template>
-  <div
-    v-if="open"
-    class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4"
-  >
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-      @click="emit('close')"
-    ></div>
+  <BaseModal :open="open" @close="emit('close')">
+    <h4 class="modal-title mb-4">
+      {{ isEdit ? 'Edit Kategori' : 'Tambah Kategori' }}
+    </h4>
 
-    <div
-      class="relative w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
-      <h4 class="modal-title mb-4">
-        {{ isEdit ? 'Edit Kategori' : 'Tambah Kategori' }}
-      </h4>
+    <form class="space-y-4" @submit.prevent="onSubmit">
+      <!-- Product group: selectable on create, read-only on edit -->
+      <BaseFormField
+        label="Grup Produk"
+        field-id="category-product-group"
+        :required="!isEdit"
+        :error="!isEdit && localError && !productGroupId ? localError : null"
+      >
+        <BaseSelect
+          v-if="!isEdit"
+          id="category-product-group"
+          v-model="productGroupId"
+          :options="groupOptions"
+          placeholder="Pilih grup produk"
+        />
+        <p v-else class="form-readonly">{{ currentGroupName }}</p>
+      </BaseFormField>
 
-      <form class="space-y-4" @submit.prevent="onSubmit">
-        <!-- Product group: selectable on create, read-only on edit -->
-        <BaseFormField
-          label="Grup Produk"
-          field-id="category-product-group"
-          :required="!isEdit"
-          :error="!isEdit && localError && !productGroupId ? localError : null"
+      <BaseFormField
+        label="Nama"
+        field-id="category-name"
+        required
+        :error="localError && !name.trim() ? localError : null"
+      >
+        <BaseInput id="category-name" v-model="name" placeholder="mis. Roti Manis" />
+      </BaseFormField>
+
+      <BaseFormField label="Deskripsi" field-id="category-description">
+        <BaseTextarea
+          id="category-description"
+          v-model="description"
+          :rows="2"
+          placeholder="Deskripsi singkat (opsional)"
+        />
+      </BaseFormField>
+
+      <BaseToggle v-if="isEdit" v-model="isActive" label="Aktif" />
+
+      <BaseAlert :message="localError || errorMessage" size="sm" />
+
+      <div class="flex justify-end gap-3 pt-2">
+        <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
+          <template #start-icon>
+            <X class="h-4 w-4" aria-hidden="true" />
+          </template>
+          Batal
+        </BaseButton>
+        <BaseButton
+          type="submit"
+          size="sm"
+          variant="success"
+          :loading="submitting"
+          loading-text="Menyimpan..."
+          :disabled="submitting"
         >
-          <BaseSelect
-            v-if="!isEdit"
-            id="category-product-group"
-            v-model="productGroupId"
-            :options="groupOptions"
-            placeholder="Pilih grup produk"
-          />
-          <p
-            v-else
-            class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300"
-          >
-            {{ currentGroupName }}
-          </p>
-        </BaseFormField>
-
-        <BaseFormField
-          label="Nama"
-          field-id="category-name"
-          required
-          :error="localError && !name.trim() ? localError : null"
-        >
-          <BaseInput id="category-name" v-model="name" placeholder="mis. Roti Manis" />
-        </BaseFormField>
-
-        <BaseFormField label="Deskripsi" field-id="category-description">
-          <BaseTextarea
-            id="category-description"
-            v-model="description"
-            :rows="2"
-            placeholder="Deskripsi singkat (opsional)"
-          />
-        </BaseFormField>
-
-        <BaseToggle v-if="isEdit" v-model="isActive" label="Aktif" />
-
-        <p v-if="localError || errorMessage" class="alert-error px-3 py-2">
-          {{ localError || errorMessage }}
-        </p>
-
-        <div class="flex justify-end gap-3 pt-2">
-          <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
-            <template #start-icon>
-              <X class="h-4 w-4" aria-hidden="true" />
-            </template>
-            Batal
-          </BaseButton>
-          <BaseButton
-            type="submit"
-            size="sm"
-            variant="success"
-            :loading="submitting"
-            loading-text="Menyimpan..."
-            :disabled="submitting"
-          >
-            <template #start-icon>
-              <Save class="h-4 w-4" aria-hidden="true" />
-            </template>
-            Simpan
-          </BaseButton>
-        </div>
-      </form>
-    </div>
-  </div>
+          <template #start-icon>
+            <Save class="h-4 w-4" aria-hidden="true" />
+          </template>
+          Simpan
+        </BaseButton>
+      </div>
+    </form>
+  </BaseModal>
 </template>
