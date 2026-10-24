@@ -200,7 +200,7 @@ function removeRow(index: number): void {
           <!-- Product (read-only — dictated by the source PO item) -->
           <BaseTableCell class="align-top">
             <div class="flex min-h-11 flex-col justify-center">
-              <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+              <span class="text-strong">
                 {{ productLabel(row.productId) }}
               </span>
               <span
@@ -209,9 +209,7 @@ function removeRow(index: number): void {
               >
                 Batch-tracked
               </span>
-              <span v-else class="text-theme-xs text-gray-400 dark:text-gray-500">
-                Dari item PO
-              </span>
+              <span v-else class="text-muted-xs"> Dari item PO </span>
             </div>
           </BaseTableCell>
           <!-- Ordered (read-only) -->
@@ -246,20 +244,17 @@ function removeRow(index: number): void {
             <span v-if="overMax(row)" class="mt-1 block text-theme-xs text-error-500">
               Terima + tolak maks {{ maxQtyForRow(row) }} (sisa PO)
             </span>
-            <span
-              v-else-if="maxQtyForRow(row) > 0"
-              class="mt-1 block text-theme-xs text-gray-400 dark:text-gray-500"
-            >
+            <span v-else-if="maxQtyForRow(row) > 0" class="mt-1 block text-muted-xs">
               Maks {{ maxQtyForRow(row) }} (sisa PO)
             </span>
           </BaseTableCell>
           <!-- UOM (read-only — follows the source PO item) -->
           <BaseTableCell class="align-top">
             <div class="flex min-h-11 flex-col justify-center">
-              <span class="text-theme-sm text-gray-800 dark:text-white/90">
+              <span class="text-value">
                 {{ uomLabel(row.uomId) }}
               </span>
-              <span class="text-theme-xs text-gray-400 dark:text-gray-500"> Dari item PO </span>
+              <span class="text-muted-xs"> Dari item PO </span>
             </div>
           </BaseTableCell>
           <!-- Batch Number -->
@@ -360,7 +355,7 @@ function removeRow(index: number): void {
       <Plus class="h-4 w-4 text-gray-400 dark:text-gray-500" aria-hidden="true" />
     </div>
 
-    <p class="text-theme-xs text-gray-400 dark:text-gray-500">
+    <p class="text-muted-xs">
       Item hanya dapat dipilih dari item PO sumber. Jumlah diterima + ditolak tidak boleh melebihi
       sisa (outstanding) PO. Untuk produk batch-tracked dengan jumlah diterima &gt; 0, nomor batch
       dan tanggal kadaluarsa wajib diisi.

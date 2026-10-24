@@ -63,9 +63,7 @@ const poPickerDisabled = computed<boolean>(() => props.disabled || props.poLocke
           @update:model-value="emit('update:purchaseOrderId', $event)"
         />
 
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
-          Hanya PO berstatus disetujui yang dapat diterima.
-        </p>
+        <p class="mt-1 text-muted-xs">Hanya PO berstatus disetujui yang dapat diterima.</p>
       </div>
 
       <!-- Receive Date -->
@@ -83,27 +81,19 @@ const poPickerDisabled = computed<boolean>(() => props.disabled || props.poLocke
       <!-- Supplier (inherited from PO, read-only) -->
       <div>
         <label :class="labelClass">Vendor</label>
-        <div
-          class="flex h-11 w-full items-center rounded-lg border border-gray-200 bg-gray-50 px-4 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/[0.02] dark:text-gray-300"
-        >
+        <div class="form-readonly flex h-11 w-full items-center dark:bg-white/[0.02]">
           {{ props.supplierLabel || 'Diwarisi dari PO sumber' }}
         </div>
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
-          Diwarisi dari PO sumber (tidak dapat diubah).
-        </p>
+        <p class="mt-1 text-muted-xs">Diwarisi dari PO sumber (tidak dapat diubah).</p>
       </div>
 
       <!-- Destination outlet (inherited from PO, read-only) -->
       <div>
         <label :class="labelClass">Outlet Tujuan</label>
-        <div
-          class="flex h-11 w-full items-center rounded-lg border border-gray-200 bg-gray-50 px-4 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/[0.02] dark:text-gray-300"
-        >
+        <div class="form-readonly flex h-11 w-full items-center dark:bg-white/[0.02]">
           {{ props.destinationOutletLabel || 'Diwarisi dari PO sumber' }}
         </div>
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
-          Diwarisi dari PO sumber (tidak dapat diubah).
-        </p>
+        <p class="mt-1 text-muted-xs">Diwarisi dari PO sumber (tidak dapat diubah).</p>
       </div>
     </div>
 

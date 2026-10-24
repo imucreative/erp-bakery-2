@@ -134,7 +134,7 @@ void fetchList()
     >
       <!-- Toolbar -->
       <div class="toolbar-row">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div class="stack-row">
           <div class="w-full sm:max-w-xs">
             <BaseInput
               id="payment-term-search"

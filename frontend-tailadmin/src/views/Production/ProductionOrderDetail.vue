@@ -84,12 +84,7 @@ function goToList(): void {
   <AdminLayout>
     <PageBreadcrumb :pageTitle="'Detail Production Order'" />
 
-    <div
-      v-if="loading"
-      class="text-muted rounded-2xl border border-gray-200 bg-white p-10 text-center dark:border-gray-800 dark:bg-white/[0.03]"
-    >
-      Memuat data...
-    </div>
+    <div v-if="loading" class="panel-loading">Memuat data...</div>
 
     <div
       v-else-if="loadError"

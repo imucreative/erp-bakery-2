@@ -118,10 +118,14 @@ src/
   value shown in place of an input (SKU, email, code, parent group name),
   `alert-error` / `alert-success` /
   `alert-warning` / `alert-info` for banners, `panel-muted` for empty/loading panels
-  (add `border-dashed` at the call site when needed), `panel-card` for nested item cards
+  (add `border-dashed` at the call site when needed), `panel-loading` for a page-level
+  "Memuat data…" card (full-width `rounded-2xl` white card, not the dimmed in-card `panel-muted`),
+  `panel-card` for nested item cards
   (attachment/comment rows), `icon-tile` for the square icon in front of a list row (attachment
   icon, avatar — 40px tile, override `h-*`/`w-*` at the call site for another size),
   `toolbar-row` for a filter/actions bar (stacks under 640px; add margin at the call site),
+  `stack-row` for the same bar when it has no left/right split — a run of fields, or a field plus
+  the button that may keep flowing (`sm:justify-between` is what separates the two),
   `field-grid` for a two-column form/summary grid (stacks under 640px; `gap-*` and `sm:grid-cols-*`
   are plain core utilities, so overriding them at the call site works and keeps the snippet's
   `display`/`grid-cols-1` base — `PurchaseOrderSummary` uses `field-grid gap-2 sm:grid-cols-3` for
@@ -135,7 +139,11 @@ src/
   scroll containers. Prefer these over retyping the long class chain. Custom utilities are
   emitted BEFORE core utilities, so a call-site utility always wins
   (e.g. `class="modal-title mt-4"`) without `!important`. Ordering is per property category,
-  though — plain layout utilities like `.flex`/`.h-11` are emitted earlier, which is still safe
+  though — and within a category **shorthand loses to longhand**: in the built CSS `.p-4` (39274)
+  is emitted before `.px-4` (39683) and `.py-3` (40132), so to override a snippet's or component's
+  padding use `px-*` / `py-*`, never `p-*` (`p-*` on top of `BaseAlert size="md"` silently kept
+  the component's `px-4 py-3`). Plain layout utilities like `.flex`/`.h-11` are emitted earlier,
+  which is still safe
   because snippets such as `form-readonly` set no `display`/`height` (`PurchaseOrderHeaderFields`
   overrides it with `form-readonly flex h-11 w-full items-center dark:bg-white/[0.02]`).
   Snippets deliberately exclude

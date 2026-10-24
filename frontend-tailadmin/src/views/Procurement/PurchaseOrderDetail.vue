@@ -195,14 +195,9 @@ async function onConfirmAction(note: string): Promise<void> {
   <AdminLayout>
     <PageBreadcrumb :pageTitle="'Detail Purchase Order'" />
 
-    <div
-      v-if="loading"
-      class="text-muted rounded-2xl border border-gray-200 bg-white p-10 text-center dark:border-gray-800 dark:bg-white/[0.03]"
-    >
-      Memuat data...
-    </div>
+    <div v-if="loading" class="panel-loading">Memuat data...</div>
 
-    <BaseAlert v-else-if="loadError" :message="loadError" size="md" class="rounded-2xl p-4" />
+    <BaseAlert v-else-if="loadError" :message="loadError" size="md" class="rounded-2xl py-4" />
 
     <template v-else-if="po">
       <!-- Page header: back (icon-only) + title on the start, lifecycle actions on the end -->

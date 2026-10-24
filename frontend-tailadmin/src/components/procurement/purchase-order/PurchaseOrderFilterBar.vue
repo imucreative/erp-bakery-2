@@ -36,7 +36,7 @@ const statusOptions = [
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+  <div class="stack-row">
     <div class="relative w-full sm:max-w-xs">
       <BaseInput
         id="purchase-order-search"

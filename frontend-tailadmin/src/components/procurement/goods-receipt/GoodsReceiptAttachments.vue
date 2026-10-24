@@ -21,7 +21,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { Download, FileText, ImageIcon, Paperclip, Trash2, UploadCloud } from 'lucide-vue-next'
 import { ApiClientError } from '@/services/http'
-import { BaseButton, BaseFileButton } from '@/components/ui'
+import { BaseAlert, BaseButton, BaseFileButton } from '@/components/ui'
 import { formatDateTime, formatFileSize } from '@/lib/format'
 import { goodsReceiptService, type GoodsReceiptAttachment } from '@/services/goods-receipt.service'
 
@@ -180,34 +180,18 @@ onMounted(() => {
 <template>
   <div class="space-y-5">
     <!-- Loading -->
-    <p
-      v-if="loading"
-      class="text-muted rounded-lg border border-gray-200 bg-gray-50 px-3 py-6 text-center dark:border-gray-800 dark:bg-white/[0.02]"
-    >
-      Memuat lampiran...
-    </p>
+    <p v-if="loading" class="panel-muted">Memuat lampiran...</p>
 
     <!-- Load / action error -->
-    <p v-else-if="loadError" class="alert-error px-3 py-2" role="alert">
-      {{ loadError }}
-    </p>
+    <BaseAlert v-else-if="loadError" :message="loadError" size="sm" />
 
     <template v-else>
       <!-- Empty -->
-      <p
-        v-if="attachments.length === 0"
-        class="text-muted rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-6 text-center dark:border-gray-800 dark:bg-white/[0.02]"
-      >
-        Belum ada lampiran.
-      </p>
+      <p v-if="attachments.length === 0" class="panel-muted border-dashed">Belum ada lampiran.</p>
 
       <!-- Attachment list -->
       <ul v-else class="space-y-3">
-        <li
-          v-for="attachment in attachments"
-          :key="attachment.id"
-          class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.02]"
-        >
+        <li v-for="attachment in attachments" :key="attachment.id" class="panel-card">
           <div class="flex items-start gap-3">
             <span class="icon-tile">
               <ImageIcon v-if="isImage(attachment.mimeType)" class="h-5 w-5" aria-hidden="true" />
@@ -215,10 +199,10 @@ onMounted(() => {
             </span>
 
             <div class="min-w-0 flex-1">
-              <p class="truncate text-theme-sm font-medium text-gray-800 dark:text-white/90">
+              <p class="truncate text-strong">
                 {{ attachment.originalName }}
               </p>
-              <p class="mt-0.5 text-theme-xs text-gray-400 dark:text-gray-500">
+              <p class="mt-0.5 text-muted-xs">
                 {{ formatFileSize(attachment.sizeBytes) }} · {{ uploaderLabel(attachment) }} ·
                 {{ formatDateTime(attachment.createdAt) }}
               </p>
@@ -290,7 +274,7 @@ onMounted(() => {
     >
       <label class="form-label"> Unggah Lampiran </label>
 
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div class="stack-row">
         <BaseFileButton
           ref="fileButton"
           size="sm"
@@ -325,9 +309,7 @@ onMounted(() => {
         </BaseButton>
       </div>
 
-      <p v-if="uploadError" class="alert-error px-3 py-2" role="alert">
-        {{ uploadError }}
-      </p>
+      <BaseAlert v-if="uploadError" :message="uploadError" size="sm" />
     </form>
   </div>
 </template>

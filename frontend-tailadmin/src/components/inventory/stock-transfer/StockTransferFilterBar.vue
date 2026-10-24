@@ -33,7 +33,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+  <div class="stack-row">
     <BaseInput
       id="stock-transfer-search"
       :model-value="search"

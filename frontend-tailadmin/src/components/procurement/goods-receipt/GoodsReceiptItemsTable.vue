@@ -71,10 +71,7 @@ function conversionHint(item: GoodsReceiptItem): string | null {
         <BaseTableCell align="end">{{ item.orderedQuantity }}</BaseTableCell>
         <BaseTableCell align="end" emphasis="medium">
           {{ item.acceptedQuantity }}
-          <span
-            v-if="conversionHint(item)"
-            class="mt-0.5 block text-theme-xs font-normal text-gray-400 dark:text-gray-500"
-          >
+          <span v-if="conversionHint(item)" class="mt-0.5 block font-normal text-muted-xs">
             {{ conversionHint(item) }}
           </span>
         </BaseTableCell>

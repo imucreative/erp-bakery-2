@@ -455,12 +455,7 @@ onMounted(() => {
     <PageBreadcrumb :pageTitle="pageTitle" />
 
     <!-- Bootstrapping -->
-    <div
-      v-if="bootstrapping"
-      class="text-muted rounded-2xl border border-gray-200 bg-white p-10 text-center dark:border-gray-800 dark:bg-white/[0.03]"
-    >
-      Memuat terminal POS...
-    </div>
+    <div v-if="bootstrapping" class="panel-loading">Memuat terminal POS...</div>
 
     <template v-else>
       <!-- Bootstrap error -->
@@ -487,7 +482,7 @@ onMounted(() => {
       <template v-else>
         <!-- Outlet selector + shift bar -->
         <div class="mb-5 flex flex-col gap-4">
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div class="stack-row">
             <label
               for="pos-outlet"
               class="text-theme-sm font-medium text-gray-700 dark:text-gray-400"

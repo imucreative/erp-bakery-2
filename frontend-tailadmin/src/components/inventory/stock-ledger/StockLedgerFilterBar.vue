@@ -36,7 +36,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+  <div class="stack-row">
     <div class="w-full sm:w-56">
       <BaseSelect
         id="stock-ledger-outlet"

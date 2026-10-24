@@ -279,7 +279,7 @@ onMounted(() => {
     >
       <label class="form-label"> Unggah Lampiran </label>
 
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div class="stack-row">
         <BaseFileButton
           ref="fileButton"
           size="sm"

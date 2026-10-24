@@ -36,7 +36,7 @@ import { ChevronLeft } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import { BaseButton } from '@/components/ui'
+import { BaseAlert, BaseButton } from '@/components/ui'
 import {
   GoodsReceiptHeaderFields,
   GoodsReceiptItemsEditor,
@@ -419,17 +419,12 @@ function onCancel(): void {
     <ComponentCard :title="pageTitle">
       <div v-if="loading" class="text-muted py-10 text-center">Memuat data...</div>
 
-      <div v-else-if="loadError" class="alert-error px-4 py-3" role="alert">
-        {{ loadError }}
-      </div>
+      <BaseAlert v-else-if="loadError" :message="loadError" size="md" />
 
       <form v-else class="space-y-6" @submit.prevent="onSubmit">
-        <p
-          v-if="isReadOnly"
-          class="rounded-lg border border-warning-500/40 bg-warning-50 px-4 py-3 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
-        >
+        <BaseAlert v-if="isReadOnly" variant="warning" size="md" class="dark:text-orange-400">
           GR ini tidak dapat diedit pada status saat ini. Ditampilkan sebagai baca-saja.
-        </p>
+        </BaseAlert>
 
         <!-- Header -->
         <GoodsReceiptHeaderFields
@@ -447,14 +442,15 @@ function onCancel(): void {
         <!-- Line items -->
         <div>
           <h5 class="mb-3 text-sm font-semibold text-gray-800 dark:text-white/90">Item</h5>
-          <p
+          <BaseAlert
             v-if="allReceived"
-            class="mb-3 rounded-lg border border-warning-500/40 bg-warning-50 px-4 py-3 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
-            role="alert"
+            variant="warning"
+            size="md"
+            class="mb-3 dark:text-orange-400"
           >
             Semua item PO ini sudah habis diterima pada GR lain. Tidak ada sisa (outstanding) yang
             bisa diterima, sehingga GR tidak dapat dibuat.
-          </p>
+          </BaseAlert>
           <GoodsReceiptItemsEditor
             v-model="items"
             :po-items="poItems"
@@ -464,9 +460,7 @@ function onCancel(): void {
           />
         </div>
 
-        <p v-if="formError" class="alert-error px-3 py-2">
-          {{ formError }}
-        </p>
+        <BaseAlert v-if="formError" :message="formError" size="sm" />
 
         <div class="flex justify-end gap-3 pt-2">
           <BaseButton size="sm" variant="outline" :disabled="submitting" @click="onCancel">
