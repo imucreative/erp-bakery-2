@@ -13,7 +13,7 @@ import { CheckCircle2, Plus } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import { BaseButton, BaseTablePagination } from '@/components/ui'
+import { BaseAlert, BaseButton, BaseTablePagination } from '@/components/ui'
 import { RecipeFilterBar, RecipeTable } from '@/components/production/recipe'
 import { usePermission } from '@/composables/usePermission'
 import { useRecipes } from '@/composables/useRecipes'
@@ -97,24 +97,18 @@ onMounted(() => {
   <AdminLayout>
     <PageBreadcrumb :pageTitle="pageTitle" />
 
-    <div
+    <BaseAlert
       v-if="deletedNotice"
-      class="alert-success mb-4 flex items-start justify-between gap-3 px-4 py-3"
-      role="status"
+      variant="success"
+      dismissible
+      class="mb-4"
+      @dismiss="dismissDeletedNotice"
     >
-      <span class="flex items-center gap-2">
+      <template #icon>
         <CheckCircle2 class="h-4 w-4 shrink-0" aria-hidden="true" />
-        Resep draft berhasil dihapus.
-      </span>
-      <BaseButton
-        variant="outline"
-        size="sm"
-        class="text-success-600 underline-offset-2 hover:underline dark:text-success-500"
-        @click="dismissDeletedNotice"
-      >
-        Tutup
-      </BaseButton>
-    </div>
+      </template>
+      Resep draft berhasil dihapus.
+    </BaseAlert>
 
     <ComponentCard
       title="Recipe"

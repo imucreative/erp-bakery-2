@@ -26,7 +26,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import Badge from '@/components/ui/Badge.vue'
-import { BaseButton } from '@/components/ui'
+import { BaseAlert, BaseButton } from '@/components/ui'
 import {
   RecipeSummary,
   RecipeItemsTable,
@@ -206,13 +206,7 @@ function onDuplicate(): void {
 
     <div v-if="loading" class="panel-loading">Memuat data...</div>
 
-    <div
-      v-else-if="loadError"
-      class="rounded-2xl border border-error-500/40 bg-error-50 p-4 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400"
-      role="alert"
-    >
-      {{ loadError }}
-    </div>
+    <BaseAlert v-else-if="loadError" :message="loadError" size="md" class="rounded-2xl py-4" />
 
     <template v-else-if="recipe">
       <!-- Page header: back (icon-only) + title/number/status/version on the start, actions on the end -->
@@ -260,9 +254,7 @@ function onDuplicate(): void {
       <div class="grid grid-cols-1 gap-5">
         <ComponentCard title="Informasi Resep">
           <!-- Action error banner (mutation failures keep user here) -->
-          <p v-if="actionError" class="alert-error mb-4 px-3 py-2">
-            {{ actionError }}
-          </p>
+          <BaseAlert v-if="actionError" :message="actionError" size="sm" class="mb-4" />
 
           <RecipeSummary :recipe="recipe" :product-name="productName" :uom-name="uomName" />
 

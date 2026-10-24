@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
  * RecipeFilterBar — search (name/recipeNumber) + status filter + finished
- * product filter toolbar for the Recipe list. Native selects wrapped with a
- * ChevronDownIcon per the UI standard. Two-way binds `search`, `status`, and
- * `product` via v-model:search / v-model:status / v-model:product. Product
- * options (finished products) are resolved once by the parent.
+ * product filter toolbar for the Recipe list, built on `BaseInput`/`BaseSelect`.
+ * Two-way binds `search`, `status`, and `product` via v-model:search /
+ * v-model:status / v-model:product. Product options (finished products) are
+ * resolved once by the parent.
  */
 import { BaseInput, BaseSelect } from '@/components/ui'
 import { RECIPE_STATUSES, RECIPE_STATUS_LABELS } from '@/services/recipe.service'
@@ -27,6 +27,14 @@ const emit = defineEmits<{
   (event: 'update:status', value: StatusFilter): void
   (event: 'update:product', value: string): void
 }>()
+
+const statusOptions = [
+  { value: 'all' as const, label: 'Semua Status' },
+  ...RECIPE_STATUSES.map((status) => ({
+    value: status,
+    label: RECIPE_STATUS_LABELS[status],
+  })),
+]
 </script>
 
 <template>
@@ -42,10 +50,7 @@ const emit = defineEmits<{
     <BaseSelect
       id="recipe-status"
       :model-value="status"
-      :options="[
-        { value: 'all', label: 'Semua Status' },
-        ...RECIPE_STATUSES.map((value) => ({ value, label: RECIPE_STATUS_LABELS[value] })),
-      ]"
+      :options="statusOptions"
       class="sm:w-48"
       @update:model-value="emit('update:status', $event as StatusFilter)"
     />

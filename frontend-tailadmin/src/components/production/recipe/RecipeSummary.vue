@@ -20,7 +20,7 @@ const props = defineProps<{
 <template>
   <dl class="field-grid">
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Status</dt>
+      <dt class="text-muted-xs uppercase">Status</dt>
       <dd class="mt-1">
         <Badge :color="statusBadgeColor(props.recipe.status)">
           {{ RECIPE_STATUS_LABELS[props.recipe.status] }}
@@ -28,45 +28,43 @@ const props = defineProps<{
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Versi</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
-        v{{ props.recipe.version }}
-      </dd>
+      <dt class="text-muted-xs uppercase">Versi</dt>
+      <dd class="mt-1 text-value">v{{ props.recipe.version }}</dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Produk Jadi</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Produk Jadi</dt>
+      <dd class="mt-1 text-value">
         {{ props.productName(props.recipe.productId) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Hasil / Batch</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Hasil / Batch</dt>
+      <dd class="mt-1 text-value">
         {{ formatNumber(props.recipe.yieldQty) }}
         {{ props.recipe.yieldUomName || props.uomName(props.recipe.yieldUomId) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Jumlah Bahan</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Jumlah Bahan</dt>
+      <dd class="mt-1 text-value">
         {{ props.recipe.items.length }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Dibuat</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Dibuat</dt>
+      <dd class="mt-1 text-value">
         {{ formatDateTime(props.recipe.createdAt) }}
       </dd>
     </div>
     <div>
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Diperbarui</dt>
-      <dd class="mt-1 text-theme-sm text-gray-800 dark:text-white/90">
+      <dt class="text-muted-xs uppercase">Diperbarui</dt>
+      <dd class="mt-1 text-value">
         {{ formatDateTime(props.recipe.updatedAt) }}
       </dd>
     </div>
 
     <div v-if="props.recipe.instructions" class="sm:col-span-2">
-      <dt class="text-theme-xs uppercase text-gray-400 dark:text-gray-500">Instruksi</dt>
+      <dt class="text-muted-xs uppercase">Instruksi</dt>
       <dd class="mt-1 whitespace-pre-line text-body">
         {{ props.recipe.instructions }}
       </dd>

@@ -142,9 +142,7 @@ function selectProduct(product: Product): void {
           </template>
         </EntityCombobox>
 
-        <p class="mt-1 text-theme-xs text-gray-400 dark:text-gray-500">
-          Produk jadi yang dihasilkan oleh resep ini.
-        </p>
+        <p class="mt-1 text-muted-xs">Produk jadi yang dihasilkan oleh resep ini.</p>
       </div>
 
       <!-- Yield qty + yield UOM -->

@@ -161,9 +161,11 @@ function removeRow(index: number): void {
     <BaseTable aria-label="Editor bahan resep">
       <template #header>
         <BaseTableRow variant="header">
-          <BaseTableHead>Bahan</BaseTableHead><BaseTableHead>Qty</BaseTableHead
-          ><BaseTableHead>UOM</BaseTableHead><BaseTableHead>Loss %</BaseTableHead
-          ><BaseTableHead align="end">Aksi</BaseTableHead>
+          <BaseTableHead>Bahan</BaseTableHead>
+          <BaseTableHead>Qty</BaseTableHead>
+          <BaseTableHead>UOM</BaseTableHead>
+          <BaseTableHead>Loss %</BaseTableHead>
+          <BaseTableHead align="end">Aksi</BaseTableHead>
         </BaseTableRow>
       </template>
       <template #body>
@@ -258,7 +260,7 @@ function removeRow(index: number): void {
       </BaseButton>
     </div>
 
-    <p class="text-theme-xs text-gray-400 dark:text-gray-500">
+    <p class="text-muted-xs">
       Setiap baris adalah satu bahan baku untuk satu batch resep. "Loss %" adalah kelonggaran susut
       bahan (0–100), default 0. Bahan yang sudah dipakai di baris lain tidak bisa dipilih lagi.
     </p>

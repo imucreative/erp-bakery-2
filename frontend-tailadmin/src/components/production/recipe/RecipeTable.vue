@@ -15,14 +15,17 @@ defineEmits<{ (event: 'view', recipe: Recipe): void }>()
     empty-message="Belum ada resep."
     aria-label="Daftar resep"
   >
-    <template #header
-      ><BaseTableRow variant="header"
-        ><BaseTableHead>Nomor</BaseTableHead><BaseTableHead>Nama</BaseTableHead
-        ><BaseTableHead>Produk Jadi</BaseTableHead><BaseTableHead align="end">Versi</BaseTableHead
-        ><BaseTableHead align="end">Jumlah Bahan</BaseTableHead><BaseTableHead>Status</BaseTableHead
-        ><BaseTableHead align="end">Aksi</BaseTableHead></BaseTableRow
-      ></template
-    >
+    <template #header>
+      <BaseTableRow variant="header">
+        <BaseTableHead>Nomor</BaseTableHead>
+        <BaseTableHead>Nama</BaseTableHead>
+        <BaseTableHead>Produk Jadi</BaseTableHead>
+        <BaseTableHead align="end">Versi</BaseTableHead>
+        <BaseTableHead align="end">Jumlah Bahan</BaseTableHead>
+        <BaseTableHead>Status</BaseTableHead>
+        <BaseTableHead align="end">Aksi</BaseTableHead>
+      </BaseTableRow>
+    </template>
     <template #body>
       <BaseTableRow v-for="recipe in items" :key="recipe.id">
         <BaseTableCell emphasis="medium">{{ recipe.recipeNumber }}</BaseTableCell>
@@ -30,21 +33,23 @@ defineEmits<{ (event: 'view', recipe: Recipe): void }>()
         <BaseTableCell>{{ recipe.productName || recipe.productId }}</BaseTableCell>
         <BaseTableCell align="end">v{{ recipe.version }}</BaseTableCell>
         <BaseTableCell align="end">{{ recipe.items.length }}</BaseTableCell>
-        <BaseTableCell
-          ><Badge :color="statusBadgeColor(recipe.status)">{{
-            RECIPE_STATUS_LABELS[recipe.status]
-          }}</Badge></BaseTableCell
-        >
-        <BaseTableCell align="end"
-          ><BaseButton
+        <BaseTableCell>
+          <Badge :color="statusBadgeColor(recipe.status)">
+            {{ RECIPE_STATUS_LABELS[recipe.status] }}
+          </Badge>
+        </BaseTableCell>
+        <BaseTableCell align="end">
+          <BaseButton
             size="sm"
             variant="outline"
             icon-only
             aria-label="Lihat detail"
             title="Lihat detail"
             @click="$emit('view', recipe)"
-            ><Eye class="h-4 w-4" aria-hidden="true" /></BaseButton
-        ></BaseTableCell>
+          >
+            <Eye class="h-4 w-4" aria-hidden="true" />
+          </BaseButton>
+        </BaseTableCell>
       </BaseTableRow>
     </template>
   </BaseTable>

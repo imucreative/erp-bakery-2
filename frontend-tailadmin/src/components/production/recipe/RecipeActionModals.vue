@@ -1,7 +1,13 @@
 <script setup lang="ts">
+/**
+ * Confirmation modal for recipe lifecycle actions (activate/archive/delete).
+ * Backdrop, panel, Esc-close, and backdrop-click close come from `BaseModal`
+ * (`size="md"`); the destructive warning and the backend error are `BaseAlert`
+ * banners.
+ */
 import { computed } from 'vue'
 import { TriangleAlert } from 'lucide-vue-next'
-import { BaseButton } from '@/components/ui'
+import { BaseAlert, BaseButton, BaseModal } from '@/components/ui'
 
 export type RecipeAction = 'activate' | 'archive' | 'delete'
 const props = withDefaults(
@@ -52,45 +58,33 @@ const confirmVariant = computed<'success' | 'danger'>(() =>
 </script>
 
 <template>
-  <div
-    v-if="action"
-    class="fixed inset-0 z-99999 flex items-center justify-center overflow-y-auto p-4"
-  >
-    <div
-      class="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] dark:bg-black/30"
-      aria-hidden="true"
-      @click="emit('close')"
-    />
-    <div
-      class="relative w-full max-w-md rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-    >
-      <h4 class="modal-title mb-2">{{ title }}</h4>
-      <p class="text-muted mb-4">{{ description }}</p>
-      <div
-        v-if="isDestructive"
-        class="mb-4 flex items-start gap-2 rounded-lg border border-warning-500/40 bg-warning-50 px-3 py-2 text-sm text-warning-600 dark:bg-warning-500/10 dark:text-orange-400"
+  <BaseModal :open="Boolean(action)" @close="emit('close')">
+    <h4 class="modal-title mb-2">{{ title }}</h4>
+    <p class="text-muted mb-4">{{ description }}</p>
+
+    <BaseAlert v-if="isDestructive" variant="warning" size="sm" class="mb-4 dark:text-orange-400">
+      <span class="flex items-start gap-2">
+        <TriangleAlert class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        <span>{{ warningText }}</span>
+      </span>
+    </BaseAlert>
+
+    <BaseAlert :message="errorMessage" size="sm" class="mb-4" />
+
+    <div class="button-row">
+      <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">
+        Kembali
+      </BaseButton>
+      <BaseButton
+        size="sm"
+        :variant="confirmVariant"
+        :disabled="submitting"
+        :loading="submitting"
+        loading-text="Memproses..."
+        @click="emit('confirm')"
       >
-        <TriangleAlert class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><span>{{
-          warningText
-        }}</span>
-      </div>
-      <p v-if="errorMessage" class="alert-error mb-4 px-3 py-2">
-        {{ errorMessage }}
-      </p>
-      <div class="button-row">
-        <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')"
-          >Kembali</BaseButton
-        >
-        <BaseButton
-          size="sm"
-          :variant="confirmVariant"
-          :disabled="submitting"
-          :loading="submitting"
-          loading-text="Memproses..."
-          @click="emit('confirm')"
-          >{{ confirmLabel }}</BaseButton
-        >
-      </div>
+        {{ confirmLabel }}
+      </BaseButton>
     </div>
-  </div>
+  </BaseModal>
 </template>
