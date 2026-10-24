@@ -267,9 +267,7 @@ const totalSelected = computed<number>(() => props.modelValue.length)
     <div v-else class="space-y-4">
       <div class="flex items-center justify-between px-0.5">
         <p class="text-sm font-medium text-gray-700 dark:text-gray-400">Permission</p>
-        <span class="text-theme-xs text-gray-500 dark:text-gray-400">
-          {{ totalSelected }} dipilih
-        </span>
+        <span class="text-meta"> {{ totalSelected }} dipilih </span>
       </div>
 
       <div
@@ -299,7 +297,7 @@ const totalSelected = computed<number>(() => props.modelValue.length)
 
         <div class="space-y-3 px-4 py-3">
           <div v-for="mod in domain.modules" :key="mod.key">
-            <p class="mb-2 text-theme-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            <p class="mb-2 text-meta font-medium uppercase">
               {{ mod.name }}
             </p>
             <div class="flex flex-wrap gap-2">

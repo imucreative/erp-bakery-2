@@ -71,7 +71,7 @@ const emit = defineEmits<{
                 <li
                   v-for="topping in line.selectedToppings"
                   :key="topping.toppingProductId"
-                  class="text-theme-xs text-gray-500 dark:text-gray-400"
+                  class="text-meta"
                 >
                   + {{ topping.toppingName }}
                   <span v-if="topping.extraPrice > 0" class="text-gray-400 dark:text-gray-500">
@@ -124,12 +124,7 @@ const emit = defineEmits<{
           </div>
 
           <div class="mt-2 flex items-center gap-2">
-            <label
-              :for="`pos-item-discount-${line.lineId}`"
-              class="text-theme-xs text-gray-500 dark:text-gray-400"
-            >
-              Diskon item
-            </label>
+            <label :for="`pos-item-discount-${line.lineId}`" class="text-meta"> Diskon item </label>
             <div class="w-28">
               <BaseInput
                 :id="`pos-item-discount-${line.lineId}`"

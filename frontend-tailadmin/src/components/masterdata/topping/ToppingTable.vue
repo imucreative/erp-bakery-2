@@ -47,7 +47,7 @@ defineEmits<{
           <p class="font-medium text-gray-800 dark:text-white/90">
             {{ topping.toppingName }}
           </p>
-          <p class="text-theme-xs font-mono text-gray-500 dark:text-gray-400">
+          <p class="text-meta font-mono">
             {{ topping.toppingSku }}
           </p>
         </BaseTableCell>

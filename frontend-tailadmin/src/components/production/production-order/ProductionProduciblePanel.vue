@@ -75,16 +75,14 @@ const hasStock = computed<boolean>(() => (props.info?.producibleQty ?? 0) > 0)
       <!-- Recipe + max producible -->
       <div class="field-grid">
         <div>
-          <p class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">Resep Aktif</p>
+          <p class="text-meta uppercase">Resep Aktif</p>
           <p class="mt-1 text-theme-sm font-medium text-gray-800 dark:text-white/90">
             {{ props.info.recipe.name }}
             <span class="font-normal text-gray-400">({{ props.info.recipe.recipeNumber }})</span>
           </p>
         </div>
         <div>
-          <p class="text-theme-xs uppercase text-gray-500 dark:text-gray-400">
-            Maks. Bisa Diproduksi
-          </p>
+          <p class="text-meta uppercase">Maks. Bisa Diproduksi</p>
           <p class="mt-1 flex items-baseline gap-1.5">
             <span
               :class="[
@@ -113,7 +111,7 @@ const hasStock = computed<boolean>(() => (props.info?.producibleQty ?? 0) > 0)
 
       <!-- Ingredient table -->
       <div>
-        <p class="mb-2 text-theme-xs uppercase text-gray-500 dark:text-gray-400">Daftar Bahan</p>
+        <p class="mb-2 text-meta uppercase">Daftar Bahan</p>
         <BaseTable aria-label="Kapasitas bahan produksi">
           <template #header>
             <BaseTableRow variant="header">

@@ -23,6 +23,14 @@
   @apply text-theme-xs text-gray-400 dark:text-gray-500;
 }
 
+/* Versi xs dari pasangan abu-abu `text-muted`/`form-hint` (gray-500 → gray-400
+   di dark mode) — teks metadata kecil di bawah teks utama: baris SKU di bawah
+   nama produk pada tabel, label kunci uppercase pada pasangan label/nilai,
+   subjudul di header modal. Beda dari `text-muted-xs` yang lebih redup. */
+@utility text-meta {
+  @apply text-theme-xs text-gray-500 dark:text-gray-400;
+}
+
 /* Teks utama baris/daftar (nama lampiran, penulis komentar) — lebih tegas dari
    body teks tapi bukan heading. */
 @utility text-strong {

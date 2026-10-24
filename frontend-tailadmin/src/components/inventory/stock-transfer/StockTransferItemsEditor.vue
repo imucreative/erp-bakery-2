@@ -93,9 +93,7 @@ function removeRow(index: number): void {
               @update:model-value="onPickBatch(index, $event)"
             />
             <div v-if="row.sourceBatchId" class="mt-1 flex flex-col gap-0.5">
-              <span class="text-theme-xs text-gray-500 dark:text-gray-400">{{
-                productLabel(row.productId)
-              }}</span
+              <span class="text-meta">{{ productLabel(row.productId) }}</span
               ><span
                 v-if="availableForRow(row) !== null"
                 class="text-theme-xs text-gray-400 dark:text-gray-500"

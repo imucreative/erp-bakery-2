@@ -115,10 +115,10 @@ function qtyClass(type: string): string {
         </BaseTableCell>
         <BaseTableCell>
           <div class="flex flex-col">
-            <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+            <span class="text-strong">
               {{ productDisplay(row.productId).name }}
             </span>
-            <span class="text-theme-xs text-gray-500 dark:text-gray-400">
+            <span class="text-meta">
               {{ productDisplay(row.productId).sku }}
             </span>
           </div>

@@ -47,7 +47,7 @@ function uomLabel(row: StockOnHandRow): string {
             <span class="text-strong">
               {{ row.productName }}
             </span>
-            <span class="text-theme-xs text-gray-500 dark:text-gray-400">
+            <span class="text-meta">
               {{ row.productSku }}
             </span>
           </div>

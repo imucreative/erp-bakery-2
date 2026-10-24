@@ -57,7 +57,7 @@ const permissionCount = computed<number>(() => props.detail?.permissions.length 
     <div class="mb-4 flex items-start justify-between gap-3">
       <div>
         <h4 class="modal-title">{{ title }}</h4>
-        <p v-if="code" class="mt-0.5 font-mono text-theme-xs text-gray-500 dark:text-gray-400">
+        <p v-if="code" class="mt-0.5 font-mono text-meta">
           {{ code }}
         </p>
       </div>
@@ -91,7 +91,7 @@ const permissionCount = computed<number>(() => props.detail?.permissions.length 
       </div>
     </div>
 
-    <div class="mt-6 flex justify-end">
+    <div class="mt-6 button-row">
       <BaseButton size="sm" variant="outline" @click="emit('close')">
         <template #start-icon><X class="h-4 w-4" aria-hidden="true" /></template>
         Tutup

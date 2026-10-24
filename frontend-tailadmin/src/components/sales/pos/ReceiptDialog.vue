@@ -74,11 +74,7 @@ function onPrint(): void {
               }}</span>
             </div>
             <ul v-if="item.toppings.length > 0" class="mt-0.5 space-y-0.5">
-              <li
-                v-for="topping in item.toppings"
-                :key="topping.id"
-                class="text-theme-xs text-gray-500 dark:text-gray-400"
-              >
+              <li v-for="topping in item.toppings" :key="topping.id" class="text-meta">
                 + {{ topping.toppingNameSnapshot }}
               </li>
             </ul>

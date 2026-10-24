@@ -109,13 +109,15 @@ src/
     styles in the partial that matches their category, and keep the `@import` order in
     `main.css` unchanged — the order is what the cascade depends on. There is **no**
     `tailwind.config.js`.
-- **Core snippet classes** (`src/assets/styles/ui.css`, declared with `@utility`): use
+- **Core snippet classes** (`src/assets/styles/ui.css`, declared with `@utility`, 31 utilities): use
   `page-title` / `card-title` / `modal-title` for headings, `text-muted` for secondary text
-  (`text-muted-xs` for dimmer placeholders like an empty-cell `—`, `text-strong` for the primary
-  text of a list row such as an attachment name, comment author, or the product name on a list
-  table — the SKU sub-line under it stays `text-theme-xs text-gray-500 dark:text-gray-400`, which
-  is NOT `text-muted-xs` (that snippet swaps the two grays and would read dimmer), `text-value` for the read-only
-  value of a summary list — same as `text-strong` without `font-medium`, `text-body` for the
+  (`text-muted-xs` for dimmer placeholders like an empty-cell `—`, `text-meta` for small metadata
+  sitting under a primary text — the SKU sub-line under a product name in a table row, the uppercase
+  key label of a label/value pair, a modal header subtitle; it is the xs sibling of `text-muted`,
+  same `gray-500` → `gray-400` dark pair, and NOT `text-muted-xs`, whose swapped grays would read
+  dimmer — `text-strong` for the primary text of a list row such as an attachment name, comment
+  author, or the product name on a list table, `text-value` for the read-only
+  value of a summary list or a detail modal — same as `text-strong` without `font-medium`, `text-body` for the
   paragraph tone one step softer (`whitespace-pre-wrap` comment body, the "oleh <nama>" line in a
   timeline, the notes `<dd>` of a summary card),
   `form-label` / `form-hint` / `form-error` for field text, `form-readonly` for a read-only
@@ -132,11 +134,14 @@ src/
   icon, avatar — 40px tile, override `h-*`/`w-*` at the call site for another size),
   `toolbar-row` for a filter/actions bar (stacks under 640px; add margin at the call site),
   `stack-row` for the same bar when it has no left/right split — a run of fields, or a field plus
-  the button that may keep flowing (`sm:justify-between` is what separates the two),
+  the button that may keep flowing (`sm:justify-between` is what separates the two); add
+  `sm:flex-wrap` at the call site when the bar should wrap instead of staying on one row
+  (`BatchFilterBar`),
   `button-row` for a run of buttons pushed to the end (modal footer, form Save/Cancel; it is
   deliberately only `flex justify-end gap-3` — no `items-center`/`flex-wrap`, so the 9
   `*ActionBar.vue` rows that use `flex flex-wrap items-center justify-end gap-3` keep their own
-  layout; add `pt-*`/`mt-*` at the call site),
+  layout; a single-child footer still uses it, e.g. `mt-6 button-row` around one `Tutup` button;
+  add `pt-*`/`mt-*` at the call site),
   `field-grid` for a two-column form/summary grid (stacks under 640px; `gap-*` and `sm:grid-cols-*`
   are plain core utilities, so overriding them at the call site works and keeps the snippet's
   `display`/`grid-cols-1` base — `PurchaseOrderSummary` uses `field-grid gap-2 sm:grid-cols-3` for
@@ -151,7 +156,7 @@ src/
   emitted BEFORE core utilities, so a call-site utility always wins
   (e.g. `class="modal-title mt-4"`) without `!important`. Ordering is per property category,
   though — and within a category **shorthand loses to longhand**: in the built CSS
-  (`dist/assets/index-CEnZavT_.css`) `.p-4` (39787)
+  (`dist/assets/index-B1SI766m.css`) `.p-4` (39787)
   is emitted before `.px-4` (40196) and `.py-3` (40645), so to override a snippet's or component's
   padding use `px-*` / `py-*`, never `p-*` (`p-*` on top of `BaseAlert size="md"` silently kept
   the component's `px-4 py-3`). Plain layout utilities like `.flex`/`.h-11` are emitted earlier,
@@ -171,6 +176,9 @@ src/
 - **Theme Tokens**: Always use predefined theme tokens:
   - **Colors**: `brand` (`25`–`950`), `gray` (`25`–`950`), `blue-light` (`25`–`950`), `orange` (`25`–`950`), `success`, `error`, `warning`.
   - **Typography**: `font-outfit`, `text-theme-xs/sm/xl`, `text-title-sm/md/lg/xl/2xl`.
+    `theme.css` opens `@theme` with `--font-*: initial` and defines only `--font-outfit`, so
+    **`font-mono` is never emitted** — writing it on a call site has no effect (5 dead sites remain,
+    see dok 48 §2.8); do not add new ones until `--font-mono` is defined or the class is removed.
   - **Shadows**: `shadow-theme-xs/sm/md/lg/xl`.
   - **Breakpoints**: `2xsm` (375px), `xsm` (425px), `sm` (640px), `md` (768px), `lg` (1024px), `xl` (1280px), `2xl` (1536px).
 - **Dark Mode**:

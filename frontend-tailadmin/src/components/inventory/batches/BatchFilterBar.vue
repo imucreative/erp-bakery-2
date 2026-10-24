@@ -2,10 +2,10 @@
 /**
  * BatchFilterBar — outlet + product + batch-status filters plus an
  * "include non-batch" toggle for the Batch & Expiry list. The three dropdowns
- * are native selects wrapped with a ChevronDownIcon per the UI standard; the
- * boolean uses ToggleSwitch (never a checkbox). Two-way binds `outletId`,
- * `productId`, `status`, and `includeNonBatch`. Outlet and product options are
- * resolved once by the parent.
+ * are `BaseSelect`; the boolean uses `BaseToggle` (never a checkbox). The bar
+ * wraps (`stack-row sm:flex-wrap`) because four controls don't fit one row at
+ * mid widths. Two-way binds `outletId`, `productId`, `status`, and
+ * `includeNonBatch`. Outlet and product options are resolved once by the parent.
  */
 import { BaseSelect, BaseToggle } from '@/components/ui'
 import { BATCH_STATUSES, batchStatusLabel } from '@/services/inventory.service'
@@ -39,7 +39,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+  <div class="stack-row sm:flex-wrap">
     <div class="w-full sm:w-56">
       <BaseSelect
         id="batch-outlet"

@@ -263,10 +263,10 @@ async function onDelete(row: ProductUomConversion): Promise<void> {
         <span class="text-gray-600 dark:text-gray-300">Satuan dasar</span>
         <span class="font-medium text-gray-800 dark:text-white/90">
           {{ baseUomName }}
-          <span class="ms-1 text-theme-xs text-gray-500 dark:text-gray-400">(faktor 1)</span>
+          <span class="ms-1 text-meta">(faktor 1)</span>
         </span>
       </div>
-      <p class="mt-2 text-theme-xs text-gray-500 dark:text-gray-400">
+      <p class="mt-2 text-meta">
         Faktor konversi berarti: 1 satuan alternatif = faktor &times; satuan dasar (<span
           class="font-medium"
           >{{ baseUomName }}</span
@@ -297,9 +297,7 @@ async function onDelete(row: ProductUomConversion): Promise<void> {
           <BaseTableRow v-for="row in rows" :key="row.id">
             <BaseTableCell emphasis="medium">
               <span class="font-medium">{{ row.uomName }}</span>
-              <span class="ms-1 text-theme-xs text-gray-500 dark:text-gray-400">
-                ({{ row.uomCode }})
-              </span>
+              <span class="ms-1 text-meta"> ({{ row.uomCode }}) </span>
             </BaseTableCell>
             <BaseTableCell align="end" emphasis="medium">
               <template v-if="editingId === row.id">
@@ -417,7 +415,7 @@ async function onDelete(row: ProductUomConversion): Promise<void> {
 
       <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
         <BaseToggle v-model="addActive" label="Aktif" />
-        <p class="text-theme-xs text-gray-500 dark:text-gray-400">
+        <p class="text-meta">
           1
           <span class="font-medium">{{
             availableUoms.find((u) => u.id === addUomId)?.name || 'satuan alternatif'
@@ -429,7 +427,7 @@ async function onDelete(row: ProductUomConversion): Promise<void> {
 
       <BaseAlert :message="addError" size="sm" class="mt-3" />
 
-      <div class="mt-4 flex justify-end">
+      <div class="mt-4 button-row">
         <BaseButton
           variant="success"
           :disabled="adding || availableUoms.length === 0"
@@ -446,7 +444,7 @@ async function onDelete(row: ProductUomConversion): Promise<void> {
     </div>
 
     <!-- Footer -->
-    <div class="mt-6 flex justify-end">
+    <div class="mt-6 button-row">
       <BaseButton size="sm" variant="outline" @click="emit('close')">Tutup</BaseButton>
     </div>
   </BaseModal>

@@ -48,16 +48,13 @@ const props = defineProps<{
           </BaseTableCell>
         </BaseTableRow>
         <BaseTableRow v-for="topping in item.toppings" :key="topping.id">
-          <BaseTableCell
-            class="ps-8 pe-4 py-2 text-theme-xs text-gray-500 dark:text-gray-400"
-            colspan="5"
-          >
+          <BaseTableCell class="ps-8 pe-4 py-2 text-meta" colspan="5">
             + {{ topping.toppingNameSnapshot }}
             <span class="text-gray-400 dark:text-gray-500">
               (×{{ formatNumber(topping.qtyPerItem) }})
             </span>
           </BaseTableCell>
-          <BaseTableCell align="end" class="py-2 text-theme-xs text-gray-500 dark:text-gray-400">
+          <BaseTableCell align="end" class="py-2 text-meta">
             {{ formatRupiah(topping.extraPriceSnapshot) }}
           </BaseTableCell>
         </BaseTableRow>

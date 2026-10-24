@@ -109,10 +109,10 @@ function expiryColor(state: ExpiryState): ExpiryColor {
       <BaseTableRow v-for="row in items" :key="row.batch.id">
         <BaseTableCell>
           <div class="flex flex-col">
-            <span class="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+            <span class="text-strong">
               {{ productDisplay(row.batch.productId).name }}
             </span>
-            <span class="text-theme-xs text-gray-500 dark:text-gray-400">
+            <span class="text-meta">
               {{ productDisplay(row.batch.productId).sku }}
             </span>
           </div>
@@ -146,7 +146,7 @@ function expiryColor(state: ExpiryState): ExpiryColor {
           </Badge>
         </BaseTableCell>
         <BaseTableCell align="end">
-          <div class="flex justify-end">
+          <div class="button-row">
             <BaseButton
               size="sm"
               variant="outline"

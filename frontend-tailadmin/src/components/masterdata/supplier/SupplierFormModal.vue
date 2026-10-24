@@ -186,9 +186,7 @@ function onSubmit(): void {
           :disabled="paymentTermsLoading"
           placeholder="Tanpa payment term"
         />
-        <p v-if="paymentTermsLoading" class="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
-          Memuat payment term...
-        </p>
+        <p v-if="paymentTermsLoading" class="mt-1 text-meta">Memuat payment term...</p>
         <p v-else-if="paymentTermsError" class="mt-1 text-theme-xs text-error-500">
           {{ paymentTermsError }}
         </p>

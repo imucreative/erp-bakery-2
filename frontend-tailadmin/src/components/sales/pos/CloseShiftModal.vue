@@ -105,7 +105,7 @@ function onConfirm(): void {
             </dd>
           </div>
         </dl>
-        <div class="mt-6 flex justify-end">
+        <div class="mt-6 button-row">
           <BaseButton size="sm" variant="primary" @click="emit('close')">Selesai</BaseButton>
         </div>
       </template>

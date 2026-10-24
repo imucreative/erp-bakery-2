@@ -29,7 +29,7 @@
         <span class="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
           {{ auth.companyName || 'Bakery ERP' }}
         </span>
-        <span class="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
+        <span class="mt-0.5 block text-meta">
           {{ auth.userEmail || '—' }}
         </span>
       </div>
