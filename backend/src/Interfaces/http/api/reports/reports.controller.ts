@@ -1,6 +1,6 @@
 import { Controller, Get, HttpCode, HttpStatus, Query, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Response } from 'express';
+import type { FastifyReply } from 'fastify';
 import { GetSalesReportUseCase } from '../../../../Applications/use_case/reports/GetSalesReportUseCase';
 import { GetInventoryReportUseCase } from '../../../../Applications/use_case/reports/GetInventoryReportUseCase';
 import { GetProductionReportUseCase } from '../../../../Applications/use_case/reports/GetProductionReportUseCase';
@@ -69,10 +69,11 @@ export class ReportsController {
     @Query() dto: InventoryReportQueryDto,
     @GetUser() user: JwtAccessPayload,
   ) {
+    const includeExpired = dto.includeExpired === 'true';
     const report = await this.getInventoryReportUseCase.execute(this._companyId(user), {
       outletId: dto.outletId,
       productId: dto.productId,
-      includeExpired: dto.includeExpired,
+      includeExpired,
     });
     return successResponse(report);
   }
@@ -108,7 +109,7 @@ export class ReportsController {
   async exportSalesReport(
     @Query() dto: SalesReportQueryDto,
     @GetUser() user: JwtAccessPayload,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     const report = await this.getSalesReportUseCase.execute(this._companyId(user), {
       dateFrom: dto.dateFrom,
@@ -120,8 +121,8 @@ export class ReportsController {
     const csv = this.reportExportService.exportSalesToCsv(report);
     const filename = `sales-report-${dto.dateFrom}-to-${dto.dateTo}.csv`;
 
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.header('Content-Type', 'text/csv');
+    res.header('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(csv);
   }
 
@@ -136,19 +137,20 @@ export class ReportsController {
   async exportInventoryReport(
     @Query() dto: InventoryReportQueryDto,
     @GetUser() user: JwtAccessPayload,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
+    const includeExpired = dto.includeExpired === 'true';
     const report = await this.getInventoryReportUseCase.execute(this._companyId(user), {
       outletId: dto.outletId,
       productId: dto.productId,
-      includeExpired: dto.includeExpired,
+      includeExpired,
     });
 
     const csv = this.reportExportService.exportInventoryToCsv(report);
     const filename = `inventory-report-${new Date().toISOString().slice(0, 10)}.csv`;
 
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.header('Content-Type', 'text/csv');
+    res.header('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(csv);
   }
 
@@ -164,7 +166,7 @@ export class ReportsController {
   async exportProductionReport(
     @Query() dto: ProductionReportQueryDto,
     @GetUser() user: JwtAccessPayload,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     const report = await this.getProductionReportUseCase.execute(this._companyId(user), {
       dateFrom: dto.dateFrom,
@@ -176,8 +178,8 @@ export class ReportsController {
     const csv = this.reportExportService.exportProductionToCsv(report);
     const filename = `production-report-${dto.dateFrom}-to-${dto.dateTo}.csv`;
 
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.header('Content-Type', 'text/csv');
+    res.header('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(csv);
   }
 }

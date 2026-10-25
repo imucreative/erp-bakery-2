@@ -265,7 +265,8 @@ const menuGroups: MenuGroup[] = [
       {
         icon: LayoutDashboard,
         name: 'Dashboard',
-        subItems: [{ name: 'Ecommerce', path: '/', pro: false }],
+        path: '/dashboard',
+        permission: 'dashboard.read',
       },
       {
         icon: UserCircle,
@@ -476,9 +477,21 @@ const menuGroups: MenuGroup[] = [
     items: [
       {
         icon: BarChart3,
-        name: 'Reports',
-        path: '/error-404',
-        soon: true,
+        name: 'Sales Report',
+        path: '/reports/sales',
+        permission: 'reports.read',
+      },
+      {
+        icon: Package,
+        name: 'Inventory Report',
+        path: '/reports/inventory',
+        permission: 'reports.read',
+      },
+      {
+        icon: Factory,
+        name: 'Production Report',
+        path: '/reports/production',
+        permission: 'reports.read',
       },
     ],
   },

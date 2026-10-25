@@ -212,6 +212,9 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
     const productFilter = filter.productId ? `AND b.product_id = $${filter.outletId ? 3 : 2}` : '';
     const expiredFilter = filter.includeExpired ? '' : "AND (b.expired_date IS NULL OR b.expired_date >= CURRENT_DATE)";
 
+    const outletFilterSub = filter.outletId ? 'AND b2.outlet_id = $2' : '';
+    const productFilterSub = filter.productId ? `AND b2.product_id = $${filter.outletId ? 3 : 2}` : '';
+
     const params: unknown[] = [companyId];
     if (filter.outletId) params.push(filter.outletId);
     if (filter.productId) params.push(filter.productId);
@@ -230,15 +233,15 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
          (SELECT COUNT(*) FROM (
            SELECT b2.product_id, b2.outlet_id
            FROM inventory_batches b2
-           JOIN products p2 ON p2.id = b2.product_id
-           WHERE b2.company_id = $1 AND b2.status = 'ACTIVE' ${outletFilter} ${productFilter}
+           JOIN products p2 ON p2.id = b2.product_id AND p2.company_id = b2.company_id
+           WHERE b2.company_id = $1 AND b2.status = 'ACTIVE' ${outletFilterSub} ${productFilterSub}
              AND p2.minimum_stock > 0
            GROUP BY b2.product_id, b2.outlet_id, p2.minimum_stock
            HAVING SUM(b2.qty_available) < p2.minimum_stock
          ) AS low) AS low_stock_count,
-         COUNT(*) FILTER (WHERE b.expired_date IS NOT NULL AND b.expired_date < CURRENT_DATE) AS expired_count
+         COALESCE(SUM(CASE WHEN b.expired_date IS NOT NULL AND b.expired_date < CURRENT_DATE THEN 1 ELSE 0 END), 0) AS expired_count
        FROM inventory_batches b
-       JOIN products p ON p.id = b.product_id
+       JOIN products p ON p.id = b.product_id AND p.company_id = b.company_id
        WHERE b.company_id = $1
          AND b.status = 'ACTIVE'
          ${outletFilter}
@@ -262,7 +265,7 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
     filter: InventoryReportFilter,
   ): Promise<InventoryReportProductRow[]> {
     const outletFilter = filter.outletId ? 'AND b.outlet_id = $2' : '';
-    const productFilter = filter.productId ? `AND b.product_id = $${filter.outletId ? 3 : 2}` : '';
+    const productFilter = filter.productId ? `AND p.id = $${filter.outletId ? 3 : 2}` : '';
     const expiredFilter = filter.includeExpired ? '' : "AND (b.expired_date IS NULL OR b.expired_date >= CURRENT_DATE)";
 
     const params: unknown[] = [companyId];
@@ -285,17 +288,18 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
          p.name AS product_name,
          p.sku,
          COALESCE(SUM(b.qty_available), 0) AS total_qty,
-         COALESCE(SUM(b.qty_available) FILTER (WHERE b.status = 'ACTIVE'), 0) AS available_qty,
-         COALESCE(SUM(b.qty_available) FILTER (WHERE b.status = 'RESERVED'), 0) AS reserved_qty,
+         COALESCE(SUM(CASE WHEN b.status = 'ACTIVE' THEN b.qty_available ELSE 0 END), 0) AS available_qty,
+         COALESCE(SUM(CASE WHEN b.status = 'RESERVED' THEN b.qty_available ELSE 0 END), 0) AS reserved_qty,
          COUNT(DISTINCT b.id) AS batch_count,
          MIN(b.expired_date) AS earliest_expiry,
          COALESCE(SUM(b.qty_available * p.selling_price), 0) AS stock_value
        FROM products p
-       LEFT JOIN inventory_batches b ON b.product_id = p.id
+       LEFT JOIN inventory_batches b ON b.product_id = p.id 
+         AND b.company_id = p.company_id
+         ${expiredFilter}
        WHERE p.company_id = $1
          ${outletFilter}
          ${productFilter}
-         ${expiredFilter}
        GROUP BY p.id, p.name, p.sku
        ORDER BY p.name`,
       params,
@@ -320,11 +324,11 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
     companyId: string,
     filter: ProductionReportFilter,
   ): Promise<ProductionReportSummary> {
-    const outletFilter = filter.outletId ? 'AND po.outlet_id = $3' : '';
-    const recipeFilter = filter.recipeId ? `AND po.recipe_id = $${filter.outletId ? 4 : 3}` : '';
+    const outletFilter = filter.outletId ? 'AND po.outlet_id = $4' : '';
+    const recipeFilter = filter.recipeId ? `AND po.recipe_id = $${filter.outletId ? 5 : 4}` : '';
 
     const params: unknown[] = [companyId, filter.dateFrom, filter.dateTo];
-    if (filter.outletId) params.splice(2, 0, filter.outletId);
+    if (filter.outletId) params.push(filter.outletId);
     if (filter.recipeId) params.push(filter.recipeId);
 
     const result = await this.pool.query<{
@@ -335,11 +339,11 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
     }>(
       `SELECT
          COUNT(*) AS total_orders,
-         COALESCE(SUM(po.planned_qty), 0) AS total_produced,
+         COALESCE(SUM(po.scheduled_qty), 0) AS total_produced,
          COALESCE(SUM(po.waste_qty), 0) AS total_waste,
          CASE
-           WHEN SUM(po.planned_qty) > 0
-           THEN ((SUM(po.planned_qty) - SUM(po.waste_qty)) * 100.0 / SUM(po.planned_qty))
+           WHEN SUM(po.scheduled_qty) > 0
+           THEN ((SUM(po.scheduled_qty) - SUM(po.waste_qty)) * 100.0 / SUM(po.scheduled_qty))
            ELSE 0
          END AS avg_yield
        FROM production_orders po
@@ -363,11 +367,11 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
     companyId: string,
     filter: ProductionReportFilter,
   ): Promise<ProductionReportDailyBreakdown[]> {
-    const outletFilter = filter.outletId ? 'AND po.outlet_id = $3' : '';
-    const recipeFilter = filter.recipeId ? `AND po.recipe_id = $${filter.outletId ? 4 : 3}` : '';
+    const outletFilter = filter.outletId ? 'AND po.outlet_id = $4' : '';
+    const recipeFilter = filter.recipeId ? `AND po.recipe_id = $${filter.outletId ? 5 : 4}` : '';
 
     const params: unknown[] = [companyId, filter.dateFrom, filter.dateTo];
-    if (filter.outletId) params.splice(2, 0, filter.outletId);
+    if (filter.outletId) params.push(filter.outletId);
     if (filter.recipeId) params.push(filter.recipeId);
 
     const result = await this.pool.query<{
@@ -387,12 +391,12 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
          o.name AS outlet_name,
          po.recipe_id,
          r.name AS recipe_name,
-         COALESCE(SUM(po.planned_qty), 0) AS planned_qty,
-         COALESCE(SUM(po.planned_qty - po.waste_qty), 0) AS produced_qty,
+         COALESCE(SUM(po.scheduled_qty), 0) AS planned_qty,
+         COALESCE(SUM(po.actual_qty), 0) AS produced_qty,
          COALESCE(SUM(po.waste_qty), 0) AS waste_qty,
          CASE
-           WHEN SUM(po.planned_qty) > 0
-           THEN ((SUM(po.planned_qty) - SUM(po.waste_qty)) * 100.0 / SUM(po.planned_qty))
+           WHEN SUM(po.scheduled_qty) > 0
+           THEN ((SUM(po.actual_qty) - SUM(po.waste_qty)) * 100.0 / SUM(po.scheduled_qty))
            ELSE 0
          END yield
        FROM production_orders po

@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 /**
  * DTO: InventoryReportQueryDto
@@ -23,7 +23,6 @@ export class InventoryReportQueryDto {
     default: false,
   })
   @IsOptional()
-  @Type(() => Boolean)
-  @IsBoolean()
-  includeExpired?: boolean;
+  @IsString()
+  includeExpired?: string;
 }

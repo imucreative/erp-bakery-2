@@ -22,13 +22,15 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
     companyId: string,
     businessDate: Date = new Date(),
   ): Promise<OwnerDashboardSummary> {
-    const bizDate = businessDate.toISOString().slice(0, 10);
-    const soonBoundary = new Date(businessDate);
+    // Calculate Jakarta date (UTC+7) for "today"
+    const jakartaNow = new Date(businessDate.getTime() + 7 * 60 * 60 * 1000);
+    const bizDate = jakartaNow.toISOString().slice(0, 10);
+    const soonBoundary = new Date(jakartaNow);
     soonBoundary.setUTCDate(soonBoundary.getUTCDate() + INVENTORY_EXPIRY_SOON_DAYS);
     const soonDate = soonBoundary.toISOString().slice(0, 10);
 
     // 7 days ago for trend
-    const trendStart = new Date(businessDate);
+    const trendStart = new Date(jakartaNow);
     trendStart.setUTCDate(trendStart.getUTCDate() - 6);
     const trendStartDate = trendStart.toISOString().slice(0, 10);
 
@@ -58,8 +60,10 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
     outletId: string,
     businessDate: Date = new Date(),
   ): Promise<OutletDashboardSummary> {
-    const bizDate = businessDate.toISOString().slice(0, 10);
-    const soonBoundary = new Date(businessDate);
+    // Calculate Jakarta date (UTC+7) for "today"
+    const jakartaNow = new Date(businessDate.getTime() + 7 * 60 * 60 * 1000);
+    const bizDate = jakartaNow.toISOString().slice(0, 10);
+    const soonBoundary = new Date(jakartaNow);
     soonBoundary.setUTCDate(soonBoundary.getUTCDate() + INVENTORY_EXPIRY_SOON_DAYS);
     const soonDate = soonBoundary.toISOString().slice(0, 10);
 
@@ -91,7 +95,7 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
        FROM sales_orders
        WHERE company_id = $1
          AND status = 'PAID'
-         AND DATE(paid_at AT TIME ZONE 'Asia/Jakarta') = $2::date`,
+         AND DATE(paid_at + interval '7 hours') = $2::date`,
       [companyId, bizDate],
     );
 
@@ -149,14 +153,14 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
       order_count: string;
     }>(
       `SELECT
-         DATE(paid_at AT TIME ZONE 'Asia/Jakarta') AS date,
+         DATE(paid_at + interval '7 hours') AS date,
          COALESCE(SUM(grand_total), 0) AS revenue,
          COUNT(*) AS order_count
        FROM sales_orders
        WHERE company_id = $1
          AND status = 'PAID'
-         AND DATE(paid_at AT TIME ZONE 'Asia/Jakarta') BETWEEN $2::date AND $3::date
-       GROUP BY DATE(paid_at AT TIME ZONE 'Asia/Jakarta')
+         AND DATE(paid_at + interval '7 hours') BETWEEN $2::date AND $3::date
+       GROUP BY DATE(paid_at + interval '7 hours')
        ORDER BY date`,
       [companyId, startDate, endDate],
     );
@@ -185,7 +189,7 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
       `SELECT
          b.product_id,
          p.name AS product_name,
-         b.batch_no,
+         b.batch_number AS batch_no,
          b.expired_date AS expiry_date,
          b.qty_available AS qty,
          u.name AS uom_name
@@ -234,7 +238,7 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
        JOIN sales_orders so ON so.id = soi.sales_order_id
        WHERE so.company_id = $1
          AND so.status = 'PAID'
-         AND DATE(so.paid_at AT TIME ZONE 'Asia/Jakarta') BETWEEN $2::date AND $3::date
+         AND DATE(so.paid_at + interval '7 hours') BETWEEN $2::date AND $3::date
        GROUP BY soi.product_id, soi.product_name_snapshot
        ORDER BY qty_sold DESC
        LIMIT $4`,
@@ -262,7 +266,7 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
        WHERE company_id = $1
          AND outlet_id = $2
          AND status = 'PAID'
-         AND DATE(paid_at AT TIME ZONE 'Asia/Jakarta') = $3::date`,
+         AND DATE(paid_at + interval '7 hours') = $3::date`,
       [companyId, outletId, bizDate],
     );
 

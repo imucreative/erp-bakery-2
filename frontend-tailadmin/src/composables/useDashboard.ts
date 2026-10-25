@@ -1,11 +1,16 @@
 /**
- * useDashboard — loads the real inventory dashboard summary. Optional outlet
- * scope (used by the outlet dashboard). Exposes loading/error + the summary.
+ * useDashboard — loads Owner, Outlet, and Inventory dashboard summaries.
+ * Exposes loading/error + the summary for each dashboard type.
  */
 
 import { ref } from 'vue'
 import { ApiClientError } from '@/services/http'
-import { dashboardService, type InventoryDashboardSummary } from '@/services/dashboard.service'
+import {
+  dashboardService,
+  type InventoryDashboardSummary,
+  type OwnerDashboardSummary,
+  type OutletDashboardSummary,
+} from '@/services/dashboard.service'
 
 function toMessage(error: unknown): string {
   if (error instanceof ApiClientError || error instanceof Error) {
@@ -24,6 +29,48 @@ export function useDashboard() {
     errorMessage.value = null
     try {
       summary.value = await dashboardService.getInventorySummary(outletId)
+    } catch (error) {
+      errorMessage.value = toMessage(error)
+      summary.value = null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { summary, loading, errorMessage, load }
+}
+
+export function useOwnerDashboard() {
+  const summary = ref<OwnerDashboardSummary | null>(null)
+  const loading = ref<boolean>(false)
+  const errorMessage = ref<string | null>(null)
+
+  async function load(): Promise<void> {
+    loading.value = true
+    errorMessage.value = null
+    try {
+      summary.value = await dashboardService.getOwnerSummary()
+    } catch (error) {
+      errorMessage.value = toMessage(error)
+      summary.value = null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { summary, loading, errorMessage, load }
+}
+
+export function useOutletDashboard(outletId: string) {
+  const summary = ref<OutletDashboardSummary | null>(null)
+  const loading = ref<boolean>(false)
+  const errorMessage = ref<string | null>(null)
+
+  async function load(): Promise<void> {
+    loading.value = true
+    errorMessage.value = null
+    try {
+      summary.value = await dashboardService.getOutletSummary(outletId)
     } catch (error) {
       errorMessage.value = toMessage(error)
       summary.value = null

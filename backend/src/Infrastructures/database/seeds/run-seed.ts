@@ -50,7 +50,7 @@ async function seedPermissions(client: { query: (text: string, values?: unknown[
 
 async function seedSuperAdmin(client: { query: (text: string, values?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> }): Promise<void> {
   const email = process.env.SUPER_ADMIN_EMAIL ?? 'admin@erp.local';
-  const password = process.env.SUPER_ADMIN_PASSWORD ?? 'Admin@1234!';
+  const password = process.env.SUPER_ADMIN_PASSWORD ?? '12345678';
   const name = process.env.SUPER_ADMIN_NAME ?? 'Super Admin';
 
   console.log(`⏳ Seeding SUPER_ADMIN (${email})...`);

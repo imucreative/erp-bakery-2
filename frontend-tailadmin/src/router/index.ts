@@ -18,10 +18,51 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'Ecommerce',
-      component: () => import('../views/Ecommerce.vue'),
+      redirect: '/dashboard',
+    },
+    {
+      path: '/dashboard',
+      name: 'DashboardOwner',
+      component: () => import('../views/Dashboard/OwnerDashboard.vue'),
       meta: {
-        title: 'eCommerce Dashboard',
+        title: 'Dashboard',
+        permission: 'dashboard.read',
+      },
+    },
+    {
+      path: '/dashboard/outlet/:outletId',
+      name: 'DashboardOutlet',
+      component: () => import('../views/Dashboard/OutletDashboard.vue'),
+      meta: {
+        title: 'Dashboard Outlet',
+        permission: 'dashboard.read',
+      },
+    },
+    {
+      path: '/reports/sales',
+      name: 'ReportsSales',
+      component: () => import('../views/Reports/SalesReport.vue'),
+      meta: {
+        title: 'Sales Report',
+        permission: 'reports.read',
+      },
+    },
+    {
+      path: '/reports/inventory',
+      name: 'ReportsInventory',
+      component: () => import('../views/Reports/InventoryReport.vue'),
+      meta: {
+        title: 'Inventory Report',
+        permission: 'reports.read',
+      },
+    },
+    {
+      path: '/reports/production',
+      name: 'ReportsProduction',
+      component: () => import('../views/Reports/ProductionReport.vue'),
+      meta: {
+        title: 'Production Report',
+        permission: 'reports.read',
       },
     },
     {
@@ -531,7 +572,7 @@ router.beforeEach((to, from, next) => {
 
   // Authenticated users should not see the auth pages.
   if (isPublic && auth.isAuthenticated && (to.name === 'Signin' || to.name === 'Signup')) {
-    return next({ name: 'Ecommerce' })
+    return next({ name: 'DashboardOwner' })
   }
 
   // Protected routes require authentication.
@@ -542,7 +583,7 @@ router.beforeEach((to, from, next) => {
   // Permission-gated routes: redirect to dashboard when the user lacks it.
   const required = to.meta.permission
   if (required && !hasPermission(auth.permissions, auth.isSuperAdmin, required)) {
-    return next({ name: 'Ecommerce' })
+    return next({ name: 'DashboardOwner' })
   }
 
   return next()
