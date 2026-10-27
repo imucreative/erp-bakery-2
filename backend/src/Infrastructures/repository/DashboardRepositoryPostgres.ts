@@ -1,5 +1,8 @@
 import { Pool } from 'pg';
-import { DashboardRepository } from '../../Domains/dashboard/DashboardRepository';
+import {
+  DashboardRepository,
+  OwnerDashboardFilter,
+} from '../../Domains/dashboard/DashboardRepository';
 import {
   OwnerDashboardSummary,
   OutletDashboardSummary,
@@ -20,8 +23,10 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
 
   async getOwnerSummary(
     companyId: string,
+    filter: OwnerDashboardFilter = {},
     businessDate: Date = new Date(),
   ): Promise<OwnerDashboardSummary> {
+    const { outletId, periodDays = 7, topProductsLimit = 10 } = filter;
     // Calculate Jakarta date (UTC+7) for "today"
     const jakartaNow = new Date(businessDate.getTime() + 7 * 60 * 60 * 1000);
     const bizDate = jakartaNow.toISOString().slice(0, 10);
@@ -29,19 +34,18 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
     soonBoundary.setUTCDate(soonBoundary.getUTCDate() + INVENTORY_EXPIRY_SOON_DAYS);
     const soonDate = soonBoundary.toISOString().slice(0, 10);
 
-    // 7 days ago for trend
     const trendStart = new Date(jakartaNow);
-    trendStart.setUTCDate(trendStart.getUTCDate() - 6);
+    trendStart.setUTCDate(trendStart.getUTCDate() - (periodDays - 1));
     const trendStartDate = trendStart.toISOString().slice(0, 10);
 
     // Parallel queries untuk performance
     const [salesMetrics, inventoryMetrics, salesTrend, expiringSoon, topProducts] =
       await Promise.all([
-        this.getSalesMetrics(companyId, bizDate),
-        this.getInventoryMetrics(companyId, bizDate, soonDate),
-        this.getSalesTrend(companyId, trendStartDate, bizDate),
-        this.getExpiringSoonBatches(companyId, bizDate, soonDate),
-        this.getTopSellingProducts(companyId, trendStartDate, bizDate),
+        this.getSalesMetrics(companyId, bizDate, outletId),
+        this.getInventoryMetrics(companyId, bizDate, soonDate, outletId),
+        this.getSalesTrend(companyId, trendStartDate, bizDate, outletId),
+        this.getExpiringSoonBatches(companyId, bizDate, soonDate, outletId),
+        this.getTopSellingProducts(companyId, trendStartDate, bizDate, outletId, topProductsLimit),
       ]);
 
     return new OwnerDashboardSummary({
@@ -87,6 +91,7 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
   private async getSalesMetrics(
     companyId: string,
     bizDate: string,
+    outletId?: string,
   ): Promise<{ revenueToday: number; salesToday: number }> {
     const result = await this.pool.query<{ revenue: string; count: string }>(
       `SELECT
@@ -95,8 +100,9 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
        FROM sales_orders
        WHERE company_id = $1
          AND status = 'PAID'
-         AND DATE(paid_at + interval '7 hours') = $2::date`,
-      [companyId, bizDate],
+         AND DATE(paid_at + interval '7 hours') = $2::date
+         ${outletId ? 'AND outlet_id = $3' : ''}`,
+      outletId ? [companyId, bizDate, outletId] : [companyId, bizDate],
     );
 
     return {
@@ -109,6 +115,7 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
     companyId: string,
     bizDate: string,
     soonDate: string,
+    outletId?: string,
   ): Promise<{ lowStockCount: number; expiredCount: number }> {
     // Low stock: product+outlet groups whose summed active balance < minimum_stock
     const lowStock = await this.pool.query<{ count: string }>(
@@ -118,10 +125,11 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
          JOIN products p ON p.id = b.product_id
          WHERE b.company_id = $1 AND b.status = 'ACTIVE'
            AND p.minimum_stock > 0
+           ${outletId ? 'AND b.outlet_id = $2' : ''}
          GROUP BY b.product_id, b.outlet_id, p.minimum_stock
          HAVING SUM(b.qty_available) < p.minimum_stock
        ) AS low`,
-      [companyId],
+      outletId ? [companyId, outletId] : [companyId],
     );
 
     // Expired batches
@@ -132,8 +140,9 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
          AND status = 'ACTIVE'
          AND qty_available > 0
          AND expired_date IS NOT NULL
-         AND expired_date < $2::date`,
-      [companyId, bizDate],
+         AND expired_date < $2::date
+         ${outletId ? 'AND outlet_id = $3' : ''}`,
+      outletId ? [companyId, bizDate, outletId] : [companyId, bizDate],
     );
 
     return {
@@ -146,6 +155,7 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
     companyId: string,
     startDate: string,
     endDate: string,
+    outletId?: string,
   ): Promise<SalesTrendPoint[]> {
     const result = await this.pool.query<{
       date: string;
@@ -160,9 +170,10 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
        WHERE company_id = $1
          AND status = 'PAID'
          AND DATE(paid_at + interval '7 hours') BETWEEN $2::date AND $3::date
+         ${outletId ? 'AND outlet_id = $4' : ''}
        GROUP BY DATE(paid_at + interval '7 hours')
        ORDER BY date`,
-      [companyId, startDate, endDate],
+      outletId ? [companyId, startDate, endDate, outletId] : [companyId, startDate, endDate],
     );
 
     return result.rows.map((row) => ({
@@ -176,6 +187,7 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
     companyId: string,
     bizDate: string,
     soonDate: string,
+    outletId?: string,
     limit: number = 10,
   ): Promise<ExpiringBatch[]> {
     const result = await this.pool.query<{
@@ -202,9 +214,12 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
          AND b.expired_date IS NOT NULL
          AND b.expired_date >= $2::date
          AND b.expired_date <= $3::date
+         ${outletId ? 'AND b.outlet_id = $5' : ''}
        ORDER BY b.expired_date ASC
        LIMIT $4`,
-      [companyId, bizDate, soonDate, limit],
+      outletId
+        ? [companyId, bizDate, soonDate, limit, outletId]
+        : [companyId, bizDate, soonDate, limit],
     );
 
     return result.rows.map((row) => ({
@@ -221,33 +236,48 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
     companyId: string,
     startDate: string,
     endDate: string,
+    outletId?: string,
     limit: number = 10,
   ): Promise<TopSellingProduct[]> {
     const result = await this.pool.query<{
       product_id: string;
       product_name: string;
+      topping_names: string[];
       qty_sold: string;
       revenue: string;
     }>(
       `SELECT
          soi.product_id,
          soi.product_name_snapshot AS product_name,
+         topping.topping_names,
          SUM(soi.qty) AS qty_sold,
          SUM(soi.line_total) AS revenue
        FROM sales_order_items soi
        JOIN sales_orders so ON so.id = soi.sales_order_id
+       LEFT JOIN LATERAL (
+         SELECT COALESCE(
+           ARRAY_AGG(sot.topping_name_snapshot ORDER BY sot.topping_name_snapshot),
+           ARRAY[]::varchar[]
+         ) AS topping_names
+         FROM sales_order_item_toppings sot
+         WHERE sot.sales_order_item_id = soi.id
+       ) topping ON TRUE
        WHERE so.company_id = $1
          AND so.status = 'PAID'
          AND DATE(so.paid_at + interval '7 hours') BETWEEN $2::date AND $3::date
-       GROUP BY soi.product_id, soi.product_name_snapshot
-       ORDER BY qty_sold DESC
+         ${outletId ? 'AND so.outlet_id = $5' : ''}
+       GROUP BY soi.product_id, soi.product_name_snapshot, topping.topping_names
+       ORDER BY qty_sold DESC, product_name, topping.topping_names
        LIMIT $4`,
-      [companyId, startDate, endDate, limit],
+      outletId
+        ? [companyId, startDate, endDate, limit, outletId]
+        : [companyId, startDate, endDate, limit],
     );
 
     return result.rows.map((row) => ({
       productId: row.product_id,
       productName: row.product_name,
+      toppingNames: row.topping_names,
       qtySold: parseFloat(row.qty_sold),
       revenue: parseFloat(row.revenue),
     }));

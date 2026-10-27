@@ -8,6 +8,7 @@ import { ApiClientError } from '@/services/http'
 import {
   dashboardService,
   type InventoryDashboardSummary,
+  type OwnerDashboardFilters,
   type OwnerDashboardSummary,
   type OutletDashboardSummary,
 } from '@/services/dashboard.service'
@@ -45,11 +46,11 @@ export function useOwnerDashboard() {
   const loading = ref<boolean>(false)
   const errorMessage = ref<string | null>(null)
 
-  async function load(): Promise<void> {
+  async function load(filters: OwnerDashboardFilters): Promise<void> {
     loading.value = true
     errorMessage.value = null
     try {
-      summary.value = await dashboardService.getOwnerSummary()
+      summary.value = await dashboardService.getOwnerSummary(filters)
     } catch (error) {
       errorMessage.value = toMessage(error)
       summary.value = null

@@ -36,6 +36,7 @@ export interface SalesReportDailyBreakdown {
 export interface SalesReportTopProduct {
   productId: string
   productName: string
+  toppingNames: string[]
   qtySold: number
   revenue: number
 }
@@ -46,11 +47,14 @@ export interface SalesReport {
   topProducts: SalesReportTopProduct[]
 }
 
+export type SalesReportTopProductsLimit = 5 | 10 | 20 | 50
+
 export interface SalesReportFilters {
   dateFrom: string
   dateTo: string
   outletId: string
   status: 'PAID' | 'REFUNDED' | 'CANCELLED'
+  topProductsLimit: SalesReportTopProductsLimit
 }
 
 // ─── Inventory Report Types ─────────────────────────────────────────────────

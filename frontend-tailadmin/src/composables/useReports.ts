@@ -29,7 +29,11 @@ export function useSalesReport() {
     dateTo: new Date().toISOString().slice(0, 10),
     outletId: '',
     status: 'PAID',
+    topProductsLimit: 10,
   })
+  const appliedTopProductsLimit = ref<SalesReportFilters['topProductsLimit']>(
+    filters.value.topProductsLimit,
+  )
   const loading = ref<boolean>(false)
   const exporting = ref<boolean>(false)
   const errorMessage = ref<string | null>(null)
@@ -39,6 +43,7 @@ export function useSalesReport() {
     errorMessage.value = null
     try {
       report.value = await reportsService.getSalesReport(filters.value)
+      appliedTopProductsLimit.value = filters.value.topProductsLimit
     } catch (error) {
       errorMessage.value = toMessage(error)
       report.value = null
@@ -59,7 +64,16 @@ export function useSalesReport() {
     }
   }
 
-  return { report, filters, loading, exporting, errorMessage, loadReport, exportReport }
+  return {
+    report,
+    filters,
+    appliedTopProductsLimit,
+    loading,
+    exporting,
+    errorMessage,
+    loadReport,
+    exportReport,
+  }
 }
 
 export function useInventoryReport() {

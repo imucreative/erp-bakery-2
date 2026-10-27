@@ -37,9 +37,16 @@ export class ReportExportService {
 
     // Top products section
     lines.push('TOP SELLING PRODUCTS');
-    lines.push('Product,Qty Sold,Revenue');
+    lines.push('Product,Topping,Qty Sold,Revenue');
     for (const row of report.topProducts) {
-      lines.push(`"${row.productName}",${row.qtySold},${row.revenue}`);
+      const [productName, toppingNames] = [
+        row.productName,
+        row.toppingNames.join(' + ') || 'Tanpa topping',
+      ].map((value) => {
+        const safeValue = /^[=+\-@\t\r\n]/.test(value) ? `'${value}` : value;
+        return `"${safeValue.replace(/"/g, '""')}"`;
+      });
+      lines.push(`${productName},${toppingNames},${row.qtySold},${row.revenue}`);
     }
 
     return lines.join('\n');

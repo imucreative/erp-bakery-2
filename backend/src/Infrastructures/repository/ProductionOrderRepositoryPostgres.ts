@@ -228,8 +228,8 @@ export class ProductionOrderRepositoryPostgres extends ProductionOrderRepository
       } else {
         const r = await client.query<RecipeHeaderRow>(
           `SELECT id, product_id, yield_qty, status FROM recipes
-           WHERE r.company_id = $1 AND r.product_id = $2
-             AND r.status = 'ACTIVE' AND r.deleted_at IS NULL`,
+           WHERE company_id = $1 AND product_id = $2
+             AND status = 'ACTIVE' AND deleted_at IS NULL`,
           [companyId, data.productId],
         );
         if (!r.rowCount) {

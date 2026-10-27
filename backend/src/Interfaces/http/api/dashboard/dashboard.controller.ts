@@ -7,6 +7,7 @@ import { AuthorizationError } from '../../../../Commons/exceptions/Authorization
 import { successResponse } from '../../../../Commons/helpers/response.helper';
 import { GetUser } from '../../decorators/get-user.decorator';
 import { RequirePermission } from '../../decorators/require-permission.decorator';
+import { OwnerDashboardQueryDto } from './dto/owner-dashboard-query.dto';
 
 /**
  * DashboardController — read-only business dashboards (doc 54).
@@ -64,6 +65,7 @@ export class DashboardController {
             {
               productId: 'abc123',
               productName: 'Roti Coklat',
+              toppingNames: [],
               qtySold: 50,
               revenue: 1500000,
             },
@@ -73,8 +75,12 @@ export class DashboardController {
     },
   })
   @ApiResponse({ status: 403, description: 'Forbidden — missing dashboard.read' })
-  async getOwnerDashboard(@GetUser() user: JwtAccessPayload) {
-    const summary = await this.getOwnerDashboardUseCase.execute(this._companyId(user));
+  async getOwnerDashboard(@GetUser() user: JwtAccessPayload, @Query() dto: OwnerDashboardQueryDto) {
+    const summary = await this.getOwnerDashboardUseCase.execute(this._companyId(user), {
+      outletId: dto.outletId,
+      periodDays: dto.periodDays,
+      topProductsLimit: dto.topProductsLimit,
+    });
     return successResponse(summary);
   }
 

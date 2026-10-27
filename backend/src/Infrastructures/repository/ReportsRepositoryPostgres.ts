@@ -39,7 +39,7 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
     const [summary, details, topProducts] = await Promise.all([
       this.getSalesSummary(companyId, filter, status),
       this.getSalesDailyBreakdown(companyId, filter, status),
-      this.getSalesTopProducts(companyId, filter, status),
+      this.getSalesTopProducts(companyId, filter, status, filter.topProductsLimit ?? 10),
     ]);
 
     return new SalesReport({ summary, details, topProducts });
@@ -96,7 +96,7 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
        FROM sales_orders
        WHERE company_id = $1
          AND status = $2
-         AND DATE(paid_at AT TIME ZONE 'Asia/Jakarta') BETWEEN $${params.length - 1}::date AND $${params.length}::date
+         AND DATE(paid_at + interval '7 hours') BETWEEN $${params.length - 1}::date AND $${params.length}::date
          ${outletFilter}`,
       params,
     );
@@ -128,7 +128,7 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
       items_sold: string;
     }>(
       `SELECT
-         DATE(so.paid_at AT TIME ZONE 'Asia/Jakarta') AS date,
+         DATE(so.paid_at + interval '7 hours') AS date,
          so.outlet_id,
          o.name AS outlet_name,
          COUNT(*) AS order_count,
@@ -138,9 +138,9 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
        JOIN outlets o ON o.id = so.outlet_id
        WHERE so.company_id = $1
          AND so.status = $2
-         AND DATE(so.paid_at AT TIME ZONE 'Asia/Jakarta') BETWEEN $${params.length - 1}::date AND $${params.length}::date
+         AND DATE(so.paid_at + interval '7 hours') BETWEEN $${params.length - 1}::date AND $${params.length}::date
          ${outletFilter}
-       GROUP BY DATE(so.paid_at AT TIME ZONE 'Asia/Jakarta'), so.outlet_id, o.name
+       GROUP BY DATE(so.paid_at + interval '7 hours'), so.outlet_id, o.name
        ORDER BY date`,
       params,
     );
@@ -174,22 +174,32 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
     const result = await this.pool.query<{
       product_id: string;
       product_name: string;
+      topping_names: string[];
       qty_sold: string;
       revenue: string;
     }>(
       `SELECT
          soi.product_id,
          soi.product_name_snapshot AS product_name,
+         topping.topping_names,
          SUM(soi.qty) AS qty_sold,
          SUM(soi.line_total) AS revenue
        FROM sales_order_items soi
        JOIN sales_orders so ON so.id = soi.sales_order_id
+       LEFT JOIN LATERAL (
+         SELECT COALESCE(
+           ARRAY_AGG(sot.topping_name_snapshot ORDER BY sot.topping_name_snapshot),
+           ARRAY[]::varchar[]
+         ) AS topping_names
+         FROM sales_order_item_toppings sot
+         WHERE sot.sales_order_item_id = soi.id
+       ) topping ON TRUE
        WHERE so.company_id = $1
          AND so.status = $2
-         AND DATE(so.paid_at AT TIME ZONE 'Asia/Jakarta') BETWEEN $${params.length - 2}::date AND $${params.length - 1}::date
+         AND DATE(so.paid_at + interval '7 hours') BETWEEN $${params.length - 2}::date AND $${params.length - 1}::date
          ${outletFilter}
-       GROUP BY soi.product_id, soi.product_name_snapshot
-       ORDER BY qty_sold DESC
+       GROUP BY soi.product_id, soi.product_name_snapshot, topping.topping_names
+       ORDER BY qty_sold DESC, product_name, topping.topping_names
        LIMIT $${params.length}`,
       params,
     );
@@ -197,6 +207,7 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
     return result.rows.map((row) => ({
       productId: row.product_id,
       productName: row.product_name,
+      toppingNames: row.topping_names,
       qtySold: parseFloat(row.qty_sold),
       revenue: parseFloat(row.revenue),
     }));

@@ -1,4 +1,4 @@
-import { IsDateString, IsOptional, IsString, IsIn } from 'class-validator';
+import { IsDateString, IsOptional, IsString, IsIn, IsInt } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
@@ -28,4 +28,14 @@ export class SalesReportQueryDto {
   @IsOptional()
   @IsIn(['PAID', 'REFUNDED', 'CANCELLED'])
   status?: string;
+
+  @ApiPropertyOptional({
+    description: 'Maximum number of top product combinations',
+    enum: [5, 10, 20, 50],
+    default: 10,
+  })
+  @IsOptional()
+  @IsInt()
+  @IsIn([5, 10, 20, 50])
+  topProductsLimit?: number;
 }

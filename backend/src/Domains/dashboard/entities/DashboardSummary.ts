@@ -21,6 +21,7 @@ export interface ExpiringBatch {
 export interface TopSellingProduct {
   productId: string;
   productName: string;
+  toppingNames: string[];
   qtySold: number;
   revenue: number;
 }

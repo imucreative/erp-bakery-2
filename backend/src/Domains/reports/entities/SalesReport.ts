@@ -22,6 +22,7 @@ export interface SalesReportDailyBreakdown {
 export interface SalesReportTopProduct {
   productId: string;
   productName: string;
+  toppingNames: string[];
   qtySold: number;
   revenue: number;
 }
@@ -51,4 +52,5 @@ export interface SalesReportFilter {
   dateTo: string; // ISO date string
   outletId?: string;
   status?: string; // PAID, REFUNDED, CANCELLED (default: PAID)
+  topProductsLimit?: number;
 }

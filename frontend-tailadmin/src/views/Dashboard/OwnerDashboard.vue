@@ -3,6 +3,39 @@
     <PageBreadcrumb pageTitle="Dashboard" />
 
     <div class="space-y-6">
+      <div class="panel-card grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div>
+          <label for="dashboard-outlet-filter" class="form-label">Outlet</label>
+          <BaseSelect
+            id="dashboard-outlet-filter"
+            :model-value="selectedOutletId"
+            :options="outletOptions"
+            :disabled="loading"
+            @update:model-value="onOutletChange"
+          />
+        </div>
+        <div>
+          <label for="dashboard-period-filter" class="form-label">Periode</label>
+          <BaseSelect
+            id="dashboard-period-filter"
+            :model-value="String(selectedPeriodDays)"
+            :options="periodOptions"
+            :disabled="loading"
+            @update:model-value="onPeriodChange"
+          />
+        </div>
+        <div>
+          <label for="dashboard-top-products-filter" class="form-label">Jumlah Produk</label>
+          <BaseSelect
+            id="dashboard-top-products-filter"
+            :model-value="String(selectedTopProductsLimit)"
+            :options="topProductsOptions"
+            :disabled="loading"
+            @update:model-value="onTopProductsLimitChange"
+          />
+        </div>
+      </div>
+
       <!-- KPI Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <KpiCard
@@ -40,7 +73,7 @@
     <!-- Charts Row -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Sales Trend Chart -->
-      <ComponentCard title="Tren Penjualan 7 Hari" desc="Revenue dan jumlah transaksi">
+      <ComponentCard :title="`Tren Penjualan ${selectedPeriodDays} Hari`" desc="Revenue dan jumlah transaksi">
         <apexchart
           v-if="chartOptions"
           type="line"
@@ -49,7 +82,7 @@
           :series="chartSeries"
         />
         <div v-else class="flex items-center justify-center h-[300px] text-gray-400">
-          Memuat data...
+          {{ loading ? 'Memuat data...' : 'Belum ada data penjualan' }}
         </div>
       </ComponentCard>
 
@@ -83,7 +116,10 @@
     </div>
 
     <!-- Top Products Table -->
-    <ComponentCard title="Produk Terlaris 7 Hari" desc="Top 10 produk berdasarkan qty terjual">
+    <ComponentCard
+      :title="`Produk Terlaris ${selectedPeriodDays} Hari`"
+      :desc="`Top ${selectedTopProductsLimit} produk dan kombinasi topping berdasarkan qty terjual`"
+    >
       <BaseTable
         v-if="summary?.topProducts && summary.topProducts.length > 0"
         :isEmpty="summary.topProducts.length === 0"
@@ -91,13 +127,22 @@
         <template #header>
           <tr>
             <th class="px-4 py-3 text-left text-sm font-semibold text-gray-800 dark:text-white/90">Produk</th>
+            <th class="px-4 py-3 text-start text-sm font-semibold text-gray-800 dark:text-white/90">
+              Topping
+            </th>
             <th class="px-4 py-3 text-right text-sm font-semibold text-gray-800 dark:text-white/90">Qty Terjual</th>
             <th class="px-4 py-3 text-right text-sm font-semibold text-gray-800 dark:text-white/90">Revenue</th>
           </tr>
         </template>
         <template #body>
-          <tr v-for="item in summary.topProducts" :key="item.productId">
+          <tr
+            v-for="item in summary.topProducts"
+            :key="JSON.stringify([item.productId, item.productName, item.toppingNames])"
+          >
             <td class="px-4 py-3 text-sm text-gray-800 dark:text-white/90">{{ item.productName }}</td>
+            <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+              {{ item.toppingNames.length ? item.toppingNames.join(' + ') : 'Tanpa topping' }}
+            </td>
             <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 text-right">{{ item.qtySold }}</td>
             <td class="px-4 py-3 text-sm text-gray-800 dark:text-white/90 text-right">{{ formatCurrency(item.revenue) }}</td>
           </tr>
@@ -128,17 +173,79 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useOwnerDashboard } from '@/composables/useDashboard'
+import {
+  OWNER_DASHBOARD_PERIOD_OPTIONS,
+  OWNER_DASHBOARD_TOP_PRODUCTS_OPTIONS,
+  type OwnerDashboardPeriodDays,
+  type OwnerDashboardTopProductsLimit,
+} from '@/services/dashboard.service'
+import { outletService, type Outlet } from '@/services/outlet.service'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import KpiCard from '@/components/dashboard/KpiCard.vue'
 import BaseTable from '@/components/ui/BaseTable.vue'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import { DollarSign, ShoppingCart, AlertTriangle, Clock } from 'lucide-vue-next'
 
 const { summary, loading, errorMessage, load } = useOwnerDashboard()
+
+const outlets = ref<Outlet[]>([])
+const selectedOutletId = ref<string>('')
+const selectedPeriodDays = ref<OwnerDashboardPeriodDays>(7)
+const selectedTopProductsLimit = ref<OwnerDashboardTopProductsLimit>(10)
+
+const outletOptions = computed(() => [
+  { label: 'Semua Outlet', value: '' },
+  ...outlets.value.map((outlet) => ({ label: outlet.name, value: outlet.id })),
+])
+const periodOptions = OWNER_DASHBOARD_PERIOD_OPTIONS.map((days) => ({
+  label: `${days} hari`,
+  value: String(days),
+}))
+const topProductsOptions = OWNER_DASHBOARD_TOP_PRODUCTS_OPTIONS.map((limit) => ({
+  label: String(limit),
+  value: String(limit),
+}))
+
+function reloadDashboard(): void {
+  load({
+    ...(selectedOutletId.value ? { outletId: selectedOutletId.value } : {}),
+    periodDays: selectedPeriodDays.value,
+    topProductsLimit: selectedTopProductsLimit.value,
+  })
+}
+
+function onOutletChange(value: string): void {
+  selectedOutletId.value = value
+  reloadDashboard()
+}
+
+function onPeriodChange(value: string): void {
+  const periodDays = Number(value)
+  if (periodDays !== 7 && periodDays !== 14 && periodDays !== 30 && periodDays !== 90) return
+
+  selectedPeriodDays.value = periodDays
+  reloadDashboard()
+}
+
+function onTopProductsLimitChange(value: string): void {
+  const topProductsLimit = Number(value)
+  if (
+    topProductsLimit !== 5 &&
+    topProductsLimit !== 10 &&
+    topProductsLimit !== 20 &&
+    topProductsLimit !== 50
+  ) {
+    return
+  }
+
+  selectedTopProductsLimit.value = topProductsLimit
+  reloadDashboard()
+}
 
 // Chart configuration
 const chartOptions = computed(() => {
@@ -226,7 +333,8 @@ function formatCurrency(value: number): string {
   }).format(value)
 }
 
-onMounted(() => {
-  load()
+onMounted(async () => {
+  reloadDashboard()
+  outlets.value = await outletService.getAccessible()
 })
 </script>

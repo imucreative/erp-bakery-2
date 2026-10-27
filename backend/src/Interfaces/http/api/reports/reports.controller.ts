@@ -55,6 +55,7 @@ export class ReportsController {
       dateTo: dto.dateTo,
       outletId: dto.outletId,
       status: dto.status,
+      topProductsLimit: dto.topProductsLimit,
     });
     return successResponse(report);
   }
@@ -105,6 +106,7 @@ export class ReportsController {
   @ApiQuery({ name: 'dateTo', required: true })
   @ApiQuery({ name: 'outletId', required: false })
   @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'topProductsLimit', required: false, enum: [5, 10, 20, 50] })
   @ApiResponse({ status: 200, description: 'CSV file download' })
   async exportSalesReport(
     @Query() dto: SalesReportQueryDto,
@@ -116,6 +118,7 @@ export class ReportsController {
       dateTo: dto.dateTo,
       outletId: dto.outletId,
       status: dto.status,
+      topProductsLimit: dto.topProductsLimit,
     });
 
     const csv = this.reportExportService.exportSalesToCsv(report);

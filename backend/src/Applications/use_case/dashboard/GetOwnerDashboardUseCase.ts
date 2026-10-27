@@ -1,4 +1,7 @@
-import { DashboardRepository } from '../../../Domains/dashboard/DashboardRepository';
+import {
+  DashboardRepository,
+  OwnerDashboardFilter,
+} from '../../../Domains/dashboard/DashboardRepository';
 import { OwnerDashboardSummary } from '../../../Domains/dashboard/entities/DashboardSummary';
 
 /**
@@ -12,8 +15,9 @@ export class GetOwnerDashboardUseCase {
 
   async execute(
     companyId: string,
+    filter: OwnerDashboardFilter = {},
     businessDate: Date = new Date(),
   ): Promise<OwnerDashboardSummary> {
-    return this.dashboardRepository.getOwnerSummary(companyId, businessDate);
+    return this.dashboardRepository.getOwnerSummary(companyId, filter, businessDate);
   }
 }

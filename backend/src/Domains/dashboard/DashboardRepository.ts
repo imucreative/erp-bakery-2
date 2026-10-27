@@ -1,7 +1,10 @@
-import {
-  OwnerDashboardSummary,
-  OutletDashboardSummary,
-} from './entities/DashboardSummary';
+import { OwnerDashboardSummary, OutletDashboardSummary } from './entities/DashboardSummary';
+
+export interface OwnerDashboardFilter {
+  outletId?: string;
+  periodDays?: number;
+  topProductsLimit?: number;
+}
 
 /**
  * Abstract repository — Dashboard domain (doc 54).
@@ -14,10 +17,12 @@ export abstract class DashboardRepository {
    * dan Inventory (low stock, expired, expiring soon).
    *
    * @param companyId - Company scope
+   * @param filter - Optional outlet, sales period, and top-products limit
    * @param businessDate - Tanggal referensi untuk "today" (default: now)
    */
   abstract getOwnerSummary(
     companyId: string,
+    filter?: OwnerDashboardFilter,
     businessDate?: Date,
   ): Promise<OwnerDashboardSummary>;
 

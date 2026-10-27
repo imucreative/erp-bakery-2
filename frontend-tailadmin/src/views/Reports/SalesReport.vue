@@ -21,7 +21,7 @@
 
     <!-- Filters -->
     <ComponentCard title="Filters">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-5">
         <BaseFormField label="From" fieldId="dateFrom" :error="dateFromError">
           <BaseInput
             id="dateFrom"
@@ -68,6 +68,15 @@
               { label: 'Refunded', value: 'REFUNDED' },
               { label: 'Cancelled', value: 'CANCELLED' },
             ]"
+          />
+        </BaseFormField>
+
+        <BaseFormField label="Jumlah Produk" fieldId="topProductsLimit">
+          <BaseSelect
+            id="topProductsLimit"
+            :model-value="String(filters.topProductsLimit)"
+            :options="topProductsLimitOptions"
+            @update:model-value="onTopProductsLimitChange"
           />
         </BaseFormField>
       </div>
@@ -142,7 +151,11 @@
     </ComponentCard>
 
     <!-- Top Products Table -->
-    <ComponentCard v-if="report" title="Top Selling Products" desc="Top 10 products by qty sold">
+    <ComponentCard
+      v-if="report"
+      title="Top Selling Products"
+      :desc="`Top ${appliedTopProductsLimit} products and topping combinations by qty sold`"
+    >
       <BaseTable
         :is-empty="report.topProducts.length === 0"
         empty-message="Tidak ada data produk."
@@ -151,14 +164,21 @@
         <template #header>
           <BaseTableRow variant="header">
             <BaseTableHead>Product</BaseTableHead>
+            <BaseTableHead>Topping</BaseTableHead>
             <BaseTableHead align="end">Qty Sold</BaseTableHead>
             <BaseTableHead align="end">Revenue</BaseTableHead>
           </BaseTableRow>
         </template>
         <template #body>
-          <BaseTableRow v-for="row in report.topProducts" :key="row.productId">
+          <BaseTableRow
+            v-for="row in report.topProducts"
+            :key="JSON.stringify([row.productId, row.productName, row.toppingNames])"
+          >
             <BaseTableCell>
               <span class="text-strong">{{ row.productName }}</span>
+            </BaseTableCell>
+            <BaseTableCell>
+              {{ row.toppingNames.length ? row.toppingNames.join(' + ') : 'Tanpa topping' }}
             </BaseTableCell>
             <BaseTableCell align="end">
               {{ row.qtySold }}
@@ -213,8 +233,35 @@ import EntityCombobox from '@/components/ui/EntityCombobox.vue'
 
 const OUTLET_SEARCH_DEBOUNCE_MS = 300
 
-const { report, filters, loading, exporting, errorMessage, loadReport, exportReport } =
-  useSalesReport()
+const {
+  report,
+  filters,
+  appliedTopProductsLimit,
+  loading,
+  exporting,
+  errorMessage,
+  loadReport,
+  exportReport,
+} = useSalesReport()
+
+const topProductsLimitOptions = [5, 10, 20, 50].map((limit) => ({
+  label: String(limit),
+  value: String(limit),
+}))
+
+function onTopProductsLimitChange(value: string): void {
+  const topProductsLimit = Number(value)
+  if (
+    topProductsLimit !== 5 &&
+    topProductsLimit !== 10 &&
+    topProductsLimit !== 20 &&
+    topProductsLimit !== 50
+  ) {
+    return
+  }
+
+  filters.value.topProductsLimit = topProductsLimit
+}
 
 // ── Outlet autocomplete (server-side) ────────────────────────────────
 const outletResults = ref<Outlet[]>([])
