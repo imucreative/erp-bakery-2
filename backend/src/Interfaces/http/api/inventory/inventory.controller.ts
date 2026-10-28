@@ -5,7 +5,7 @@ import { GetStockLedgerUseCase } from '../../../../Applications/use_case/invento
 import { GetBatchesUseCase } from '../../../../Applications/use_case/inventory/GetBatchesUseCase';
 import { GetInventoryDashboardUseCase } from '../../../../Applications/use_case/inventory/GetInventoryDashboardUseCase';
 import { InventoryRepository } from '../../../../Domains/inventory/InventoryRepository';
-import { classifyExpiry } from '../../../../Domains/inventory/batchStatus';
+import { classifyExpiry, deriveOperationalStatus } from '../../../../Domains/inventory/batchStatus';
 import { JwtAccessPayload } from '../../../../Applications/security/TokenManager';
 import { AuthorizationError } from '../../../../Commons/exceptions/AuthorizationError';
 import { successResponse, listResponse } from '../../../../Commons/helpers/response.helper';
@@ -121,6 +121,8 @@ export class InventoryController {
         productId: query.productId,
         batchId: query.batchId,
         movementType: query.movementType,
+        dateFrom: query.dateFrom,
+        dateTo: query.dateTo,
       },
       companyId,
     );
@@ -146,6 +148,7 @@ export class InventoryController {
         outletId: query.outletId,
         productId: query.productId,
         status: query.status,
+        operationalStatus: query.operationalStatus,
         includeNonBatch: query.includeNonBatch === 'true',
       },
       companyId,
@@ -165,6 +168,7 @@ export class InventoryController {
     const companyId = this._companyId(user);
     const batch = await this.inventoryRepository.getBatchById(id, companyId);
     const expiryState = classifyExpiry(batch.expiredDate, new Date(), batch.isNonBatch);
-    return successResponse({ batch, expiryState });
+    const operationalStatus = deriveOperationalStatus(batch.status, expiryState);
+    return successResponse({ batch, expiryState, operationalStatus });
   }
 }

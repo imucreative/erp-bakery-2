@@ -32,6 +32,54 @@ describe('InventoryRepositoryPostgres', () => {
     repo = new InventoryRepositoryPostgres(mockPool);
   });
 
+  describe('getStockOnHand', () => {
+    it.each([false, true])('sums non-expired ACTIVE batches with lowOnly=%s', async (lowOnly) => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              product_id: 'p1',
+              product_sku: 'SKU-1',
+              product_name: 'Waffle',
+              outlet_id: 'o1',
+              outlet_name: 'Outlet Utama',
+              uom_id: 'u1',
+              uom_code: 'PCS',
+              uom_name: 'Pieces',
+              qty_available: '4',
+              minimum_stock: '5',
+            },
+          ],
+        });
+
+      const result = await repo.getStockOnHand(
+        'c1',
+        { limit: 20, offset: 0, outletId: 'o1', lowOnly },
+        new Date('2026-10-27T17:00:00.000Z'),
+      );
+
+      expect(result.rows[0]).toMatchObject({ qtyAvailable: 4, isLow: true });
+      for (const [sql] of (mockPool.query as jest.Mock).mock.calls) {
+        expect(sql as string).toContain("b.status = 'ACTIVE'");
+        expect(sql as string).toContain('b.expired_date IS NULL OR b.expired_date >= $2::date');
+        expect(sql as string).not.toContain('CURRENT_DATE');
+      }
+      expect((mockPool.query as jest.Mock).mock.calls[0][1]).toEqual([
+        'c1',
+        '2026-10-28',
+        'o1',
+      ]);
+      expect((mockPool.query as jest.Mock).mock.calls[1][1]).toEqual([
+        'c1',
+        '2026-10-28',
+        'o1',
+        20,
+        0,
+      ]);
+    });
+  });
+
   describe('getBatchById', () => {
     it('should return an InventoryBatch when found', async () => {
       (mockPool.query as jest.Mock).mockResolvedValue({ rows: [batchRow()], rowCount: 1 });

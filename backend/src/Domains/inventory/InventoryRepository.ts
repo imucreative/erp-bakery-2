@@ -11,7 +11,7 @@ export interface StockOnHandRow {
   uomId: string; // base unit of measure of the product (display only)
   uomCode: string; // e.g. PCS, KG (display only)
   uomName: string; // e.g. Pieces, Kilogram (display only)
-  qtyAvailable: number; // summed across active batches
+  qtyAvailable: number; // summed across non-expired ACTIVE batches
   minimumStock: number;
   isLow: boolean; // qtyAvailable < minimumStock (only when minimumStock > 0)
 }
@@ -36,6 +36,7 @@ export interface BatchListFilter {
   outletId?: string;
   productId?: string;
   status?: string;
+  operationalStatus?: string;
   includeNonBatch?: boolean;
 }
 
@@ -51,6 +52,8 @@ export interface LedgerFilter {
   productId?: string;
   batchId?: string;
   movementType?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export interface LedgerResult {
@@ -105,14 +108,22 @@ export interface InventoryDashboardSummary {
  */
 export abstract class InventoryRepository {
   // ── Reads ──────────────────────────────────────────────────────────────
-  /** Stock-On-Hand aggregated per product+outlet from batch balances (rule #8). */
-  abstract getStockOnHand(companyId: string, filter: StockOnHandFilter): Promise<StockOnHandResult>;
+  /** Sellable Stock-On-Hand per product+outlet; expired batches contribute zero. */
+  abstract getStockOnHand(
+    companyId: string,
+    filter: StockOnHandFilter,
+    businessDate?: Date,
+  ): Promise<StockOnHandResult>;
 
   /** Immutable ledger listing (rule #9). */
   abstract getLedger(companyId: string, filter: LedgerFilter): Promise<LedgerResult>;
 
   /** Batch & Expiry monitoring listing over inventory_batches (rule #14). */
-  abstract getBatches(companyId: string, filter: BatchListFilter): Promise<BatchListResult>;
+  abstract getBatches(
+    companyId: string,
+    filter: BatchListFilter,
+    businessDate?: Date,
+  ): Promise<BatchListResult>;
 
   /** Fetch a single batch scoped to company. Throws INVENTORY_BATCH.NOT_FOUND. */
   abstract getBatchById(id: string, companyId: string): Promise<InventoryBatch>;

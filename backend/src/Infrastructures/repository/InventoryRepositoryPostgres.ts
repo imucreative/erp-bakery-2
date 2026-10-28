@@ -24,6 +24,7 @@ import {
   resolveOrCreateBatch,
   translateDuplicateSourceKey,
 } from './helpers/inventoryPosting';
+import { toJakartaBusinessDate } from '../../Commons/helpers/businessDate';
 
 interface BatchRow {
   id: string;
@@ -57,8 +58,10 @@ interface MovementRow {
   created_at: Date;
 }
 
-const BATCH_COLUMNS = `id, company_id, outlet_id, product_id, batch_number, lot_key, lot_number, expired_date, received_date, qty_available, status, is_non_batch`;
-const MOVEMENT_COLUMNS = `id, company_id, outlet_id, batch_id, product_id, movement_type, qty, before_qty, after_qty, source_document_type, source_document_id, notes, user_id, created_at`;
+// Anchor SQL DATE values at UTC midnight so pg cannot shift their calendar date with the host timezone.
+const BATCH_COLUMNS = `id, company_id, outlet_id, product_id, batch_number, lot_key, lot_number, expired_date::timestamp AT TIME ZONE 'UTC' AS expired_date, received_date::timestamp AT TIME ZONE 'UTC' AS received_date, qty_available, status, is_non_batch`;
+// Ledger timestamps are stored as UTC without a timezone; expose an unambiguous instant.
+const MOVEMENT_COLUMNS = `id, company_id, outlet_id, batch_id, product_id, movement_type, qty, before_qty, after_qty, source_document_type, source_document_id, notes, user_id, created_at AT TIME ZONE 'UTC' AS created_at`;
 
 /**
  * Concrete PostgreSQL implementation of InventoryRepository.
@@ -114,11 +117,11 @@ export class InventoryRepositoryPostgres extends InventoryRepository {
   async getStockOnHand(
     companyId: string,
     filter: StockOnHandFilter,
+    businessDate: Date = new Date(),
   ): Promise<StockOnHandResult> {
-    // Aggregate active batch balances per product+outlet from authoritative
-    // qty_available (rule #8). Join products + outlets for display + low-stock.
+    const bizDate = toJakartaBusinessDate(businessDate);
     const conditions: string[] = ['b.company_id = $1', "b.status = 'ACTIVE'"];
-    const params: unknown[] = [companyId];
+    const params: unknown[] = [companyId, bizDate];
 
     if (filter.outletId) {
       params.push(filter.outletId);
@@ -134,10 +137,14 @@ export class InventoryRepositoryPostgres extends InventoryRepository {
     }
 
     const whereClause = conditions.join(' AND ');
-
-    // HAVING for low-stock filter is applied after aggregation
+    const sellableQtySql = `COALESCE(
+      SUM(b.qty_available) FILTER (
+        WHERE b.expired_date IS NULL OR b.expired_date >= $2::date
+      ),
+      0
+    )`;
     const havingClause = filter.lowOnly
-      ? 'HAVING p.minimum_stock > 0 AND SUM(b.qty_available) < p.minimum_stock'
+      ? `HAVING p.minimum_stock > 0 AND ${sellableQtySql} < p.minimum_stock`
       : '';
 
     const baseFrom = `
@@ -152,8 +159,8 @@ export class InventoryRepositoryPostgres extends InventoryRepository {
 
     // Total = number of product+outlet groups
     const countResult = await this.pool.query<{ count: string }>(
-      `SELECT COUNT(*) AS count FROM (SELECT 1 ${baseFrom}) AS grouped`,
-      params,
+      `SELECT COUNT(*) AS count FROM (SELECT ${sellableQtySql} ${baseFrom}) AS grouped`,
+      [...params],
     );
     const total = parseInt(countResult.rows[0].count, 10);
 
@@ -179,7 +186,7 @@ export class InventoryRepositoryPostgres extends InventoryRepository {
          p.uom_id          AS uom_id,
          u.code            AS uom_code,
          u.name            AS uom_name,
-         SUM(b.qty_available) AS qty_available,
+         ${sellableQtySql}  AS qty_available,
          p.minimum_stock   AS minimum_stock
        ${baseFrom}
        ORDER BY p.name ASC
@@ -228,12 +235,20 @@ export class InventoryRepositoryPostgres extends InventoryRepository {
       params.push(filter.movementType);
       conditions.push(`movement_type = $${params.length}`);
     }
+    if (filter.dateFrom) {
+      params.push(filter.dateFrom);
+      conditions.push(`created_at >= $${params.length}::date::timestamp - INTERVAL '7 hours'`);
+    }
+    if (filter.dateTo) {
+      params.push(filter.dateTo);
+      conditions.push(`created_at < $${params.length}::date::timestamp + INTERVAL '1 day' - INTERVAL '7 hours'`);
+    }
 
     const whereClause = conditions.join(' AND ');
 
     const countResult = await this.pool.query<{ count: string }>(
       `SELECT COUNT(*) AS count FROM inventory_movements WHERE ${whereClause}`,
-      params,
+      [...params],
     );
     const total = parseInt(countResult.rows[0].count, 10);
 
@@ -250,7 +265,11 @@ export class InventoryRepositoryPostgres extends InventoryRepository {
     return { rows: rowsResult.rows.map((r) => this._toMovement(r)), total };
   }
 
-  async getBatches(companyId: string, filter: BatchListFilter): Promise<BatchListResult> {
+  async getBatches(
+    companyId: string,
+    filter: BatchListFilter,
+    businessDate: Date = new Date(),
+  ): Promise<BatchListResult> {
     const conditions: string[] = ['company_id = $1'];
     const params: unknown[] = [companyId];
 
@@ -269,12 +288,20 @@ export class InventoryRepositoryPostgres extends InventoryRepository {
       params.push(filter.status);
       conditions.push(`status = $${params.length}`);
     }
+    if (filter.operationalStatus) {
+      params.push(toJakartaBusinessDate(businessDate), filter.operationalStatus);
+      conditions.push(`(CASE
+        WHEN status = 'ACTIVE' AND is_non_batch = FALSE
+          AND expired_date < $${params.length - 1}::date THEN 'EXPIRED'
+        ELSE status
+      END) = $${params.length}`);
+    }
 
     const whereClause = conditions.join(' AND ');
 
     const countResult = await this.pool.query<{ count: string }>(
       `SELECT COUNT(*) AS count FROM inventory_batches WHERE ${whereClause}`,
-      params,
+      [...params],
     );
     const total = parseInt(countResult.rows[0].count, 10);
 
@@ -426,8 +453,9 @@ export class InventoryRepositoryPostgres extends InventoryRepository {
     businessDate: Date,
     outletId?: string,
   ): Promise<InventoryDashboardSummary> {
-    const bizDate = businessDate.toISOString().slice(0, 10);
-    const soonBoundary = new Date(businessDate);
+    // Same WIB business day the batch list, stock-on-hand and POS availability use.
+    const bizDate = toJakartaBusinessDate(businessDate);
+    const soonBoundary = new Date(`${bizDate}T00:00:00.000Z`);
     soonBoundary.setUTCDate(soonBoundary.getUTCDate() + INVENTORY_EXPIRY_SOON_DAYS);
     const soonDate = soonBoundary.toISOString().slice(0, 10);
 

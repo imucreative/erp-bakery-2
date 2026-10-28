@@ -106,6 +106,7 @@ export const MOVEMENT_TYPES = [
   'PRODUCTION_CONSUME',
   'PRODUCTION_RESULT',
   'SALE',
+  'SALE_RETURN',
   'RETURN',
   'TRANSFER_OUT',
   'TRANSFER_IN',
@@ -123,7 +124,8 @@ export const MOVEMENT_TYPE_LABELS: Record<MovementType, string> = {
   PRODUCTION_CONSUME: 'Konsumsi Produksi',
   PRODUCTION_RESULT: 'Hasil Produksi',
   SALE: 'Penjualan',
-  RETURN: 'Retur',
+  SALE_RETURN: 'Retur Penjualan',
+  RETURN: 'Retur Pembelian',
   TRANSFER_OUT: 'Transfer Keluar',
   TRANSFER_IN: 'Transfer Masuk',
   ADJUSTMENT_IN: 'Penyesuaian Masuk',
@@ -137,6 +139,7 @@ export const MOVEMENT_TYPE_LABELS: Record<MovementType, string> = {
 const INBOUND_MOVEMENT_TYPES: ReadonlySet<string> = new Set<string>([
   'PURCHASE',
   'PRODUCTION_RESULT',
+  'SALE_RETURN',
   'TRANSFER_IN',
   'ADJUSTMENT_IN',
 ])
@@ -215,6 +218,9 @@ export interface LedgerListParams {
   productId?: string
   batchId?: string
   movementType?: string
+  /** Inclusive WIB calendar-date bounds (YYYY-MM-DD), interpreted by the backend. */
+  dateFrom?: string
+  dateTo?: string
 }
 
 export interface LedgerListResult {
@@ -239,28 +245,30 @@ function toLedgerQuery(params: LedgerListParams): Record<string, string | number
   if (params.movementType) {
     query.movementType = params.movementType
   }
+  if (params.dateFrom) {
+    query.dateFrom = params.dateFrom
+  }
+  if (params.dateTo) {
+    query.dateTo = params.dateTo
+  }
   return query
 }
 
-/**
- * Batch lifecycle status (doc 27 / backend contract). A batch is ACTIVE while
- * available, EXPIRED once past its expiry, CONSUMED when fully depleted, or
- * QUARANTINE when held. All transitions are backend-owned.
- */
+/** Batch status codes shared by stored status and backend-derived operational status. */
 export const BATCH_STATUSES = ['ACTIVE', 'EXPIRED', 'CONSUMED', 'QUARANTINE'] as const
 export type BatchStatus = (typeof BATCH_STATUSES)[number]
 
-/** Indonesian display labels for each batch status. */
-export const BATCH_STATUS_LABELS: Record<BatchStatus, string> = {
+/** Indonesian display labels for the operational status shown on batch screens. */
+const OPERATIONAL_STATUS_LABELS: Record<BatchStatus, string> = {
   ACTIVE: 'Aktif',
-  EXPIRED: 'Kedaluwarsa',
+  EXPIRED: 'Kedaluwarsa — tidak dapat digunakan',
   CONSUMED: 'Habis',
-  QUARANTINE: 'Karantina',
+  QUARANTINE: 'Karantina — tidak dapat digunakan',
 }
 
-/** Human label for a batch status; falls back to the raw code if unknown. */
-export function batchStatusLabel(status: string): string {
-  return BATCH_STATUS_LABELS[status as BatchStatus] ?? status
+/** Human label for backend-derived operational status, not stored batch status. */
+export function operationalStatusLabel(status: string): string {
+  return OPERATIONAL_STATUS_LABELS[status as BatchStatus] ?? status
 }
 
 /**
@@ -305,13 +313,11 @@ export interface InventoryBatchRow {
   isNonBatch: boolean
 }
 
-/**
- * A batch paired with its backend-derived expiry classification. This is the
- * item shape returned by both the list and detail endpoints.
- */
+/** A batch with backend-derived expiry and operational status for list/detail. */
 export interface BatchWithExpiry {
   batch: InventoryBatchRow
   expiryState: ExpiryState
+  operationalStatus: BatchStatus
 }
 
 export interface BatchesListParams {
@@ -319,7 +325,9 @@ export interface BatchesListParams {
   limit: number
   outletId?: string
   productId?: string
+  /** Filter by stored batch status (legacy callers). */
   status?: string
+  operationalStatus?: string
   /**
    * When `true`, include synthetic non-batch rows. Sent as the string `'true'`;
    * omitted when false/undefined so the default list keeps its contract.
@@ -345,6 +353,9 @@ function toBatchesQuery(params: BatchesListParams): Record<string, string | numb
   }
   if (params.status) {
     query.status = params.status
+  }
+  if (params.operationalStatus) {
+    query.operationalStatus = params.operationalStatus
   }
   if (params.includeNonBatch) {
     query.includeNonBatch = 'true'

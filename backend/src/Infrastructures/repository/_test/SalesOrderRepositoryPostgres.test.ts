@@ -5,6 +5,8 @@ import { InvariantError } from '../../../Commons/exceptions/InvariantError';
 import { ConflictError } from '../../../Commons/exceptions/ConflictError';
 
 const mockPool = { query: jest.fn(), connect: jest.fn() } as unknown as Pool;
+const businessDate = new Date('2026-10-27T17:00:00.000Z');
+const jakartaBusinessDate = '2026-10-28';
 
 function header(over: Record<string, unknown> = {}) {
   return {
@@ -116,7 +118,7 @@ describe('SalesOrderRepositoryPostgres', () => {
           })
           .mockResolvedValueOnce(stockRow('10', '0'));
 
-        await repo.resolveCheckoutItems('c1', 'o1', [untopped('p1', 2)]);
+        await repo.resolveCheckoutItems('c1', 'o1', [untopped('p1', 2)], businessDate);
 
         const stockSql = sqls('FROM inventory_batches');
         expect(stockSql).toHaveLength(1);
@@ -124,10 +126,16 @@ describe('SalesOrderRepositoryPostgres', () => {
         // not be counted, otherwise expiredQty would explain nothing.
         expect(count(stockSql[0], 'qty_available > 0')).toBe(2);
         expect(count(stockSql[0], "status = 'ACTIVE'")).toBe(2);
-        expect(stockSql[0]).toContain('expired_date >= CURRENT_DATE');
-        expect(stockSql[0]).toContain('expired_date < CURRENT_DATE');
+        expect(stockSql[0]).toContain('expired_date >= $4::date');
+        expect(stockSql[0]).toContain('expired_date < $4::date');
         expect(stockSql[0]).toContain('AS sellable_qty');
         expect(stockSql[0]).toContain('AS expired_qty');
+        expect((mockPool.query as jest.Mock).mock.calls[1][1]).toEqual([
+          'c1',
+          'o1',
+          'p1',
+          jakartaBusinessDate,
+        ]);
       });
 
       it('resolves STOCK for a FINISHED_GOODS line and snapshots the line total', async () => {
@@ -445,8 +453,18 @@ describe('SalesOrderRepositoryPostgres', () => {
         .mockResolvedValueOnce(undefined); // COMMIT
 
       // NOTE: _loadItems returns [] (empty items) so it skips the toppings query.
-      const order = await repo.pay('so1', 'c1', 'u1', [{ method: 'CASH', amount: 15000, referenceNo: null }]);
+      const order = await repo.pay(
+        'so1',
+        'c1',
+        'u1',
+        [{ method: 'CASH', amount: 15000, referenceNo: null }],
+        businessDate,
+      );
       expect(order.status).toBe('PAID');
+      const fefoCall = client.query.mock.calls.find(
+        (c) => typeof c[0] === 'string' && c[0].includes('FROM inventory_batches'),
+      );
+      expect(fefoCall?.[1]).toEqual(['c1', 'out1', 'p2', jakartaBusinessDate]);
       // SALE movement posted with the SALES_ORDER source key.
       const movementCall = client.query.mock.calls.find(
         (c) => typeof c[0] === 'string' && c[0].includes("'SALE'"),
@@ -857,7 +875,7 @@ describe('SalesOrderRepositoryPostgres', () => {
           },
         ],
       });
-      const toppings = await repo.listActiveToppings('c1', 'o1');
+      const toppings = await repo.listActiveToppings('c1', 'o1', businessDate);
       expect(toppings).toHaveLength(1);
       expect(toppings[0].toppingProductId).toBe('t1');
       expect(toppings[0].defaultQtyPerItem).toBe(25);
@@ -865,8 +883,11 @@ describe('SalesOrderRepositoryPostgres', () => {
       // Non-expired stock surfaces as availableQty, expired as expiredQty.
       expect(toppings[0].availableQty).toBe(30);
       expect(toppings[0].expiredQty).toBe(5);
-      // The outlet is forwarded as the 2nd parameter to the stock subqueries.
-      expect((mockPool.query as jest.Mock).mock.calls[0][1]).toEqual(['c1', 'o1']);
+      expect((mockPool.query as jest.Mock).mock.calls[0][1]).toEqual([
+        'c1',
+        'o1',
+        jakartaBusinessDate,
+      ]);
     });
 
     it('listActiveToppings defaults stock figures to 0 when the SUMs come back null', async () => {
@@ -902,17 +923,21 @@ describe('SalesOrderRepositoryPostgres', () => {
           },
         ],
       });
-      const toppings = await repo.listActiveToppings('c1');
+      const toppings = await repo.listActiveToppings('c1', null, businessDate);
       expect(toppings[0].availableQty).toBe(0);
       expect(toppings[0].expiredQty).toBe(0);
       // No outlet → the stock param is NULL so both correlated SUMs collapse.
-      expect((mockPool.query as jest.Mock).mock.calls[0][1]).toEqual(['c1', null]);
+      expect((mockPool.query as jest.Mock).mock.calls[0][1]).toEqual([
+        'c1',
+        null,
+        jakartaBusinessDate,
+      ]);
     });
 
     it('listActiveToppings reuses the same batch filters/outlet param as the product grid', async () => {
       (mockPool.query as jest.Mock).mockResolvedValueOnce({ rows: [] });
 
-      await repo.listActiveToppings('c1', 'o1');
+      await repo.listActiveToppings('c1', 'o1', businessDate);
 
       const sql = (mockPool.query as jest.Mock).mock.calls[0][0] as string;
       // Same trap as the product grid: BOTH correlated sums need the
@@ -923,8 +948,8 @@ describe('SalesOrderRepositoryPostgres', () => {
       expect(guardCount("ib.status = 'ACTIVE'")).toBe(2);
       expect(sql).toContain('AS available_qty');
       expect(sql).toContain('AS expired_qty');
-      expect(sql).toContain('ib.expired_date >= CURRENT_DATE');
-      expect(sql).toContain('ib.expired_date IS NOT NULL AND ib.expired_date < CURRENT_DATE');
+      expect(sql).toContain('ib.expired_date >= $3::date');
+      expect(sql).toContain('ib.expired_date IS NOT NULL AND ib.expired_date < $3::date');
       const placeholders = sql.match(/\$\d+::uuid/g) as string[];
       expect(placeholders).toHaveLength(2);
       expect(placeholders[0]).toBe('$2::uuid');
@@ -988,7 +1013,11 @@ describe('SalesOrderRepositoryPostgres', () => {
         .mockResolvedValueOnce({ rows: [{ count: '1' }] }) // count
         .mockResolvedValueOnce({ rows: [] }); // page
 
-      await repo.listPosProducts('c1', { limit: 50, offset: 0, outletId: 'o1', search: 'waffle' });
+      await repo.listPosProducts(
+        'c1',
+        { limit: 50, offset: 0, outletId: 'o1', search: 'waffle' },
+        businessDate,
+      );
 
       const sql = (mockPool.query as jest.Mock).mock.calls[1][0] as string;
       // The trap: an expired batch with qty_available = 0 must not inflate
@@ -998,15 +1027,27 @@ describe('SalesOrderRepositoryPostgres', () => {
       expect(guardCount("ib.status = 'ACTIVE'")).toBe(2);
       expect(sql).toContain('AS available_qty');
       expect(sql).toContain('AS expired_qty');
-      expect(sql).toContain('ib.expired_date >= CURRENT_DATE');
-      expect(sql).toContain('ib.expired_date IS NOT NULL AND ib.expired_date < CURRENT_DATE');
+      expect(sql).toMatch(/ib\.expired_date >= \$\d+::date/);
+      expect(sql).toMatch(/ib\.expired_date IS NOT NULL AND ib\.expired_date < \$\d+::date/);
       // Both subqueries must reuse the SAME dynamically-built outlet placeholder
       // (params.length + 1), never a hardcoded parameter number.
       const placeholders = sql.match(/\$\d+::uuid/g) as string[];
       expect(placeholders).toHaveLength(2);
       expect(placeholders[0]).toBe(placeholders[1]);
+      const datePlaceholders = sql.match(/\$\d+::date/g) as string[];
+      expect(datePlaceholders).toHaveLength(2);
+      expect(datePlaceholders[0]).toBe(datePlaceholders[1]);
       const limitIndex = Number((sql.match(/LIMIT \$(\d+)/) as RegExpMatchArray)[1]);
       expect(placeholders[0]).toBe(`$${limitIndex + 2}::uuid`);
+      expect(datePlaceholders[0]).toBe(`$${limitIndex + 3}::date`);
+      expect((mockPool.query as jest.Mock).mock.calls[1][1]).toEqual([
+        'c1',
+        '%waffle%',
+        50,
+        0,
+        'o1',
+        jakartaBusinessDate,
+      ]);
     });
   });
 

@@ -20,10 +20,20 @@ export class BatchesQueryDto {
   @IsUUID()
   productId?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by batch status (ACTIVE, EXPIRED, CONSUMED, QUARANTINE)' })
+  @ApiPropertyOptional({
+    description: 'Filter by batch status (ACTIVE, EXPIRED, CONSUMED, QUARANTINE)',
+  })
   @IsOptional()
   @IsString()
   status?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Filter by derived operational status at the current WIB date (ACTIVE, EXPIRED, CONSUMED, QUARANTINE)',
+  })
+  @IsOptional()
+  @IsString()
+  operationalStatus?: string;
 
   @ApiPropertyOptional({
     example: 'false',

@@ -1,14 +1,8 @@
 <script setup lang="ts">
-/**
- * BatchFilterBar — outlet + product + batch-status filters plus an
- * "include non-batch" toggle for the Batch & Expiry list. The three dropdowns
- * are `BaseSelect`; the boolean uses `BaseToggle` (never a checkbox). The bar
- * wraps (`stack-row sm:flex-wrap`) because four controls don't fit one row at
- * mid widths. Two-way binds `outletId`, `productId`, `status`, and
- * `includeNonBatch`. Outlet and product options are resolved once by the parent.
- */
+import { computed } from 'vue'
 import { BaseSelect, BaseToggle } from '@/components/ui'
-import { BATCH_STATUSES, batchStatusLabel } from '@/services/inventory.service'
+import EntityCombobox from '@/components/ui/EntityCombobox.vue'
+import { BATCH_STATUSES, operationalStatusLabel } from '@/services/inventory.service'
 
 interface OutletOption {
   id: string
@@ -21,7 +15,7 @@ interface ProductOption {
   sku: string
 }
 
-defineProps<{
+const props = defineProps<{
   outletId: string
   productId: string
   status: string
@@ -29,6 +23,12 @@ defineProps<{
   outlets: OutletOption[]
   products: ProductOption[]
 }>()
+
+const productLabel = (product: ProductOption): string => `${product.name} (${product.sku})`
+const selectedProductLabel = computed(() => {
+  const product = props.products.find((product) => product.id === props.productId)
+  return product ? productLabel(product) : ''
+})
 
 const emit = defineEmits<{
   (event: 'update:outletId', value: string): void
@@ -53,27 +53,29 @@ const emit = defineEmits<{
     </div>
 
     <div class="w-full sm:w-64">
-      <BaseSelect
-        id="batch-product"
+      <EntityCombobox
         :model-value="productId"
-        :options="[
-          { value: '', label: 'Semua Produk' },
-          ...products.map((product) => ({
-            value: product.id,
-            label: `${product.name} (${product.sku})`,
-          })),
-        ]"
+        :selected-label="selectedProductLabel"
+        :items="products"
+        :item-id="(product) => product.id"
+        :item-label="productLabel"
+        mode="client"
+        placeholder="Semua Produk — cari nama / SKU..."
+        aria-label="Filter produk"
+        clear-aria-label="Hapus filter produk"
         @update:model-value="emit('update:productId', $event)"
       />
     </div>
 
-    <div class="w-full sm:w-48">
+    <div class="w-full sm:w-96">
+      <label for="batch-status" class="sr-only">Status Operasional</label>
       <BaseSelect
         id="batch-status"
+        aria-label="Status Operasional"
         :model-value="status"
         :options="[
-          { value: '', label: 'Semua Status' },
-          ...BATCH_STATUSES.map((value) => ({ value, label: batchStatusLabel(value) })),
+          { value: '', label: 'Semua Status Operasional' },
+          ...BATCH_STATUSES.map((value) => ({ value, label: operationalStatusLabel(value) })),
         ]"
         @update:model-value="emit('update:status', $event)"
       />

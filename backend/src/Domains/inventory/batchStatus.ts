@@ -1,3 +1,5 @@
+import { toJakartaBusinessDate } from '../../Commons/helpers/businessDate';
+
 /**
  * Inventory batch lifecycle status.
  *
@@ -26,7 +28,22 @@ export const INVENTORY_EXPIRY_SOON_DAYS = 30;
 export type ExpiryState = 'EXPIRED' | 'EXPIRING_SOON' | 'OK' | 'NOT_APPLICABLE';
 
 /**
- * Classify a batch expiry against the business date (inventory-domain rule #14):
+ * Operational view shown to users: an ACTIVE batch past its expiry date reads
+ * as EXPIRED. Held or depleted states are never rewritten by the calendar, and
+ * the stored lifecycle status is left untouched.
+ */
+export function deriveOperationalStatus(
+  status: BatchStatus,
+  expiryState: ExpiryState,
+): BatchStatus {
+  return status === 'ACTIVE' && expiryState === 'EXPIRED' ? 'EXPIRED' : status;
+}
+
+/**
+ * Classify a batch expiry against the business date (inventory-domain rule #14).
+ * `expiredDate` is a calendar date anchored at UTC midnight; the business date
+ * is compared on its WIB calendar day, so a batch stays valid through its
+ * expiry day and turns EXPIRED only after it:
  * - expiredDate < businessDate            => EXPIRED
  * - expiredDate within N days (inclusive) => EXPIRING_SOON  (== businessDate counts here)
  * - otherwise                             => OK
@@ -46,11 +63,7 @@ export function classifyExpiry(
     expiredDate.getUTCMonth(),
     expiredDate.getUTCDate(),
   );
-  const today = Date.UTC(
-    businessDate.getUTCFullYear(),
-    businessDate.getUTCMonth(),
-    businessDate.getUTCDate(),
-  );
+  const today = Date.parse(`${toJakartaBusinessDate(businessDate)}T00:00:00Z`);
 
   if (exp < today) return 'EXPIRED';
 

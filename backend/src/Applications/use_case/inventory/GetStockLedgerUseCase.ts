@@ -3,6 +3,7 @@ import {
   LedgerResult,
 } from '../../../Domains/inventory/InventoryRepository';
 import { isMovementType } from '../../../Domains/inventory/movementTypes';
+import { InvariantError } from '../../../Commons/exceptions/InvariantError';
 
 export interface StockLedgerQuery {
   limit: number;
@@ -11,6 +12,8 @@ export interface StockLedgerQuery {
   productId?: string;
   batchId?: string;
   movementType?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 /**
@@ -28,6 +31,12 @@ export class GetStockLedgerUseCase {
       throw new Error('INVENTORY.INVALID_MOVEMENT_TYPE');
     }
 
+    if (query.dateFrom && query.dateTo && query.dateFrom > query.dateTo) {
+      throw new InvariantError(
+        'Dari tanggal tidak boleh melewati sampai tanggal. Periksa kembali rentang tanggal.',
+      );
+    }
+
     return this.inventoryRepository.getLedger(companyId, {
       limit: query.limit,
       offset: query.offset,
@@ -35,6 +44,8 @@ export class GetStockLedgerUseCase {
       productId: query.productId,
       batchId: query.batchId,
       movementType: query.movementType,
+      dateFrom: query.dateFrom,
+      dateTo: query.dateTo,
     });
   }
 }

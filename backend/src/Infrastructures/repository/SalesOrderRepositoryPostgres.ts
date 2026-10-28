@@ -33,6 +33,7 @@ import { scaledIngredientConsumption } from '../../Domains/production/production
 import { NotFoundError } from '../../Commons/exceptions/NotFoundError';
 import { InvariantError } from '../../Commons/exceptions/InvariantError';
 import { ConflictError } from '../../Commons/exceptions/ConflictError';
+import { toJakartaBusinessDate } from '../../Commons/helpers/businessDate';
 
 interface HeaderRow {
   id: string;
@@ -293,8 +294,10 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
     companyId: string,
     outletId: string,
     items: CheckoutItemRequest[],
+    businessDate: Date = new Date(),
   ): Promise<ResolveCheckoutResult> {
     const resolved: ResolvedSalesOrderItem[] = [];
+    const bizDate = toJakartaBusinessDate(businessDate);
 
     for (const req of items) {
       // Load the sellable product (must belong to the company, not deleted).
@@ -331,15 +334,15 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
       }>(
         `SELECT COALESCE(SUM(qty_available) FILTER (
                   WHERE status = 'ACTIVE' AND qty_available > 0
-                    AND (expired_date IS NULL OR expired_date >= CURRENT_DATE)
+                    AND (expired_date IS NULL OR expired_date >= $4::date)
               ), 0) AS sellable_qty,
                 COALESCE(SUM(qty_available) FILTER (
                   WHERE status = 'ACTIVE' AND qty_available > 0
-                    AND expired_date IS NOT NULL AND expired_date < CURRENT_DATE
+                    AND expired_date IS NOT NULL AND expired_date < $4::date
               ), 0) AS expired_qty
          FROM inventory_batches
          WHERE company_id = $1 AND outlet_id = $2 AND product_id = $3`,
-        [companyId, outletId, req.productId],
+        [companyId, outletId, req.productId, bizDate],
       );
       const sellableQty = Number(stockResult.rows[0]?.sellable_qty ?? 0);
       const expiredQty = Number(stockResult.rows[0]?.expired_qty ?? 0);
@@ -527,6 +530,7 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
     companyId: string,
     userId: string | null,
     payments: PaymentInput[],
+    businessDate: Date = new Date(),
   ): Promise<SalesOrder> {
     const client = await this.pool.connect();
     try {
@@ -552,7 +556,7 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
       }
 
       const outletId = header.outlet_id;
-      const bizDate = new Date().toISOString().slice(0, 10);
+      const bizDate = toJakartaBusinessDate(businessDate);
 
       // 2. Σ payments == grand_total (tolerate float noise within 0.005).
       const grandTotal = Number(header.grand_total);
@@ -1147,7 +1151,9 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
   async listPosProducts(
     companyId: string,
     filter: PosProductFilter,
+    businessDate: Date = new Date(),
   ): Promise<PosProductResult> {
+    const bizDate = toJakartaBusinessDate(businessDate);
     // Sellable products: active, non-deleted. A product is listed when it has an
     // ACTIVE recipe (i.e. it is backflushable) OR is FINISHED_GOODS (sold from
     // its own stock). This is the GRID's sellability rule, independent of the
@@ -1184,12 +1190,13 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
     // outlet and both derived from the same source as Stock On Hand (ACTIVE
     // batches with qty_available > 0):
     //   available_qty — not expired yet (NULL expiry counts as sellable)
-    //   expired_qty   — already past CURRENT_DATE
+    //   expired_qty   — already past the Jakarta business date
     // The qty_available > 0 guard is mandatory on BOTH: an expired batch that
     // has already been fully consumed would otherwise inflate expired_qty with
     // a meaningless figure and hide the real reason a line was rejected.
     // Without an outletId the param is NULL, so both sums collapse to 0.
     const outletParam = `$${params.length + 1}`;
+    const businessDateParam = `$${params.length + 2}`;
     const rowsResult = await this.pool.query<{
       id: string;
       sku: string;
@@ -1211,20 +1218,20 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
                WHERE ib.company_id = p.company_id AND ib.product_id = p.id
                  AND ib.outlet_id = ${outletParam}::uuid
                  AND ib.status = 'ACTIVE' AND ib.qty_available > 0
-                 AND (ib.expired_date IS NULL OR ib.expired_date >= CURRENT_DATE)
+                 AND (ib.expired_date IS NULL OR ib.expired_date >= ${businessDateParam}::date)
               ) AS available_qty,
               (SELECT COALESCE(SUM(ib.qty_available), 0)
                FROM inventory_batches ib
                WHERE ib.company_id = p.company_id AND ib.product_id = p.id
                  AND ib.outlet_id = ${outletParam}::uuid
                  AND ib.status = 'ACTIVE' AND ib.qty_available > 0
-                 AND ib.expired_date IS NOT NULL AND ib.expired_date < CURRENT_DATE
+                 AND ib.expired_date IS NOT NULL AND ib.expired_date < ${businessDateParam}::date
               ) AS expired_qty
        FROM products p
        WHERE ${whereClause}
        ORDER BY p.name ASC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
-      [...params, filter.outletId ?? null],
+      [...params, filter.outletId ?? null, bizDate],
     );
 
     // Each product carries a hasToppings flag (model global, doc 51 §2.1); the
@@ -1255,14 +1262,16 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
   async listActiveToppings(
     companyId: string,
     outletId?: string | null,
+    businessDate: Date = new Date(),
   ): Promise<PosToppingOption[]> {
+    const bizDate = toJakartaBusinessDate(businessDate);
     // Active entries of the GLOBAL topping catalog (shared by all products).
     // Two per-outlet stock figures per topping product, both scoped to the
     // requested outlet and both derived from the same source as Stock On Hand
     // (ACTIVE batches with qty_available > 0) — the IDENTICAL pattern used by
     // listPosProducts/resolveCheckoutItems:
     //   available_qty — not expired yet (NULL expiry counts as sellable)
-    //   expired_qty   — already past CURRENT_DATE
+    //   expired_qty   — already past the Jakarta business date
     // The qty_available > 0 guard is mandatory on BOTH: an expired batch that
     // has been fully consumed would otherwise inflate expired_qty with a
     // meaningless figure. Without an outletId the param is NULL, so both sums
@@ -1283,20 +1292,20 @@ export class SalesOrderRepositoryPostgres extends SalesOrderRepository {
                WHERE ib.company_id = tg.company_id AND ib.product_id = tg.topping_product_id
                  AND ib.outlet_id = $2::uuid
                  AND ib.status = 'ACTIVE' AND ib.qty_available > 0
-                 AND (ib.expired_date IS NULL OR ib.expired_date >= CURRENT_DATE)
+                 AND (ib.expired_date IS NULL OR ib.expired_date >= $3::date)
               ) AS available_qty,
               (SELECT COALESCE(SUM(ib.qty_available), 0)
                FROM inventory_batches ib
                WHERE ib.company_id = tg.company_id AND ib.product_id = tg.topping_product_id
                  AND ib.outlet_id = $2::uuid
                  AND ib.status = 'ACTIVE' AND ib.qty_available > 0
-                 AND ib.expired_date IS NOT NULL AND ib.expired_date < CURRENT_DATE
+                 AND ib.expired_date IS NOT NULL AND ib.expired_date < $3::date
               ) AS expired_qty
        FROM toppings tg
        JOIN products tp ON tp.id = tg.topping_product_id
        WHERE tg.company_id = $1 AND tg.is_active = TRUE AND tg.deleted_at IS NULL
        ORDER BY tg.sort_order ASC, tp.name ASC`,
-      [companyId, outletId ?? null],
+      [companyId, outletId ?? null, bizDate],
     );
 
     return result.rows.map((row) => ({
