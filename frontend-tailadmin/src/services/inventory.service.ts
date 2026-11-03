@@ -261,9 +261,9 @@ export type BatchStatus = (typeof BATCH_STATUSES)[number]
 /** Indonesian display labels for the operational status shown on batch screens. */
 const OPERATIONAL_STATUS_LABELS: Record<BatchStatus, string> = {
   ACTIVE: 'Aktif',
-  EXPIRED: 'Kedaluwarsa — tidak dapat digunakan',
+  EXPIRED: 'Kedaluwarsa',
   CONSUMED: 'Habis',
-  QUARANTINE: 'Karantina — tidak dapat digunakan',
+  QUARANTINE: 'Karantina',
 }
 
 /** Human label for backend-derived operational status, not stored batch status. */

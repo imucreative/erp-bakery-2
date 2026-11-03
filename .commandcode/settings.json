@@ -2,7 +2,28 @@
   "permissions": {
     "allow": [
       "Shell(npx tsc --noEmit)",
-      "Shell(npm:*)"
+      "Shell(npm:*)",
+      "Shell(npx prettier --check src/components/layout/AppSidebar.vue)",
+      "Shell(npx prettier --write src/components/layout/AppSidebar.vue)",
+      "Shell(npx eslint src/components/layout/AppSidebar.vue)",
+      "Shell(npx --yes agent-browser --help)",
+      "Shell(npx --yes agent-browser scrollintoview @e49)",
+      "Shell(npx --yes agent-browser click @e49)",
+      "Shell(npx --yes agent-browser get text aside)",
+      "Shell(npx --yes agent-browser eval \"JSON.stringify(Array.from(document.querySelectorAll('aside .menu-item-active, aside .menu-dropdown-item-active')).map(function(el){return el.textContent.trim()}))\")",
+      "Shell(npx --yes agent-browser click @e79)",
+      "Shell(npx --yes agent-browser wait 800)",
+      "Shell(npx --yes agent-browser eval JSON.stringify(Array.from(document.querySelectorAll('aside h2')).map(function(h){var ul=h.nextElementSibling; return h.textContent.trim()+':'+(ul && ul.offsetParent !== null ? 'open':'closed')})))",
+      "Shell(npx --yes agent-browser pushstate http://localhost:5174/inventory/ledger)",
+      "Shell(npx --yes agent-browser wait 1200)",
+      "Shell(npx --yes agent-browser eval JSON.stringify(Array.from(document.querySelectorAll('aside .menu-item-active')).map(function(el){return el.textContent.trim()})))",
+      "Shell(npx --yes agent-browser console)",
+      "Shell(npx --yes agent-browser errors)",
+      "Shell(npx --yes agent-browser close)",
+      "powershell",
+      "Shell(npx prettier --write \"src/components/layout/sidebar/**/*.{vue,ts}\" \"src/components/layout/AdminLayout.vue\")",
+      "Shell(npx eslint src/components/layout src/lib/route.ts)",
+      "Shell(findstr:*)"
     ],
     "deny": [],
     "defaultMode": "default"
