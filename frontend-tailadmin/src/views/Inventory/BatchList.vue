@@ -1,15 +1,4 @@
 <script setup lang="ts">
-/**
- * BatchList — thin controller for the read-only Batch & Expiry list page.
- * List state (pagination / outlet / product / status filters + include-non-batch
- * toggle) lives in `useBatches`; the toolbar, table, and detail modal are
- * separate feature components. The batches endpoint returns raw InventoryBatch
- * rows carrying IDs only, so outlet and product names are resolved from
- * one-time lookup maps (same pattern as the Stock Ledger list). Expiry
- * classification is backend-derived — never recomputed here. Read-only: no
- * create button, no mutations; the only row action opens a read-only detail
- * modal fetched via the service.
- */
 import { onMounted, ref } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
@@ -163,8 +152,17 @@ onMounted(() => {
 
     <ComponentCard
       title="Batch & Expiry"
-      desc="Pemantauan batch inventaris beserta status kedaluwarsanya per produk dan outlet."
+      desc="Pemantauan batch inventaris beserta status operasional dan kondisi kedaluwarsanya per produk dan outlet."
     >
+      <p class="text-muted mb-4">
+        Sisa Stok Fisik menampilkan stok yang masih ada secara fisik — termasuk batch kedaluwarsa
+        dan karantina — sehingga tidak selalu sama dengan stok yang dapat digunakan. Status
+        Operasional dihitung dari tanggal kedaluwarsa WIB: batch masih valid sampai akhir tanggal
+        kedaluwarsanya dan baru tidak dapat digunakan setelah tanggal tersebut. Status lifecycle
+        tersimpan (Aktif / Kedaluwarsa / Habis / Karantina) tidak diubah otomatis oleh pemantauan
+        ini.
+      </p>
+
       <!-- Toolbar -->
       <div class="toolbar-row">
         <BatchFilterBar

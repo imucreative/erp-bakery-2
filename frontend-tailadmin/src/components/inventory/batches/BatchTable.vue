@@ -1,22 +1,10 @@
 <script setup lang="ts">
-/**
- * BatchTable — presentational, read-only table for the Batch & Expiry list.
- * Columns: Produk (name + SKU, resolved from a map), Outlet (name, resolved
- * from a map), No. Batch (batchNumber; "Non-batch" for synthetic rows), Qty
- * (qtyAvailable), Tgl Kedaluwarsa (expiredDate; "—" when null), Status (batch
- * status badge), Kedaluwarsa (expiryState badge: EXPIRED→error,
- * EXPIRING_SOON→warning, OK→success, NOT_APPLICABLE→light), and an icon-only
- * "Lihat" action that emits `view`. Rows are raw InventoryBatch records that
- * carry IDs only; names are resolved by the parent via lookup maps, with a
- * raw-id fallback. Expiry classification is backend-derived (never recomputed
- * here). Renders loading / error / empty states.
- */
 import { Eye } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
 import { BaseButton, BaseTable, BaseTableCell, BaseTableHead, BaseTableRow } from '@/components/ui'
 import { formatDate, formatQtyWithUom } from '@/lib/format'
 import {
-  batchStatusLabel,
+  operationalStatusLabel,
   expiryStateLabel,
   type BatchWithExpiry,
   type ExpiryState,
@@ -98,10 +86,10 @@ function expiryColor(state: ExpiryState): ExpiryColor {
         <BaseTableHead>Produk</BaseTableHead>
         <BaseTableHead>Outlet</BaseTableHead>
         <BaseTableHead>No. Batch</BaseTableHead>
-        <BaseTableHead align="end">Qty</BaseTableHead>
+        <BaseTableHead align="end">Sisa Stok Fisik</BaseTableHead>
         <BaseTableHead>Tgl Kedaluwarsa</BaseTableHead>
-        <BaseTableHead>Status</BaseTableHead>
-        <BaseTableHead>Kedaluwarsa</BaseTableHead>
+        <BaseTableHead>Status Operasional</BaseTableHead>
+        <BaseTableHead>Kondisi Kedaluwarsa</BaseTableHead>
         <BaseTableHead align="end">Aksi</BaseTableHead>
       </BaseTableRow>
     </template>
@@ -136,8 +124,8 @@ function expiryColor(state: ExpiryState): ExpiryColor {
           {{ row.batch.expiredDate ? formatDate(row.batch.expiredDate) : '—' }}
         </BaseTableCell>
         <BaseTableCell>
-          <Badge :color="statusColor(row.batch.status)">
-            {{ batchStatusLabel(row.batch.status) }}
+          <Badge :color="statusColor(row.operationalStatus)">
+            {{ operationalStatusLabel(row.operationalStatus) }}
           </Badge>
         </BaseTableCell>
         <BaseTableCell>

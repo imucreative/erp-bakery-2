@@ -51,35 +51,105 @@ describe('GetBatchesUseCase', () => {
     expect(result.rows[1].expiryState).toBe('EXPIRED');
   });
 
-  it('should mark non-batch rows as NOT_APPLICABLE', async () => {
+  it.each([
+    {
+      id: 'active',
+      status: 'ACTIVE' as const,
+      expiredDate: new Date('2026-06-10'),
+      expected: 'EXPIRED',
+    },
+    {
+      id: 'held',
+      status: 'QUARANTINE' as const,
+      expiredDate: new Date('2026-06-20'),
+      expected: 'QUARANTINE',
+    },
+    {
+      id: 'depleted',
+      status: 'CONSUMED' as const,
+      expiredDate: new Date('2026-06-10'),
+      expected: 'CONSUMED',
+    },
+    {
+      id: 'stored-expired',
+      status: 'EXPIRED' as const,
+      expiredDate: new Date('2026-12-10'),
+      expected: 'EXPIRED',
+    },
+  ])(
+    'derives $id operational status without touching the stored status',
+    async ({ status, expiredDate, expected }) => {
+      mockInventoryRepository.getBatches.mockResolvedValue({
+        rows: [makeBatch({ id: 'one', status, expiredDate })],
+        total: 1,
+      });
+
+      const { rows } = await useCase.execute({ limit: 10, offset: 0 }, 'company-1', businessDate);
+
+      expect(rows[0].operationalStatus).toBe(expected);
+      expect(rows[0].batch.status).toBe(status);
+      expect(rows[0].batch.qtyAvailable).toBe(5);
+    },
+  );
+
+  it('should mark non-batch rows as NOT_APPLICABLE and keep their stored status', async () => {
     mockInventoryRepository.getBatches.mockResolvedValue({
       rows: [makeBatch({ id: 'nb', isNonBatch: true, expiredDate: null })],
       total: 1,
     });
 
-    const result = await useCase.execute(
+    const { rows } = await useCase.execute(
       { limit: 10, offset: 0, includeNonBatch: true },
       'company-1',
       businessDate,
     );
 
-    expect(result.rows[0].expiryState).toBe('NOT_APPLICABLE');
+    expect(rows[0].expiryState).toBe('NOT_APPLICABLE');
+    expect(rows[0].operationalStatus).toBe('ACTIVE');
   });
 
-  it('should default includeNonBatch to false when passing filter to repo', async () => {
+  it('should pass the business date and default includeNonBatch to false', async () => {
     mockInventoryRepository.getBatches.mockResolvedValue({ rows: [], total: 0 });
 
     await useCase.execute({ limit: 10, offset: 0 }, 'company-1', businessDate);
 
     expect(mockInventoryRepository.getBatches).toHaveBeenCalledWith(
       'company-1',
-      expect.objectContaining({ includeNonBatch: false }),
+      expect.objectContaining({ includeNonBatch: false, operationalStatus: undefined }),
+      businessDate,
+    );
+  });
+
+  it('forwards the operational status filter separately from the stored status filter', async () => {
+    mockInventoryRepository.getBatches.mockResolvedValue({ rows: [], total: 0 });
+
+    await useCase.execute(
+      { limit: 10, offset: 0, status: 'ACTIVE', operationalStatus: 'EXPIRED' },
+      'company-1',
+      businessDate,
+    );
+
+    expect(mockInventoryRepository.getBatches).toHaveBeenCalledWith(
+      'company-1',
+      expect.objectContaining({ status: 'ACTIVE', operationalStatus: 'EXPIRED' }),
+      businessDate,
     );
   });
 
   it('should throw INVALID_BATCH_STATUS for an unknown status', async () => {
     await expect(
       useCase.execute({ limit: 10, offset: 0, status: 'BOGUS' }, 'company-1', businessDate),
+    ).rejects.toThrow('INVENTORY.INVALID_BATCH_STATUS');
+    expect(mockInventoryRepository.getBatches).not.toHaveBeenCalled();
+  });
+
+  it('should throw INVALID_BATCH_STATUS for an unknown operational status', async () => {
+    await expect(
+      useCase.execute(
+        { limit: 10, offset: 0, operationalStatus: 'BOGUS' },
+        'company-1',
+        businessDate,
+      ),
     ).rejects.toThrow('INVENTORY.INVALID_BATCH_STATUS');
     expect(mockInventoryRepository.getBatches).not.toHaveBeenCalled();
   });

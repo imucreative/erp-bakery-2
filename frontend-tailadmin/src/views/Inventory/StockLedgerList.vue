@@ -29,6 +29,8 @@ const {
   outletId,
   productId,
   movementType,
+  dateFrom,
+  dateTo,
   page,
   totalPages,
   canPrev,
@@ -147,6 +149,8 @@ onMounted(() => {
           v-model:outlet-id="outletId"
           v-model:product-id="productId"
           v-model:movement-type="movementType"
+          v-model:date-from="dateFrom"
+          v-model:date-to="dateTo"
           :outlets="outlets"
           :products="products"
         />

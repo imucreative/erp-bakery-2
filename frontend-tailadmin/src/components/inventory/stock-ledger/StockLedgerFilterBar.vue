@@ -1,12 +1,7 @@
 <script setup lang="ts">
-/**
- * StockLedgerFilterBar — outlet + product + movement-type filters for the Stock
- * Ledger list. All three are native selects wrapped with a ChevronDownIcon per
- * the UI standard. The ledger has no backend text search, so there is no search
- * input. Two-way binds `outletId`, `productId`, and `movementType`. Outlet and
- * product options are resolved once by the parent.
- */
-import { BaseSelect } from '@/components/ui'
+import { computed } from 'vue'
+import { BaseFormField, BaseInput, BaseSelect } from '@/components/ui'
+import EntityCombobox from '@/components/ui/EntityCombobox.vue'
 import { MOVEMENT_TYPES, movementTypeLabel } from '@/services/inventory.service'
 
 interface OutletOption {
@@ -20,23 +15,33 @@ interface ProductOption {
   sku: string
 }
 
-defineProps<{
+const props = defineProps<{
   outletId: string
   productId: string
   movementType: string
+  dateFrom: string
+  dateTo: string
   outlets: OutletOption[]
   products: ProductOption[]
 }>()
+
+const productLabel = (product: ProductOption): string => `${product.name} (${product.sku})`
+const selectedProductLabel = computed(() => {
+  const product = props.products.find((product) => product.id === props.productId)
+  return product ? productLabel(product) : ''
+})
 
 const emit = defineEmits<{
   (event: 'update:outletId', value: string): void
   (event: 'update:productId', value: string): void
   (event: 'update:movementType', value: string): void
+  (event: 'update:dateFrom', value: string): void
+  (event: 'update:dateTo', value: string): void
 }>()
 </script>
 
 <template>
-  <div class="stack-row">
+  <div class="stack-row w-full sm:flex-wrap sm:items-end">
     <div class="w-full sm:w-56">
       <BaseSelect
         id="stock-ledger-outlet"
@@ -50,16 +55,16 @@ const emit = defineEmits<{
     </div>
 
     <div class="w-full sm:w-64">
-      <BaseSelect
-        id="stock-ledger-product"
+      <EntityCombobox
         :model-value="productId"
-        :options="[
-          { value: '', label: 'Semua Produk' },
-          ...products.map((product) => ({
-            value: product.id,
-            label: `${product.name} (${product.sku})`,
-          })),
-        ]"
+        :selected-label="selectedProductLabel"
+        :items="products"
+        :item-id="(product) => product.id"
+        :item-label="productLabel"
+        mode="client"
+        placeholder="Semua Produk — cari nama / SKU..."
+        aria-label="Filter produk"
+        clear-aria-label="Hapus filter produk"
         @update:model-value="emit('update:productId', $event)"
       />
     </div>
@@ -78,5 +83,33 @@ const emit = defineEmits<{
         @update:model-value="emit('update:movementType', $event)"
       />
     </div>
+
+    <BaseFormField
+      label="Dari Tanggal (WIB)"
+      field-id="stock-ledger-date-from"
+      class="w-full sm:w-56"
+    >
+      <BaseInput
+        id="stock-ledger-date-from"
+        type="date"
+        :model-value="dateFrom"
+        :max="dateTo || undefined"
+        @update:model-value="emit('update:dateFrom', $event)"
+      />
+    </BaseFormField>
+
+    <BaseFormField
+      label="Sampai Tanggal (WIB)"
+      field-id="stock-ledger-date-to"
+      class="w-full sm:w-56"
+    >
+      <BaseInput
+        id="stock-ledger-date-to"
+        type="date"
+        :model-value="dateTo"
+        :min="dateFrom || undefined"
+        @update:model-value="emit('update:dateTo', $event)"
+      />
+    </BaseFormField>
   </div>
 </template>

@@ -1,4 +1,65 @@
-/* Class untuk AppSidebar & submenu (dipakai lewat @utility). */
+/* Class untuk sidebar & submenu (dipakai lewat @utility). */
+
+/* --- Kerangka sidebar --- */
+
+/* Wadah utama `<aside>`. Lebar/posisi yang berubah-ubah (w-[290px]/w-[90px],
+   translate) tetap di call-site karena bergantung state. */
+@utility sidebar {
+  @apply fixed flex flex-col mt-0 top-0 px-5 start-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-99999 border-e border-gray-200;
+}
+
+/* Blok logo di atas sidebar. Penyejajaran ikon (justify-center saat collapse)
+   tetap di call-site. */
+@utility sidebar-brand {
+  @apply pt-8 pb-7 flex;
+}
+
+/* Area menu yang bisa di-scroll. */
+@utility sidebar-scroll {
+  @apply flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar;
+}
+
+/* --- Judul & grup menu --- */
+
+/* Label grup statis (tanpa toggle), disamakan dengan demo TailAdmin. */
+@utility menu-group-title {
+  @apply mb-4 flex h-auto shrink-0 items-center p-0 text-xs uppercase leading-5 font-medium text-gray-400;
+}
+
+@utility menu-group-list {
+  @apply flex w-full min-w-0 flex-col gap-1;
+}
+
+/* --- Item menu --- */
+
+@utility menu-item-text {
+  @apply truncate;
+}
+
+@utility menu-item-arrow-icon {
+  @apply ms-auto w-5 h-5 transition-transform duration-200;
+}
+
+@utility menu-item-badge {
+  @apply ms-auto rounded-full bg-gray-100 px-2 py-0.5 text-theme-xs font-medium text-gray-500 dark:bg-white/10 dark:text-gray-400;
+}
+
+/* Saat sidebar dalam mode ikon saja (label disembunyikan). */
+@utility menu-item-collapsed {
+  @apply xl:justify-center;
+}
+
+/* --- Submenu --- */
+
+@utility menu-submenu-list {
+  @apply mt-2 space-y-1 ms-9;
+}
+
+@utility menu-subitem-badges {
+  @apply flex items-center gap-1 ms-auto;
+}
+
+/* --- Dasar item (dipakai lewat @utility) --- */
 
 @utility menu-item {
   @apply relative flex items-center w-full gap-3 px-3 py-2 font-medium rounded-lg text-theme-sm;

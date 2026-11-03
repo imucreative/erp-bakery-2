@@ -19,20 +19,26 @@ describe('GetStockOnHandUseCase', () => {
     mockInventoryRepository.getStockOnHand.mockResolvedValue({ rows: [], total: 0 });
   });
 
-  it('should delegate to repository with normalized filter', async () => {
+  it('should delegate to repository with normalized filter and business date', async () => {
+    const businessDate = new Date('2026-10-27T17:00:00.000Z');
     await useCase.execute(
       { limit: 20, offset: 0, outletId: 'o1', productId: 'p1', search: 'roti', lowOnly: true },
       'company-1',
+      businessDate,
     );
 
-    expect(mockInventoryRepository.getStockOnHand).toHaveBeenCalledWith('company-1', {
-      limit: 20,
-      offset: 0,
-      outletId: 'o1',
-      productId: 'p1',
-      search: 'roti',
-      lowOnly: true,
-    });
+    expect(mockInventoryRepository.getStockOnHand).toHaveBeenCalledWith(
+      'company-1',
+      {
+        limit: 20,
+        offset: 0,
+        outletId: 'o1',
+        productId: 'p1',
+        search: 'roti',
+        lowOnly: true,
+      },
+      businessDate,
+    );
   });
 
   it('should return the repository result', async () => {

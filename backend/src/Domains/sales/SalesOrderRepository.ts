@@ -194,6 +194,7 @@ export abstract class SalesOrderRepository {
     companyId: string,
     outletId: string,
     items: CheckoutItemRequest[],
+    businessDate?: Date,
   ): Promise<ResolveCheckoutResult>;
 
   /** Checkout — create a PENDING_PAYMENT order (+ items + toppings). No stock. */
@@ -212,6 +213,7 @@ export abstract class SalesOrderRepository {
     companyId: string,
     userId: string | null,
     payments: PaymentInput[],
+    businessDate?: Date,
   ): Promise<SalesOrder>;
 
   /** Void — PENDING_PAYMENT -> CANCELLED (no stock). */
@@ -251,6 +253,7 @@ export abstract class SalesOrderRepository {
   abstract listPosProducts(
     companyId: string,
     filter: PosProductFilter,
+    businessDate?: Date,
   ): Promise<PosProductResult>;
 
   /**
@@ -266,5 +269,6 @@ export abstract class SalesOrderRepository {
   abstract listActiveToppings(
     companyId: string,
     outletId?: string | null,
+    businessDate?: Date,
   ): Promise<PosToppingOption[]>;
 }

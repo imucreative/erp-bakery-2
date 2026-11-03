@@ -719,6 +719,21 @@ const DomainErrorTranslator = {
     'CREATE_PRODUCTION_ORDER.QTY_MUST_BE_POSITIVE': new InvariantError(
       'Jumlah produksi harus lebih dari nol',
     ),
+    'CREATE_PRODUCTION_ORDER.ACTUAL_QTY_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Jumlah hasil produksi (actual) harus berupa angka',
+    ),
+    'CREATE_PRODUCTION_ORDER.ACTUAL_QTY_NEGATIVE': new InvariantError(
+      'Jumlah hasil produksi (actual) tidak boleh negatif',
+    ),
+    'CREATE_PRODUCTION_ORDER.WASTE_INVALID': new InvariantError(
+      'Jumlah waste harus berupa angka dan tidak boleh negatif',
+    ),
+    'CREATE_PRODUCTION_ORDER.RESULT_EXPIRY_REQUIRED': new InvariantError(
+      'Tanggal kedaluwarsa hasil produksi wajib diisi ketika ada hasil yang masuk stok',
+    ),
+    'CREATE_PRODUCTION_ORDER.RESULT_EXPIRY_INVALID': new InvariantError(
+      'Tanggal kedaluwarsa hasil produksi tidak valid; gunakan format YYYY-MM-DD',
+    ),
     'RECORD_YIELD.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
       'Data yield produksi tidak lengkap',
     ),
@@ -952,6 +967,89 @@ const DomainErrorTranslator = {
       'Kategori komentar SYSTEM hanya untuk sistem dan tidak dapat dipilih',
     ),
 
+    // ── Purchase Request Comments (doc 35 §6) ────────────────────
+    'ADD_PURCHASE_REQUEST_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data komentar purchase request tidak lengkap',
+    ),
+    'ADD_PURCHASE_REQUEST_COMMENT.BODY_REQUIRED': new InvariantError(
+      'Isi komentar wajib diisi',
+    ),
+    'ADD_PURCHASE_REQUEST_COMMENT.INVALID_CATEGORY': new InvariantError(
+      'Kategori komentar tidak valid',
+    ),
+    'ADD_PURCHASE_REQUEST_COMMENT.CATEGORY_NOT_ALLOWED': new InvariantError(
+      'Kategori komentar SYSTEM hanya untuk sistem dan tidak dapat dipilih',
+    ),
+
+    // ── Purchase Return Comments (doc 35 §6) ─────────────────────
+    'ADD_PURCHASE_RETURN_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data komentar purchase return tidak lengkap',
+    ),
+    'ADD_PURCHASE_RETURN_COMMENT.BODY_REQUIRED': new InvariantError(
+      'Isi komentar wajib diisi',
+    ),
+    'ADD_PURCHASE_RETURN_COMMENT.INVALID_CATEGORY': new InvariantError(
+      'Kategori komentar tidak valid',
+    ),
+    'ADD_PURCHASE_RETURN_COMMENT.CATEGORY_NOT_ALLOWED': new InvariantError(
+      'Kategori komentar SYSTEM hanya untuk sistem dan tidak dapat dipilih',
+    ),
+
+    // ── Purchase Return Attachments (doc 35 §5) ──────────────────
+    'UPLOAD_PURCHASE_RETURN_ATTACHMENT.FILE_REQUIRED': new InvariantError(
+      'Berkas lampiran wajib dipilih dan tidak boleh kosong',
+    ),
+    'UPLOAD_PURCHASE_RETURN_ATTACHMENT.MIME_NOT_ALLOWED': new InvariantError(
+      'Tipe berkas tidak diizinkan; gunakan PDF atau gambar dengan ekstensi yang sesuai',
+    ),
+    'UPLOAD_PURCHASE_RETURN_ATTACHMENT.FILE_TOO_LARGE': new InvariantError(
+      'Ukuran berkas melebihi batas maksimum yang diizinkan',
+    ),
+
+    // ── Purchase Return ──────────────────────────────────────────
+    'CREATE_PURCHASE_RETURN.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Data purchase return tidak lengkap',
+    ),
+    'CREATE_PURCHASE_RETURN.GOODS_RECEIPT_REQUIRED': new InvariantError(
+      'Purchase return harus dibuat dari goods receipt',
+    ),
+    'CREATE_PURCHASE_RETURN.RETURN_DATE_INVALID': new InvariantError(
+      'Tanggal retur tidak valid; gunakan format YYYY-MM-DD',
+    ),
+    'CREATE_PURCHASE_RETURN.ITEMS_REQUIRED': new InvariantError(
+      'Purchase return harus memiliki minimal satu item',
+    ),
+    'CREATE_PURCHASE_RETURN.ITEM_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Format item purchase return tidak sesuai',
+    ),
+    'CREATE_PURCHASE_RETURN.ITEM_GR_ITEM_REQUIRED': new InvariantError(
+      'Setiap item retur harus merujuk ke item goods receipt',
+    ),
+    'CREATE_PURCHASE_RETURN.ITEM_QTY_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Jumlah retur harus berupa angka',
+    ),
+    'CREATE_PURCHASE_RETURN.ITEM_QTY_MUST_BE_POSITIVE': new InvariantError(
+      'Jumlah retur harus lebih dari nol',
+    ),
+    'CREATE_PURCHASE_RETURN.ITEM_REASON_INVALID': new InvariantError(
+      'Alasan retur tidak valid',
+    ),
+    'CREATE_PURCHASE_RETURN.ITEM_REASON_DESCRIPTION_REQUIRED': new InvariantError(
+      'Alasan retur yang dipilih mewajibkan keterangan tambahan',
+    ),
+    'PURCHASE_RETURN.DUPLICATE_ITEM': new InvariantError(
+      'Item goods receipt yang sama dikirim lebih dari sekali',
+    ),
+    'PURCHASE_RETURN.ITEM_NOT_IN_GOODS_RECEIPT': new InvariantError(
+      'Item yang diretur tidak ada pada goods receipt tersebut',
+    ),
+    'PURCHASE_RETURN.RETURN_QTY_EXCEEDS_RETURNABLE': new InvariantError(
+      'Jumlah retur melebihi jumlah yang masih dapat diretur',
+    ),
+    'PURCHASE_RETURN.INVALID_STATUS': new InvariantError(
+      'Filter status purchase return tidak valid',
+    ),
+
     // ── Goods Receipt (doc 26 §3/§6, STAGE 1) ────────────────────
     'GOODS_RECEIPT.NOT_FOUND': new NotFoundError('Goods receipt tidak ditemukan'),
     'CREATE_GOODS_RECEIPT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
@@ -962,6 +1060,13 @@ const DomainErrorTranslator = {
     ),
     'CREATE_GOODS_RECEIPT.RECEIVE_DATE_INVALID': new InvariantError(
       'Tanggal terima goods receipt tidak valid',
+    ),
+    'GOODS_RECEIPT.MISSING_UOM_CONVERSION': new InvariantError(
+      'Satuan yang dipilih belum punya konversi aktif ke satuan dasar produk. ' +
+        'Tambahkan konversi UOM pada master produk terlebih dahulu',
+    ),
+    'GOODS_RECEIPT.INVALID_UOM_CONVERSION_FACTOR': new InvariantError(
+      'Faktor konversi satuan produk tidak valid; perbaiki konversi UOM pada master produk',
     ),
     'CREATE_GOODS_RECEIPT.ITEMS_REQUIRED': new InvariantError(
       'Goods receipt harus memiliki minimal satu item',

@@ -56,6 +56,8 @@ export function useStockLedger() {
   const productId = ref<string>('')
   const batchId = ref<string>('')
   const movementType = ref<string>('')
+  const dateFrom = ref<string>('')
+  const dateTo = ref<string>('')
   const page = ref<number>(1)
 
   const totalPages = computed<number>(() => meta.value.totalPages || 1)
@@ -73,6 +75,8 @@ export function useStockLedger() {
         productId: productId.value || undefined,
         batchId: batchId.value || undefined,
         movementType: movementType.value || undefined,
+        dateFrom: dateFrom.value || undefined,
+        dateTo: dateTo.value || undefined,
       }
       const result = await inventoryService.getLedger(params)
       items.value = result.items
@@ -100,6 +104,11 @@ export function useStockLedger() {
     void fetchList()
   })
 
+  watch([dateFrom, dateTo], () => {
+    page.value = 1
+    void fetchList()
+  })
+
   function prevPage(): void {
     if (canPrev.value) {
       page.value -= 1
@@ -123,6 +132,8 @@ export function useStockLedger() {
     productId,
     batchId,
     movementType,
+    dateFrom,
+    dateTo,
     page,
     totalPages,
     canPrev,

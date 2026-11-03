@@ -1,18 +1,10 @@
 <script setup lang="ts">
-/**
- * BatchDetailModal — read-only detail view of a single inventory batch.
- * Panel and backdrop come from `BaseModal` (`size="lg"`, `scrollable`). Shows the
- * product (name + SKU), outlet, batch number, lot number, available quantity,
- * received/expiry dates, batch status, the backend-derived expiry state, and
- * the non-batch flag. Product/outlet names are resolved by the parent via
- * lookup maps (raw-id fallback). Read-only — no actions beyond closing.
- */
 import { computed } from 'vue'
 import { BaseAlert, BaseButton, BaseModal } from '@/components/ui'
 import Badge from '@/components/ui/Badge.vue'
 import { formatDate, formatQtyWithUom } from '@/lib/format'
 import {
-  batchStatusLabel,
+  operationalStatusLabel,
   expiryStateLabel,
   type BatchWithExpiry,
   type ExpiryState,
@@ -143,7 +135,7 @@ function statusColor(status: string): BatchStatusColor {
           </span>
         </div>
         <div class="flex flex-col">
-          <span class="text-meta uppercase">Qty Tersedia</span>
+          <span class="text-meta uppercase">Sisa Stok Fisik</span>
           <span class="text-strong">
             {{ formatQtyWithUom(detail.batch.qtyAvailable, uomLabel) }}
           </span>
@@ -161,15 +153,15 @@ function statusColor(status: string): BatchStatusColor {
           </span>
         </div>
         <div class="flex flex-col">
-          <span class="text-meta uppercase">Status</span>
+          <span class="text-meta uppercase">Status Operasional</span>
           <span>
-            <Badge :color="statusColor(detail.batch.status)">
-              {{ batchStatusLabel(detail.batch.status) }}
+            <Badge :color="statusColor(detail.operationalStatus)">
+              {{ operationalStatusLabel(detail.operationalStatus) }}
             </Badge>
           </span>
         </div>
         <div class="flex flex-col">
-          <span class="text-meta uppercase">Kedaluwarsa</span>
+          <span class="text-meta uppercase">Kondisi Kedaluwarsa</span>
           <span>
             <Badge :color="expiryColor(detail.expiryState)">
               {{ expiryStateLabel(detail.expiryState) }}

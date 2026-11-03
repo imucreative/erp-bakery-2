@@ -70,7 +70,7 @@ export function useBatches() {
         limit: limit.value,
         outletId: outletId.value || undefined,
         productId: productId.value || undefined,
-        status: status.value || undefined,
+        operationalStatus: status.value || undefined,
         includeNonBatch: includeNonBatch.value || undefined,
       }
       const result = await inventoryService.getBatches(params)
