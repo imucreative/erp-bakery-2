@@ -123,6 +123,7 @@
             <BaseTableHead>Date</BaseTableHead>
             <BaseTableHead>Outlet</BaseTableHead>
             <BaseTableHead>Recipe</BaseTableHead>
+            <BaseTableHead>UOM</BaseTableHead>
             <BaseTableHead align="end">Planned Qty</BaseTableHead>
             <BaseTableHead align="end">Produced Qty</BaseTableHead>
             <BaseTableHead align="end">Waste Qty</BaseTableHead>
@@ -139,6 +140,9 @@
             </BaseTableCell>
             <BaseTableCell>
               <span class="text-strong">{{ row.recipeName }}</span>
+            </BaseTableCell>
+            <BaseTableCell>
+              {{ row.uomName || '—' }}
             </BaseTableCell>
             <BaseTableCell align="end">
               {{ row.plannedQty }}

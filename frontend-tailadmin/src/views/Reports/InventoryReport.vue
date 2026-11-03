@@ -120,6 +120,7 @@
             <BaseTableHead>SKU</BaseTableHead>
             <BaseTableHead align="end">Total Qty</BaseTableHead>
             <BaseTableHead align="end">Available Qty</BaseTableHead>
+            <BaseTableHead>UOM</BaseTableHead>
             <BaseTableHead align="end">Batches</BaseTableHead>
             <BaseTableHead>Earliest Expiry</BaseTableHead>
             <BaseTableHead align="end">Stock Value</BaseTableHead>
@@ -134,10 +135,13 @@
               <span class="text-meta">{{ row.sku }}</span>
             </BaseTableCell>
             <BaseTableCell align="end" emphasis="medium">
-              {{ row.totalQty.toFixed(2) }}
+              {{ row.totalQty.toFixed(0) }}
             </BaseTableCell>
             <BaseTableCell align="end">
-              {{ row.availableQty.toFixed(2) }}
+              {{ row.availableQty.toFixed(0) }}
+            </BaseTableCell>
+            <BaseTableCell>
+              {{ row.uomName || '—' }}
             </BaseTableCell>
             <BaseTableCell align="end">
               {{ row.batchCount }}

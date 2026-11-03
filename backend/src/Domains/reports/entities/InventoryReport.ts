@@ -15,6 +15,8 @@ export interface InventoryReportProductRow {
   productId: string;
   productName: string;
   sku: string;
+  uomCode: string | null;
+  uomName: string | null;
   totalQty: number;
   availableQty: number;
   reservedQty: number;

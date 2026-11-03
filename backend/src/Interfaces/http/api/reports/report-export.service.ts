@@ -37,7 +37,7 @@ export class ReportExportService {
 
     // Top products section
     lines.push('TOP SELLING PRODUCTS');
-    lines.push('Product,Topping,Qty Sold,Revenue');
+    lines.push('Product,Topping,Qty Sold,UOM,Revenue');
     for (const row of report.topProducts) {
       const [productName, toppingNames] = [
         row.productName,
@@ -46,7 +46,9 @@ export class ReportExportService {
         const safeValue = /^[=+\-@\t\r\n]/.test(value) ? `'${value}` : value;
         return `"${safeValue.replace(/"/g, '""')}"`;
       });
-      lines.push(`${productName},${toppingNames},${row.qtySold},${row.revenue}`);
+      lines.push(
+        `${productName},${toppingNames},${row.qtySold},${row.uomCode || row.uomName || 'N/A'},${row.revenue}`,
+      );
     }
 
     return lines.join('\n');
@@ -71,10 +73,12 @@ export class ReportExportService {
 
     // Product rows section
     lines.push('PRODUCT DETAILS');
-    lines.push('Product,SKU,Total Qty,Available Qty,Reserved Qty,Batch Count,Earliest Expiry,Stock Value');
+    lines.push(
+      'Product,SKU,Total Qty,Available Qty,UOM,Reserved Qty,Batch Count,Earliest Expiry,Stock Value',
+    );
     for (const row of report.details) {
       lines.push(
-        `"${row.productName}","${row.sku}",${row.totalQty},${row.availableQty},${row.reservedQty},${row.batchCount},${row.earliestExpiry || 'N/A'},${row.stockValue}`,
+        `"${row.productName}","${row.sku}",${row.totalQty},${row.availableQty},${row.uomCode || row.uomName || 'N/A'},${row.reservedQty},${row.batchCount},${row.earliestExpiry || 'N/A'},${row.stockValue}`,
       );
     }
 
@@ -99,10 +103,10 @@ export class ReportExportService {
 
     // Daily breakdown section
     lines.push('DAILY BREAKDOWN');
-    lines.push('Date,Outlet,Recipe,Planned Qty,Produced Qty,Waste Qty,Yield %');
+    lines.push('Date,Outlet,Recipe,UOM,Planned Qty,Produced Qty,Waste Qty,Yield %');
     for (const row of report.details) {
       lines.push(
-        `${row.date},"${row.outletName}","${row.recipeName}",${row.plannedQty},${row.producedQty},${row.wasteQty},${row.yield.toFixed(2)}`,
+        `${row.date},"${row.outletName}","${row.recipeName}",${row.uomCode || row.uomName || 'N/A'},${row.plannedQty},${row.producedQty},${row.wasteQty},${row.yield.toFixed(2)}`,
       );
     }
 

@@ -166,6 +166,7 @@
             <BaseTableHead>Product</BaseTableHead>
             <BaseTableHead>Topping</BaseTableHead>
             <BaseTableHead align="end">Qty Sold</BaseTableHead>
+            <BaseTableHead>UOM</BaseTableHead>
             <BaseTableHead align="end">Revenue</BaseTableHead>
           </BaseTableRow>
         </template>
@@ -182,6 +183,9 @@
             </BaseTableCell>
             <BaseTableCell align="end">
               {{ row.qtySold }}
+            </BaseTableCell>
+            <BaseTableCell>
+              {{ row.uomName || '—' }}
             </BaseTableCell>
             <BaseTableCell align="end" emphasis="medium">
               {{ formatCurrency(row.revenue) }}

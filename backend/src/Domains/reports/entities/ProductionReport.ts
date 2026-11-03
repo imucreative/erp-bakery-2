@@ -16,6 +16,8 @@ export interface ProductionReportDailyBreakdown {
   outletName: string;
   recipeId: string;
   recipeName: string;
+  uomCode: string | null;
+  uomName: string | null;
   plannedQty: number;
   producedQty: number;
   wasteQty: number;

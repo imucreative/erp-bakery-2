@@ -175,6 +175,8 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
       product_id: string;
       product_name: string;
       topping_names: string[];
+      uom_code: string | null;
+      uom_name: string | null;
       qty_sold: string;
       revenue: string;
     }>(
@@ -182,10 +184,14 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
          soi.product_id,
          soi.product_name_snapshot AS product_name,
          topping.topping_names,
+         u.code AS uom_code,
+         u.name AS uom_name,
          SUM(soi.qty) AS qty_sold,
          SUM(soi.line_total) AS revenue
        FROM sales_order_items soi
        JOIN sales_orders so ON so.id = soi.sales_order_id
+       LEFT JOIN products p ON p.id = soi.product_id AND p.company_id = so.company_id
+       LEFT JOIN uoms u ON u.id = p.uom_id AND u.company_id = p.company_id
        LEFT JOIN LATERAL (
          SELECT COALESCE(
            ARRAY_AGG(sot.topping_name_snapshot ORDER BY sot.topping_name_snapshot),
@@ -198,7 +204,7 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
          AND so.status = $2
          AND DATE(so.paid_at + interval '7 hours') BETWEEN $${params.length - 2}::date AND $${params.length - 1}::date
          ${outletFilter}
-       GROUP BY soi.product_id, soi.product_name_snapshot, topping.topping_names
+       GROUP BY soi.product_id, soi.product_name_snapshot, topping.topping_names, u.code, u.name
        ORDER BY qty_sold DESC, product_name, topping.topping_names
        LIMIT $${params.length}`,
       params,
@@ -208,6 +214,8 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
       productId: row.product_id,
       productName: row.product_name,
       toppingNames: row.topping_names,
+      uomCode: row.uom_code,
+      uomName: row.uom_name,
       qtySold: parseFloat(row.qty_sold),
       revenue: parseFloat(row.revenue),
     }));
@@ -287,6 +295,8 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
       product_id: string;
       product_name: string;
       sku: string;
+      uom_code: string | null;
+      uom_name: string | null;
       total_qty: string;
       available_qty: string;
       reserved_qty: string;
@@ -298,6 +308,10 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
          p.id AS product_id,
          p.name AS product_name,
          p.sku,
+         (SELECT u.code FROM uoms u
+          WHERE u.id = p.uom_id AND u.company_id = p.company_id) AS uom_code,
+         (SELECT u.name FROM uoms u
+          WHERE u.id = p.uom_id AND u.company_id = p.company_id) AS uom_name,
          COALESCE(SUM(b.qty_available), 0) AS total_qty,
          COALESCE(SUM(CASE WHEN b.status = 'ACTIVE' THEN b.qty_available ELSE 0 END), 0) AS available_qty,
          COALESCE(SUM(CASE WHEN b.status = 'RESERVED' THEN b.qty_available ELSE 0 END), 0) AS reserved_qty,
@@ -320,6 +334,8 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
       productId: row.product_id,
       productName: row.product_name,
       sku: row.sku,
+      uomCode: row.uom_code,
+      uomName: row.uom_name,
       totalQty: parseFloat(row.total_qty),
       availableQty: parseFloat(row.available_qty),
       reservedQty: parseFloat(row.reserved_qty),
@@ -391,6 +407,8 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
       outlet_name: string;
       recipe_id: string;
       recipe_name: string;
+      uom_code: string | null;
+      uom_name: string | null;
       planned_qty: string;
       produced_qty: string;
       waste_qty: string;
@@ -402,6 +420,8 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
          o.name AS outlet_name,
          po.recipe_id,
          r.name AS recipe_name,
+         u.code AS uom_code,
+         u.name AS uom_name,
          COALESCE(SUM(po.scheduled_qty), 0) AS planned_qty,
          COALESCE(SUM(po.actual_qty), 0) AS produced_qty,
          COALESCE(SUM(po.waste_qty), 0) AS waste_qty,
@@ -413,11 +433,12 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
        FROM production_orders po
        JOIN outlets o ON o.id = po.outlet_id
        JOIN recipes r ON r.id = po.recipe_id
+       LEFT JOIN uoms u ON u.id = r.yield_uom_id AND u.company_id = r.company_id
        WHERE po.company_id = $1
          AND DATE(po.created_at AT TIME ZONE 'Asia/Jakarta') BETWEEN $2::date AND $3::date
          ${outletFilter}
          ${recipeFilter}
-       GROUP BY DATE(po.created_at AT TIME ZONE 'Asia/Jakarta'), po.outlet_id, o.name, po.recipe_id, r.name
+       GROUP BY DATE(po.created_at AT TIME ZONE 'Asia/Jakarta'), po.outlet_id, o.name, po.recipe_id, r.name, u.code, u.name
        ORDER BY date`,
       params,
     );
@@ -428,6 +449,8 @@ export class ReportsRepositoryPostgres extends ReportsRepository {
       outletName: row.outlet_name,
       recipeId: row.recipe_id,
       recipeName: row.recipe_name,
+      uomCode: row.uom_code,
+      uomName: row.uom_name,
       plannedQty: parseFloat(row.planned_qty),
       producedQty: parseFloat(row.produced_qty),
       wasteQty: parseFloat(row.waste_qty),

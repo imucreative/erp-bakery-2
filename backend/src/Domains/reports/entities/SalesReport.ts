@@ -23,6 +23,8 @@ export interface SalesReportTopProduct {
   productId: string;
   productName: string;
   toppingNames: string[];
+  uomCode: string | null;
+  uomName: string | null;
   qtySold: number;
   revenue: number;
 }

@@ -37,6 +37,8 @@ export interface SalesReportTopProduct {
   productId: string
   productName: string
   toppingNames: string[]
+  uomCode: string | null
+  uomName: string | null
   qtySold: number
   revenue: number
 }
@@ -71,6 +73,8 @@ export interface InventoryReportProductRow {
   productId: string
   productName: string
   sku: string
+  uomCode: string | null
+  uomName: string | null
   totalQty: number
   availableQty: number
   reservedQty: number
@@ -105,6 +109,8 @@ export interface ProductionReportDailyBreakdown {
   outletName: string
   recipeId: string
   recipeName: string
+  uomCode: string | null
+  uomName: string | null
   plannedQty: number
   producedQty: number
   wasteQty: number
