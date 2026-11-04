@@ -116,9 +116,4 @@ export const authService = {
       data: { refreshToken },
     })
   },
-
-  async getCurrentCompany(): Promise<Company> {
-    const response = await httpClient.get<ApiSuccess<Company>>('/companies/me')
-    return response.data.data
-  },
 }

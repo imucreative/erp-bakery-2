@@ -103,7 +103,7 @@ import {
   BaseTableRow,
 } from '@/components/ui'
 import { ApiClientError } from '@/services/http'
-import { companyService } from '@/services/company.service'
+import { platformCompanyService } from '@/services/platform-company.service'
 import { platformService, type PlatformUserItem } from '@/services/platform.service'
 
 const PAGE_SIZE = 10
@@ -130,7 +130,7 @@ function toMessage(error: unknown): string {
 
 async function loadCompanies(): Promise<void> {
   try {
-    const result = await companyService.list({ page: 1, limit: 100 })
+    const result = await platformCompanyService.list({ page: 1, limit: 100 })
     companyOptions.value = [
       { label: 'All companies', value: '' },
       ...result.items.map((company) => ({ label: company.name, value: company.id })),

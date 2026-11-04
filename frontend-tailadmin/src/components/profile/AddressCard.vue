@@ -6,17 +6,7 @@
 
         <BaseAlert v-if="errorMessage" type="error" :message="errorMessage" class="mb-4" />
 
-        <div
-          v-if="company"
-          class="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32"
-        >
-          <div v-for="field in fields" :key="field.label">
-            <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-              {{ field.label }}
-            </p>
-            <p class="text-sm font-medium text-gray-800 dark:text-white/90">{{ field.value }}</p>
-          </div>
-        </div>
+        <ProfileFieldGrid v-if="company" :fields="fields" />
 
         <p v-else class="text-muted">Akun ini tidak terhubung ke perusahaan.</p>
       </div>
@@ -26,73 +16,61 @@
       </div>
     </div>
 
-    <Modal v-if="editing" @close="closeEdit">
-      <template #body>
-        <div
-          class="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 lg:p-11 dark:bg-gray-900"
-        >
-          <div class="px-2">
-            <h4 class="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Edit Address
-            </h4>
-            <p class="text-muted mb-6 lg:mb-7">Perbarui data perusahaan Anda.</p>
-          </div>
-          <form class="flex flex-col" @submit.prevent="save">
-            <div class="grid grid-cols-1 gap-x-6 gap-y-5 px-2 lg:grid-cols-2">
-              <div class="col-span-2">
-                <BaseFormField label="Alamat" field-id="company-address">
-                  <BaseInput id="company-address" v-model="form.address" placeholder="Alamat lengkap" />
-                </BaseFormField>
-              </div>
-              <div>
-                <BaseFormField label="Kota" field-id="company-city">
-                  <BaseInput id="company-city" v-model="form.city" placeholder="mis. Depok" />
-                </BaseFormField>
-              </div>
-              <div>
-                <BaseFormField label="Provinsi" field-id="company-province">
-                  <BaseInput id="company-province" v-model="form.province" placeholder="mis. Jawa Barat" />
-                </BaseFormField>
-              </div>
-              <div>
-                <BaseFormField label="Kode Pos" field-id="company-postal-code">
-                  <BaseInput id="company-postal-code" v-model="form.postalCode" placeholder="mis. 16411" />
-                </BaseFormField>
-              </div>
-              <div>
-                <BaseFormField label="Negara" field-id="company-country">
-                  <BaseInput id="company-country" v-model="form.country" placeholder="Indonesia" />
-                </BaseFormField>
-              </div>
-              <div>
-                <BaseFormField label="NPWP / Tax ID" field-id="company-tax-id">
-                  <BaseInput id="company-tax-id" v-model="form.taxId" placeholder="mis. 01.234.567.8-901.000" />
-                </BaseFormField>
-              </div>
-              <div>
-                <BaseFormField label="Telepon" field-id="company-phone">
-                  <BaseInput id="company-phone" v-model="form.phone" placeholder="mis. 021-1234567" />
-                </BaseFormField>
-              </div>
-            </div>
-            <div class="mt-6 flex items-center gap-3 px-2 lg:justify-end">
-              <BaseButton variant="outline" size="sm" type="button" @click="closeEdit">
-                Batal
-              </BaseButton>
-              <BaseButton variant="primary" size="sm" type="submit" :loading="saving">
-                Simpan
-              </BaseButton>
-            </div>
-          </form>
-        </div>
-      </template>
-    </Modal>
+    <ProfileEditModal
+      v-if="editing"
+      title="Edit Address"
+      description="Perbarui data perusahaan Anda."
+      :saving="saving"
+      @close="closeEdit"
+      @submit="save"
+    >
+      <div class="col-span-2">
+        <BaseFormField label="Alamat" field-id="company-address">
+          <BaseInput id="company-address" v-model="form.address" placeholder="Alamat lengkap" />
+        </BaseFormField>
+      </div>
+      <div>
+        <BaseFormField label="Kota" field-id="company-city">
+          <BaseInput id="company-city" v-model="form.city" placeholder="mis. Depok" />
+        </BaseFormField>
+      </div>
+      <div>
+        <BaseFormField label="Provinsi" field-id="company-province">
+          <BaseInput id="company-province" v-model="form.province" placeholder="mis. Jawa Barat" />
+        </BaseFormField>
+      </div>
+      <div>
+        <BaseFormField label="Kode Pos" field-id="company-postal-code">
+          <BaseInput id="company-postal-code" v-model="form.postalCode" placeholder="mis. 16411" />
+        </BaseFormField>
+      </div>
+      <div>
+        <BaseFormField label="Negara" field-id="company-country">
+          <BaseInput id="company-country" v-model="form.country" placeholder="Indonesia" />
+        </BaseFormField>
+      </div>
+      <div>
+        <BaseFormField label="NPWP / Tax ID" field-id="company-tax-id">
+          <BaseInput
+            id="company-tax-id"
+            v-model="form.taxId"
+            placeholder="mis. 01.234.567.8-901.000"
+          />
+        </BaseFormField>
+      </div>
+      <div>
+        <BaseFormField label="Telepon" field-id="company-phone">
+          <BaseInput id="company-phone" v-model="form.phone" placeholder="mis. 021-1234567" />
+        </BaseFormField>
+      </div>
+    </ProfileEditModal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import Modal from './Modal.vue'
+import ProfileFieldGrid from './ProfileFieldGrid.vue'
+import ProfileEditModal from './ProfileEditModal.vue'
 import { BaseAlert, BaseButton, BaseFormField, BaseInput } from '@/components/ui'
 import { usePermission } from '@/composables/usePermission'
 import { ApiClientError } from '@/services/http'

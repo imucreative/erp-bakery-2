@@ -11,9 +11,9 @@ import { computed, ref } from 'vue'
 import {
   authService,
   type AuthTokens,
-  type Company,
   type LoginPayload,
 } from '@/services/auth.service'
+import { companyService, type CompanyProfile } from '@/services/company.service'
 import { decodeJwt, isJwtExpired, type JwtPayload } from '@/lib/jwt'
 import {
   clearTokens,
@@ -45,7 +45,7 @@ function toUser(payload: JwtPayload): AuthUser {
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<AuthUser | null>(null)
-  const company = ref<Company | null>(null)
+  const company = ref<CompanyProfile | null>(null)
 
   const isAuthenticated = computed<boolean>(() => user.value !== null)
   const permissions = computed<string[]>(() => user.value?.permissions ?? [])
@@ -112,7 +112,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function loadCompany(): Promise<void> {
     try {
-      company.value = await authService.getCurrentCompany()
+      company.value = await companyService.getMyCompany()
     } catch {
       // Company profile is non-critical for session validity; ignore failures.
       company.value = null

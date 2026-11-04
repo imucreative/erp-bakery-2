@@ -112,13 +112,13 @@ import {
   BaseTableRow,
 } from '@/components/ui'
 import { ApiClientError } from '@/services/http'
-import { companyService, type CompanyListItem } from '@/services/company.service'
+import { platformCompanyService, type PlatformCompanyItem } from '@/services/platform-company.service'
 import { Check, X } from 'lucide-vue-next'
 
 const PAGE_SIZE = 10
 const SEARCH_DEBOUNCE_MS = 300
 
-const items = ref<CompanyListItem[]>([])
+const items = ref<PlatformCompanyItem[]>([])
 const meta = reactive({ page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 })
 const search = ref('')
 const loading = ref(false)
@@ -138,7 +138,7 @@ async function load(): Promise<void> {
   loading.value = true
   errorMessage.value = null
   try {
-    const result = await companyService.list({
+    const result = await platformCompanyService.list({
       page: meta.page,
       limit: meta.limit,
       search: search.value,
@@ -175,7 +175,7 @@ function goToPage(page: number): void {
   void load()
 }
 
-async function toggleStatus(item: CompanyListItem): Promise<void> {
+async function toggleStatus(item: PlatformCompanyItem): Promise<void> {
   const nextActive = !item.isActive
   const verb = nextActive ? 'mengaktifkan' : 'menonaktifkan (suspend)'
   if (!window.confirm(`Yakin ${verb} perusahaan "${item.name}"?`)) {
@@ -185,7 +185,7 @@ async function toggleStatus(item: CompanyListItem): Promise<void> {
   updatingId.value = item.id
   errorMessage.value = null
   try {
-    const result = await companyService.setStatus(item.id, nextActive)
+    const result = await platformCompanyService.setStatus(item.id, nextActive)
     const target = items.value.find((row) => row.id === result.id)
     if (target) {
       target.isActive = result.isActive
