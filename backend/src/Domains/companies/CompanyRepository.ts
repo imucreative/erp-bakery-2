@@ -1,6 +1,30 @@
 import { RegisterCompany } from './entities/RegisterCompany';
 import { RegisteredCompany } from './entities/RegisteredCompany';
 
+/** Platform-level filters for the company list (super admin only). */
+export interface CompanyListParams {
+  page: number;
+  limit: number;
+  search?: string;
+}
+
+/** One row of the platform company list. */
+export interface CompanyListItem {
+  id: string;
+  code: string;
+  name: string;
+  slug: string;
+  phone: string | null;
+  isActive: boolean;
+  userCount: number;
+  createdAt: string;
+}
+
+export interface CompanyListResult {
+  rows: CompanyListItem[];
+  total: number;
+}
+
 /**
  * Abstract repository interface — Companies domain.
  * Concrete implementation lives in Infrastructures/repository/.
@@ -35,4 +59,18 @@ export abstract class CompanyRepository {
    * Generate a unique, sequential company code (e.g. "COMP-001").
    */
   abstract generateCompanyCode(): Promise<string>;
+
+  /**
+   * List companies for the platform console (super admin only).
+   * Soft-deleted companies are excluded; each row carries its active user count.
+   */
+  abstract listCompanies(params: CompanyListParams): Promise<CompanyListResult>;
+
+  /**
+   * Activate or suspend a company. Throws COMPANY.NOT_FOUND if missing.
+   */
+  abstract setCompanyActive(
+    id: string,
+    isActive: boolean,
+  ): Promise<{ id: string; isActive: boolean }>;
 }

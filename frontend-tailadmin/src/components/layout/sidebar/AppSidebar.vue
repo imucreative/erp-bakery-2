@@ -43,14 +43,16 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSidebar } from '@/composables/useSidebar'
 import { usePermission } from '@/composables/usePermission'
+import { useAuthStore } from '@/stores/auth'
 import SidebarHeader from './SidebarHeader.vue'
 import SidebarNavGroup from './SidebarNavGroup.vue'
 import SidebarWidget from './SidebarWidget.vue'
-import { findActiveSubmenu, menuGroups } from './data'
+import { findActiveSubmenu, menuGroups, platformMenuGroups } from './data'
 import type { NavGroup, NavItem, OpenSubmenu } from './types'
 
 const route = useRoute()
 
+const auth = useAuthStore()
 const { isExpanded, isMobileOpen, isHovered } = useSidebar()
 const { can } = usePermission()
 
@@ -76,11 +78,15 @@ const toggleSubmenu = (groupTitle: string, itemIndex: number) => {
  * `permission` or when `can(permission)` is true; items with `subItems` keep
  * only the sub-items the user may see. Groups left with no visible items are
  * dropped entirely. Computed so it re-runs when the auth store changes.
+ *
+ * A super admin has no company context, so it gets the platform console menu
+ * instead of the tenant ERP groups.
  */
 const visibleMenuGroups = computed<NavGroup[]>(() => {
   const isItemVisible = (item: NavItem): boolean => !item.permission || can(item.permission)
+  const sourceGroups = auth.isSuperAdmin ? platformMenuGroups : menuGroups
 
-  return menuGroups
+  return sourceGroups
     .map((group) => {
       const items = group.items
         .filter(isItemVisible)

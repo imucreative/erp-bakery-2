@@ -1,4 +1,4 @@
-import { CompanyRepository } from '../CompanyRepository';
+import { CompanyRepository, CompanyListParams } from '../CompanyRepository';
 import { RegisterCompany } from '../entities/RegisterCompany';
 
 /**
@@ -17,6 +17,12 @@ describe('CompanyRepository (abstract contract)', () => {
       throw new Error('NOT_IMPLEMENTED');
     }
     async generateCompanyCode(): Promise<never> {
+      throw new Error('NOT_IMPLEMENTED');
+    }
+    async listCompanies(_params: CompanyListParams): Promise<never> {
+      throw new Error('NOT_IMPLEMENTED');
+    }
+    async setCompanyActive(_id: string, _isActive: boolean): Promise<never> {
       throw new Error('NOT_IMPLEMENTED');
     }
   }

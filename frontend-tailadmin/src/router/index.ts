@@ -7,6 +7,8 @@ declare module 'vue-router' {
     title?: string
     public?: boolean
     permission?: string
+    /** Platform-console route — super admin only, never tenant-scoped. */
+    platform?: boolean
   }
 }
 
@@ -542,6 +544,25 @@ const router = createRouter({
     },
 
     {
+      // Platform console — super admin only (no company context).
+      path: '/platform/companies',
+      name: 'PlatformCompanies',
+      component: () => import('../views/Platform/CompanyList.vue'),
+      meta: {
+        title: 'Companies',
+        platform: true,
+      },
+    },
+    {
+      path: '/platform/users',
+      name: 'PlatformUsers',
+      component: () => import('../views/Platform/UserList.vue'),
+      meta: {
+        title: 'Platform Users',
+        platform: true,
+      },
+    },
+    {
       path: '/signin',
       name: 'Signin',
       component: () => import('../views/Auth/Signin.vue'),
@@ -569,10 +590,15 @@ router.beforeEach((to, from, next) => {
 
   const auth = useAuthStore()
   const isPublic = to.meta.public === true
+  const isPlatform = to.meta.platform === true
+
+  // Where this session belongs: super admin lives in the platform console,
+  // everyone else in the tenant ERP.
+  const home = auth.isSuperAdmin ? { name: 'PlatformCompanies' } : { name: 'DashboardOwner' }
 
   // Authenticated users should not see the auth pages.
   if (isPublic && auth.isAuthenticated && (to.name === 'Signin' || to.name === 'Signup')) {
-    return next({ name: 'DashboardOwner' })
+    return next(home)
   }
 
   // Protected routes require authentication.
@@ -580,10 +606,20 @@ router.beforeEach((to, from, next) => {
     return next({ name: 'Signin', query: { redirect: to.fullPath } })
   }
 
-  // Permission-gated routes: redirect to dashboard when the user lacks it.
+  // Platform console routes: super admin only.
+  if (isPlatform && !auth.isSuperAdmin) {
+    return next({ name: 'DashboardOwner' })
+  }
+
+  // A super admin has no company context — keep it out of tenant screens.
+  if (!isPublic && auth.isSuperAdmin && !isPlatform) {
+    return next({ name: 'PlatformCompanies' })
+  }
+
+  // Permission-gated routes: redirect to the session home when the user lacks it.
   const required = to.meta.permission
   if (required && !hasPermission(auth.permissions, auth.isSuperAdmin, required)) {
-    return next({ name: 'DashboardOwner' })
+    return next(home)
   }
 
   return next()

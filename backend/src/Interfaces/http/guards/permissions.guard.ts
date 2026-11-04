@@ -4,14 +4,18 @@ import { FastifyRequest } from 'fastify';
 import { AuthorizationError } from '../../../Commons/exceptions/AuthorizationError';
 import { JwtAccessPayload } from '../../../Applications/security/TokenManager';
 import { PERMISSIONS_KEY } from '../decorators/require-permission.decorator';
+import { SUPER_ADMIN_ONLY_KEY } from '../decorators/super-admin-only.decorator';
 
 /**
  * PermissionsGuard
  *
  * Runs after JwtAuthGuard (which attaches request.user).
- * Checks that the authenticated user has ALL required permission codes.
+ * Checks that the authenticated user has ALL required permission codes,
+ * and enforces platform-level routes marked with @SuperAdminOnly().
  *
  * Rules (from knowledge-base/16.role-permission-matrix.md):
+ * - @SuperAdminOnly() routes require `is_super_admin = TRUE` and skip
+ *   permission checks entirely.
  * - SUPER_ADMIN bypasses all permission checks.
  * - `module.manage` implies `module.read` — if a route requires `product.read`
  *   and the user has `product.manage`, access is granted.
@@ -22,6 +26,22 @@ export class PermissionsGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    const superAdminOnly = this.reflector.getAllAndOverride<boolean>(SUPER_ADMIN_ONLY_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    const request = context.switchToHttp().getRequest<FastifyRequest>();
+    const user = (request as FastifyRequest & { user: JwtAccessPayload }).user;
+
+    // Platform-level route: only SUPER_ADMIN may pass, no permission code needed.
+    if (superAdminOnly) {
+      if (!user || !user.isSuperAdmin) {
+        throw new AuthorizationError('AUTHORIZATION.ACCESS_DENIED');
+      }
+      return true;
+    }
+
     const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
       PERMISSIONS_KEY,
       [context.getHandler(), context.getClass()],
@@ -31,9 +51,6 @@ export class PermissionsGuard implements CanActivate {
     if (!requiredPermissions || requiredPermissions.length === 0) {
       return true;
     }
-
-    const request = context.switchToHttp().getRequest<FastifyRequest>();
-    const user = (request as FastifyRequest & { user: JwtAccessPayload }).user;
 
     // JwtAuthGuard guarantees user is attached; this is a safety net
     if (!user) {

@@ -4,6 +4,7 @@ import pool from './database/pool';
 
 // Domain abstracts (tokens for DI)
 import { CompanyRepository } from '../Domains/companies/CompanyRepository';
+import { PlatformRepository } from '../Domains/platform/PlatformRepository';
 import { UserRepository } from '../Domains/users/UserRepository';
 import { AuthenticationRepository } from '../Domains/authentications/AuthenticationRepository';
 import { RoleRepository } from '../Domains/roles/RoleRepository';
@@ -40,6 +41,7 @@ import { TokenManager } from '../Applications/security/TokenManager';
 
 // Concrete implementations
 import { CompanyRepositoryPostgres } from './repository/CompanyRepositoryPostgres';
+import { PlatformRepositoryPostgres } from './repository/PlatformRepositoryPostgres';
 import { UserRepositoryPostgres } from './repository/UserRepositoryPostgres';
 import { AuthenticationRepositoryPostgres } from './repository/AuthenticationRepositoryPostgres';
 import { RoleRepositoryPostgres } from './repository/RoleRepositoryPostgres';
@@ -245,6 +247,10 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     {
       provide: CompanyRepository,
       useFactory: () => new CompanyRepositoryPostgres(pool),
+    },
+    {
+      provide: PlatformRepository,
+      useFactory: () => new PlatformRepositoryPostgres(pool),
     },
     {
       provide: UserRepository,
@@ -1323,6 +1329,7 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     PasswordHash,
     TokenManager,
     CompanyRepository,
+    PlatformRepository,
     UserRepository,
     AuthenticationRepository,
     RoleRepository,

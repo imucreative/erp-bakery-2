@@ -152,8 +152,12 @@ const handleSubmit = async () => {
   errorMessage.value = null
   try {
     await auth.login({ email: email.value, password: password.value })
+    if (auth.isSuperAdmin) {
+      await router.push({ name: 'PlatformCompanies' })
+      return
+    }
     const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : null
-    await router.push(redirect ?? { name: 'Ecommerce' })
+    await router.push(redirect ?? { name: 'DashboardOwner' })
   } catch (error) {
     errorMessage.value =
       error instanceof ApiClientError

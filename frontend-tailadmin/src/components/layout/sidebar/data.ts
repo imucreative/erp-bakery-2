@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Boxes,
+  Building2,
   ClipboardList,
   Factory,
   LayoutDashboard,
@@ -151,6 +152,29 @@ export const menuGroups: NavGroup[] = [
         name: 'Roles',
         path: '/system/roles',
         permission: 'role.read',
+      },
+    ],
+  },
+]
+
+/**
+ * Platform console menu — shown ONLY to a super admin (`is_super_admin`).
+ * A super admin has no company context, so the tenant ERP groups do not apply
+ * (they would render empty/403 screens).
+ */
+export const platformMenuGroups: NavGroup[] = [
+  {
+    title: 'Platform',
+    items: [
+      {
+        icon: Building2,
+        name: 'Companies',
+        path: '/platform/companies',
+      },
+      {
+        icon: Users,
+        name: 'Users',
+        path: '/platform/users',
       },
     ],
   },

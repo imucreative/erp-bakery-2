@@ -3,6 +3,7 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { InfrastructureModule } from './Infrastructures/InfrastructureModule';
 import { AuthModule } from './Interfaces/http/api/auth/auth.module';
 import { CompanyModule } from './Interfaces/http/api/companies/company.module';
+import { PlatformModule } from './Interfaces/http/api/platform/platform.module';
 import { OutletModule } from './Interfaces/http/api/outlets/outlet.module';
 import { RoleModule } from './Interfaces/http/api/roles/role.module';
 import { PermissionModule } from './Interfaces/http/api/permissions/permission.module';
@@ -49,6 +50,7 @@ import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
     InfrastructureModule,
     AuthModule,
     CompanyModule,
+    PlatformModule,
     OutletModule,
     RoleModule,
     PermissionModule,
