@@ -50,7 +50,7 @@ const emit = defineEmits<{
       />
     </div>
 
-    <div class="flex items-center sm:ms-1">
+    <div class="flex items-center sm:w-56 sm:ms-1">
       <BaseToggle
         :model-value="lowOnly"
         label="Hanya stok rendah"

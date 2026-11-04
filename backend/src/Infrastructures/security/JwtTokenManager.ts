@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { TokenManager, JwtAccessPayload, JwtRefreshPayload } from '../../Applications/security/TokenManager';
+import { TokenManager, JwtAccessPayload, JwtRefreshPayload, JwtMfaPayload } from '../../Applications/security/TokenManager';
 import { AuthenticationError } from '../../Commons/exceptions/AuthenticationError';
 
 /**
@@ -49,6 +49,28 @@ export class JwtTokenManager extends TokenManager {
 
   async decodeRefreshToken(token: string): Promise<JwtRefreshPayload> {
     return this.jwtService.decode(token) as JwtRefreshPayload;
+  }
+
+  async createMfaToken(payload: { sub: string }): Promise<string> {
+    const mfaPayload: JwtMfaPayload = { sub: payload.sub, purpose: 'mfa' };
+    return this.jwtService.signAsync(mfaPayload, {
+      secret: process.env.MFA_TOKEN_SECRET ?? process.env.ACCESS_TOKEN_SECRET,
+      expiresIn: process.env.MFA_TOKEN_EXPIRES_IN ?? '5m',
+    });
+  }
+
+  async verifyMfaToken(token: string): Promise<{ sub: string }> {
+    try {
+      const decoded = await this.jwtService.verifyAsync<Partial<JwtMfaPayload>>(token, {
+        secret: process.env.MFA_TOKEN_SECRET ?? process.env.ACCESS_TOKEN_SECRET,
+      });
+      if (decoded.purpose !== 'mfa' || !decoded.sub) {
+        throw new Error('NOT_MFA_TOKEN');
+      }
+      return { sub: decoded.sub };
+    } catch {
+      throw new AuthenticationError('AUTHENTICATION.TOKEN_NOT_VALID');
+    }
   }
 
   /**

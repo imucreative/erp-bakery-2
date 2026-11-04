@@ -38,6 +38,8 @@ import { GoodsReceiptRepository } from '../Domains/goods-receipts/GoodsReceiptRe
 import { PurchaseReturnRepository } from '../Domains/purchase-returns/PurchaseReturnRepository';
 import { PasswordHash } from '../Applications/security/PasswordHash';
 import { TokenManager } from '../Applications/security/TokenManager';
+import { Totp } from '../Applications/security/Totp';
+import { SecretCipher } from '../Applications/security/SecretCipher';
 
 // Concrete implementations
 import { CompanyRepositoryPostgres } from './repository/CompanyRepositoryPostgres';
@@ -75,12 +77,21 @@ import { LocalGoodsReceiptAttachmentStorage } from './storage/LocalGoodsReceiptA
 import { LocalPurchaseReturnAttachmentStorage } from './storage/LocalPurchaseReturnAttachmentStorage';
 import { BcryptPasswordHash } from './security/BcryptPasswordHash';
 import { JwtTokenManager } from './security/JwtTokenManager';
+import { RfcTotp } from './security/RfcTotp';
+import { AesGcmSecretCipher } from './security/AesGcmSecretCipher';
+import { InMemoryRateLimiter } from './security/InMemoryRateLimiter';
 
 // Use cases
 import { RegisterCompanyUseCase } from '../Applications/use_case/companies/RegisterCompanyUseCase';
 import { LoginUseCase } from '../Applications/use_case/auth/LoginUseCase';
 import { RefreshTokenUseCase } from '../Applications/use_case/auth/RefreshTokenUseCase';
 import { LogoutUseCase } from '../Applications/use_case/auth/LogoutUseCase';
+import {
+  SetupTwoFactorUseCase,
+  EnableTwoFactorUseCase,
+  DisableTwoFactorUseCase,
+  VerifyTwoFactorLoginUseCase,
+} from '../Applications/use_case/auth/TwoFactorUseCases';
 import { CreateOutletUseCase } from '../Applications/use_case/outlets/CreateOutletUseCase';
 import { UpdateOutletUseCase } from '../Applications/use_case/outlets/UpdateOutletUseCase';
 import { CreateUserUseCase } from '../Applications/use_case/users/CreateUserUseCase';
@@ -241,6 +252,18 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     {
       provide: TokenManager,
       useClass: JwtTokenManager,
+    },
+    {
+      provide: Totp,
+      useFactory: () => new RfcTotp(),
+    },
+    {
+      provide: SecretCipher,
+      useFactory: () => new AesGcmSecretCipher(process.env.TOTP_ENCRYPTION_KEY ?? ''),
+    },
+    {
+      provide: InMemoryRateLimiter,
+      useFactory: () => new InMemoryRateLimiter(),
     },
 
     // ─── Repositories ─────────────────────────────────────────────────────
@@ -414,6 +437,47 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
       useFactory: (authRepo: AuthenticationRepository) =>
         new LogoutUseCase(authRepo),
       inject: [AuthenticationRepository],
+    },
+    {
+      provide: SetupTwoFactorUseCase,
+      useFactory: (
+        userRepo: UserRepository,
+        pwHash: PasswordHash,
+        cipher: SecretCipher,
+        totp: Totp,
+      ) => new SetupTwoFactorUseCase(userRepo, pwHash, cipher, totp),
+      inject: [UserRepository, PasswordHash, SecretCipher, Totp],
+    },
+    {
+      provide: EnableTwoFactorUseCase,
+      useFactory: (userRepo: UserRepository, cipher: SecretCipher, totp: Totp) =>
+        new EnableTwoFactorUseCase(userRepo, cipher, totp),
+      inject: [UserRepository, SecretCipher, Totp],
+    },
+    {
+      provide: DisableTwoFactorUseCase,
+      useFactory: (userRepo: UserRepository, cipher: SecretCipher, totp: Totp) =>
+        new DisableTwoFactorUseCase(userRepo, cipher, totp),
+      inject: [UserRepository, SecretCipher, Totp],
+    },
+    {
+      provide: VerifyTwoFactorLoginUseCase,
+      useFactory: (
+        userRepo: UserRepository,
+        authRepo: AuthenticationRepository,
+        pwHash: PasswordHash,
+        cipher: SecretCipher,
+        totp: Totp,
+        tokenMgr: TokenManager,
+      ) => new VerifyTwoFactorLoginUseCase(userRepo, authRepo, pwHash, cipher, totp, tokenMgr),
+      inject: [
+        UserRepository,
+        AuthenticationRepository,
+        PasswordHash,
+        SecretCipher,
+        Totp,
+        TokenManager,
+      ],
     },
     {
       provide: CreateOutletUseCase,
@@ -1328,6 +1392,9 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     'PG_POOL',
     PasswordHash,
     TokenManager,
+    Totp,
+    SecretCipher,
+    InMemoryRateLimiter,
     CompanyRepository,
     PlatformRepository,
     UserRepository,
@@ -1361,6 +1428,10 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     LoginUseCase,
     RefreshTokenUseCase,
     LogoutUseCase,
+    SetupTwoFactorUseCase,
+    EnableTwoFactorUseCase,
+    DisableTwoFactorUseCase,
+    VerifyTwoFactorLoginUseCase,
     CreateOutletUseCase,
     UpdateOutletUseCase,
     CreateUserUseCase,

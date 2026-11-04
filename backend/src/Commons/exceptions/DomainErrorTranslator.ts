@@ -512,6 +512,9 @@ const DomainErrorTranslator = {
     'AUTHORIZATION.NO_COMPANY_CONTEXT': new AuthorizationError(
       'Akun Anda tidak terhubung ke perusahaan manapun',
     ),
+    'AUTHORIZATION.MFA_REQUIRED': new AuthorizationError(
+      'Aktifkan 2FA terlebih dahulu sebelum mengakses konsol platform',
+    ),
 
     // ── User not found ───────────────────────────────────────────
     'USER.NOT_FOUND': new NotFoundError('User tidak ditemukan'),

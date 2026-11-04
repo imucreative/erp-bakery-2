@@ -3,7 +3,6 @@ import { UserRepository, UserWithPermissions } from '../../../../Domains/users/U
 import { AuthenticationRepository } from '../../../../Domains/authentications/AuthenticationRepository';
 import { PasswordHash } from '../../../security/PasswordHash';
 import { TokenManager } from '../../../security/TokenManager';
-import { NewAuthentication } from '../../../../Domains/authentications/entities/NewAuthentication';
 
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
@@ -14,6 +13,11 @@ const mockUserRepository: jest.Mocked<UserRepository> = {
   getUserWithPermissionsByEmail: jest.fn(),
   getUserWithPermissionsById: jest.fn(),
   getUserById: jest.fn(),
+  getTwoFactorStateByEmail: jest.fn(),
+  getTwoFactorStateById: jest.fn(),
+  saveTwoFactorSetup: jest.fn(),
+  updateRecoveryCodes: jest.fn(),
+  setTwoFactorEnabled: jest.fn(),
 } as unknown as jest.Mocked<UserRepository>;
 
 const mockAuthenticationRepository: jest.Mocked<AuthenticationRepository> = {
@@ -35,6 +39,8 @@ const mockTokenManager: jest.Mocked<TokenManager> = {
   verifyRefreshToken: jest.fn(),
   decodeRefreshToken: jest.fn(),
   getRefreshTokenExpiry: jest.fn(),
+  createMfaToken: jest.fn(),
+  verifyMfaToken: jest.fn(),
 } as unknown as jest.Mocked<TokenManager>;
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -77,17 +83,48 @@ describe('LoginUseCase', () => {
     mockTokenManager.createRefreshToken.mockResolvedValue('refresh.token');
     mockTokenManager.getRefreshTokenExpiry.mockReturnValue(new Date());
     mockAuthenticationRepository.addToken.mockResolvedValue(undefined);
+    mockUserRepository.getTwoFactorStateByEmail.mockResolvedValue({
+      id: 'user-uuid',
+      email: 'budi@example.com',
+      isSuperAdmin: false,
+      enabled: false,
+      secretCipher: null,
+      recoveryCodeHashes: [],
+    });
   });
 
-  it('should return a NewAuthentication with access and refresh token', async () => {
+  it('should return tokens when 2FA is not enabled', async () => {
     const result = await useCase.execute({
       email: 'budi@example.com',
       password: 'Secret123',
     });
 
-    expect(result).toBeInstanceOf(NewAuthentication);
-    expect(result.accessToken).toBe('access.token');
-    expect(result.refreshToken).toBe('refresh.token');
+    expect(result).toEqual({
+      mfaRequired: false,
+      accessToken: 'access.token',
+      refreshToken: 'refresh.token',
+    });
+  });
+
+  it('should return an MFA challenge (no tokens) when 2FA is enabled', async () => {
+    mockUserRepository.getTwoFactorStateByEmail.mockResolvedValue({
+      id: 'user-uuid',
+      email: 'budi@example.com',
+      isSuperAdmin: false,
+      enabled: true,
+      secretCipher: 'encrypted-secret',
+      recoveryCodeHashes: [],
+    });
+    mockTokenManager.createMfaToken.mockResolvedValue('mfa.token');
+
+    const result = await useCase.execute({
+      email: 'budi@example.com',
+      password: 'Secret123',
+    });
+
+    expect(result).toEqual({ mfaRequired: true, mfaToken: 'mfa.token' });
+    expect(mockTokenManager.createAccessToken).not.toHaveBeenCalled();
+    expect(mockAuthenticationRepository.addToken).not.toHaveBeenCalled();
   });
 
   it('should call getPasswordByEmail with normalised email', async () => {

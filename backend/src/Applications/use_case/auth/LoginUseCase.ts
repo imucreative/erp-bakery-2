@@ -1,9 +1,17 @@
 import { UserLogin } from '../../../Domains/users/entities/UserLogin';
-import { NewAuthentication } from '../../../Domains/authentications/entities/NewAuthentication';
 import { UserRepository } from '../../../Domains/users/UserRepository';
 import { AuthenticationRepository } from '../../../Domains/authentications/AuthenticationRepository';
 import { PasswordHash } from '../../security/PasswordHash';
 import { TokenManager } from '../../security/TokenManager';
+
+/**
+ * Result of the first login step.
+ * When the account has 2FA enabled, NO tokens are issued — the caller must
+ * exchange `mfaToken` + a TOTP/recovery code via the MFA verify endpoint.
+ */
+export type LoginResult =
+  | { mfaRequired: true; mfaToken: string }
+  | { mfaRequired: false; accessToken: string; refreshToken: string };
 
 /**
  * UseCase: LoginUseCase
@@ -12,9 +20,10 @@ import { TokenManager } from '../../security/TokenManager';
  * 2. Fetch hashed password by email
  * 3. Compare passwords
  * 4. Fetch user + permissions
- * 5. Issue access token + refresh token
- * 6. Persist refresh token
- * 7. Return token pair
+ * 5. If 2FA is enabled → return a short-lived MFA challenge instead of tokens
+ * 6. Issue access token + refresh token
+ * 7. Persist refresh token
+ * 8. Return token pair
  */
 export class LoginUseCase {
   constructor(
@@ -24,7 +33,7 @@ export class LoginUseCase {
     private readonly tokenManager: TokenManager,
   ) {}
 
-  async execute(payload: unknown): Promise<NewAuthentication> {
+  async execute(payload: unknown): Promise<LoginResult> {
     // Step 1 — validate
     const { email, password } = new UserLogin(payload);
 
@@ -37,7 +46,14 @@ export class LoginUseCase {
     // Step 4 — fetch user + permissions
     const user = await this.userRepository.getUserWithPermissionsByEmail(email);
 
-    // Step 5 — issue tokens
+    // Step 5 — 2FA gate
+    const twoFactor = await this.userRepository.getTwoFactorStateByEmail(email);
+    if (twoFactor.enabled) {
+      const mfaToken = await this.tokenManager.createMfaToken({ sub: user.id });
+      return { mfaRequired: true, mfaToken };
+    }
+
+    // Step 6 — issue tokens
     const accessToken = await this.tokenManager.createAccessToken({
       sub: user.id,
       email: user.email,
@@ -51,11 +67,11 @@ export class LoginUseCase {
       sub: user.id,
     });
 
-    // Step 6 — persist refresh token
+    // Step 7 — persist refresh token
     const expiredAt = this.tokenManager.getRefreshTokenExpiry();
     await this.authenticationRepository.addToken(user.id, refreshToken, expiredAt);
 
-    // Step 7 — return
-    return new NewAuthentication({ accessToken, refreshToken });
+    // Step 8 — return
+    return { mfaRequired: false, accessToken, refreshToken };
   }
 }

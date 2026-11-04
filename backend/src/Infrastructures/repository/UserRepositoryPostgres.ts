@@ -7,6 +7,7 @@ import {
   UserDetail,
   UserOutletRef,
   UpdateUserFields,
+  TwoFactorState,
 } from '../../Domains/users/UserRepository';
 import { RegisterUser } from '../../Domains/users/entities/RegisterUser';
 import { RegisteredUser } from '../../Domains/users/entities/RegisteredUser';
@@ -441,5 +442,128 @@ export class UserRepositoryPostgres extends UserRepository {
       roleCode: row.role_code,
       permissions: row.permissions ? row.permissions.split(',').filter(Boolean) : [],
     };
+  }
+
+  // ── Two-factor authentication (TOTP) ─────────────────────────────────
+
+  async getTwoFactorStateByEmail(email: string): Promise<TwoFactorState> {
+    const result = await this.pool.query<TwoFactorRow>(
+      `SELECT id, email, is_super_admin, two_factor_enabled, two_factor_secret,
+              two_factor_recovery_codes
+       FROM users
+       WHERE email = $1 AND deleted_at IS NULL`,
+      [email],
+    );
+
+    if (!result.rowCount || result.rowCount === 0) {
+      throw new AuthenticationError('AUTHENTICATION.CREDENTIALS_NOT_VALID');
+    }
+
+    return mapTwoFactorState(result.rows[0]);
+  }
+
+  async getTwoFactorStateById(id: string): Promise<TwoFactorState> {
+    const result = await this.pool.query<TwoFactorRow>(
+      `SELECT id, email, is_super_admin, two_factor_enabled, two_factor_secret,
+              two_factor_recovery_codes
+       FROM users
+       WHERE id = $1 AND deleted_at IS NULL`,
+      [id],
+    );
+
+    if (!result.rowCount || result.rowCount === 0) {
+      throw new NotFoundError('USER.NOT_FOUND');
+    }
+
+    return mapTwoFactorState(result.rows[0]);
+  }
+
+  async saveTwoFactorSetup(
+    id: string,
+    secretCipher: string,
+    recoveryCodeHashes: string[],
+  ): Promise<void> {
+    const result = await this.pool.query(
+      `UPDATE users
+       SET two_factor_secret = $2,
+           two_factor_recovery_codes = $3,
+           two_factor_enabled = FALSE,
+           two_factor_confirmed_at = NULL,
+           updated_at = NOW()
+       WHERE id = $1 AND deleted_at IS NULL`,
+      [id, secretCipher, JSON.stringify(recoveryCodeHashes)],
+    );
+
+    if (!result.rowCount || result.rowCount === 0) {
+      throw new NotFoundError('USER.NOT_FOUND');
+    }
+  }
+
+  async updateRecoveryCodes(id: string, recoveryCodeHashes: string[]): Promise<void> {
+    await this.pool.query(
+      `UPDATE users
+       SET two_factor_recovery_codes = $2, updated_at = NOW()
+       WHERE id = $1 AND deleted_at IS NULL`,
+      [id, JSON.stringify(recoveryCodeHashes)],
+    );
+  }
+
+  async setTwoFactorEnabled(id: string, enabled: boolean): Promise<void> {
+    const result = enabled
+      ? await this.pool.query(
+          `UPDATE users
+           SET two_factor_enabled = TRUE, two_factor_confirmed_at = NOW(), updated_at = NOW()
+           WHERE id = $1 AND deleted_at IS NULL`,
+          [id],
+        )
+      : await this.pool.query(
+          `UPDATE users
+           SET two_factor_enabled = FALSE,
+               two_factor_secret = NULL,
+               two_factor_recovery_codes = NULL,
+               two_factor_confirmed_at = NULL,
+               updated_at = NOW()
+           WHERE id = $1 AND deleted_at IS NULL`,
+          [id],
+        );
+
+    if (!result.rowCount || result.rowCount === 0) {
+      throw new NotFoundError('USER.NOT_FOUND');
+    }
+  }
+}
+
+interface TwoFactorRow {
+  id: string;
+  email: string;
+  is_super_admin: boolean;
+  two_factor_enabled: boolean;
+  two_factor_secret: string | null;
+  two_factor_recovery_codes: string | null;
+}
+
+function mapTwoFactorState(row: TwoFactorRow): TwoFactorState {
+  return {
+    id: row.id,
+    email: row.email,
+    isSuperAdmin: row.is_super_admin,
+    enabled: row.two_factor_enabled,
+    secretCipher: row.two_factor_secret,
+    recoveryCodeHashes: parseRecoveryCodeHashes(row.two_factor_recovery_codes),
+  };
+}
+
+function parseRecoveryCodeHashes(raw: string | null): string[] {
+  if (!raw) {
+    return [];
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed.filter((entry): entry is string => typeof entry === 'string');
+  } catch {
+    return [];
   }
 }

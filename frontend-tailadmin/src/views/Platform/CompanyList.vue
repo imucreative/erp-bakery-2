@@ -16,9 +16,6 @@
               @update:model-value="onSearchInput"
             />
           </div>
-          <BaseButton variant="outline" size="sm" :disabled="loading" @click="load">
-            {{ loading ? 'Memuat...' : 'Muat ulang' }}
-          </BaseButton>
         </div>
 
         <BaseAlert v-if="errorMessage" type="error" :message="errorMessage" class="mb-4" />
@@ -62,11 +59,20 @@
               <BaseTableCell align="end">
                 <BaseButton
                   size="sm"
-                  :variant="item.isActive ? 'outline' : 'primary'"
+                  :variant="item.isActive ? 'danger' : 'primary'"
                   :disabled="updatingId === item.id"
                   @click="toggleStatus(item)"
                 >
-                  {{ item.isActive ? 'Suspend' : 'Activate' }}
+                  <template #start-icon>
+                    {{ item.isActive ? 'Suspend' : 'Activate' }}
+                    <component 
+                      :is="item.isActive ? X : Check" 
+                      class="h-4 w-4" 
+                      aria-hidden="true" 
+                    />
+                  </template>
+
+                  
                 </BaseButton>
               </BaseTableCell>
             </BaseTableRow>
@@ -107,6 +113,7 @@ import {
 } from '@/components/ui'
 import { ApiClientError } from '@/services/http'
 import { companyService, type CompanyListItem } from '@/services/company.service'
+import { Check, X } from 'lucide-vue-next'
 
 const PAGE_SIZE = 10
 const SEARCH_DEBOUNCE_MS = 300

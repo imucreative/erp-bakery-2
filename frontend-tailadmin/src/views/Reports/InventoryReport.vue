@@ -22,51 +22,45 @@
     <!-- Filters -->
     <ComponentCard title="Filters">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <BaseFormField label="Outlet" fieldId="outletId">
-          <EntityCombobox
-            :model-value="filters.outletId"
-            :selected-label="outletSelectedLabel"
-            :items="outletResults"
-            :item-id="(o: Outlet) => o.id"
-            :item-label="(o: Outlet) => o.name"
-            :searching="outletSearching"
-            searching-text="Mencari..."
-            empty-text="Outlet tidak ditemukan."
-            placeholder="All Outlets"
-            aria-label="Pilih outlet"
-            @update:model-value="filters.outletId = $event"
-            @search="onOutletSearch"
-            @select="onOutletSelect"
-            @clear="onOutletClear"
-          />
-        </BaseFormField>
+        <EntityCombobox
+          :model-value="filters.outletId"
+          :selected-label="outletSelectedLabel"
+          :items="outletResults"
+          :item-id="(o: Outlet) => o.id"
+          :item-label="(o: Outlet) => o.name"
+          :searching="outletSearching"
+          searching-text="Mencari..."
+          empty-text="Outlet tidak ditemukan."
+          placeholder="All Outlets"
+          aria-label="Pilih outlet"
+          @update:model-value="filters.outletId = $event"
+          @search="onOutletSearch"
+          @select="onOutletSelect"
+          @clear="onOutletClear"
+        />
 
-        <BaseFormField label="Product" fieldId="productId">
-          <EntityCombobox
-            :model-value="filters.productId"
-            :selected-label="productSelectedLabel"
-            :items="productResults"
-            :item-id="(p: Product) => p.id"
-            :item-label="(p: Product) => `${p.name} (${p.sku})`"
-            :searching="productSearching"
-            searching-text="Mencari..."
-            empty-text="Produk tidak ditemukan."
-            placeholder="All Products"
-            aria-label="Pilih produk"
-            @update:model-value="filters.productId = $event"
-            @search="onProductSearch"
-            @select="onProductSelect"
-            @clear="onProductClear"
-          />
-        </BaseFormField>
+        <EntityCombobox
+          :model-value="filters.productId"
+          :selected-label="productSelectedLabel"
+          :items="productResults"
+          :item-id="(p: Product) => p.id"
+          :item-label="(p: Product) => `${p.name} (${p.sku})`"
+          :searching="productSearching"
+          searching-text="Mencari..."
+          empty-text="Produk tidak ditemukan."
+          placeholder="All Products"
+          aria-label="Pilih produk"
+          @update:model-value="filters.productId = $event"
+          @search="onProductSearch"
+          @select="onProductSelect"
+          @clear="onProductClear"
+        />
 
-        <BaseFormField label="Include Expired" fieldId="includeExpired">
-          <ToggleSwitch
-            id="includeExpired"
-            v-model="filters.includeExpired"
-            label="Show expired batches"
-          />
-        </BaseFormField>
+        <ToggleSwitch
+          id="includeExpired"
+          v-model="filters.includeExpired"
+          label="Show expired batches"
+        />
       </div>
 
       <div class="mt-4 flex justify-end">

@@ -30,7 +30,7 @@
                   size="md"
                   class="mb-4"
                 />
-                <form @submit.prevent="handleSubmit">
+                <form v-if="step === 'credentials'" @submit.prevent="handleSubmit">
                   <div class="space-y-5">
                     <!-- Email -->
                     <BaseFormField label="Email" field-id="email" required>
@@ -82,6 +82,38 @@
                         Sign In
                       </BaseButton>
                     </div>
+                  </div>
+                </form>
+                <form v-else @submit.prevent="handleVerifyMfa">
+                  <div class="space-y-5">
+                    <p class="text-muted">
+                      Masukkan kode 6 digit dari aplikasi authenticator, atau salah satu kode
+                      recovery.
+                    </p>
+                    <BaseFormField label="Kode 2FA" field-id="mfa-code" required>
+                      <BaseInput
+                        id="mfa-code"
+                        v-model="code"
+                        placeholder="123456 atau ABCDE-FGHIJ"
+                        autocomplete="one-time-code"
+                      />
+                    </BaseFormField>
+                    <BaseButton
+                      type="submit"
+                      full-width
+                      :loading="submitting"
+                      loading-text="Memverifikasi..."
+                      :disabled="submitting"
+                    >
+                      Verifikasi
+                    </BaseButton>
+                    <button
+                      type="button"
+                      class="w-full text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 cursor-pointer"
+                      @click="backToCredentials"
+                    >
+                      Kembali ke halaman login
+                    </button>
                   </div>
                 </form>
                 <div class="mt-5">
@@ -143,28 +175,65 @@ const keepLoggedIn = ref(false)
 const submitting = ref(false)
 const errorMessage = ref<string | null>(null)
 
+const step = ref<'credentials' | 'mfa'>('credentials')
+const mfaToken = ref('')
+const code = ref('')
+
 const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value
+}
+
+function toMessage(error: unknown): string {
+  return error instanceof ApiClientError
+    ? error.message
+    : 'Unable to sign in. Please check your credentials and try again.'
+}
+
+async function redirectAfterLogin(): Promise<void> {
+  if (auth.isSuperAdmin) {
+    await router.push({ name: 'PlatformCompanies' })
+    return
+  }
+  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : null
+  await router.push(redirect ?? { name: 'DashboardOwner' })
 }
 
 const handleSubmit = async () => {
   submitting.value = true
   errorMessage.value = null
   try {
-    await auth.login({ email: email.value, password: password.value })
-    if (auth.isSuperAdmin) {
-      await router.push({ name: 'PlatformCompanies' })
+    const outcome = await auth.login({ email: email.value, password: password.value })
+    if (outcome.mfaRequired) {
+      mfaToken.value = outcome.mfaToken ?? ''
+      code.value = ''
+      step.value = 'mfa'
       return
     }
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : null
-    await router.push(redirect ?? { name: 'DashboardOwner' })
+    await redirectAfterLogin()
   } catch (error) {
-    errorMessage.value =
-      error instanceof ApiClientError
-        ? error.message
-        : 'Unable to sign in. Please check your credentials and try again.'
+    errorMessage.value = toMessage(error)
   } finally {
     submitting.value = false
   }
+}
+
+const handleVerifyMfa = async () => {
+  submitting.value = true
+  errorMessage.value = null
+  try {
+    await auth.verifyMfa(mfaToken.value, code.value)
+    await redirectAfterLogin()
+  } catch (error) {
+    errorMessage.value = toMessage(error)
+  } finally {
+    submitting.value = false
+  }
+}
+
+function backToCredentials(): void {
+  step.value = 'credentials'
+  mfaToken.value = ''
+  code.value = ''
+  errorMessage.value = null
 }
 </script>

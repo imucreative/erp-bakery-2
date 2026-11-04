@@ -10,29 +10,22 @@
         <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-end">
             <div class="w-full sm:max-w-xs">
-              <BaseFormField label="Search" field-id="user-search">
-                <BaseInput
-                  id="user-search"
-                  :model-value="search"
-                  placeholder="Cari nama atau email..."
-                  @update:model-value="onSearchInput"
-                />
-              </BaseFormField>
+              <BaseInput
+                id="user-search"
+                :model-value="search"
+                placeholder="Cari nama atau email..."
+                @update:model-value="onSearchInput"
+              />
             </div>
             <div class="w-full sm:max-w-xs">
-              <BaseFormField label="Company" field-id="user-company">
-                <BaseSelect
-                  id="user-company"
-                  :model-value="companyId"
-                  :options="companyOptions"
-                  @update:model-value="onCompanyChange"
-                />
-              </BaseFormField>
+              <BaseSelect
+                id="user-company"
+                :model-value="companyId"
+                :options="companyOptions"
+                @update:model-value="onCompanyChange"
+              />
             </div>
           </div>
-          <BaseButton variant="outline" size="sm" :disabled="loading" @click="load">
-            {{ loading ? 'Memuat...' : 'Muat ulang' }}
-          </BaseButton>
         </div>
 
         <BaseAlert v-if="errorMessage" type="error" :message="errorMessage" class="mb-4" />
@@ -101,8 +94,6 @@ import ComponentCard from '@/components/common/ComponentCard.vue'
 import Badge from '@/components/ui/Badge.vue'
 import {
   BaseAlert,
-  BaseButton,
-  BaseFormField,
   BaseInput,
   BaseSelect,
   BaseTable,

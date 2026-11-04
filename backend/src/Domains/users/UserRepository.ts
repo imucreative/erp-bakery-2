@@ -47,6 +47,18 @@ export interface UpdateUserFields {
   isActive?: boolean;
 }
 
+/** 2FA (TOTP) state for a user. */
+export interface TwoFactorState {
+  id: string;
+  email: string;
+  isSuperAdmin: boolean;
+  enabled: boolean;
+  /** AES-GCM payload of the Base32 secret; null when enrollment has not started. */
+  secretCipher: string | null;
+  /** bcrypt hashes of single-use recovery codes. */
+  recoveryCodeHashes: string[];
+}
+
 /**
  * Abstract repository interface — Users domain.
  */
@@ -112,4 +124,25 @@ export abstract class UserRepository {
 
   /** Replace a user's outlet assignments (idempotent full-sync). */
   abstract setUserOutlets(userId: string, outletIds: string[]): Promise<void>;
+
+  // ── Two-factor authentication (TOTP) ────────────────────────────────
+
+  /** Fetch 2FA state by email. Throws AUTHENTICATION.CREDENTIALS_NOT_VALID. */
+  abstract getTwoFactorStateByEmail(email: string): Promise<TwoFactorState>;
+
+  /** Fetch 2FA state by user id. Throws USER.NOT_FOUND. */
+  abstract getTwoFactorStateById(id: string): Promise<TwoFactorState>;
+
+  /** Persist a pending enrollment (secret + recovery codes); 2FA stays disabled. */
+  abstract saveTwoFactorSetup(
+    id: string,
+    secretCipher: string,
+    recoveryCodeHashes: string[],
+  ): Promise<void>;
+
+  /** Replace the stored recovery code hashes (used when one is consumed). */
+  abstract updateRecoveryCodes(id: string, recoveryCodeHashes: string[]): Promise<void>;
+
+  /** Enable 2FA, or disable it and wipe the secret + recovery codes. */
+  abstract setTwoFactorEnabled(id: string, enabled: boolean): Promise<void>;
 }
