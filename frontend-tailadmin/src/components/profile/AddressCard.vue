@@ -1,5 +1,5 @@
 <template>
-  <div class="mb-6 rounded-2xl border border-gray-200 p-5 lg:p-6 dark:border-gray-800">
+  <div class="section-card">
     <div class="flex flex-col gap-6 sm:flex-row lg:items-start lg:justify-between">
       <div class="flex-1">
         <h4 class="card-title mb-4 lg:mb-6">Address</h4>
@@ -73,7 +73,7 @@ import ProfileFieldGrid from './ProfileFieldGrid.vue'
 import ProfileEditModal from './ProfileEditModal.vue'
 import { BaseAlert, BaseButton, BaseFormField, BaseInput } from '@/components/ui'
 import { usePermission } from '@/composables/usePermission'
-import { ApiClientError } from '@/services/http'
+import { toMessage } from '@/lib/errors'
 import { companyService, type CompanyProfile } from '@/services/company.service'
 
 const { can } = usePermission()
@@ -103,13 +103,6 @@ const fields = computed(() => [
   { label: 'NPWP / Tax ID', value: company.value?.taxId || '—' },
   { label: 'Telepon', value: company.value?.phone || '—' },
 ])
-
-function toMessage(error: unknown): string {
-  if (error instanceof ApiClientError || error instanceof Error) {
-    return error.message
-  }
-  return 'Terjadi kesalahan. Coba lagi.'
-}
 
 async function load(): Promise<void> {
   errorMessage.value = null

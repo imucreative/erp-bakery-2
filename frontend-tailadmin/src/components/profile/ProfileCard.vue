@@ -80,7 +80,8 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import ProfileFieldGrid from './ProfileFieldGrid.vue'
 import ProfileEditModal from './ProfileEditModal.vue'
 import { BaseAlert, BaseButton, BaseFormField, BaseInput } from '@/components/ui'
-import { ApiClientError } from '@/services/http'
+import { toMessage } from '@/lib/errors'
+import { formatDateTime } from '@/lib/format'
 import { profileService, type MyProfile } from '@/services/profile.service'
 
 const profile = ref<MyProfile | null>(null)
@@ -110,26 +111,6 @@ const fields = computed(() => [
   { label: 'Perusahaan', value: profile.value?.companyName || 'Platform' },
   { label: 'Login terakhir', value: formatDateTime(profile.value?.lastLoginAt ?? null) },
 ])
-
-function toMessage(error: unknown): string {
-  if (error instanceof ApiClientError || error instanceof Error) {
-    return error.message
-  }
-  return 'Terjadi kesalahan. Coba lagi.'
-}
-
-function formatDateTime(value: string | null): string {
-  if (!value) {
-    return '—'
-  }
-  return new Date(value).toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
 
 async function load(): Promise<void> {
   errorMessage.value = null
