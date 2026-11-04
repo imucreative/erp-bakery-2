@@ -327,6 +327,19 @@
   @apply rounded-2xl border border-gray-200 bg-white p-10 text-center text-theme-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400;
 }
 
+/* Placeholder setinggi tetap untuk area chart/kartu yang belum punya data —
+   `panel-muted` tanpa padding vertikal besar, tapi memusatkan isinya. Tinggi
+   dipasang di call-site (`h-[300px]`) karena berbeda per pemakai. */
+@utility panel-placeholder {
+  @apply flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-theme-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.02] dark:text-gray-400;
+}
+
+/* Overlay "Memuat…" satu layar penuh untuk halaman yang memuat data awal
+   (mis. Dashboard) — dipasang pada `v-if="loading"`. */
+@utility page-loading-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center bg-white/50 dark:bg-gray-900/50;
+}
+
 /* Pembatas + wadah form input di dalam panel lampiran/komentar: garis atas,
    jarak, lalu field-nya. Selalu dipakai berpasangan dengan `panel-card`/
    `panel-muted` di atasnya. */
