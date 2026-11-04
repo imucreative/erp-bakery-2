@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Param,
+  Put,
   Query,
 } from '@nestjs/common';
 import {
@@ -20,6 +21,8 @@ import { RegisterCompanyUseCase } from '../../../../Applications/use_case/compan
 import { RegisterCompanyDto } from './dto/register-company.dto';
 import { CompanyQueryDto } from './dto/company-query.dto';
 import { UpdateCompanyStatusDto } from './dto/update-company-status.dto';
+import { UpdateCompanyProfileDto } from './dto/update-company-profile.dto';
+import { AuthorizationError } from '../../../../Commons/exceptions/AuthorizationError';
 import { Public } from '../../decorators/public.decorator';
 import { RequirePermission } from '../../decorators/require-permission.decorator';
 import { SuperAdminOnly } from '../../decorators/super-admin-only.decorator';
@@ -130,6 +133,25 @@ export class CompanyController {
       return successResponse(null);
     }
     const company = await this.companyRepository.getCompanyById(user.companyId);
+    return successResponse(company);
+  }
+
+  @ApiBearerAuth()
+  @Put('me')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('company.manage')
+  @ApiOperation({ summary: "Update the current user's company profile" })
+  @ApiResponse({ status: 200, description: 'Updated company profile' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 403, description: 'Forbidden — missing company.manage' })
+  async updateMyCompany(
+    @GetUser() user: JwtAccessPayload,
+    @Body() dto: UpdateCompanyProfileDto,
+  ) {
+    if (!user.companyId) {
+      throw new AuthorizationError('AUTHORIZATION.NO_COMPANY_CONTEXT');
+    }
+    const company = await this.companyRepository.updateCompanyProfile(user.companyId, dto);
     return successResponse(company);
   }
 

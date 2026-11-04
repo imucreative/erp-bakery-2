@@ -71,7 +71,14 @@ export class LoginUseCase {
     const expiredAt = this.tokenManager.getRefreshTokenExpiry();
     await this.authenticationRepository.addToken(user.id, refreshToken, expiredAt);
 
-    // Step 8 — return
+    // Step 8 — record the successful login (best-effort, never blocks login)
+    try {
+      await this.userRepository.touchLastLogin(user.id);
+    } catch {
+      // Non-critical: the profile simply shows the previous login time.
+    }
+
+    // Step 9 — return
     return { mfaRequired: false, accessToken, refreshToken };
   }
 }

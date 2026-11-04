@@ -25,6 +25,9 @@ describe('CompanyRepository (abstract contract)', () => {
     async setCompanyActive(_id: string, _isActive: boolean): Promise<never> {
       throw new Error('NOT_IMPLEMENTED');
     }
+    async updateCompanyProfile(_id: string, _fields: unknown): Promise<never> {
+      throw new Error('NOT_IMPLEMENTED');
+    }
   }
 
   const repo = new TestCompanyRepository();

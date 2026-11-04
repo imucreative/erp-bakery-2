@@ -13,6 +13,7 @@
         </div>
         <div>
           <button
+            type="button"
             class="shadow-theme-xs flex h-10 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white py-2.5 pr-4 pl-3.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/3 dark:hover:text-gray-200"
           >
             <svg
@@ -30,21 +31,23 @@
                 stroke-linejoin="round"
               />
             </svg>
-            Change Password
+            Logout all devices
           </button>
         </div>
       </div>
+
       <div
         class="flex flex-col justify-between gap-4 border-b border-gray-200 py-4 first:pt-0 last:border-b-0 last:pb-0 sm:flex-row sm:items-end dark:border-gray-800"
       >
         <div>
           <span class="block text-base mb-1 font-medium text-gray-800 dark:text-white/90"
-            >Logout all devices</span
+            >Delete account</span
           >
-          <p class="text-muted">Sign out from every active session.</p>
+          <p class="text-muted">Hapus akun secara permanen. Tindakan ini tidak dapat dibatalkan.</p>
         </div>
         <div>
           <button
+            type="button"
             class="border-error-500 text-error-500 hover:bg-error-100 dark:border-error-500/15 inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border px-3.5 py-2.5 pr-4 pl-3.5 text-sm font-medium transition-all dark:hover:bg-red-500/15"
           >
             <svg

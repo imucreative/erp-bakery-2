@@ -18,6 +18,9 @@ const mockUserRepository: jest.Mocked<UserRepository> = {
   saveTwoFactorSetup: jest.fn(),
   updateRecoveryCodes: jest.fn(),
   setTwoFactorEnabled: jest.fn(),
+  getMyProfile: jest.fn(),
+  updateMyProfile: jest.fn(),
+  touchLastLogin: jest.fn(),
 } as unknown as jest.Mocked<UserRepository>;
 
 const mockAuthenticationRepository: jest.Mocked<AuthenticationRepository> = {

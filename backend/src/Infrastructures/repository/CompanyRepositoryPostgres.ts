@@ -3,6 +3,8 @@ import {
   CompanyRepository,
   CompanyListParams,
   CompanyListResult,
+  CompanyProfile,
+  UpdateCompanyProfileFields,
 } from '../../Domains/companies/CompanyRepository';
 import { RegisterCompany } from '../../Domains/companies/entities/RegisterCompany';
 import { RegisteredCompany } from '../../Domains/companies/entities/RegisteredCompany';
@@ -47,15 +49,7 @@ export class CompanyRepositoryPostgres extends CompanyRepository {
     }
   }
 
-  async getCompanyById(id: string): Promise<{
-    id: string;
-    code: string;
-    name: string;
-    slug: string;
-    address: string | null;
-    phone: string | null;
-    isActive: boolean;
-  }> {
+  async getCompanyById(id: string): Promise<CompanyProfile> {
     const result = await this.pool.query<{
       id: string;
       code: string;
@@ -63,9 +57,16 @@ export class CompanyRepositoryPostgres extends CompanyRepository {
       slug: string;
       address: string | null;
       phone: string | null;
+      city: string | null;
+      province: string | null;
+      postal_code: string | null;
+      country: string;
+      tax_id: string | null;
+      logo_url: string | null;
       is_active: boolean;
     }>(
-      `SELECT id, code, name, slug, address, phone, is_active
+      `SELECT id, code, name, slug, address, phone, city, province, postal_code,
+              country, tax_id, logo_url, is_active
        FROM companies
        WHERE id = $1 AND deleted_at IS NULL`,
       [id],
@@ -75,16 +76,43 @@ export class CompanyRepositoryPostgres extends CompanyRepository {
       throw new NotFoundError('COMPANY.NOT_FOUND');
     }
 
-    const row = result.rows[0];
-    return {
-      id: row.id,
-      code: row.code,
-      name: row.name,
-      slug: row.slug,
-      address: row.address,
-      phone: row.phone,
-      isActive: row.is_active,
+    return mapCompanyProfile(result.rows[0]);
+  }
+
+  async updateCompanyProfile(
+    id: string,
+    fields: UpdateCompanyProfileFields,
+  ): Promise<CompanyProfile> {
+    const sets: string[] = [];
+    const values: unknown[] = [id];
+
+    const assign = (column: string, value: unknown) => {
+      values.push(value);
+      sets.push(`${column} = $${values.length}`);
     };
+
+    if (fields.name !== undefined) assign('name', fields.name);
+    if (fields.address !== undefined) assign('address', fields.address);
+    if (fields.phone !== undefined) assign('phone', fields.phone);
+    if (fields.city !== undefined) assign('city', fields.city);
+    if (fields.province !== undefined) assign('province', fields.province);
+    if (fields.postalCode !== undefined) assign('postal_code', fields.postalCode);
+    if (fields.country !== undefined) assign('country', fields.country);
+    if (fields.taxId !== undefined) assign('tax_id', fields.taxId);
+    if (fields.logoUrl !== undefined) assign('logo_url', fields.logoUrl);
+
+    if (sets.length > 0) {
+      sets.push('updated_at = NOW()');
+      const result = await this.pool.query(
+        `UPDATE companies SET ${sets.join(', ')} WHERE id = $1 AND deleted_at IS NULL`,
+        values,
+      );
+      if (!result.rowCount || result.rowCount === 0) {
+        throw new NotFoundError('COMPANY.NOT_FOUND');
+      }
+    }
+
+    return this.getCompanyById(id);
   }
 
   async generateCompanyCode(): Promise<string> {
@@ -172,4 +200,38 @@ export class CompanyRepositoryPostgres extends CompanyRepository {
 
     return { id: result.rows[0].id, isActive: result.rows[0].is_active };
   }
+}
+
+interface CompanyProfileRow {
+  id: string;
+  code: string;
+  name: string;
+  slug: string;
+  address: string | null;
+  phone: string | null;
+  city: string | null;
+  province: string | null;
+  postal_code: string | null;
+  country: string;
+  tax_id: string | null;
+  logo_url: string | null;
+  is_active: boolean;
+}
+
+function mapCompanyProfile(row: CompanyProfileRow): CompanyProfile {
+  return {
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    slug: row.slug,
+    address: row.address,
+    phone: row.phone,
+    city: row.city,
+    province: row.province,
+    postalCode: row.postal_code,
+    country: row.country,
+    taxId: row.tax_id,
+    logoUrl: row.logo_url,
+    isActive: row.is_active,
+  };
 }

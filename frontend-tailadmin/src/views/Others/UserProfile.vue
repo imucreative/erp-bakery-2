@@ -7,7 +7,6 @@
       <h3 class="card-title mb-5 lg:mb-7">Profile</h3>
       <profile-card />
       <address-card />
-      <two-factor-card />
       <security />
       <danger-zone />
     </div>
@@ -20,7 +19,6 @@ import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import { ref } from 'vue'
 import ProfileCard from '../../components/profile/ProfileCard.vue'
 import AddressCard from '../../components/profile/AddressCard.vue'
-import TwoFactorCard from '../../components/profile/TwoFactorCard.vue'
 import Security from '@/components/profile/Security.vue'
 import DangerZone from '@/components/profile/DangerZone.vue'
 const currentPageTitle = ref('User Profile')

@@ -25,6 +25,35 @@ export interface CompanyListResult {
   total: number;
 }
 
+/** Full company profile (tenant scope) — used by the profile screen. */
+export interface CompanyProfile {
+  id: string;
+  code: string;
+  name: string;
+  slug: string;
+  address: string | null;
+  phone: string | null;
+  city: string | null;
+  province: string | null;
+  postalCode: string | null;
+  country: string;
+  taxId: string | null;
+  logoUrl: string | null;
+  isActive: boolean;
+}
+
+export interface UpdateCompanyProfileFields {
+  name?: string;
+  address?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  province?: string | null;
+  postalCode?: string | null;
+  country?: string;
+  taxId?: string | null;
+  logoUrl?: string | null;
+}
+
 /**
  * Abstract repository interface — Companies domain.
  * Concrete implementation lives in Infrastructures/repository/.
@@ -45,15 +74,7 @@ export abstract class CompanyRepository {
   /**
    * Fetch company by id. Throws COMPANY.NOT_FOUND if missing or deleted.
    */
-  abstract getCompanyById(id: string): Promise<{
-    id: string;
-    code: string;
-    name: string;
-    slug: string;
-    address: string | null;
-    phone: string | null;
-    isActive: boolean;
-  }>;
+  abstract getCompanyById(id: string): Promise<CompanyProfile>;
 
   /**
    * Generate a unique, sequential company code (e.g. "COMP-001").
@@ -73,4 +94,13 @@ export abstract class CompanyRepository {
     id: string,
     isActive: boolean,
   ): Promise<{ id: string; isActive: boolean }>;
+
+  /**
+   * Update the tenant company profile (address, contact, tax id, logo).
+   * Throws COMPANY.NOT_FOUND if missing.
+   */
+  abstract updateCompanyProfile(
+    id: string,
+    fields: UpdateCompanyProfileFields,
+  ): Promise<CompanyProfile>;
 }

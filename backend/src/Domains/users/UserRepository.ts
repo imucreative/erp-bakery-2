@@ -59,6 +59,30 @@ export interface TwoFactorState {
   recoveryCodeHashes: string[];
 }
 
+/** Self-service profile of the authenticated user. */
+export interface MyProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  jobTitle: string | null;
+  avatarUrl: string | null;
+  roleCode: string | null;
+  roleName: string | null;
+  companyId: string | null;
+  companyName: string | null;
+  lastLoginAt: string | null;
+  createdAt: string;
+}
+
+/** Fields a user may change on their own profile. */
+export interface UpdateMyProfileFields {
+  name?: string;
+  phone?: string | null;
+  jobTitle?: string | null;
+  avatarUrl?: string | null;
+}
+
 /**
  * Abstract repository interface — Users domain.
  */
@@ -145,4 +169,15 @@ export abstract class UserRepository {
 
   /** Enable 2FA, or disable it and wipe the secret + recovery codes. */
   abstract setTwoFactorEnabled(id: string, enabled: boolean): Promise<void>;
+
+  // ── Self-service profile ────────────────────────────────────────────
+
+  /** Profile of the authenticated user (with role + company names). Throws USER.NOT_FOUND. */
+  abstract getMyProfile(id: string): Promise<MyProfile>;
+
+  /** Update the authenticated user's own fields. Throws USER.NOT_FOUND. */
+  abstract updateMyProfile(id: string, fields: UpdateMyProfileFields): Promise<MyProfile>;
+
+  /** Record a successful login timestamp. */
+  abstract touchLastLogin(id: string): Promise<void>;
 }

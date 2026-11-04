@@ -8,6 +8,8 @@ import {
   UserOutletRef,
   UpdateUserFields,
   TwoFactorState,
+  MyProfile,
+  UpdateMyProfileFields,
 } from '../../Domains/users/UserRepository';
 import { RegisterUser } from '../../Domains/users/entities/RegisterUser';
 import { RegisteredUser } from '../../Domains/users/entities/RegisteredUser';
@@ -531,6 +533,104 @@ export class UserRepositoryPostgres extends UserRepository {
       throw new NotFoundError('USER.NOT_FOUND');
     }
   }
+
+  // ── Self-service profile ─────────────────────────────────────────────
+
+  async getMyProfile(id: string): Promise<MyProfile> {
+    const result = await this.pool.query<MyProfileRow>(
+      `SELECT
+         u.id,
+         u.name,
+         u.email,
+         u.phone,
+         u.job_title,
+         u.avatar_url,
+         r.code AS role_code,
+         r.name AS role_name,
+         u.company_id,
+         c.name AS company_name,
+         u.last_login_at,
+         u.created_at
+       FROM users u
+       LEFT JOIN roles r ON r.id = u.role_id
+       LEFT JOIN companies c ON c.id = u.company_id AND c.deleted_at IS NULL
+       WHERE u.id = $1 AND u.deleted_at IS NULL`,
+      [id],
+    );
+
+    if (!result.rowCount || result.rowCount === 0) {
+      throw new NotFoundError('USER.NOT_FOUND');
+    }
+
+    return mapMyProfile(result.rows[0]);
+  }
+
+  async updateMyProfile(id: string, fields: UpdateMyProfileFields): Promise<MyProfile> {
+    const sets: string[] = [];
+    const values: unknown[] = [id];
+
+    const assign = (column: string, value: unknown) => {
+      values.push(value);
+      sets.push(`${column} = $${values.length}`);
+    };
+
+    if (fields.name !== undefined) assign('name', fields.name);
+    if (fields.phone !== undefined) assign('phone', fields.phone);
+    if (fields.jobTitle !== undefined) assign('job_title', fields.jobTitle);
+    if (fields.avatarUrl !== undefined) assign('avatar_url', fields.avatarUrl);
+
+    if (sets.length > 0) {
+      sets.push('updated_at = NOW()');
+      const result = await this.pool.query(
+        `UPDATE users SET ${sets.join(', ')} WHERE id = $1 AND deleted_at IS NULL`,
+        values,
+      );
+      if (!result.rowCount || result.rowCount === 0) {
+        throw new NotFoundError('USER.NOT_FOUND');
+      }
+    }
+
+    return this.getMyProfile(id);
+  }
+
+  async touchLastLogin(id: string): Promise<void> {
+    await this.pool.query(
+      `UPDATE users SET last_login_at = NOW() WHERE id = $1 AND deleted_at IS NULL`,
+      [id],
+    );
+  }
+}
+
+interface MyProfileRow {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  job_title: string | null;
+  avatar_url: string | null;
+  role_code: string | null;
+  role_name: string | null;
+  company_id: string | null;
+  company_name: string | null;
+  last_login_at: Date | null;
+  created_at: Date;
+}
+
+function mapMyProfile(row: MyProfileRow): MyProfile {
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    phone: row.phone,
+    jobTitle: row.job_title,
+    avatarUrl: row.avatar_url,
+    roleCode: row.role_code,
+    roleName: row.role_name,
+    companyId: row.company_id,
+    companyName: row.company_name,
+    lastLoginAt: row.last_login_at ? row.last_login_at.toISOString() : null,
+    createdAt: row.created_at.toISOString(),
+  };
 }
 
 interface TwoFactorRow {
