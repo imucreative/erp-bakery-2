@@ -40,6 +40,7 @@ import { PasswordHash } from '../Applications/security/PasswordHash';
 import { TokenManager } from '../Applications/security/TokenManager';
 import { Totp } from '../Applications/security/Totp';
 import { SecretCipher } from '../Applications/security/SecretCipher';
+import { MailSender } from '../Applications/security/MailSender';
 
 // Concrete implementations
 import { CompanyRepositoryPostgres } from './repository/CompanyRepositoryPostgres';
@@ -80,6 +81,7 @@ import { JwtTokenManager } from './security/JwtTokenManager';
 import { RfcTotp } from './security/RfcTotp';
 import { AesGcmSecretCipher } from './security/AesGcmSecretCipher';
 import { InMemoryRateLimiter } from './security/InMemoryRateLimiter';
+import { ConsoleMailSender } from './mail/ConsoleMailSender';
 
 // Use cases
 import { RegisterCompanyUseCase } from '../Applications/use_case/companies/RegisterCompanyUseCase';
@@ -92,6 +94,11 @@ import {
   DisableTwoFactorUseCase,
   VerifyTwoFactorLoginUseCase,
 } from '../Applications/use_case/auth/TwoFactorUseCases';
+import {
+  RequestPasswordResetUseCase,
+  ResetPasswordUseCase,
+} from '../Applications/use_case/auth/PasswordResetUseCases';
+import { ChangePasswordUseCase } from '../Applications/use_case/auth/ChangePasswordUseCase';
 import { CreateOutletUseCase } from '../Applications/use_case/outlets/CreateOutletUseCase';
 import { UpdateOutletUseCase } from '../Applications/use_case/outlets/UpdateOutletUseCase';
 import { CreateUserUseCase } from '../Applications/use_case/users/CreateUserUseCase';
@@ -264,6 +271,36 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     {
       provide: InMemoryRateLimiter,
       useFactory: () => new InMemoryRateLimiter(),
+    },
+    {
+      // Belum ada SMTP: email ditulis ke log server. Ganti useClass ke
+      // implementasi SMTP/API saat kredensial email sudah tersedia.
+      provide: MailSender,
+      useClass: ConsoleMailSender,
+    },
+    {
+      provide: RequestPasswordResetUseCase,
+      useFactory: (userRepo: UserRepository, mailSender: MailSender) =>
+        new RequestPasswordResetUseCase(userRepo, mailSender),
+      inject: [UserRepository, MailSender],
+    },
+    {
+      provide: ResetPasswordUseCase,
+      useFactory: (
+        userRepo: UserRepository,
+        authRepo: AuthenticationRepository,
+        pwHash: PasswordHash,
+      ) => new ResetPasswordUseCase(userRepo, authRepo, pwHash),
+      inject: [UserRepository, AuthenticationRepository, PasswordHash],
+    },
+    {
+      provide: ChangePasswordUseCase,
+      useFactory: (
+        userRepo: UserRepository,
+        authRepo: AuthenticationRepository,
+        pwHash: PasswordHash,
+      ) => new ChangePasswordUseCase(userRepo, authRepo, pwHash),
+      inject: [UserRepository, AuthenticationRepository, PasswordHash],
     },
 
     // ─── Repositories ─────────────────────────────────────────────────────
@@ -1432,6 +1469,9 @@ import { DeletePurchaseReturnAttachmentUseCase } from '../Applications/use_case/
     EnableTwoFactorUseCase,
     DisableTwoFactorUseCase,
     VerifyTwoFactorLoginUseCase,
+    RequestPasswordResetUseCase,
+    ResetPasswordUseCase,
+    ChangePasswordUseCase,
     CreateOutletUseCase,
     UpdateOutletUseCase,
     CreateUserUseCase,

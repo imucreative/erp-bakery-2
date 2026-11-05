@@ -10,6 +10,8 @@ import {
   TwoFactorState,
   MyProfile,
   UpdateMyProfileFields,
+  PasswordResetToken,
+  PasswordResetUser,
 } from '../../Domains/users/UserRepository';
 import { RegisterUser } from '../../Domains/users/entities/RegisterUser';
 import { RegisteredUser } from '../../Domains/users/entities/RegisteredUser';
@@ -532,6 +534,94 @@ export class UserRepositoryPostgres extends UserRepository {
     if (!result.rowCount || result.rowCount === 0) {
       throw new NotFoundError('USER.NOT_FOUND');
     }
+  }
+
+  // ── Password reset ("lupa password") ─────────────────────────────────
+
+  async findActiveUserByEmail(email: string): Promise<PasswordResetUser | null> {
+    // Case-insensitive supaya email yang diketik dengan huruf besar/kecil berbeda
+    // tetap ditemukan (login sendiri masih case-sensitive — dicatat terpisah).
+    const result = await this.pool.query<PasswordResetUser>(
+      `SELECT id, name, email FROM users
+       WHERE LOWER(email) = LOWER($1) AND is_active = TRUE AND deleted_at IS NULL`,
+      [email],
+    );
+
+    return result.rowCount && result.rowCount > 0 ? result.rows[0] : null;
+  }
+
+  async createPasswordResetToken(
+    userId: string,
+    tokenHash: string,
+    expiresAt: Date,
+    requestedIp: string | null,
+  ): Promise<void> {
+    // Hanya satu token aktif per user: token lama yang belum terpakai dibatalkan.
+    await this.pool.query(
+      `UPDATE password_reset_tokens SET used_at = NOW()
+       WHERE user_id = $1 AND used_at IS NULL`,
+      [userId],
+    );
+
+    await this.pool.query(
+      `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, requested_ip)
+       VALUES ($1, $2, $3, $4)`,
+      [userId, tokenHash, expiresAt, requestedIp],
+    );
+  }
+
+  async getUsablePasswordResetToken(tokenHash: string): Promise<PasswordResetToken | null> {
+    const result = await this.pool.query<{
+      id: string;
+      user_id: string;
+      expires_at: Date;
+      used_at: Date | null;
+    }>(
+      `SELECT id, user_id, expires_at, used_at FROM password_reset_tokens
+       WHERE token_hash = $1 AND used_at IS NULL AND expires_at > NOW()`,
+      [tokenHash],
+    );
+
+    if (!result.rowCount || result.rowCount === 0) {
+      return null;
+    }
+
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      userId: row.user_id,
+      expiresAt: row.expires_at,
+      usedAt: row.used_at,
+    };
+  }
+
+  async markPasswordResetTokenUsed(id: string): Promise<void> {
+    await this.pool.query(`UPDATE password_reset_tokens SET used_at = NOW() WHERE id = $1`, [id]);
+  }
+
+  async updatePassword(id: string, passwordHash: string): Promise<void> {
+    const result = await this.pool.query(
+      `UPDATE users SET password = $2, updated_at = NOW()
+       WHERE id = $1 AND deleted_at IS NULL`,
+      [id, passwordHash],
+    );
+
+    if (!result.rowCount || result.rowCount === 0) {
+      throw new NotFoundError('USER.NOT_FOUND');
+    }
+  }
+
+  async getPasswordById(id: string): Promise<string> {
+    const result = await this.pool.query<{ password: string }>(
+      `SELECT password FROM users WHERE id = $1 AND deleted_at IS NULL`,
+      [id],
+    );
+
+    if (!result.rowCount || result.rowCount === 0) {
+      throw new NotFoundError('USER.NOT_FOUND');
+    }
+
+    return result.rows[0].password;
   }
 
   // ── Self-service profile ─────────────────────────────────────────────

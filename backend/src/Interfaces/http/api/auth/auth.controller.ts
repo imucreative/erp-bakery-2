@@ -26,12 +26,20 @@ import {
   DisableTwoFactorUseCase,
   VerifyTwoFactorLoginUseCase,
 } from '../../../../Applications/use_case/auth/TwoFactorUseCases';
+import {
+  RequestPasswordResetUseCase,
+  ResetPasswordUseCase,
+} from '../../../../Applications/use_case/auth/PasswordResetUseCases';
+import { ChangePasswordUseCase } from '../../../../Applications/use_case/auth/ChangePasswordUseCase';
 import { UserRepository } from '../../../../Domains/users/UserRepository';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { LogoutDto } from './dto/logout.dto';
 import { VerifyMfaDto } from './dto/verify-mfa.dto';
 import { TwoFactorCodeDto } from './dto/two-factor-code.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { Public } from '../../decorators/public.decorator';
 import { GetUser } from '../../decorators/get-user.decorator';
 import { JwtAccessPayload } from '../../../../Applications/security/TokenManager';
@@ -60,6 +68,9 @@ export class AuthController {
     private readonly enableTwoFactorUseCase: EnableTwoFactorUseCase,
     private readonly disableTwoFactorUseCase: DisableTwoFactorUseCase,
     private readonly verifyTwoFactorLoginUseCase: VerifyTwoFactorLoginUseCase,
+    private readonly requestPasswordResetUseCase: RequestPasswordResetUseCase,
+    private readonly resetPasswordUseCase: ResetPasswordUseCase,
+    private readonly changePasswordUseCase: ChangePasswordUseCase,
     private readonly userRepository: UserRepository,
     private readonly rateLimiter: InMemoryRateLimiter,
   ) {}
@@ -118,6 +129,87 @@ export class AuthController {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
     });
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Request a password reset link',
+    description:
+      'Selalu membalas 200 — tidak pernah memberi tahu apakah email terdaftar atau tidak ' +
+      '(mencegah enumerasi akun).',
+  })
+  @ApiResponse({ status: 200, description: 'Permintaan diterima' })
+  @ApiResponse({ status: 429, description: 'Terlalu banyak permintaan' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto, @Req() request: FastifyRequest) {
+    // 5 permintaan / 15 menit per IP, dan 3 / 15 menit per email supaya satu
+    // kotak masuk tidak bisa dibanjiri tautan reset.
+    this.rateLimiter.consumeOrThrow(`auth:forgot:${request.ip}`, 5, 15 * 60_000);
+    this.rateLimiter.consumeOrThrow(
+      `auth:forgot:email:${dto.email.trim().toLowerCase()}`,
+      3,
+      15 * 60_000,
+    );
+
+    // Tautan hanya dibuka untuk pilot/non-produksi; produksi wajib lewat email.
+    const exposeLink =
+      process.env.AUTH_EXPOSE_RESET_LINK === 'true' && process.env.NODE_ENV !== 'production';
+
+    const result = await this.requestPasswordResetUseCase.execute({
+      email: dto.email,
+      requestedIp: request.ip ?? null,
+      exposeLink,
+    });
+
+    return successResponse({ resetLink: result.resetLink });
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Set a new password with a reset token',
+    description: 'Token sekali pakai; setelah berhasil seluruh sesi user dicabut.',
+  })
+  @ApiResponse({ status: 200, description: 'Password diperbarui' })
+  @ApiResponse({ status: 401, description: 'Token reset tidak valid / kedaluwarsa' })
+  @ApiResponse({ status: 429, description: 'Terlalu banyak percobaan' })
+  async resetPassword(@Body() dto: ResetPasswordDto, @Req() request: FastifyRequest) {
+    // Token panjang, tapi percobaan menebak tetap dibatasi: 10 / menit per IP.
+    this.rateLimiter.consumeOrThrow(`auth:reset:${request.ip}`, 10, 60_000);
+    await this.resetPasswordUseCase.execute({ token: dto.token, password: dto.password });
+    return successResponse(null);
+  }
+
+  @Put('password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Ganti password user yang sedang login',
+    description:
+      'Wajib menyertakan password lama. Sesi lain dicabut; sesi yang mengirim ' +
+      'keepRefreshToken tetap hidup (bila kosong, semua sesi dicabut).',
+  })
+  @ApiResponse({ status: 200, description: 'Password diperbarui' })
+  @ApiResponse({ status: 400, description: 'Payload tidak valid' })
+  @ApiResponse({ status: 401, description: 'Password lama salah' })
+  @ApiResponse({ status: 429, description: 'Terlalu banyak percobaan' })
+  async changePassword(
+    @Body() dto: ChangePasswordDto,
+    @GetUser() user: JwtAccessPayload,
+    @Req() request: FastifyRequest,
+  ) {
+    // Password lama bisa ditebak: 5 percobaan / 5 menit per user.
+    this.rateLimiter.consumeOrThrow(`auth:change-password:${user.sub}`, 5, 5 * 60_000);
+
+    await this.changePasswordUseCase.execute({
+      userId: user.sub,
+      currentPassword: dto.currentPassword,
+      newPassword: dto.newPassword,
+      keepRefreshToken: dto.keepRefreshToken ?? null,
+    });
+
+    return successResponse(null);
   }
 
   @Public()

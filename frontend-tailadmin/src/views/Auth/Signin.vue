@@ -65,7 +65,7 @@
                     <div class="flex items-center justify-between">
                       <BaseToggle v-model="keepLoggedIn" label="Keep me logged in" />
                       <router-link
-                        to="/reset-password"
+                        to="/forgot-password"
                         class="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
                         >Forgot password?</router-link
                       >

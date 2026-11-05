@@ -581,6 +581,24 @@ const router = createRouter({
         public: true,
       },
     },
+    {
+      path: '/forgot-password',
+      name: 'ForgotPassword',
+      component: () => import('../views/Auth/ForgotPassword.vue'),
+      meta: {
+        title: 'Lupa Password',
+        public: true,
+      },
+    },
+    {
+      path: '/reset-password',
+      name: 'ResetPassword',
+      component: () => import('../views/Auth/ResetPassword.vue'),
+      meta: {
+        title: 'Reset Password',
+        public: true,
+      },
+    },
   ],
 })
 

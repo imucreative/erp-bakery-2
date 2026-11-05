@@ -83,6 +83,21 @@ export interface UpdateMyProfileFields {
   avatarUrl?: string | null;
 }
 
+/** One-time password reset token (only its hash is persisted). */
+export interface PasswordResetToken {
+  id: string;
+  userId: string;
+  expiresAt: Date;
+  usedAt: Date | null;
+}
+
+/** Minimal user identity needed by the "forgot password" flow. */
+export interface PasswordResetUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
 /**
  * Abstract repository interface — Users domain.
  */
@@ -180,4 +195,34 @@ export abstract class UserRepository {
 
   /** Record a successful login timestamp. */
   abstract touchLastLogin(id: string): Promise<void>;
+
+  // ── Password reset ("lupa password") ────────────────────────────────
+
+  /**
+   * Look up an active user by email for the reset flow.
+   * Returns null (not a throw) so the endpoint can stay enumeration-safe.
+   */
+  abstract findActiveUserByEmail(email: string): Promise<PasswordResetUser | null>;
+
+  /**
+   * Persist a reset token hash and invalidate the user's previous unused tokens.
+   */
+  abstract createPasswordResetToken(
+    userId: string,
+    tokenHash: string,
+    expiresAt: Date,
+    requestedIp: string | null,
+  ): Promise<void>;
+
+  /** Fetch a token that is unused and not expired. Null when unusable. */
+  abstract getUsablePasswordResetToken(tokenHash: string): Promise<PasswordResetToken | null>;
+
+  /** Mark a token as consumed (single-use). */
+  abstract markPasswordResetTokenUsed(id: string): Promise<void>;
+
+  /** Store a new password hash for the user. Throws USER.NOT_FOUND. */
+  abstract updatePassword(id: string, passwordHash: string): Promise<void>;
+
+  /** Current password hash of the user (untuk verifikasi password lama). */
+  abstract getPasswordById(id: string): Promise<string>;
 }
