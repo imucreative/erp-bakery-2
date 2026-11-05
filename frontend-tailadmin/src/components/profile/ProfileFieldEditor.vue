@@ -6,7 +6,16 @@
       :required="field.required"
       :error="errors?.[field.key]"
     >
+      <PasswordInput
+        v-if="field.type === 'password'"
+        :id="field.key"
+        :model-value="modelValue[field.key] ?? ''"
+        :placeholder="field.placeholder"
+        :error="errors?.[field.key]"
+        @update:model-value="update(field.key, $event)"
+      />
       <BaseInput
+        v-else
         :id="field.key"
         :model-value="modelValue[field.key] ?? ''"
         :placeholder="field.placeholder"
@@ -19,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { BaseFormField, BaseInput } from '@/components/ui'
+import { BaseFormField, BaseInput, PasswordInput } from '@/components/ui'
 
 /**
  * ProfileFieldEditor — pasangan `ProfileFieldGrid` untuk mode edit: menerima

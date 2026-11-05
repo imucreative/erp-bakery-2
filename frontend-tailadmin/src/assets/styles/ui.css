@@ -221,6 +221,12 @@
   @apply bg-error-500 text-white shadow-theme-xs hover:bg-error-600 disabled:bg-error-300;
 }
 
+/* Tombol ikon tanpa latar/bingkai — dipakai di dalam kontrol lain, mis. toggle
+   lihat password di dalam input. Warna mengikuti teks sekunder, hover menegaskan. */
+@utility btn-ghost {
+  @apply bg-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200;
+}
+
 /* Checkbox — style dasar untuk input checkbox. Size (`h-4 w-4`) dan disabled state
    sudah termasuk karena selalu sama untuk semua checkbox. */
 @utility checkbox {
@@ -352,6 +358,12 @@
    (mis. Dashboard) — dipasang pada `v-if="loading"`. */
 @utility page-loading-overlay {
   @apply fixed inset-0 z-50 flex items-center justify-center bg-white/50 dark:bg-gray-900/50;
+}
+
+/* Panel brand di sisi kanan halaman auth (Signin, Signup, Lupa Password, Reset
+   Password) — hanya tampil pada layar besar; berisi logo + grid dekoratif. */
+@utility auth-brand-panel {
+  @apply relative hidden h-full w-full items-center bg-brand-950 lg:grid lg:w-1/2 dark:bg-white/5;
 }
 
 /* Pembatas + wadah form input di dalam panel lampiran/komentar: garis atas,

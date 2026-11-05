@@ -6,7 +6,7 @@ defineOptions({ inheritAttrs: false })
 interface BaseButtonProps {
   type?: 'button' | 'submit' | 'reset'
   size?: 'sm' | 'md'
-  variant?: 'primary' | 'outline' | 'success' | 'info' | 'warning' | 'danger'
+  variant?: 'primary' | 'outline' | 'success' | 'info' | 'warning' | 'danger' | 'ghost'
   disabled?: boolean
   loading?: boolean
   fullWidth?: boolean
@@ -41,6 +41,7 @@ const variantClasses = {
   info: 'btn-info',
   warning: 'btn-warning',
   danger: 'btn-danger',
+  ghost: 'btn-ghost',
 }
 
 const buttonClass = computed<string>(() =>
