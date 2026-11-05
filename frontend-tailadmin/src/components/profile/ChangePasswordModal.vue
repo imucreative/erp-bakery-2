@@ -2,56 +2,13 @@
   <ProfileEditModal
     title="Ganti Password"
     description="Masukkan password lama, lalu password baru Anda."
-    :saving="saving"
+    :saving="loading"
     @close="emit('close')"
     @submit="save"
   >
-    <div v-if="errorMessage" class="col-span-2">
-      <BaseAlert type="error" :message="errorMessage" />
-    </div>
+    <FormAlerts class="col-span-2" :error="errorMessage" />
 
-    <div class="col-span-2">
-      <BaseFormField label="Password saat ini" field-id="current-password" required>
-        <BaseInput
-          id="current-password"
-          v-model="form.current"
-          type="password"
-          placeholder="Password saat ini"
-        />
-      </BaseFormField>
-    </div>
-    <div>
-      <BaseFormField
-        label="Password baru"
-        field-id="new-password"
-        required
-        :error="newPasswordError"
-      >
-        <BaseInput
-          id="new-password"
-          v-model="form.next"
-          type="password"
-          placeholder="Minimal 8 karakter"
-          :error="newPasswordError || undefined"
-        />
-      </BaseFormField>
-    </div>
-    <div>
-      <BaseFormField
-        label="Ulangi password baru"
-        field-id="confirm-new-password"
-        required
-        :error="confirmPasswordError"
-      >
-        <BaseInput
-          id="confirm-new-password"
-          v-model="form.confirm"
-          type="password"
-          placeholder="Ulangi password baru"
-          :error="confirmPasswordError || undefined"
-        />
-      </BaseFormField>
-    </div>
+    <ProfileFieldEditor v-model="form" :fields="fields" :errors="errors" />
 
     <div class="col-span-2">
       <p class="text-muted">
@@ -62,36 +19,68 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive } from 'vue'
 import ProfileEditModal from './ProfileEditModal.vue'
-import { BaseAlert, BaseFormField, BaseInput } from '@/components/ui'
+import ProfileFieldEditor, { type ProfileEditField } from './ProfileFieldEditor.vue'
+import { FormAlerts } from '@/components/ui'
+import { useAsyncAction } from '@/composables/useAsyncAction'
 import { authService } from '@/services/auth.service'
-import { toMessage } from '@/lib/errors'
 import { getRefreshToken } from '@/lib/tokenStorage'
 
 /**
- * Form ganti password, dipisah dari Security.vue supaya kartu Security tinggal
- * menjadi daftar baris + panel. Sukses ditandai lewat emit `saved`.
+ * Form ganti password. Sukses ditandai lewat emit `saved` (induk yang menampilkan
+ * pesan suksesnya, karena modalnya langsung ditutup).
  */
 const emit = defineEmits<{
   close: []
   saved: []
 }>()
 
-const form = reactive({ current: '', next: '', confirm: '' })
-const saving = ref(false)
-const errorMessage = ref<string | null>(null)
+const { loading, errorMessage, run } = useAsyncAction()
 
-const newPasswordError = computed(() =>
-  form.next && form.next.length < 8 ? 'Minimal 8 karakter' : null,
-)
+const form = reactive<Record<string, string>>({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+})
 
-const confirmPasswordError = computed(() =>
-  form.confirm && form.confirm !== form.next ? 'Konfirmasi password tidak sama' : null,
-)
+const fields: ProfileEditField[] = [
+  {
+    key: 'currentPassword',
+    label: 'Password saat ini',
+    placeholder: 'Password saat ini',
+    type: 'password',
+    required: true,
+    full: true,
+  },
+  {
+    key: 'newPassword',
+    label: 'Password baru',
+    placeholder: 'Minimal 8 karakter',
+    type: 'password',
+  },
+  {
+    key: 'confirmPassword',
+    label: 'Ulangi password baru',
+    placeholder: 'Ulangi password baru',
+    type: 'password',
+  },
+]
+
+const errors = computed<Record<string, string | null>>(() => ({
+  newPassword:
+    form.newPassword && form.newPassword.length < 8 ? 'Minimal 8 karakter' : null,
+  confirmPassword:
+    form.confirmPassword && form.confirmPassword !== form.newPassword
+      ? 'Konfirmasi password tidak sama'
+      : null,
+}))
 
 const canSave = computed(
-  () => form.current.length > 0 && form.next.length >= 8 && form.next === form.confirm,
+  () =>
+    form.currentPassword.length > 0 &&
+    form.newPassword.length >= 8 &&
+    form.newPassword === form.confirmPassword,
 )
 
 async function save(): Promise<void> {
@@ -99,23 +88,17 @@ async function save(): Promise<void> {
     return
   }
 
-  saving.value = true
-  errorMessage.value = null
-  try {
-    await authService.changePassword({
-      currentPassword: form.current,
-      newPassword: form.next,
+  const done = await run(() =>
+    authService.changePassword({
+      currentPassword: form.currentPassword,
+      newPassword: form.newPassword,
       // Sesi yang sedang dipakai dipertahankan; sesi lain dicabut.
       keepRefreshToken: getRefreshToken(),
-    })
-    form.current = ''
-    form.next = ''
-    form.confirm = ''
+    }),
+  )
+
+  if (done !== null) {
     emit('saved')
-  } catch (error) {
-    errorMessage.value = toMessage(error)
-  } finally {
-    saving.value = false
   }
 }
 </script>

@@ -6,22 +6,14 @@
       class="mb-4"
       message="Konsol platform mewajibkan 2FA. Aktifkan di bawah untuk melanjutkan."
     />
-    <BaseAlert v-if="errorMessage" type="error" :message="errorMessage" class="mb-4" />
-    <BaseAlert v-if="successMessage" variant="success" :message="successMessage" class="mb-4" />
+    <FormAlerts :error="errorMessage" :success="successMessage" class="mb-4" />
 
-    <!-- Not enrolled -->
-    <ProfileActionRow
+    <TwoFactorEnrollPrompt
       v-if="!status.enabled && !setupData"
-      title=""
-      description="Gunakan aplikasi authenticator (Google Authenticator, Authy, 1Password, ...) untuk menghasilkan kode 6 digit setiap kali login."
-    >
-      <BaseButton variant="primary" size="sm" :loading="loading" @click="startSetup">
-        <KeyRound class="size-5" />
-        Aktifkan 2FA
-      </BaseButton>
-    </ProfileActionRow>
+      :loading="loading"
+      @start="startSetup"
+    />
 
-    <!-- Enrollment in progress -->
     <TwoFactorSetup
       v-else-if="setupData"
       v-model:code="code"
@@ -31,51 +23,25 @@
       @cancel="cancelSetup"
     />
 
-    <!-- Enabled -->
-    <div v-else class="space-y-3">
-      <p class="text-muted">
-        Login berikutnya memerlukan kode dari aplikasi authenticator (atau salah satu kode
-        recovery).
-      </p>
-      <div class="stack-row sm:items-end">
-        <div class="w-full sm:max-w-xs">
-          <BaseFormField label="Kode saat ini" field-id="two-factor-disable-code" required>
-            <BaseInput
-              id="two-factor-disable-code"
-              v-model="code"
-              placeholder="123456"
-              autocomplete="one-time-code"
-            />
-          </BaseFormField>
-        </div>
-        <BaseButton
-          variant="outline"
-          size="sm"
-          :loading="loading"
-          :disabled="!code"
-          @click="disable"
-        >
-          Nonaktifkan 2FA
-        </BaseButton>
-      </div>
-    </div>
+    <TwoFactorDisableForm v-else :loading="loading" @disable="disable" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { KeyRound } from 'lucide-vue-next'
-import ProfileActionRow from './ProfileActionRow.vue'
+import TwoFactorEnrollPrompt from './TwoFactorEnrollPrompt.vue'
+import TwoFactorDisableForm from './TwoFactorDisableForm.vue'
 import TwoFactorSetup from './TwoFactorSetup.vue'
-import { BaseAlert, BaseButton, BaseFormField, BaseInput } from '@/components/ui'
+import { BaseAlert, FormAlerts } from '@/components/ui'
+import { useAsyncAction } from '@/composables/useAsyncAction'
 import { authService, type TwoFactorSetup as TwoFactorSetupData } from '@/services/auth.service'
-import { toMessage } from '@/lib/errors'
 import { resetTwoFactorGate } from '@/lib/twoFactorGate'
 
 /**
- * Seluruh alur 2FA (status, enrollment, nonaktifkan). Status diteruskan ke
- * Security.vue lewat `update:status` supaya baris kartunya bisa menampilkan Badge.
+ * Orkestrasi alur 2FA: status, enrollment, aktifkan, nonaktifkan. Setiap state
+ * tampilan ada di komponennya sendiri; status diteruskan ke Security.vue lewat
+ * `update:status` supaya Badge di baris kartu tetap sinkron.
  */
 const emit = defineEmits<{
   'update:status': [value: { enabled: boolean; pending: boolean }]
@@ -84,13 +50,12 @@ const emit = defineEmits<{
 const route = useRoute()
 const requiredNotice = computed(() => route.query.twoFactor === 'required')
 
+const { loading, errorMessage, successMessage, run, reset } = useAsyncAction()
+
 const enabled = ref(false)
 const pending = ref(false)
 const setupData = ref<TwoFactorSetupData | null>(null)
 const code = ref('')
-const loading = ref(false)
-const errorMessage = ref<string | null>(null)
-const successMessage = ref<string | null>(null)
 
 const status = computed(() => ({ enabled: enabled.value, pending: pending.value }))
 
@@ -108,60 +73,47 @@ async function refresh(): Promise<void> {
 }
 
 async function startSetup(): Promise<void> {
-  loading.value = true
-  errorMessage.value = null
-  successMessage.value = null
-  try {
-    setupData.value = await authService.setupTwoFactor()
+  const data = await run(() => authService.setupTwoFactor())
+  if (data) {
+    setupData.value = data
     code.value = ''
-  } catch (error) {
-    errorMessage.value = toMessage(error)
-  } finally {
-    loading.value = false
   }
 }
 
 async function enable(): Promise<void> {
-  loading.value = true
-  errorMessage.value = null
-  successMessage.value = null
-  try {
-    await authService.enableTwoFactor(code.value.trim())
-    enabled.value = true
-    pending.value = false
-    setupData.value = null
-    code.value = ''
-    successMessage.value = '2FA berhasil diaktifkan.'
-    resetTwoFactorGate()
-  } catch (error) {
-    errorMessage.value = toMessage(error)
-  } finally {
-    loading.value = false
+  const done = await run(
+    () => authService.enableTwoFactor(code.value.trim()),
+    '2FA berhasil diaktifkan.',
+  )
+  if (done === null) {
+    return
   }
+
+  enabled.value = true
+  pending.value = false
+  setupData.value = null
+  code.value = ''
+  resetTwoFactorGate()
 }
 
-async function disable(): Promise<void> {
-  loading.value = true
-  errorMessage.value = null
-  successMessage.value = null
-  try {
-    await authService.disableTwoFactor(code.value.trim())
-    enabled.value = false
-    pending.value = false
-    code.value = ''
-    successMessage.value = '2FA dinonaktifkan.'
-    resetTwoFactorGate()
-  } catch (error) {
-    errorMessage.value = toMessage(error)
-  } finally {
-    loading.value = false
+async function disable(input: string): Promise<void> {
+  const done = await run(
+    () => authService.disableTwoFactor(input.trim()),
+    '2FA dinonaktifkan.',
+  )
+  if (done === null) {
+    return
   }
+
+  enabled.value = false
+  pending.value = false
+  resetTwoFactorGate()
 }
 
 function cancelSetup(): void {
   setupData.value = null
   code.value = ''
-  errorMessage.value = null
+  reset()
 }
 
 onMounted(() => {
