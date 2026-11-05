@@ -31,7 +31,13 @@
 
       <form v-if="token && !done" @submit.prevent="handleSubmit">
         <div class="space-y-5">
-          <BaseFormField label="Password baru" field-id="new-password" required>
+          <BaseFormField
+            label="Password baru"
+            field-id="new-password"
+            required
+            :hint="PASSWORD_POLICY_HINT"
+            :error="newPasswordError"
+          >
             <PasswordInput
               id="new-password"
               v-model="password"
@@ -95,6 +101,7 @@ import AuthLayout from '@/components/layout/AuthLayout.vue'
 import { BaseAlert, BaseButton, BaseFormField, PasswordInput } from '@/components/ui'
 import { authService } from '@/services/auth.service'
 import { toMessage } from '@/lib/errors'
+import { PASSWORD_POLICY_HINT, isPasswordValid, passwordPolicyError } from '@/lib/passwordPolicy'
 
 const route = useRoute()
 const router = useRouter()
@@ -106,6 +113,8 @@ const submitting = ref(false)
 const done = ref(false)
 const errorMessage = ref<string | null>(null)
 
+const newPasswordError = computed(() => passwordPolicyError(password.value))
+
 const confirmError = computed(() => {
   if (!confirm.value || confirm.value === password.value) {
     return null
@@ -113,7 +122,9 @@ const confirmError = computed(() => {
   return 'Konfirmasi password tidak sama'
 })
 
-const canSubmit = computed(() => password.value.length >= 8 && confirm.value === password.value)
+const canSubmit = computed(
+  () => isPasswordValid(password.value) && confirm.value === password.value,
+)
 
 async function handleSubmit(): Promise<void> {
   submitting.value = true

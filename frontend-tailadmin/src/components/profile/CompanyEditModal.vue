@@ -8,7 +8,7 @@
   >
     <FormAlerts class="col-span-2" :error="errorMessage" :success="successMessage" />
 
-    <ProfileFieldEditor v-model="form" :fields="fields" />
+    <ProfileFieldEditor :form="form" :fields="fields" />
   </ProfileEditModal>
 </template>
 

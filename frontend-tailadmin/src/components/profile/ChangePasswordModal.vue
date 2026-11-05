@@ -3,12 +3,13 @@
     title="Ganti Password"
     description="Masukkan password lama, lalu password baru Anda."
     :saving="loading"
+    :can-submit="canSave"
     @close="emit('close')"
     @submit="save"
   >
     <FormAlerts class="col-span-2" :error="errorMessage" />
 
-    <ProfileFieldEditor v-model="form" :fields="fields" :errors="errors" />
+    <ProfileFieldEditor :form="form" :fields="fields" :errors="errors" />
 
     <div class="col-span-2">
       <p class="text-muted">
@@ -25,11 +26,15 @@ import ProfileFieldEditor, { type ProfileEditField } from './ProfileFieldEditor.
 import { FormAlerts } from '@/components/ui'
 import { useAsyncAction } from '@/composables/useAsyncAction'
 import { authService } from '@/services/auth.service'
+import { PASSWORD_POLICY_HINT, isPasswordValid, passwordPolicyError } from '@/lib/passwordPolicy'
 import { getRefreshToken } from '@/lib/tokenStorage'
 
 /**
  * Form ganti password. Sukses ditandai lewat emit `saved` (induk yang menampilkan
- * pesan suksesnya, karena modalnya langsung ditutup).
+ * pesan suksesnya karena modal langsung ditutup).
+ *
+ * Tombol Simpan dinonaktifkan selama form belum valid (`canSubmit`), jadi pengguna
+ * tidak lagi menekan tombol yang diam-diam tidak melakukan apa pun.
  */
 const emit = defineEmits<{
   close: []
@@ -58,6 +63,7 @@ const fields: ProfileEditField[] = [
     label: 'Password baru',
     placeholder: 'Minimal 8 karakter',
     type: 'password',
+    hint: PASSWORD_POLICY_HINT,
   },
   {
     key: 'confirmPassword',
@@ -68,8 +74,7 @@ const fields: ProfileEditField[] = [
 ]
 
 const errors = computed<Record<string, string | null>>(() => ({
-  newPassword:
-    form.newPassword && form.newPassword.length < 8 ? 'Minimal 8 karakter' : null,
+  newPassword: passwordPolicyError(form.newPassword),
   confirmPassword:
     form.confirmPassword && form.confirmPassword !== form.newPassword
       ? 'Konfirmasi password tidak sama'
@@ -79,7 +84,7 @@ const errors = computed<Record<string, string | null>>(() => ({
 const canSave = computed(
   () =>
     form.currentPassword.length > 0 &&
-    form.newPassword.length >= 8 &&
+    isPasswordValid(form.newPassword) &&
     form.newPassword === form.confirmPassword,
 )
 

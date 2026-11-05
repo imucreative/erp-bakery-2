@@ -12,7 +12,13 @@
           <X class="size-5" />
           Batal
         </BaseButton>
-        <BaseButton variant="success" size="sm" type="submit" :loading="saving">
+        <BaseButton
+          variant="success"
+          size="sm"
+          type="submit"
+          :loading="saving"
+          :disabled="!canSubmit"
+        >
           <Save class="size-5" />
           Simpan
         </BaseButton>
@@ -26,11 +32,16 @@ import { BaseButton, BaseModal } from '@/components/ui'
 import { Save, X } from 'lucide-vue-next';
 
 /** Shared modal shell for the profile edit forms (title, actions, layout). */
-defineProps<{
-  title: string
-  description: string
-  saving?: boolean
-}>()
+withDefaults(
+  defineProps<{
+    title: string
+    description: string
+    saving?: boolean
+    /** false = tombol Simpan dinonaktifkan (form belum valid). */
+    canSubmit?: boolean
+  }>(),
+  { saving: false, canSubmit: true },
+)
 
 const emit = defineEmits<{
   close: []
