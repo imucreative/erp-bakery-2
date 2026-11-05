@@ -2,14 +2,14 @@
   <div class="section-card">
     <h4 class="card-title mb-3 lg:mb-6">Danger Zone</h4>
 
-    <DangerZoneRow title="Logout all devices" description="Sign out from every active session.">
+    <ProfileActionRow title="Logout all devices" description="Sign out from every active session.">
       <BaseButton variant="outline" size="sm">
         <LogOut class="size-5" />
         Logout all devices
       </BaseButton>
-    </DangerZoneRow>
+    </ProfileActionRow>
 
-    <DangerZoneRow
+    <ProfileActionRow
       title="Delete account"
       description="Hapus akun secara permanen. Tindakan ini tidak dapat dibatalkan."
     >
@@ -17,12 +17,12 @@
         <Trash2 class="size-5" />
         Delete account
       </BaseButton>
-    </DangerZoneRow>
+    </ProfileActionRow>
   </div>
 </template>
 
 <script setup lang="ts">
 import { LogOut, Trash2 } from 'lucide-vue-next'
 import { BaseButton } from '@/components/ui'
-import DangerZoneRow from './DangerZoneRow.vue'
+import ProfileActionRow from './ProfileActionRow.vue'
 </script>
