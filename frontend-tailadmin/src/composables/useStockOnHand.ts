@@ -7,7 +7,6 @@
  */
 
 import { computed, ref, watch } from 'vue'
-import { ApiClientError } from '@/services/http'
 import {
   inventoryService,
   type StockOnHandRow,
@@ -25,21 +24,8 @@ export interface StockOnHandListMeta {
 }
 
 /** Normalize an unknown error into a user-facing message. */
-export function toMessage(error: unknown): string {
-  if (error instanceof ApiClientError) {
-    const details = error.fieldErrors
-      .map((item) => item.message)
-      .filter((message): message is string => Boolean(message))
-    if (details.length > 0) {
-      return `${error.message}: ${details.join('; ')}`
-    }
-    return error.message
-  }
-  if (error instanceof Error) {
-    return error.message
-  }
-  return 'Terjadi kesalahan. Coba lagi.'
-}
+import { toMessage } from '@/lib/errors'
+export { toMessage }
 
 export function useStockOnHand() {
   const items = ref<StockOnHandRow[]>([])

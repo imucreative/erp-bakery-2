@@ -4,7 +4,6 @@
  */
 
 import { ref } from 'vue'
-import { ApiClientError } from '@/services/http'
 import {
   reportsService,
   type SalesReport,
@@ -15,12 +14,7 @@ import {
   type ProductionReportFilters,
 } from '@/services/reports.service'
 
-function toMessage(error: unknown): string {
-  if (error instanceof ApiClientError || error instanceof Error) {
-    return error.message
-  }
-  return 'Terjadi kesalahan. Coba lagi.'
-}
+import { toMessage } from '@/lib/errors'
 
 export function useSalesReport() {
   const report = ref<SalesReport | null>(null)

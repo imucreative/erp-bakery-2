@@ -111,7 +111,6 @@ import {
   BaseTablePagination,
   BaseTableRow,
 } from '@/components/ui'
-import { ApiClientError } from '@/services/http'
 import { platformCompanyService, type PlatformCompanyItem } from '@/services/platform-company.service'
 import { Check, X } from 'lucide-vue-next'
 
@@ -127,12 +126,7 @@ const errorMessage = ref<string | null>(null)
 
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 
-function toMessage(error: unknown): string {
-  if (error instanceof ApiClientError || error instanceof Error) {
-    return error.message
-  }
-  return 'Terjadi kesalahan. Coba lagi.'
-}
+import { toMessage } from '@/lib/errors'
 
 async function load(): Promise<void> {
   loading.value = true

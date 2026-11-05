@@ -30,7 +30,6 @@ import {
   BaseTableRow,
   BaseToggle,
 } from '@/components/ui'
-import { ApiClientError } from '@/services/http'
 import type { Product } from '@/services/product.service'
 import type { Uom } from '@/services/uom.service'
 import {
@@ -75,12 +74,7 @@ const rowError = ref<string | null>(null)
 // ── Delete state ─────────────────────────────────────────────────────
 const deletingId = ref<string | null>(null)
 
-function toMessage(error: unknown): string {
-  if (error instanceof ApiClientError || error instanceof Error) {
-    return error.message
-  }
-  return 'Terjadi kesalahan. Coba lagi.'
-}
+import { toMessage } from '@/lib/errors'
 
 const factorFormatter = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 6 })
 function formatFactor(value: number): string {

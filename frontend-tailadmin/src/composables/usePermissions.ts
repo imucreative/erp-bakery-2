@@ -5,15 +5,9 @@
  */
 
 import { ref } from 'vue'
-import { ApiClientError } from '@/services/http'
 import { permissionService, type Permission } from '@/services/permission.service'
 
-function toMessage(error: unknown): string {
-  if (error instanceof ApiClientError || error instanceof Error) {
-    return error.message
-  }
-  return 'Terjadi kesalahan. Coba lagi.'
-}
+import { toMessage } from '@/lib/errors'
 
 export function usePermissions() {
   const permissions = ref<Permission[]>([])

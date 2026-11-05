@@ -6,7 +6,6 @@
  */
 
 import { computed, ref } from 'vue'
-import { ApiClientError } from '@/services/http'
 import {
   roleService,
   type Role,
@@ -15,12 +14,7 @@ import {
   type UpdateRolePayload,
 } from '@/services/role.service'
 
-function toMessage(error: unknown): string {
-  if (error instanceof ApiClientError || error instanceof Error) {
-    return error.message
-  }
-  return 'Terjadi kesalahan. Coba lagi.'
-}
+import { toMessage } from '@/lib/errors'
 
 export function useRoles() {
   const roles = ref<Role[]>([])

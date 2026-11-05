@@ -20,7 +20,6 @@
  */
 import { computed, onMounted, ref } from 'vue'
 import { Download, FileText, ImageIcon, Paperclip, Trash2, UploadCloud } from 'lucide-vue-next'
-import { ApiClientError } from '@/services/http'
 import { BaseAlert, BaseButton, BaseFileButton } from '@/components/ui'
 import { formatDateTime, formatFileSize } from '@/lib/format'
 import {
@@ -52,21 +51,7 @@ const downloadingId = ref<string | null>(null)
 const confirmDeleteId = ref<string | null>(null)
 const deletingId = ref<string | null>(null)
 
-function toMessage(error: unknown): string {
-  if (error instanceof ApiClientError) {
-    const details = error.fieldErrors
-      .map((item) => item.message)
-      .filter((message): message is string => Boolean(message))
-    if (details.length > 0) {
-      return `${error.message}: ${details.join('; ')}`
-    }
-    return error.message
-  }
-  if (error instanceof Error) {
-    return error.message
-  }
-  return 'Terjadi kesalahan. Coba lagi.'
-}
+import { toMessage } from '@/lib/errors'
 
 function uploaderLabel(attachment: PurchaseRequestAttachment): string {
   return attachment.uploadedByName?.trim() || '—'

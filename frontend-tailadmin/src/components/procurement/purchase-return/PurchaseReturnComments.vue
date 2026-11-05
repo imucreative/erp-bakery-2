@@ -16,7 +16,6 @@
  */
 import { onMounted, ref } from 'vue'
 import { Send } from 'lucide-vue-next'
-import { ApiClientError } from '@/services/http'
 import Badge from '@/components/ui/Badge.vue'
 import { BaseAlert, BaseButton, BaseSelect, BaseTextarea } from '@/components/ui'
 import { formatDateTime } from '@/lib/format'
@@ -46,21 +45,7 @@ const categoryOptions = PURCHASE_RETURN_COMMENT_CATEGORIES.map((value) => ({
   label: PURCHASE_RETURN_COMMENT_CATEGORY_LABELS[value],
 }))
 
-function toMessage(error: unknown): string {
-  if (error instanceof ApiClientError) {
-    const details = error.fieldErrors
-      .map((item) => item.message)
-      .filter((message): message is string => Boolean(message))
-    if (details.length > 0) {
-      return `${error.message}: ${details.join('; ')}`
-    }
-    return error.message
-  }
-  if (error instanceof Error) {
-    return error.message
-  }
-  return 'Terjadi kesalahan. Coba lagi.'
-}
+import { toMessage } from '@/lib/errors'
 
 function authorLabel(comment: PurchaseReturnComment): string {
   return comment.authorName?.trim() || 'Pengguna'

@@ -102,7 +102,6 @@ import {
   BaseTablePagination,
   BaseTableRow,
 } from '@/components/ui'
-import { ApiClientError } from '@/services/http'
 import { platformCompanyService } from '@/services/platform-company.service'
 import { platformService, type PlatformUserItem } from '@/services/platform.service'
 
@@ -121,12 +120,7 @@ const errorMessage = ref<string | null>(null)
 
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 
-function toMessage(error: unknown): string {
-  if (error instanceof ApiClientError || error instanceof Error) {
-    return error.message
-  }
-  return 'Terjadi kesalahan. Coba lagi.'
-}
+import { toMessage } from '@/lib/errors'
 
 async function loadCompanies(): Promise<void> {
   try {

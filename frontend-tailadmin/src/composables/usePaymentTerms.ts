@@ -7,7 +7,6 @@
  */
 
 import { computed, ref, watch } from 'vue'
-import { ApiClientError } from '@/services/http'
 import {
   paymentTermService,
   type PaymentTerm,
@@ -28,12 +27,7 @@ export interface PaymentTermListMeta {
 
 export type ActiveFilter = 'all' | 'true' | 'false'
 
-function toMessage(error: unknown): string {
-  if (error instanceof ApiClientError || error instanceof Error) {
-    return error.message
-  }
-  return 'Terjadi kesalahan. Coba lagi.'
-}
+import { toMessage } from '@/lib/errors'
 
 export function usePaymentTerms() {
   const items = ref<PaymentTerm[]>([])

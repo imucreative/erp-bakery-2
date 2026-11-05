@@ -158,7 +158,6 @@ import FullScreenLayout from '@/components/layout/FullScreenLayout.vue'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { ApiClientError } from '@/services/http'
 import { BaseAlert, BaseButton, BaseFormField, BaseInput, BaseToggle } from '@/components/ui'
 import { Eye, EyeOff } from 'lucide-vue-next'
 
@@ -183,11 +182,7 @@ const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value
 }
 
-function toMessage(error: unknown): string {
-  return error instanceof ApiClientError
-    ? error.message
-    : 'Unable to sign in. Please check your credentials and try again.'
-}
+import { toMessage } from '@/lib/errors'
 
 async function redirectAfterLogin(): Promise<void> {
   if (auth.isSuperAdmin) {
