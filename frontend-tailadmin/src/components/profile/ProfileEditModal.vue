@@ -9,9 +9,11 @@
       </div>
       <div class="button-row mt-6">
         <BaseButton variant="outline" size="sm" type="button" @click="emit('close')">
+          <X class="size-5" />
           Batal
         </BaseButton>
-        <BaseButton variant="primary" size="sm" type="submit" :loading="saving">
+        <BaseButton variant="success" size="sm" type="submit" :loading="saving">
+          <Save class="size-5" />
           Simpan
         </BaseButton>
       </div>
@@ -21,6 +23,7 @@
 
 <script setup lang="ts">
 import { BaseButton, BaseModal } from '@/components/ui'
+import { Save, X } from 'lucide-vue-next';
 
 /** Shared modal shell for the profile edit forms (title, actions, layout). */
 defineProps<{

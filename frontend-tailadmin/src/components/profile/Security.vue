@@ -39,13 +39,16 @@
 
         <!-- Not enrolled -->
         <div v-if="!enabled && !setupData" class="space-y-3">
-          <p class="text-muted">
-            Gunakan aplikasi authenticator (Google Authenticator, Authy, 1Password, ...) untuk
-            menghasilkan kode 6 digit setiap kali login.
-          </p>
-          <BaseButton variant="primary" size="sm" :loading="loading" @click="startSetup">
-            Aktifkan 2FA
-          </BaseButton>
+          <ProfileActionRow
+            title=""
+            description="Gunakan aplikasi authenticator (Google Authenticator, Authy, 1Password, ...) untuk
+              menghasilkan kode 6 digit setiap kali login."
+          >
+            <BaseButton variant="primary" size="sm" :loading="loading" @click="startSetup">
+              <KeyRound class="size-5" />
+              Aktifkan 2FA
+            </BaseButton>
+          </ProfileActionRow>
         </div>
 
         <!-- Enrollment in progress -->

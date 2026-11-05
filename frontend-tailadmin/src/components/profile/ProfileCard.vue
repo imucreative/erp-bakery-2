@@ -36,7 +36,10 @@
         <ProfileFieldGrid :fields="fields" class="max-w-4xl" />
       </div>
       <div>
-        <BaseButton variant="outline" size="sm" @click="openEdit">Edit</BaseButton>
+        <BaseButton variant="outline" size="sm" @click="openEdit">
+          <Pencil class="size-4" />
+          Edit
+        </BaseButton>
       </div>
     </div>
 
@@ -83,6 +86,7 @@ import { BaseAlert, BaseButton, BaseFormField, BaseInput } from '@/components/ui
 import { toMessage } from '@/lib/errors'
 import { formatDateTime } from '@/lib/format'
 import { profileService, type MyProfile } from '@/services/profile.service'
+import { Pencil } from 'lucide-vue-next'
 
 const profile = ref<MyProfile | null>(null)
 const editing = ref(false)
