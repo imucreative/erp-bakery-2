@@ -137,10 +137,13 @@ export class AuthController {
   @ApiOperation({
     summary: 'Request a password reset link',
     description:
-      'Selalu membalas 200 — tidak pernah memberi tahu apakah email terdaftar atau tidak ' +
-      '(mencegah enumerasi akun).',
+      'Untuk email yang terdaftar: membuat token sekali pakai (60 menit) dan mengirim ' +
+      'tautan reset. Untuk email yang belum terdaftar: 404 dengan pesan jelas. ' +
+      'Catatan: pesan 404 tersebut mengungkap keberadaan akun (account enumeration) — ' +
+      'trade-off yang disengaja demi kejelasan UX.',
   })
   @ApiResponse({ status: 200, description: 'Permintaan diterima' })
+  @ApiResponse({ status: 404, description: 'Email belum terdaftar' })
   @ApiResponse({ status: 429, description: 'Terlalu banyak permintaan' })
   async forgotPassword(@Body() dto: ForgotPasswordDto, @Req() request: FastifyRequest) {
     // 5 permintaan / 15 menit per IP, dan 3 / 15 menit per email supaya satu

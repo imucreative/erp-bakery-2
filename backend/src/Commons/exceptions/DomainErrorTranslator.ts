@@ -536,6 +536,12 @@ const DomainErrorTranslator = {
 
     // ── User not found ───────────────────────────────────────────
     'USER.NOT_FOUND': new NotFoundError('User tidak ditemukan'),
+    // Dipakai halaman "Lupa Password": memberi tahu bahwa email belum terdaftar.
+    // Catatan keamanan: pesan ini memang mengungkap keberadaan akun (enumeration),
+    // disengaja demi kejelasan UX. Sebelumnya pesan sengaja netral. Perlu diketahui
+    // endpoint pendaftaran (register company) juga sudah mengungkap hal yang sama
+    // lewat USER.EMAIL_ALREADY_USED.
+    'USER.EMAIL_NOT_REGISTERED': new NotFoundError('Email yang Anda masukkan tidak terdaftar'),
     'COMPANY.NOT_FOUND': new NotFoundError('Company tidak ditemukan'),
     'ROLE.NOT_FOUND': new NotFoundError('Role tidak ditemukan'),
     'OUTLET.NOT_FOUND': new NotFoundError('Outlet tidak ditemukan'),

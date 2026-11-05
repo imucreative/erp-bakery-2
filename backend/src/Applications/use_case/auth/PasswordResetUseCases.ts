@@ -4,6 +4,7 @@ import { AuthenticationRepository } from '../../../Domains/authentications/Authe
 import { PasswordHash } from '../../security/PasswordHash';
 import { MailSender } from '../../security/MailSender';
 import { AuthenticationError } from '../../../Commons/exceptions/AuthenticationError';
+import { NotFoundError } from '../../../Commons/exceptions/NotFoundError';
 
 /** Masa berlaku token reset (menit). */
 export const RESET_TOKEN_TTL_MINUTES = 60;
@@ -30,10 +31,15 @@ function buildResetLink(token: string): string {
  * Membuat token reset sekali pakai untuk email yang terdaftar, lalu
  * mengirimkannya lewat MailSender.
  *
- * Penting: use case ini **tidak pernah** memberi tahu pemanggil apakah email
- * terdaftar atau tidak (mencegah enumerasi akun). `resetLink` hanya diisi bila
- * pemanggil memintanya secara eksplisit (`exposeLink`), yang di controller
- * digerbangi env dan hanya untuk lingkungan non-produksi/pilot.
+ * Bila email belum terdaftar, use case ini MELEMPAR `USER.EMAIL_NOT_REGISTERED`
+ * supaya pengguna mendapat pesan yang jelas ("email tidak terdaftar"). Ini
+ * disengaja dan merupakan trade-off keamanan: pesan tersebut mengungkap keberadaan
+ * akun (account enumeration). Sebelumnya pesan dibuat selalu netral demi mencegah
+ * enumerasi, namun endpoint pendaftaran perusahaan sudah mengungkap hal yang sama
+ * (`USER.EMAIL_ALREADY_USED`), sehingga kejelasan UX dipilih di sini.
+ *
+ * `resetLink` hanya diisi bila pemanggil memintanya eksplisit (`exposeLink`, yaitu
+ * mode pilot sebelum SMTP tersedia).
  */
 export class RequestPasswordResetUseCase {
   constructor(
@@ -48,7 +54,7 @@ export class RequestPasswordResetUseCase {
   }): Promise<{ resetLink: string | null }> {
     const user = await this.userRepository.findActiveUserByEmail(payload.email.trim());
     if (!user) {
-      return { resetLink: null };
+      throw new NotFoundError('USER.EMAIL_NOT_REGISTERED');
     }
 
     const token = randomBytes(32).toString('base64url');
