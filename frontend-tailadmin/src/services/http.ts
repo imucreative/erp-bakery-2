@@ -39,6 +39,26 @@ export class ApiClientError extends Error {
 type UnauthorizedHandler = () => void
 let onUnauthorized: UnauthorizedHandler | null = null
 
+/**
+ * Endpoint yang 401-nya berarti "kredensial/token yang kamu kirim salah", bukan
+ * "sesi kedaluwarsa" (endpoint ini juga dipakai sebelum login). Untuk endpoint ini
+ * interceptor tidak boleh mencoba refresh lalu memaksa logout: pesan asli dari
+ * server harus sampai ke pengguna.
+ *
+ * Contoh: salah password saat login, kode 2FA salah saat verifikasi login, token
+ * reset yang sudah kedaluwarsa.
+ */
+const AUTH_ENDPOINTS_WITHOUT_REFRESH = [
+  '/auth/login',
+  '/auth/mfa/verify',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+]
+
+function isAuthEndpoint(url: string | undefined): boolean {
+  return Boolean(url && AUTH_ENDPOINTS_WITHOUT_REFRESH.some((path) => url.includes(path)))
+}
+
 export function setUnauthorizedHandler(handler: UnauthorizedHandler): void {
   onUnauthorized = handler
 }
@@ -109,8 +129,10 @@ httpClient.interceptors.response.use(
     const originalConfig = error.config as RetriableConfig | undefined
     const status = error.response?.status
     const isRefreshCall = originalConfig?.url?.includes('/auth/refresh')
+    // 401 di endpoint auth = penolakan kredensial, bukan sesi kedaluwarsa.
+    const isAuthCall = isAuthEndpoint(originalConfig?.url)
 
-    if (status === 401 && originalConfig && !originalConfig._retry && !isRefreshCall) {
+    if (status === 401 && originalConfig && !originalConfig._retry && !isRefreshCall && !isAuthCall) {
       originalConfig._retry = true
       try {
         if (!refreshPromise) {
@@ -128,7 +150,7 @@ httpClient.interceptors.response.use(
       }
     }
 
-    if (status === 401) {
+    if (status === 401 && !isAuthCall) {
       clearTokens()
       onUnauthorized?.()
     }

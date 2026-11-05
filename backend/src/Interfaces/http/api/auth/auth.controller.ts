@@ -173,7 +173,7 @@ export class AuthController {
     description: 'Token sekali pakai; setelah berhasil seluruh sesi user dicabut.',
   })
   @ApiResponse({ status: 200, description: 'Password diperbarui' })
-  @ApiResponse({ status: 401, description: 'Token reset tidak valid / kedaluwarsa' })
+  @ApiResponse({ status: 400, description: 'Token reset tidak valid / kedaluwarsa' })
   @ApiResponse({ status: 429, description: 'Terlalu banyak percobaan' })
   async resetPassword(@Body() dto: ResetPasswordDto, @Req() request: FastifyRequest) {
     // Token panjang, tapi percobaan menebak tetap dibatasi: 10 / menit per IP.
@@ -191,8 +191,7 @@ export class AuthController {
       'keepRefreshToken tetap hidup (bila kosong, semua sesi dicabut).',
   })
   @ApiResponse({ status: 200, description: 'Password diperbarui' })
-  @ApiResponse({ status: 400, description: 'Payload tidak valid' })
-  @ApiResponse({ status: 401, description: 'Password lama salah' })
+  @ApiResponse({ status: 400, description: 'Payload tidak valid atau password lama salah' })
   @ApiResponse({ status: 429, description: 'Terlalu banyak percobaan' })
   async changePassword(
     @Body() dto: ChangePasswordDto,

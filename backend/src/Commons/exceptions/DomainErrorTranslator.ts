@@ -505,6 +505,24 @@ const DomainErrorTranslator = {
       'Refresh token tidak ditemukan',
     ),
 
+    // ── Password & 2FA self-service (halaman Profile) ─────────────
+    // Semua di sini 400 (InvariantError), BUKAN 401: kegagalan validasi pada
+    // permintaan yang sudah terautentikasi. Kalau dikembalikan 401, interceptor
+    // frontend akan menganggap sesi kedaluwarsa - mencoba refresh, mengulang
+    // request, lalu memaksa logout dan menimpa pesan aslinya dengan
+    // "Session expired" (dan pengguna ikut ter-logout).
+    'AUTHENTICATION.CURRENT_PASSWORD_INVALID': new InvariantError(
+      'Password saat ini salah',
+    ),
+    'AUTHENTICATION.RESET_TOKEN_INVALID': new InvariantError(
+      'Tautan reset tidak valid atau sudah kedaluwarsa. Silakan minta tautan baru.',
+    ),
+    'AUTHENTICATION.MFA_CODE_INVALID': new InvariantError('Kode 2FA tidak valid'),
+    'AUTHENTICATION.MFA_SETUP_REQUIRED': new InvariantError(
+      'Mulai pengaturan 2FA terlebih dahulu sebelum mengaktifkannya',
+    ),
+    'AUTHENTICATION.MFA_NOT_ENABLED': new InvariantError('2FA belum aktif untuk akun ini'),
+
     // ── Authorization ────────────────────────────────────────────
     'AUTHORIZATION.ACCESS_DENIED': new AuthorizationError(
       'Anda tidak memiliki akses untuk melakukan tindakan ini',

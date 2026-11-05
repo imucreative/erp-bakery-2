@@ -1,7 +1,7 @@
 import { UserRepository } from '../../../Domains/users/UserRepository';
 import { AuthenticationRepository } from '../../../Domains/authentications/AuthenticationRepository';
 import { PasswordHash } from '../../security/PasswordHash';
-import { AuthenticationError } from '../../../Commons/exceptions/AuthenticationError';
+import { InvariantError } from '../../../Commons/exceptions/InvariantError';
 
 /**
  * UseCase: ChangePasswordUseCase
@@ -33,8 +33,10 @@ export class ChangePasswordUseCase {
     try {
       await this.passwordHash.comparePassword(payload.currentPassword, currentHash);
     } catch {
-      // Kode ini memang dipakai untuk kredensial yang tidak cocok (401).
-      throw new AuthenticationError('AUTHENTICATION.CREDENTIALS_NOT_VALID');
+      // 400 (bukan 401): password lama salah adalah kegagalan validasi pada
+      // permintaan yang sudah terautentikasi. Kalau 401, interceptor frontend
+      // menganggapnya sesi kedaluwarsa lalu memaksa logout.
+      throw new InvariantError('AUTHENTICATION.CURRENT_PASSWORD_INVALID');
     }
 
     const newHash = await this.passwordHash.hash(payload.newPassword);
