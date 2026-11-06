@@ -5,10 +5,10 @@
     <div class="space-y-6">
       <ComponentCard
         title="Users"
-        desc="Semua user lintas perusahaan (read-only). Halaman ini hanya untuk Super Admin."
+        desc="Kelola user lintas perusahaan. Halaman ini hanya untuk Super Admin."
       >
-        <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-end">
+        <div class="toolbar-row">
+          <div class="stack-row">
             <div class="w-full sm:max-w-xs">
               <BaseInput
                 id="user-search"
@@ -26,52 +26,25 @@
               />
             </div>
           </div>
+          <BaseButton size="sm" variant="primary" @click="openCreate">
+            <template #start-icon>
+              <Plus class="h-4 w-4" aria-hidden="true" />
+            </template>
+            Tambah User
+          </BaseButton>
         </div>
 
-        <BaseAlert v-if="errorMessage" type="error" :message="errorMessage" class="mb-4" />
-
-        <BaseTable
-          :is-empty="items.length === 0"
-          empty-message="Belum ada user."
-          aria-label="Daftar user platform"
-        >
-          <template #header>
-            <BaseTableRow variant="header">
-              <BaseTableHead>Name</BaseTableHead>
-              <BaseTableHead>Email</BaseTableHead>
-              <BaseTableHead>Company</BaseTableHead>
-              <BaseTableHead>Role</BaseTableHead>
-              <BaseTableHead>Super Admin</BaseTableHead>
-              <BaseTableHead>Status</BaseTableHead>
-              <BaseTableHead>Created</BaseTableHead>
-            </BaseTableRow>
-          </template>
-          <template #body>
-            <BaseTableRow v-for="item in items" :key="item.id">
-              <BaseTableCell>
-                <span class="text-strong">{{ item.name }}</span>
-              </BaseTableCell>
-              <BaseTableCell>
-                <span class="text-meta">{{ item.email }}</span>
-              </BaseTableCell>
-              <BaseTableCell>{{ item.companyName || '— (platform)' }}</BaseTableCell>
-              <BaseTableCell>{{ item.roleName || item.roleCode || '—' }}</BaseTableCell>
-              <BaseTableCell>
-                <Badge v-if="item.isSuperAdmin" color="primary">Yes</Badge>
-                <span v-else class="text-meta">—</span>
-              </BaseTableCell>
-              <BaseTableCell>
-                <Badge :color="item.isActive ? 'success' : 'error'">
-                  {{ item.isActive ? 'Active' : 'Inactive' }}
-                </Badge>
-              </BaseTableCell>
-              <BaseTableCell>{{ formatDate(item.createdAt) }}</BaseTableCell>
-            </BaseTableRow>
-          </template>
-        </BaseTable>
+        <PlatformUserTable
+          :items="items"
+          :loading="loading"
+          :error-message="errorMessage"
+          :deleting-id="deletingId"
+          @edit="openEdit"
+          @delete="remove"
+        />
 
         <BaseTablePagination
-          class="mt-4"
+          v-if="!loading && !errorMessage && items.length > 0"
           :current-count="items.length"
           :total-items="meta.total"
           :current-page="meta.page"
@@ -83,112 +56,153 @@
         />
       </ComponentCard>
     </div>
+    <PlatformUserFormModal
+      :open="formOpen"
+      :mode="formMode"
+      :user="selectedUser"
+      :companies="assignableCompanyOptions"
+      :submitting="saving"
+      :error-message="formError"
+      @close="closeForm"
+      @submit="submitForm"
+    />
+    <PlatformUserDeleteModal
+      :open="deleteOpen"
+      :user="deleteTarget"
+      :deleting="deletingId !== null"
+      :error-message="deleteError"
+      @close="closeDelete"
+      @confirm="confirmDelete"
+    />
   </AdminLayout>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import Badge from '@/components/ui/Badge.vue'
-import {
-  BaseAlert,
-  BaseInput,
-  BaseSelect,
-  BaseTable,
-  BaseTableCell,
-  BaseTableHead,
-  BaseTablePagination,
-  BaseTableRow,
-} from '@/components/ui'
-import { platformCompanyService } from '@/services/platform-company.service'
-import { platformService, type PlatformUserItem } from '@/services/platform.service'
-
-const PAGE_SIZE = 10
-const SEARCH_DEBOUNCE_MS = 300
-
-const items = ref<PlatformUserItem[]>([])
-const meta = reactive({ page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 })
-const search = ref('')
-const companyId = ref('')
-const companyOptions = ref<Array<{ label: string; value: string }>>([
-  { label: 'All companies', value: '' },
-])
-const loading = ref(false)
-const errorMessage = ref<string | null>(null)
-
-let searchTimer: ReturnType<typeof setTimeout> | undefined
-
+import { BaseButton, BaseInput, BaseSelect, BaseTablePagination } from '@/components/ui'
+import PlatformUserTable from '@/components/platform/PlatformUserTable.vue'
+import PlatformUserDeleteModal from '@/components/platform/PlatformUserDeleteModal.vue'
+import type { PlatformUserItem } from '@/services/platform.service'
+import PlatformUserFormModal, {
+  type PlatformUserFormPayload,
+} from '@/components/platform/PlatformUserFormModal.vue'
+import { usePlatformUsers } from '@/composables/usePlatformUsers'
+import { Plus } from 'lucide-vue-next'
 import { toMessage } from '@/lib/errors'
 
-async function loadCompanies(): Promise<void> {
-  try {
-    const result = await platformCompanyService.list({ page: 1, limit: 100 })
-    companyOptions.value = [
-      { label: 'All companies', value: '' },
-      ...result.items.map((company) => ({ label: company.name, value: company.id })),
-    ]
-  } catch {
-    // The company filter is a convenience — keep the page usable without it.
-    companyOptions.value = [{ label: 'All companies', value: '' }]
-  }
+const {
+  items,
+  meta,
+  search,
+  companyId,
+  companyOptions,
+  assignableCompanyOptions,
+  loading,
+  errorMessage,
+  load,
+  loadCompanies,
+  onSearchInput,
+  onCompanyChange,
+  goToPage,
+  createUser,
+  updateUser,
+  deleteUser,
+} = usePlatformUsers()
+
+const formOpen = ref(false)
+const formMode = ref<'create' | 'edit'>('create')
+const selectedUser = ref<PlatformUserItem | null>(null)
+const saving = ref(false)
+const formError = ref<string | null>(null)
+const deletingId = ref<string | null>(null)
+const deleteOpen = ref(false)
+const deleteTarget = ref<PlatformUserItem | null>(null)
+const deleteError = ref<string | null>(null)
+
+function openCreate(): void {
+  formMode.value = 'create'
+  selectedUser.value = null
+  formError.value = null
+  formOpen.value = true
 }
 
-async function load(): Promise<void> {
-  loading.value = true
-  errorMessage.value = null
-  try {
-    const result = await platformService.listUsers({
-      page: meta.page,
-      limit: meta.limit,
-      search: search.value,
-      companyId: companyId.value,
-    })
-    items.value = result.items
-    meta.page = result.meta.page
-    meta.limit = result.meta.limit
-    meta.total = result.meta.total
-    meta.totalPages = result.meta.totalPages
-  } catch (error) {
-    errorMessage.value = toMessage(error)
-    items.value = []
-  } finally {
-    loading.value = false
-  }
-}
-
-function onSearchInput(value: string): void {
-  search.value = value
-  if (searchTimer) {
-    clearTimeout(searchTimer)
-  }
-  searchTimer = setTimeout(() => {
-    meta.page = 1
-    void load()
-  }, SEARCH_DEBOUNCE_MS)
-}
-
-function onCompanyChange(value: string): void {
-  companyId.value = value
-  meta.page = 1
-  void load()
-}
-
-function goToPage(page: number): void {
-  if (page < 1 || page > meta.totalPages || page === meta.page) {
+function openEdit(item: PlatformUserItem): void {
+  if (item.isSuperAdmin) {
+    errorMessage.value = 'Akun Super Admin tidak dapat diubah dari platform console.'
     return
   }
-  meta.page = page
-  void load()
+  formMode.value = 'edit'
+  selectedUser.value = item
+  formError.value = null
+  formOpen.value = true
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
+function closeForm(): void {
+  if (!saving.value) formOpen.value = false
+}
+
+async function submitForm(payload: PlatformUserFormPayload): Promise<void> {
+  saving.value = true
+  formError.value = null
+  try {
+    if (formMode.value === 'create') {
+      if (!payload.email || !payload.password) throw new Error('Data user belum lengkap.')
+      await createUser({
+        name: payload.name,
+        email: payload.email,
+        password: payload.password,
+        phone: payload.phone,
+        companyId: payload.companyId,
+        roleId: payload.roleId,
+      })
+    } else if (selectedUser.value) {
+      await updateUser(selectedUser.value.id, {
+        name: payload.name,
+        phone: payload.phone,
+        companyId: payload.companyId,
+        roleId: payload.roleId,
+        isActive: payload.isActive,
+      })
+    }
+    formOpen.value = false
+  } catch (error) {
+    formError.value = toMessage(error)
+  } finally {
+    saving.value = false
+  }
+}
+
+function remove(item: PlatformUserItem): void {
+  if (item.isSuperAdmin) return
+  deleteTarget.value = item
+  deleteError.value = null
+  deleteOpen.value = true
+}
+
+function closeDelete(): void {
+  if (deletingId.value === null) {
+    deleteOpen.value = false
+    deleteTarget.value = null
+  }
+}
+
+async function confirmDelete(): Promise<void> {
+  if (!deleteTarget.value) return
+  const target = deleteTarget.value
+  deletingId.value = target.id
+  deleteError.value = null
+  try {
+    await deleteUser(target.id)
+    deleteOpen.value = false
+    deleteTarget.value = null
+  } catch (error) {
+    deleteError.value = toMessage(error)
+  } finally {
+    deletingId.value = null
+  }
 }
 
 onMounted(() => {

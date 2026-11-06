@@ -5,7 +5,8 @@
  * their own domain repositories — this one exists because a super admin has no
  * company context and therefore cannot use the tenant-scoped queries.
  *
- * Read-only by design: the platform console must not mutate tenant data.
+ * Operational data remains tenant-owned. Identity and access mutations are
+ * explicitly supported here because they are platform responsibilities.
  */
 
 export interface PlatformUserListParams {
@@ -35,10 +36,45 @@ export interface PlatformUserListResult {
   total: number;
 }
 
+export interface PlatformRoleItem {
+  id: string;
+  companyId: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+}
+
+export interface PlatformUserUpdateFields {
+  name?: string;
+  phone?: string | null;
+  companyId?: string;
+  roleId?: string;
+  isActive?: boolean;
+}
+
 export abstract class PlatformRepository {
   /**
    * List users across all companies (or a single one when `companyId` is set).
    * Soft-deleted users are excluded; super admins are listed first.
    */
   abstract listUsers(params: PlatformUserListParams): Promise<PlatformUserListResult>;
+
+  abstract listRoles(companyId: string): Promise<PlatformRoleItem[]>;
+
+  abstract updateUser(
+    id: string,
+    fields: PlatformUserUpdateFields,
+    actorId: string,
+  ): Promise<PlatformUserItem>;
+
+  abstract softDeleteUser(id: string, actorId: string): Promise<void>;
+
+  abstract recordAudit(
+    actorId: string,
+    action: string,
+    entityId: string,
+    companyId: string | null,
+    oldValue?: unknown,
+    newValue?: unknown,
+  ): Promise<void>;
 }
