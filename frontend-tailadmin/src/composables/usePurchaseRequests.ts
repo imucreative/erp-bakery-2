@@ -9,7 +9,6 @@
  */
 
 import { computed, ref, watch } from 'vue'
-import { ApiClientError } from '@/services/http'
 import {
   purchaseRequestService,
   type PurchaseRequest,
@@ -39,21 +38,8 @@ export type StatusFilter = 'all' | PurchaseRequestStatus
  * opaque top-level message alone. Empty `fieldErrors` falls back to
  * `error.message`; non-ApiClientError stays generic and safe.
  */
-export function toMessage(error: unknown): string {
-  if (error instanceof ApiClientError) {
-    const details = error.fieldErrors
-      .map((item) => item.message)
-      .filter((message): message is string => Boolean(message))
-    if (details.length > 0) {
-      return `${error.message}: ${details.join('; ')}`
-    }
-    return error.message
-  }
-  if (error instanceof Error) {
-    return error.message
-  }
-  return 'Terjadi kesalahan. Coba lagi.'
-}
+import { toMessage } from '@/lib/errors'
+export { toMessage }
 
 export function usePurchaseRequests() {
   const items = ref<PurchaseRequest[]>([])

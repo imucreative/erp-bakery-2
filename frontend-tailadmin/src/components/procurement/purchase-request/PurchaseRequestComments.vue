@@ -18,7 +18,6 @@
  * holds if they can see the detail page.
  */
 import { onMounted, ref } from 'vue'
-import { ApiClientError } from '@/services/http'
 import Badge from '@/components/ui/Badge.vue'
 import { BaseAlert, BaseButton, BaseSelect, BaseTextarea } from '@/components/ui'
 import { formatDateTime } from '@/lib/format'
@@ -49,21 +48,7 @@ const commentCategoryOptions = PURCHASE_REQUEST_COMMENT_CATEGORIES.map((category
   label: PURCHASE_REQUEST_COMMENT_CATEGORY_LABELS[categoryValue],
 }))
 
-function toMessage(error: unknown): string {
-  if (error instanceof ApiClientError) {
-    const details = error.fieldErrors
-      .map((item) => item.message)
-      .filter((message): message is string => Boolean(message))
-    if (details.length > 0) {
-      return `${error.message}: ${details.join('; ')}`
-    }
-    return error.message
-  }
-  if (error instanceof Error) {
-    return error.message
-  }
-  return 'Terjadi kesalahan. Coba lagi.'
-}
+import { toMessage } from '@/lib/errors'
 
 function authorLabel(comment: PurchaseRequestComment): string {
   return comment.authorName?.trim() || 'Pengguna'

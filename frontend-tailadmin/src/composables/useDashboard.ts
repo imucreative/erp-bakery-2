@@ -4,7 +4,6 @@
  */
 
 import { ref } from 'vue'
-import { ApiClientError } from '@/services/http'
 import {
   dashboardService,
   type InventoryDashboardSummary,
@@ -13,12 +12,7 @@ import {
   type OutletDashboardSummary,
 } from '@/services/dashboard.service'
 
-function toMessage(error: unknown): string {
-  if (error instanceof ApiClientError || error instanceof Error) {
-    return error.message
-  }
-  return 'Terjadi kesalahan. Coba lagi.'
-}
+import { toMessage } from '@/lib/errors'
 
 export function useDashboard() {
   const summary = ref<InventoryDashboardSummary | null>(null)

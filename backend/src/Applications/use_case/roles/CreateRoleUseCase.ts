@@ -1,9 +1,7 @@
 import { RoleRepository } from '../../../Domains/roles/RoleRepository';
 import { PermissionRepository } from '../../../Domains/permissions/PermissionRepository';
 import { Role } from '../../../Domains/roles/entities/Role';
-
-const OWNER_ROLE_CODE = 'OWNER';
-const ROLE_MANAGE_PERMISSION = 'role.manage';
+import { findReservedPermissions } from '../../../Domains/roles/rolePolicy';
 
 export interface CreateRolePayload {
   code: string;
@@ -18,8 +16,9 @@ export interface CreateRolePayload {
  * 1. Validate & normalise the payload (code trim + uppercase, non-empty name).
  * 2. Validate every requested permission code exists in the global catalog
  *    (no privilege escalation — reject unknown codes → ROLE.PERMISSION_UNKNOWN).
- * 3. Enforce the OWNER guardrail: an OWNER role always keeps `role.manage`.
- * 4. Create the role scoped to the company, then assign its permission set.
+ * 3. Reject system-administration permissions, which are reserved for platform
+ *    administration (→ ROLE.PERMISSION_RESERVED, doc 16).
+ * 4. Create the role and its permission set in one transaction.
  *
  * `code` uniqueness per company is enforced by the DB unique constraint
  * (roles_code_company_unique) → mapped to ROLE.CODE_ALREADY_USED.
@@ -34,25 +33,25 @@ export class CreateRoleUseCase {
     const { code, name, description, permissions } = this._validatePayload(payload);
 
     await this._verifyPermissionsExist(permissions);
-
-    const effectivePermissions = this._enforceOwnerGuardrail(code, permissions);
+    this._rejectReserved(permissions);
 
     let roleId: string;
     try {
-      roleId = await this.roleRepository.addRole({
-        companyId,
-        code,
-        name,
-        description: description ?? null,
-      });
+      roleId = await this.roleRepository.addRoleWithPermissions(
+        {
+          companyId,
+          code,
+          name,
+          description: description ?? null,
+        },
+        permissions,
+      );
     } catch (err) {
       if (this._isUniqueViolation(err)) {
         throw new Error('ROLE.CODE_ALREADY_USED');
       }
       throw err;
     }
-
-    await this.roleRepository.setRolePermissions(roleId, effectivePermissions);
 
     const role = await this.roleRepository.getRoleByIdAndCompany(roleId, companyId);
     const assigned = await this.roleRepository.getRolePermissions(roleId);
@@ -114,11 +113,10 @@ export class CreateRoleUseCase {
     }
   }
 
-  private _enforceOwnerGuardrail(code: string, permissions: string[]): string[] {
-    if (code === OWNER_ROLE_CODE && !permissions.includes(ROLE_MANAGE_PERMISSION)) {
-      return [...permissions, ROLE_MANAGE_PERMISSION];
+  private _rejectReserved(permissionCodes: string[]): void {
+    if (findReservedPermissions(permissionCodes).length > 0) {
+      throw new Error('ROLE.PERMISSION_RESERVED');
     }
-    return permissions;
   }
 
   private _isUniqueViolation(err: unknown): boolean {

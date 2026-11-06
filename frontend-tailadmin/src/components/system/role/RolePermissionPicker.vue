@@ -10,12 +10,11 @@
  * Checkbox is intentional here: the user explicitly requested multi-select
  * checkboxes for permission assignment (an authorized exception to ToggleSwitch).
  *
- * Guardrail (OWNER): when `isOwner`, the `role.manage` checkbox is forced
- * checked + disabled with a tooltip; the parent still sends it in the payload
- * and the backend enforces it as defense-in-depth.
+ * System-administration permissions are shown but disabled — they belong to
+ * SUPER_ADMIN and cannot be granted to a company role (doc 16).
  */
 import { computed } from 'vue'
-import type { Permission } from '@/services/permission.service'
+import { isReservedPermission, type Permission } from '@/services/permission.service'
 import { BaseAlert, BaseCheckbox } from '@/components/ui'
 
 const props = withDefaults(
@@ -24,19 +23,16 @@ const props = withDefaults(
     catalog: Permission[]
     /** Selected permission codes. */
     modelValue: string[]
-    /** OWNER role → force `role.manage` checked + disabled. */
-    isOwner?: boolean
     loading?: boolean
     errorMessage?: string | null
   }>(),
-  { isOwner: false, loading: false, errorMessage: null },
+  { loading: false, errorMessage: null },
 )
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: string[]): void
 }>()
 
-const OWNER_LOCKED_CODE = 'role.manage'
 const UNMAPPED_KEY = '__unmapped__'
 const UNMAPPED_LABEL = 'Lainnya'
 
@@ -202,8 +198,8 @@ function isChecked(code: string): boolean {
   return selectedSet.value.has(code)
 }
 
-function isLocked(code: string): boolean {
-  return props.isOwner && code === OWNER_LOCKED_CODE
+function isReserved(code: string): boolean {
+  return isReservedPermission(code)
 }
 
 function actionLabel(perm: Permission): string {
@@ -211,15 +207,17 @@ function actionLabel(perm: Permission): string {
 }
 
 function emitSelection(next: Set<string>): void {
-  // Enforce the OWNER guardrail regardless of user interaction.
-  if (props.isOwner) {
-    next.add(OWNER_LOCKED_CODE)
+  // Reserved permissions must never leak into the submitted payload.
+  for (const code of Array.from(next)) {
+    if (isReserved(code)) {
+      next.delete(code)
+    }
   }
   emit('update:modelValue', Array.from(next))
 }
 
 function toggle(code: string): void {
-  if (isLocked(code)) {
+  if (isReserved(code)) {
     return
   }
   const next = new Set(props.modelValue)
@@ -231,27 +229,36 @@ function toggle(code: string): void {
   emitSelection(next)
 }
 
+function selectableCodes(domain: DomainGroup): string[] {
+  return domain.codes.filter((code) => !isReserved(code))
+}
+
 function domainAllChecked(domain: DomainGroup): boolean {
-  return domain.codes.every((code) => selectedSet.value.has(code))
+  const codes = selectableCodes(domain)
+  return codes.length > 0 && codes.every((code) => selectedSet.value.has(code))
 }
 
 function toggleDomain(domain: DomainGroup): void {
+  const codes = selectableCodes(domain)
+  if (codes.length === 0) {
+    return
+  }
   const next = new Set(props.modelValue)
   if (domainAllChecked(domain)) {
-    for (const code of domain.codes) {
-      if (!isLocked(code)) {
-        next.delete(code)
-      }
+    for (const code of codes) {
+      next.delete(code)
     }
   } else {
-    for (const code of domain.codes) {
+    for (const code of codes) {
       next.add(code)
     }
   }
   emitSelection(next)
 }
 
-const totalSelected = computed<number>(() => props.modelValue.length)
+const totalSelected = computed<number>(
+  () => props.modelValue.filter((code) => !isReserved(code)).length,
+)
 </script>
 
 <template>
@@ -304,21 +311,24 @@ const totalSelected = computed<number>(() => props.modelValue.length)
               <label
                 v-for="perm in mod.permissions"
                 :key="perm.code"
-                :title="isLocked(perm.code) ? 'Wajib untuk Owner' : perm.code"
+                :title="
+                  isReserved(perm.code) ? 'Permission sistem — hanya untuk Super Admin' : perm.code
+                "
                 class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-theme-sm transition hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:hover:border-gray-600"
                 :class="[
                   isChecked(perm.code) ? 'ring-1 ring-brand-500/40' : '',
-                  isLocked(perm.code) ? 'cursor-not-allowed opacity-90' : '',
+                  isReserved(perm.code) ? 'cursor-not-allowed opacity-60' : '',
                 ]"
               >
                 <BaseCheckbox
                   :model-value="isChecked(perm.code)"
-                  :disabled="isLocked(perm.code)"
+                  :disabled="isReserved(perm.code)"
                   @update:model-value="toggle(perm.code)"
                 />
                 <span class="capitalize text-gray-700 dark:text-gray-300">
                   {{ actionLabel(perm) }}
                 </span>
+                <span v-if="isReserved(perm.code)" class="text-meta">Super Admin</span>
               </label>
             </div>
           </div>

@@ -1,12 +1,15 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteLocationRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { hasPermission } from '@/composables/usePermission'
+import { isTwoFactorEnabled } from '@/lib/twoFactorGate'
 
 declare module 'vue-router' {
   interface RouteMeta {
     title?: string
     public?: boolean
     permission?: string
+    /** Platform-console route — super admin only, never tenant-scoped. */
+    platform?: boolean
   }
 }
 
@@ -542,6 +545,34 @@ const router = createRouter({
     },
 
     {
+      // Platform console — super admin only (no company context).
+      path: '/platform/companies',
+      name: 'PlatformCompanies',
+      component: () => import('../views/Platform/CompanyList.vue'),
+      meta: {
+        title: 'Companies',
+        platform: true,
+      },
+    },
+    {
+      path: '/platform/users',
+      name: 'PlatformUsers',
+      component: () => import('../views/Platform/UserList.vue'),
+      meta: {
+        title: 'Platform Users',
+        platform: true,
+      },
+    },
+    {
+      path: '/platform/roles',
+      name: 'PlatformRoles',
+      component: () => import('../views/Platform/RoleList.vue'),
+      meta: {
+        title: 'Platform Roles',
+        platform: true,
+      },
+    },
+    {
       path: '/signin',
       name: 'Signin',
       component: () => import('../views/Auth/Signin.vue'),
@@ -559,31 +590,95 @@ const router = createRouter({
         public: true,
       },
     },
+    {
+      path: '/forgot-password',
+      name: 'ForgotPassword',
+      component: () => import('../views/Auth/ForgotPassword.vue'),
+      meta: {
+        title: 'Lupa Password',
+        public: true,
+      },
+    },
+    {
+      path: '/reset-password',
+      name: 'ResetPassword',
+      component: () => import('../views/Auth/ResetPassword.vue'),
+      meta: {
+        title: 'Reset Password',
+        public: true,
+      },
+    },
   ],
 })
 
 export default router
 
-router.beforeEach((to, from, next) => {
+/**
+ * Safety valve: a guard that redirects in a cycle freezes the whole tab, so
+ * consecutive redirects are capped (>5 within one second → let it through;
+ * the backend still enforces access).
+ */
+let redirectBurst = { count: 0, since: 0 }
+
+router.beforeEach(async (to, from, next) => {
   document.title = `${to.meta.title ?? 'Bakery ERP'} | Bakery ERP`
+
+  const guardRedirect = (target: RouteLocationRaw) => {
+    const now = Date.now()
+    if (now - redirectBurst.since > 1000) {
+      redirectBurst = { count: 0, since: now }
+    }
+    redirectBurst.count += 1
+    if (redirectBurst.count > 5) {
+      return next()
+    }
+    return next(target)
+  }
 
   const auth = useAuthStore()
   const isPublic = to.meta.public === true
+  const isPlatform = to.meta.platform === true
+  // Profile hosts the 2FA enrollment card, so a super admin must be able to
+  // open it while the platform console still refuses them.
+  const isProfile = to.name === 'Profile'
+
+  // Where this session belongs: super admin lives in the platform console,
+  // everyone else in the tenant ERP.
+  const home = auth.isSuperAdmin ? { name: 'PlatformCompanies' } : { name: 'DashboardOwner' }
 
   // Authenticated users should not see the auth pages.
   if (isPublic && auth.isAuthenticated && (to.name === 'Signin' || to.name === 'Signup')) {
-    return next({ name: 'DashboardOwner' })
+    return guardRedirect(home)
   }
 
   // Protected routes require authentication.
   if (!isPublic && !auth.isAuthenticated) {
-    return next({ name: 'Signin', query: { redirect: to.fullPath } })
+    return guardRedirect({ name: 'Signin', query: { redirect: to.fullPath } })
   }
 
-  // Permission-gated routes: redirect to dashboard when the user lacks it.
+  // Platform console routes: super admin only.
+  if (isPlatform && !auth.isSuperAdmin) {
+    return guardRedirect({ name: 'DashboardOwner' })
+  }
+
+  // A super admin has no company context — keep it out of tenant screens.
+  // Profile is exempt: it is where 2FA enrollment happens.
+  if (!isPublic && auth.isSuperAdmin && !isPlatform && !isProfile) {
+    return guardRedirect({ name: 'PlatformCompanies' })
+  }
+
+  // Platform console requires 2FA on the operator account.
+  if (isPlatform && auth.isSuperAdmin) {
+    const twoFactorReady = await isTwoFactorEnabled()
+    if (!twoFactorReady) {
+      return guardRedirect({ name: 'Profile', query: { twoFactor: 'required' } })
+    }
+  }
+
+  // Permission-gated routes: redirect to the session home when the user lacks it.
   const required = to.meta.permission
   if (required && !hasPermission(auth.permissions, auth.isSuperAdmin, required)) {
-    return next({ name: 'DashboardOwner' })
+    return guardRedirect(home)
   }
 
   return next()

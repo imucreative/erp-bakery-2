@@ -5,6 +5,7 @@ import { Role } from '../../../../Domains/roles/entities/Role';
 
 const mockRoleRepo: jest.Mocked<RoleRepository> = {
   addRole: jest.fn(),
+  addRoleWithPermissions: jest.fn(),
   getRoleById: jest.fn(),
   getRoleByIdAndCompany: jest.fn(),
   getRolePermissions: jest.fn(),
@@ -13,6 +14,7 @@ const mockRoleRepo: jest.Mocked<RoleRepository> = {
   assignAllPermissionsToRole: jest.fn(),
   getRolesByCompanyId: jest.fn(),
   updateRole: jest.fn(),
+  updateRoleWithPermissions: jest.fn(),
   setRolePermissions: jest.fn(),
   deleteRole: jest.fn(),
   countUsersUsingRole: jest.fn(),
@@ -42,31 +44,34 @@ describe('CreateRoleUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useCase = new CreateRoleUseCase(mockRoleRepo, mockPermissionRepo);
-    mockRoleRepo.addRole.mockResolvedValue('role-uuid');
-    mockRoleRepo.setRolePermissions.mockResolvedValue(undefined);
+    mockRoleRepo.addRoleWithPermissions.mockResolvedValue('role-uuid');
     mockRoleRepo.getRoleByIdAndCompany.mockResolvedValue(makeRole('CASHIER_LEAD'));
     mockRoleRepo.getRolePermissions.mockResolvedValue(['sales.manage', 'product.read']);
   });
 
-  it('should normalise the code, validate permissions, and persist the role', async () => {
+  it('should normalise the code, validate permissions, and persist atomically', async () => {
     mockPermissionRepo.getIdsByCodes.mockResolvedValue(['id-1', 'id-2']);
 
     const result = await useCase.execute(
-      { code: '  cashier_lead ', name: '  Kepala Kasir  ', permissions: ['sales.manage', 'product.read'] },
+      {
+        code: '  cashier_lead ',
+        name: '  Kepala Kasir  ',
+        permissions: ['sales.manage', 'product.read'],
+      },
       companyId,
     );
 
     expect(mockPermissionRepo.getIdsByCodes).toHaveBeenCalledWith(['sales.manage', 'product.read']);
-    expect(mockRoleRepo.addRole).toHaveBeenCalledWith({
-      companyId,
-      code: 'CASHIER_LEAD',
-      name: 'Kepala Kasir',
-      description: null,
-    });
-    expect(mockRoleRepo.setRolePermissions).toHaveBeenCalledWith('role-uuid', [
-      'sales.manage',
-      'product.read',
-    ]);
+    expect(mockRoleRepo.addRoleWithPermissions).toHaveBeenCalledWith(
+      {
+        companyId,
+        code: 'CASHIER_LEAD',
+        name: 'Kepala Kasir',
+        description: null,
+      },
+      ['sales.manage', 'product.read'],
+    );
+    expect(mockRoleRepo.setRolePermissions).not.toHaveBeenCalled();
     expect(result.permissions).toEqual(['sales.manage', 'product.read']);
   });
 
@@ -76,15 +81,32 @@ describe('CreateRoleUseCase', () => {
 
     await expect(
       useCase.execute(
-        { code: 'CASHIER_LEAD', name: 'Kepala Kasir', permissions: ['sales.manage', 'does.not.exist'] },
+        {
+          code: 'CASHIER_LEAD',
+          name: 'Kepala Kasir',
+          permissions: ['sales.manage', 'does.not.exist'],
+        },
         companyId,
       ),
     ).rejects.toThrow('ROLE.PERMISSION_UNKNOWN');
 
-    expect(mockRoleRepo.addRole).not.toHaveBeenCalled();
+    expect(mockRoleRepo.addRoleWithPermissions).not.toHaveBeenCalled();
   });
 
-  it('should force role.manage into an OWNER role even if omitted', async () => {
+  it('should reject system-administration permissions', async () => {
+    mockPermissionRepo.getIdsByCodes.mockResolvedValue(['id-1', 'id-2']);
+
+    await expect(
+      useCase.execute(
+        { code: 'AUDITOR', name: 'Auditor', permissions: ['sales.manage', 'audit.read'] },
+        companyId,
+      ),
+    ).rejects.toThrow('ROLE.PERMISSION_RESERVED');
+
+    expect(mockRoleRepo.addRoleWithPermissions).not.toHaveBeenCalled();
+  });
+
+  it('should not inject role.manage into an OWNER role', async () => {
     mockPermissionRepo.getIdsByCodes.mockResolvedValue(['id-1']);
     mockRoleRepo.getRoleByIdAndCompany.mockResolvedValue(makeRole('OWNER'));
 
@@ -93,21 +115,17 @@ describe('CreateRoleUseCase', () => {
       companyId,
     );
 
-    expect(mockRoleRepo.setRolePermissions).toHaveBeenCalledWith('role-uuid', [
+    expect(mockRoleRepo.addRoleWithPermissions).toHaveBeenCalledWith(expect.anything(), [
       'product.read',
-      'role.manage',
     ]);
   });
 
   it('should map a unique-violation to ROLE.CODE_ALREADY_USED', async () => {
     mockPermissionRepo.getIdsByCodes.mockResolvedValue(['id-1']);
-    mockRoleRepo.addRole.mockRejectedValue({ code: '23505' });
+    mockRoleRepo.addRoleWithPermissions.mockRejectedValue({ code: '23505' });
 
     await expect(
-      useCase.execute(
-        { code: 'KASIR', name: 'Kasir', permissions: ['sales.manage'] },
-        companyId,
-      ),
+      useCase.execute({ code: 'KASIR', name: 'Kasir', permissions: ['sales.manage'] }, companyId),
     ).rejects.toThrow('ROLE.CODE_ALREADY_USED');
   });
 

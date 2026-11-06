@@ -47,6 +47,57 @@ export interface UpdateUserFields {
   isActive?: boolean;
 }
 
+/** 2FA (TOTP) state for a user. */
+export interface TwoFactorState {
+  id: string;
+  email: string;
+  isSuperAdmin: boolean;
+  enabled: boolean;
+  /** AES-GCM payload of the Base32 secret; null when enrollment has not started. */
+  secretCipher: string | null;
+  /** bcrypt hashes of single-use recovery codes. */
+  recoveryCodeHashes: string[];
+}
+
+/** Self-service profile of the authenticated user. */
+export interface MyProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  jobTitle: string | null;
+  avatarUrl: string | null;
+  roleCode: string | null;
+  roleName: string | null;
+  companyId: string | null;
+  companyName: string | null;
+  lastLoginAt: string | null;
+  createdAt: string;
+}
+
+/** Fields a user may change on their own profile. */
+export interface UpdateMyProfileFields {
+  name?: string;
+  phone?: string | null;
+  jobTitle?: string | null;
+  avatarUrl?: string | null;
+}
+
+/** One-time password reset token (only its hash is persisted). */
+export interface PasswordResetToken {
+  id: string;
+  userId: string;
+  expiresAt: Date;
+  usedAt: Date | null;
+}
+
+/** Minimal user identity needed by the "forgot password" flow. */
+export interface PasswordResetUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
 /**
  * Abstract repository interface — Users domain.
  */
@@ -112,4 +163,66 @@ export abstract class UserRepository {
 
   /** Replace a user's outlet assignments (idempotent full-sync). */
   abstract setUserOutlets(userId: string, outletIds: string[]): Promise<void>;
+
+  // ── Two-factor authentication (TOTP) ────────────────────────────────
+
+  /** Fetch 2FA state by email. Throws AUTHENTICATION.CREDENTIALS_NOT_VALID. */
+  abstract getTwoFactorStateByEmail(email: string): Promise<TwoFactorState>;
+
+  /** Fetch 2FA state by user id. Throws USER.NOT_FOUND. */
+  abstract getTwoFactorStateById(id: string): Promise<TwoFactorState>;
+
+  /** Persist a pending enrollment (secret + recovery codes); 2FA stays disabled. */
+  abstract saveTwoFactorSetup(
+    id: string,
+    secretCipher: string,
+    recoveryCodeHashes: string[],
+  ): Promise<void>;
+
+  /** Replace the stored recovery code hashes (used when one is consumed). */
+  abstract updateRecoveryCodes(id: string, recoveryCodeHashes: string[]): Promise<void>;
+
+  /** Enable 2FA, or disable it and wipe the secret + recovery codes. */
+  abstract setTwoFactorEnabled(id: string, enabled: boolean): Promise<void>;
+
+  // ── Self-service profile ────────────────────────────────────────────
+
+  /** Profile of the authenticated user (with role + company names). Throws USER.NOT_FOUND. */
+  abstract getMyProfile(id: string): Promise<MyProfile>;
+
+  /** Update the authenticated user's own fields. Throws USER.NOT_FOUND. */
+  abstract updateMyProfile(id: string, fields: UpdateMyProfileFields): Promise<MyProfile>;
+
+  /** Record a successful login timestamp. */
+  abstract touchLastLogin(id: string): Promise<void>;
+
+  // ── Password reset ("lupa password") ────────────────────────────────
+
+  /**
+   * Look up an active user by email for the reset flow.
+   * Returns null (not a throw) so the endpoint can stay enumeration-safe.
+   */
+  abstract findActiveUserByEmail(email: string): Promise<PasswordResetUser | null>;
+
+  /**
+   * Persist a reset token hash and invalidate the user's previous unused tokens.
+   */
+  abstract createPasswordResetToken(
+    userId: string,
+    tokenHash: string,
+    expiresAt: Date,
+    requestedIp: string | null,
+  ): Promise<void>;
+
+  /** Fetch a token that is unused and not expired. Null when unusable. */
+  abstract getUsablePasswordResetToken(tokenHash: string): Promise<PasswordResetToken | null>;
+
+  /** Mark a token as consumed (single-use). */
+  abstract markPasswordResetTokenUsed(id: string): Promise<void>;
+
+  /** Store a new password hash for the user. Throws USER.NOT_FOUND. */
+  abstract updatePassword(id: string, passwordHash: string): Promise<void>;
+
+  /** Current password hash of the user (untuk verifikasi password lama). */
+  abstract getPasswordById(id: string): Promise<string>;
 }

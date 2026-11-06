@@ -1,6 +1,6 @@
 # BAKERY ERP — AI AGENT PROJECT CONTEXT
 
-> **Last Updated**: 2026-09-24 | **Project**: ERP Bakery
+> **Last Updated**: 2026-11-06 | **Project**: ERP Bakery
 > Read this FIRST before doing any work.
 
 ---
@@ -11,83 +11,83 @@
 |-----------|-------|
 | Name | Bakery ERP System (ERP Bakery) |
 | Industry | Bakery Retail & Manufacturing |
-| Type | ERP Lite: POS + Inventory + Production + Distribution + Procurement + Finance |
-| Architecture | Modular Monolith (NestJS backend + Next.js frontend) |
-| Methodology | Agile Scrum (1-week sprints, 8-week MVP) |
+| Type | ERP Lite: POS + Inventory + Production + Stock Transfer + Procurement; Finance/Replenishment masih backlog |
+| Architecture | Modular Monolith: NestJS Fastify + Clean Architecture; frontend Vue 3 TailAdmin |
+| Methodology | Agile Scrum (rencana awal sprint 1 minggu, MVP 8 minggu) |
 
-**Business Problem**: Excel + 3rd party POS → no real-time stock, unrecorded production, manual reconciliation, high discrepancy.
+**Business Problem**: Excel + POS pihak ketiga menyebabkan stok tidak real-time, produksi tidak tercatat dan rekonsiliasi manual.
 
-**Solution**: Integrated system with POS, Inventory (FEFO + Batch), Production, Distribution (Central→Outlet), Replenishment, Dashboard, Reporting.
+**Solution**: POS stock-first, Inventory FEFO/Batch, produksi instant-complete, transfer antar outlet, procurement, dashboard dan laporan. Model outlet-native, tanpa layer warehouse terpisah.
 
-**Stakeholders**: OWNER (full access), SUPERVISOR_OUTLET, ADMIN_GUDANG, PRODUKSI, KASIR
+**Stakeholders**: OWNER (akses operasional eksplisit, bukan seluruh administrasi sistem), SUPERVISOR_OUTLET, ADMIN_GUDANG, PRODUKSI, KASIR; SUPER_ADMIN mengelola platform, bukan operator tenant.
 
 ---
 
 ## 2. TECHNOLOGY STACK
 
-**Backend**: NestJS, TypeScript, Prisma ORM, PostgreSQL, Redis, BullMQ, JWT, Swagger, Winston
-**Frontend (ACTIVE)**: Next.js 15, TypeScript, TanStack Query, Zustand, React Hook Form, Shadcn UI, TailwindCSS
+**Backend aktif**: NestJS, Fastify, TypeScript, PostgreSQL melalui raw SQL `pg` Pool,
+`node-pg-migrate`, JWT, Swagger, Jest. Bukan Prisma/ORM.
+**Frontend aktif**: Vue 3 Composition API, TypeScript, Vite, Vue Router, Pinia/composables,
+TailAdmin + Tailwind CSS v4, di `frontend-tailadmin/`; bukan Next.js.
+
+**Catatan kompatibilitas dokumen:** rincian stack legacy Prisma/Next.js/React di
+bagian 5–8 dan referensi historis telah digantikan fakta stack/direktori aktif ini.
+Bagian 5–8 dipertahankan verbatim; catatan ini tidak mengubah workflow, permissions,
+kewajiban pembacaan, quality gate atau Definition of Done.
 
 ---
 
 ## 3. PROJECT DIRECTORY MAP
 
-```
+```text
 erp-bakery-2/
-├── backend/               ← NestJS Modular Monolith
-│   └── src/modules/
-│       ├── auth/              ✅ COMPLETE
-│       ├── user/              ✅ COMPLETE
-│       ├── role/              ✅ COMPLETE
-│       ├── outlet/            ✅ COMPLETE
-│       ├── warehouse/         ✅ COMPLETE
-│       ├── product-group/     ✅ COMPLETE (+unit test, audit log)
-│       ├── category/          ✅ COMPLETE
-│       ├── uom/               ✅ COMPLETE
-│       ├── supplier/          ✅ COMPLETE
-│       ├── product/           ✅ COMPLETE (+492 baris unit test, audit log)
-│       ├── payment-term/      ✅ COMPLETE
-│       ├── inventory/         ✅ COMPLETE (Batch, Stock, Movement, Adjustment,
-│       │                       Opname, Transfer, Dashboard, Reconciliation)
-│       ├── purchase-request/  ✅ CODE ADA
-│       ├── purchase-order/    ✅ CODE ADA
-│       ├── goods-receipt/     ✅ CODE ADA
-│       ├── purchase-return/   ✅ CODE ADA
-│       ├── accounts-payable/  ✅ CODE ADA
-│       ├── vendor-invoice/    ✅ CODE ADA
-│       └── company/           ✅ COMPLETE (tenant context)
-│
-├── frontend/              ← Next.js Development target
+├── backend/
+│   ├── migrations/            ← node-pg-migrate, tersedia sampai 074
 │   └── src/
-│       ├── app/
-│       ├── components/
-│       │   └── erp/       ← ERP UI Foundation — REUSE THIS
-│       ├── lib/
-│       ├── hooks/
-│       └── services/
-│
-├── knowledge-base/        ← Source of truth (READ THIS FIRST)
-│   ├── 1.business-context.md ... 44.master-data-dependency-standard.md
-├── project-context/       ← AI Project Context (AGENTS.md)
-└── .agents/               ← AI rules & workflows
+│       ├── app.module.ts      ← registrasi modul aktif
+│       ├── Domains/           ← entitas dan kontrak repository
+│       ├── Applications/      ← use_case, kontrak security
+│       ├── Infrastructures/   ← repository Postgres, security, mail, DI
+│       ├── Interfaces/http/   ← api controllers, DTO, guards, decorators
+│       └── Commons/           ← helper dan exception bersama
+├── frontend-tailadmin/        ← aplikasi frontend aktif
+│   └── src/
+│       ├── views/             ← Auth, MasterData, Procurement, Inventory,
+│       │                         Production, Sales, Dashboard, Reports, Platform
+│       ├── components/        ← komponen fitur, profile dan foundation ui/
+│       ├── composables/
+│       ├── services/
+│       ├── stores/
+│       ├── router/
+│       └── assets/styles/     ← partial CSS Tailwind v4
+├── knowledge-base/            ← spesifikasi, status dan log harian project-context/
+├── project-context/           ← konteks ini
+└── .agents/                   ← rules dan workflows
 ```
+
+Tidak ada layer aktif `src/modules`, warehouse, Vendor Invoice atau Accounts Payable.
+Label Finance pada sidebar masih placeholder `/error-404`, bukan implementasi modul.
 
 ---
 
 ## 4. CURRENT STATUS SUMMARY
 
-| Sprint | Module | Status | Notes |
-|--------|--------|--------|-------|
-| 0 | Foundation | ✅ Done | Docker, NestJS, Prisma, Next.js setup |
-| 1 | Auth & Master Data | ✅ Done | Auth, User, Outlet, Warehouse, Product Group, Category, UOM, Supplier, Payment Term, **Product** |
-| 2 | Inventory | ✅ Code Complete | Backend complete; UI needs verification + implementation |
-| 3 | Production | ⚠️ Partial | FEFO engine exists; Recipe/BOM/Production Order need work |
-| 4 | Distribution | ⚠️ Partial | Stock Transfer complete; Replenishment not started |
-| — | Procurement | ✅ Code Ada | PR, PO, GR, Return — code exists but not in sprint plan |
-| — | Finance | ✅ Code Ada | Vendor Invoice, AP — code exists but not tested |
-| 5 | POS | ❌ Not Started | |
-| 6 | Dashboard & Reporting | ❌ Not Started | |
-| 7 | Testing & UAT | ❌ Not Started | |
+Acuan audit statis: `feature/administrator`, HEAD `2f58401`, 2026-11-06.
+"Tersedia" berarti kode ada, **bukan** QA/UAT lulus atau siap produksi.
+
+| Area | Status kode | Batas / catatan |
+|------|-------------|----------------|
+| Foundation | Tersedia | NestJS/Fastify/raw pg + Vue TailAdmin; migrasi sampai 074 tersedia, status DB tidak diperiksa |
+| Auth/Profile & Master Data | BE/FE tersedia | Profile, change password, forgot/reset password, 2FA; Outlet, UOM, Supplier, Payment Term, Product Group/Category/Product/Topping |
+| Inventory | BE/FE tersedia | Stock On Hand, Ledger, Batch, Adjustment, Opname; jangan klaim layar Reconciliation khusus sudah ada |
+| Recipe/Production | BE/FE tersedia | Recipe/BOM dan instant-complete Production Order; gap UOM/scaling perlu investigasi |
+| Distribution | Sebagian | Stock Transfer BE/FE ada; Replenishment dan Delivery Order terpisah belum ada |
+| Procurement | BE/FE tersedia | PR, PO, GR, Purchase Return beserta timeline/comments/attachments |
+| Finance | Belum ada | Vendor Invoice, AP, Payment, Expense, Cashflow |
+| POS | BE/FE tersedia | Shift, checkout/pay/void, receipt dan full-order refund; stock-first |
+| Dashboard & Reports | BE/FE + CSV tersedia | Owner/Outlet, Sales/Inventory/Production; PDF/Excel belum ada, pendingRequests masih 0 |
+| Platform Console v1/v2 | BE/FE tersedia | Company, user CRUD lintas company, role assignment, audit mutasi user dan kewajiban 2FA; role/permission management UI dan audit viewer belum ada |
+| Testing & UAT | Belum tuntas | Log 6 November: type-check/build lulus pada sesi sebelumnya, full Jest gagal pada assertion OWNER lama; tidak diuji ulang dalam audit dokumentasi ini |
 
 ---
 
@@ -175,49 +175,51 @@ Every feature must have:
 
 ## 9. QA TESTING SCOPE (Priority Order)
 
-### Priority 1 — Core
-Auth, User, Role, Permission
+Status QA terkini bukan all-green: log 2026-11-06 mencatat full Jest gagal pada
+assertion OWNER lama di `RegisterCompanyUseCase.test.ts`. Audit dokumentasi tidak
+menjalankan ulang tes; urutan berikut merupakan pekerjaan lanjutan, bukan hasil lulus.
 
-### Priority 2 — Master Data
-Outlet, Warehouse, Product Group, Category, UOM, Supplier, Payment Term
-
-### Priority 3 — Product Management
-Product CRUD, Lookup, Validation, Audit Log
-
-### Priority 4 — Inventory
-Batch, Stock, Movement, Adjustment, Opname, Transfer, Dashboard, Reconciliation
-
-### Priority 5 — Procurement (HIGH PRIORITY — belum di-test)
-Purchase Request, Purchase Order, Goods Receipt, Purchase Return
-
-### Priority 6 — Finance (HIGH PRIORITY — belum di-test)
-Vendor Invoice, Accounts Payable
+1. Core/Auth/Profile/Platform: assignment company-role, guard tenant/platform, 2FA,
+   change/reset password, audit user serta pencabutan sesi.
+2. Master Data: Outlet, Product Group, Category, UOM, Supplier, Payment Term, Product,
+   Topping; validasi, dependensi dan audit.
+3. Inventory/Procurement: Stock On Hand, Ledger, Batch, Adjustment, Opname, Transfer,
+   PR/PO/GR/Return; akurasi saldo, expiry, transaksi dan rekonsiliasi data.
+4. Recipe/Production/POS: kompatibilitas/scaling UOM, konsumsi FEFO, hasil produksi,
+   checkout/pay/void/refund, kas shift dan kelengkapan pilihan shift Sales Order.
+5. Dashboard/Reports: summary `scheduled_qty` vs detail `actual_qty`/yield, low-stock
+   ACTIVE termasuk expired vs sellable Stock On Hand, CSV dan batas nilai harga jual.
+6. Integrasi/E2E/UAT dan tenant isolation menyeluruh masih perlu verifikasi.
+   Finance belum ada sehingga bukan modul existing yang tinggal diuji.
 
 ---
 
 ## 10. ACTIVE FOCUS
 
-### Dev Agent (Frontend — `frontend/` target)
-Target: Implement UI pages for existing backend modules
-- Product Management (List, Form)
-- Inventory (Batch, Stock, Movement, Adjustment, Opname, Transfer, Dashboard)
-- Procurement (PR, PO, GR, Return)
-- Finance (Vendor Invoice, AP)
-- Ikuti frontend-constitution.md dan application-blueprint.md
+### Dev Agent (Frontend — `frontend-tailadmin/` target)
+Fokus lanjutan: gap fitur yang nyata, bukan membangun ulang UI yang sudah ada.
+- Platform role/permission management UI dan audit viewer.
+- PDF/Excel export belum delivered; Replenishment/Finance masih backlog.
+- Profile logout-all/self-delete belum punya handler; upload avatar/logo, QR dan
+  passkey masih rencana. Change password sudah tersedia.
+- Klarifikasi versioning Recipe (ISSUE-05); increment saat activate sudah ada.
+- Rujukan implementasi UI aktif: doc 48 dan `frontend-tailadmin/AGENTS.md`.
 
 ### QA Agent (Testing — `backend/` focus)
-Target: Test existing modules
-- Priority 1-4: Verify existing unit tests, check type safety, review code
-- Priority 5-6: Procurement & Finance — create test plan, run tests, report findings
-- Dokumentasikan semua temuan (bug, missing test, code quality issues)
+Fokus berikutnya: assertion OWNER yang usang dan investigasi doc 53, lalu pengujian
+runtime sesuai lingkup yang disetujui. Hasil build/tes lama tidak membuktikan seluruh
+alur operasional siap produksi. Tidak ada pengujian ulang pada audit dokumentasi ini.
 
 ---
 
 ## 11. ENVIRONMENTAL NOTES
 
-- Backend: `backend/` (NestJS + Prisma + PostgreSQL via Docker)
-- Frontend: `frontend/` (Next.js)
-- Database: PostgreSQL (via Docker Compose di root project)
+- Workspace audit: `D:/antigravity/erp-bakery-2`, branch `feature/administrator`, HEAD `2f58401`.
+- Backend: `backend/` (NestJS + Fastify + raw pg/PostgreSQL); migrasi `node-pg-migrate`
+  tersedia sampai 074. Audit tidak memeriksa apakah migrasi telah diterapkan pada DB.
+- Frontend aktif: `frontend-tailadmin/` (Vue 3 + Vite + TailAdmin/Tailwind v4).
+- `ConsoleMailSender` hanya menulis pesan ke log; pengiriman email produksi belum tersedia.
+- Tes, build, migrasi, seed dan server tidak dijalankan untuk sinkronisasi ini.
 
 ---
 
@@ -227,22 +229,22 @@ Target: Test existing modules
 |------|------|-------|
 | Product Owner | Dian (Bang) | Decision maker |
 | AI Project Manager | Hermes Agent | Coordination & knowledge-base management |
-| Dev Agent | Spawned sub-agent | Frontend development (`frontend/`) |
+| Dev Agent | Spawned sub-agent | Frontend development (`frontend-tailadmin/`) |
 | QA Agent | Spawned sub-agent | Testing existing modules |
 
 ---
 
 ## 13. KNOWLEDGE BASE GAP (Wajib Dipahami)
 
-| Modul | knowledge-base Status | Kode Aktual | Action |
-|-------|----------------------|-------------|--------|
-| Product Management | `[ ]` (belum selesai) | ✅ Lengkap | Update ke ✅ Selesai — done |
-| Inventory | `[ ]` (belum start) | ✅ Lengkap | Update ke ✅ Code Lengkap — done |
-| Procurement (PR/PO/GR/Return) | Tidak ada di sprint plan | ✅ Ada di kode | Dokumentasi + Frontend + Testing |
-| Finance (AP/Vendor Invoice) | Tidak ada | ✅ Ada di kode | Testing prioritas QA |
-| Dashboard & Reporting | Sprint 6 belum | ❌ Belum ada kode | Belum dimulai |
-| POS | Sprint 5 belum | ❌ Belum ada kode | Belum dimulai |
-| Production | Sprint 3 belum | ⚠️ Ada FEFO engine | Perlu verifikasi + lanjut dev |
+| Area | Fakta audit 2026-11-06 | Gap yang tetap terbuka |
+|------|------------------------|-----------------------|
+| Dokumen legacy | Stack aktif raw pg/Vue TailAdmin; doc 5 Prisma dan checklist lama merupakan riwayat | Jangan menafsirkan proposal/checklist historis sebagai implementasi atau QA terkini |
+| Master/Profile/Procurement/Inventory | BE/FE sudah tersedia; doc 13/14 disinkronkan | Verifikasi runtime lintas alur; Reconciliation UI khusus belum tersedia |
+| Recipe/Production/POS | Kode dan UI tersedia | UOM/scaling, metrik produksi, pilihan shift; klarifikasi versioning ISSUE-05 (increment sudah ada) |
+| Dashboard/Reports | BE/FE + CSV tersedia | PDF/Excel, pendingRequests 0, low-stock vs expired; nilai stok berbasis selling_price bukan akuntansi |
+| Platform/Auth | v1/v2, audit mutasi user, 2FA dan change password tersedia | Role/permission management UI, audit viewer, logout-all/self-delete, upload/QR/passkey, email produksi |
+| Replenishment/Finance | Belum diimplementasikan | Permission/sidebar/spec bukan kode operasional |
+| QA/UAT | Full Jest gagal pada assertion OWNER lama menurut log 6 November | Investigasi doc 53, pengujian ulang dan validasi kesiapan produksi |
 
 ---
 

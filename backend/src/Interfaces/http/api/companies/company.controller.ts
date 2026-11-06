@@ -4,8 +4,11 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   Param,
+  Put,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,11 +19,16 @@ import {
 } from '@nestjs/swagger';
 import { RegisterCompanyUseCase } from '../../../../Applications/use_case/companies/RegisterCompanyUseCase';
 import { RegisterCompanyDto } from './dto/register-company.dto';
+import { CompanyQueryDto } from './dto/company-query.dto';
+import { UpdateCompanyStatusDto } from './dto/update-company-status.dto';
+import { UpdateCompanyProfileDto } from './dto/update-company-profile.dto';
+import { AuthorizationError } from '../../../../Commons/exceptions/AuthorizationError';
 import { Public } from '../../decorators/public.decorator';
 import { RequirePermission } from '../../decorators/require-permission.decorator';
+import { SuperAdminOnly } from '../../decorators/super-admin-only.decorator';
 import { GetUser } from '../../decorators/get-user.decorator';
 import { JwtAccessPayload } from '../../../../Applications/security/TokenManager';
-import { successResponse } from '../../../../Commons/helpers/response.helper';
+import { successResponse, listResponse } from '../../../../Commons/helpers/response.helper';
 import { CompanyRepository } from '../../../../Domains/companies/CompanyRepository';
 
 /**
@@ -28,7 +36,9 @@ import { CompanyRepository } from '../../../../Domains/companies/CompanyReposito
  *
  * POST /api/v1/companies/register  → SaaS self-service company registration (public)
  * GET  /api/v1/companies/me        → get current user's company (authenticated)
+ * GET  /api/v1/companies           → list companies (SUPER_ADMIN only)
  * GET  /api/v1/companies/:id       → get company by id (SUPER_ADMIN or company.read)
+ * PATCH /api/v1/companies/:id/status → activate/suspend company (SUPER_ADMIN only)
  */
 @ApiTags('Companies')
 @Controller('companies')
@@ -76,6 +86,25 @@ export class CompanyController {
   }
 
   @ApiBearerAuth()
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  @SuperAdminOnly()
+  @ApiOperation({ summary: 'List all companies (platform console, SUPER_ADMIN only)' })
+  @ApiResponse({ status: 200, description: 'Paginated company list' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden — SUPER_ADMIN only' })
+  async list(@Query() query: CompanyQueryDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const { rows, total } = await this.companyRepository.listCompanies({
+      page,
+      limit,
+      search: query.search,
+    });
+    return listResponse(rows, total, page, limit);
+  }
+
+  @ApiBearerAuth()
   @Get('me')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get current user's company profile" })
@@ -104,6 +133,25 @@ export class CompanyController {
       return successResponse(null);
     }
     const company = await this.companyRepository.getCompanyById(user.companyId);
+    return successResponse(company);
+  }
+
+  @ApiBearerAuth()
+  @Put('me')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('company.manage')
+  @ApiOperation({ summary: "Update the current user's company profile" })
+  @ApiResponse({ status: 200, description: 'Updated company profile' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 403, description: 'Forbidden — missing company.manage' })
+  async updateMyCompany(
+    @GetUser() user: JwtAccessPayload,
+    @Body() dto: UpdateCompanyProfileDto,
+  ) {
+    if (!user.companyId) {
+      throw new AuthorizationError('AUTHORIZATION.NO_COMPANY_CONTEXT');
+    }
+    const company = await this.companyRepository.updateCompanyProfile(user.companyId, dto);
     return successResponse(company);
   }
 
@@ -137,5 +185,20 @@ export class CompanyController {
   async getById(@Param('id') id: string) {
     const company = await this.companyRepository.getCompanyById(id);
     return successResponse(company);
+  }
+
+  @ApiBearerAuth()
+  @Patch(':id/status')
+  @HttpCode(HttpStatus.OK)
+  @SuperAdminOnly()
+  @ApiOperation({ summary: 'Activate or suspend a company (SUPER_ADMIN only)' })
+  @ApiParam({ name: 'id', description: 'Company UUID' })
+  @ApiResponse({ status: 200, description: 'Company status updated' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden — SUPER_ADMIN only' })
+  @ApiResponse({ status: 404, description: 'Company not found' })
+  async updateStatus(@Param('id') id: string, @Body() dto: UpdateCompanyStatusDto) {
+    const result = await this.companyRepository.setCompanyActive(id, dto.isActive);
+    return successResponse(result);
   }
 }

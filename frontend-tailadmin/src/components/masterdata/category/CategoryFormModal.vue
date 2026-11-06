@@ -135,9 +135,9 @@ function onSubmit(): void {
         />
       </BaseFormField>
 
-      <BaseToggle v-if="isEdit" v-model="isActive" label="Aktif" />
-
       <BaseAlert :message="localError || errorMessage" size="sm" />
+
+      <BaseToggle v-if="isEdit" v-model="isActive" label="Aktif" />
 
       <div class="button-row pt-2">
         <BaseButton size="sm" variant="outline" :disabled="submitting" @click="emit('close')">

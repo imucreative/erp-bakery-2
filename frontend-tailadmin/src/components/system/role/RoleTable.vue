@@ -10,12 +10,17 @@ import Badge from '@/components/ui/Badge.vue'
 import { BaseButton, BaseTable, BaseTableCell, BaseTableHead, BaseTableRow } from '@/components/ui'
 import type { Role } from '@/services/role.service'
 
-defineProps<{
-  items: Role[]
-  loading: boolean
-  errorMessage: string | null
-  canManage: boolean
-}>()
+withDefaults(
+  defineProps<{
+    items: Array<Role & { userCount?: number }>
+    loading: boolean
+    errorMessage: string | null
+    canManage: boolean
+    /** Platform console shows how many users are assigned to each role. */
+    showUserCount?: boolean
+  }>(),
+  { showUserCount: false },
+)
 
 defineEmits<{
   (event: 'view', role: Role): void
@@ -42,6 +47,7 @@ function isOwner(role: Role): boolean {
         <BaseTableHead>Nama</BaseTableHead>
         <BaseTableHead>Deskripsi</BaseTableHead>
         <BaseTableHead>Status</BaseTableHead>
+        <BaseTableHead v-if="showUserCount">User</BaseTableHead>
         <BaseTableHead align="end">Aksi</BaseTableHead>
       </BaseTableRow>
     </template>
@@ -55,6 +61,7 @@ function isOwner(role: Role): boolean {
             {{ role.isActive ? 'Aktif' : 'Nonaktif' }}
           </Badge>
         </BaseTableCell>
+        <BaseTableCell v-if="showUserCount">{{ role.userCount ?? 0 }}</BaseTableCell>
         <BaseTableCell align="end">
           <div class="flex items-center justify-end gap-2">
             <BaseButton

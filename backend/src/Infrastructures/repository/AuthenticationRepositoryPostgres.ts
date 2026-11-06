@@ -45,4 +45,15 @@ export class AuthenticationRepositoryPostgres extends AuthenticationRepository {
   async deleteExpiredTokens(): Promise<void> {
     await this.pool.query(`DELETE FROM authentications WHERE expired_at <= NOW()`);
   }
+
+  async deleteTokensByUserId(userId: string): Promise<void> {
+    await this.pool.query(`DELETE FROM authentications WHERE user_id = $1`, [userId]);
+  }
+
+  async deleteTokensByUserIdExcept(userId: string, keepRefreshToken: string): Promise<void> {
+    await this.pool.query(
+      `DELETE FROM authentications WHERE user_id = $1 AND refresh_token <> $2`,
+      [userId, keepRefreshToken],
+    );
+  }
 }

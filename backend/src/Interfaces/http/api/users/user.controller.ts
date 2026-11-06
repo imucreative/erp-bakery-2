@@ -28,6 +28,7 @@ import { GetUser } from '../../decorators/get-user.decorator';
 import { RequirePermission } from '../../decorators/require-permission.decorator';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 import { UserQueryDto } from './dto/user-query.dto';
 
 /**
@@ -90,6 +91,27 @@ export class UserController {
     });
 
     return listResponse(rows, total, page, limit);
+  }
+
+  @ApiBearerAuth()
+  @Get('me')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Profile of the authenticated user (self-service)' })
+  @ApiResponse({ status: 200, description: 'Own profile with role and company names' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getMyProfile(@GetUser() user: JwtAccessPayload) {
+    return successResponse(await this.userRepository.getMyProfile(user.sub));
+  }
+
+  @ApiBearerAuth()
+  @Put('me')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update the authenticated user profile (self-service)' })
+  @ApiResponse({ status: 200, description: 'Updated profile' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async updateMyProfile(@GetUser() user: JwtAccessPayload, @Body() dto: UpdateMyProfileDto) {
+    return successResponse(await this.userRepository.updateMyProfile(user.sub, dto));
   }
 
   @Get(':id')

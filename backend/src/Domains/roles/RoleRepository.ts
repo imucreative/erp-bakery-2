@@ -22,6 +22,13 @@ export abstract class RoleRepository {
   abstract addRole(data: CreateRoleData): Promise<string>;
 
   /**
+   * Persist a new role and its permission set in a single transaction.
+   * Returns the new role ID. Unique-violation errors are propagated so the
+   * use-case can map them to ROLE.CODE_ALREADY_USED.
+   */
+  abstract addRoleWithPermissions(data: CreateRoleData, permissionCodes: string[]): Promise<string>;
+
+  /**
    * Fetch role by id. Throws ROLE.NOT_FOUND if missing.
    */
   abstract getRoleById(id: string): Promise<Role>;
@@ -48,10 +55,7 @@ export abstract class RoleRepository {
    * Resolves permission codes → IDs then inserts into role_permissions.
    * Idempotent — uses INSERT ... ON CONFLICT DO NOTHING.
    */
-  abstract assignPermissionsToRole(
-    roleId: string,
-    permissionCodes: string[],
-  ): Promise<void>;
+  abstract assignPermissionsToRole(roleId: string, permissionCodes: string[]): Promise<void>;
 
   /**
    * Assign all existing permissions to a role (used for OWNER role).
@@ -68,10 +72,18 @@ export abstract class RoleRepository {
    * company (tenant isolation). `code` is immutable and is never updated here.
    * Throws ROLE.NOT_FOUND if missing or owned by another company (or platform).
    */
-  abstract updateRole(
+  abstract updateRole(id: string, companyId: string, data: UpdateRoleData): Promise<Role>;
+
+  /**
+   * Update a role's editable attributes and, when `permissionCodes` is
+   * provided, full-sync its permission set — all in one transaction.
+   * Throws ROLE.NOT_FOUND if missing or owned by another company (or platform).
+   */
+  abstract updateRoleWithPermissions(
     id: string,
     companyId: string,
     data: UpdateRoleData,
+    permissionCodes?: string[],
   ): Promise<Role>;
 
   /**
@@ -80,10 +92,7 @@ export abstract class RoleRepository {
    * Resolves permission codes → IDs; unknown codes are ignored here (the
    * use-case is responsible for validating the catalog beforehand).
    */
-  abstract setRolePermissions(
-    roleId: string,
-    permissionCodes: string[],
-  ): Promise<void>;
+  abstract setRolePermissions(roleId: string, permissionCodes: string[]): Promise<void>;
 
   /**
    * Hard-delete a role scoped to a company (tenant isolation). Associated
@@ -96,8 +105,5 @@ export abstract class RoleRepository {
    * Count active (non-deleted) users currently assigned to a role within a
    * company. Used to enforce delete-in-use dependency protection.
    */
-  abstract countUsersUsingRole(
-    roleId: string,
-    companyId: string,
-  ): Promise<number>;
+  abstract countUsersUsingRole(roleId: string, companyId: string): Promise<number>;
 }

@@ -440,6 +440,9 @@ const DomainErrorTranslator = {
     'ROLE.PERMISSION_UNKNOWN': new InvariantError(
       'Gagal menyimpan role: terdapat permission yang tidak dikenal',
     ),
+    'ROLE.PERMISSION_RESERVED': new InvariantError(
+      'Gagal menyimpan role: permission system administration hanya untuk Super Admin',
+    ),
     'ROLE.OWNER_CANNOT_BE_DELETED': new ConflictError(
       'Role Owner tidak dapat dihapus',
     ),
@@ -505,6 +508,24 @@ const DomainErrorTranslator = {
       'Refresh token tidak ditemukan',
     ),
 
+    // ── Password & 2FA self-service (halaman Profile) ─────────────
+    // Semua di sini 400 (InvariantError), BUKAN 401: kegagalan validasi pada
+    // permintaan yang sudah terautentikasi. Kalau dikembalikan 401, interceptor
+    // frontend akan menganggap sesi kedaluwarsa - mencoba refresh, mengulang
+    // request, lalu memaksa logout dan menimpa pesan aslinya dengan
+    // "Session expired" (dan pengguna ikut ter-logout).
+    'AUTHENTICATION.CURRENT_PASSWORD_INVALID': new InvariantError(
+      'Password saat ini salah',
+    ),
+    'AUTHENTICATION.RESET_TOKEN_INVALID': new InvariantError(
+      'Tautan reset tidak valid atau sudah kedaluwarsa. Silakan minta tautan baru.',
+    ),
+    'AUTHENTICATION.MFA_CODE_INVALID': new InvariantError('Kode 2FA tidak valid'),
+    'AUTHENTICATION.MFA_SETUP_REQUIRED': new InvariantError(
+      'Mulai pengaturan 2FA terlebih dahulu sebelum mengaktifkannya',
+    ),
+    'AUTHENTICATION.MFA_NOT_ENABLED': new InvariantError('2FA belum aktif untuk akun ini'),
+
     // ── Authorization ────────────────────────────────────────────
     'AUTHORIZATION.ACCESS_DENIED': new AuthorizationError(
       'Anda tidak memiliki akses untuk melakukan tindakan ini',
@@ -512,9 +533,18 @@ const DomainErrorTranslator = {
     'AUTHORIZATION.NO_COMPANY_CONTEXT': new AuthorizationError(
       'Akun Anda tidak terhubung ke perusahaan manapun',
     ),
+    'AUTHORIZATION.MFA_REQUIRED': new AuthorizationError(
+      'Aktifkan 2FA terlebih dahulu sebelum mengakses konsol platform',
+    ),
 
     // ── User not found ───────────────────────────────────────────
     'USER.NOT_FOUND': new NotFoundError('User tidak ditemukan'),
+    // Dipakai halaman "Lupa Password": memberi tahu bahwa email belum terdaftar.
+    // Catatan keamanan: pesan ini memang mengungkap keberadaan akun (enumeration),
+    // disengaja demi kejelasan UX. Sebelumnya pesan sengaja netral. Perlu diketahui
+    // endpoint pendaftaran (register company) juga sudah mengungkap hal yang sama
+    // lewat USER.EMAIL_ALREADY_USED.
+    'USER.EMAIL_NOT_REGISTERED': new NotFoundError('Email yang Anda masukkan tidak terdaftar'),
     'COMPANY.NOT_FOUND': new NotFoundError('Company tidak ditemukan'),
     'ROLE.NOT_FOUND': new NotFoundError('Role tidak ditemukan'),
     'OUTLET.NOT_FOUND': new NotFoundError('Outlet tidak ditemukan'),

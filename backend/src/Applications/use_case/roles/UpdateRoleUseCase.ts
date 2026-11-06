@@ -1,9 +1,7 @@
 import { RoleRepository } from '../../../Domains/roles/RoleRepository';
 import { PermissionRepository } from '../../../Domains/permissions/PermissionRepository';
 import { Role } from '../../../Domains/roles/entities/Role';
-
-const OWNER_ROLE_CODE = 'OWNER';
-const ROLE_MANAGE_PERMISSION = 'role.manage';
+import { findReservedPermissions } from '../../../Domains/roles/rolePolicy';
 
 export interface UpdateRolePayload {
   name?: string;
@@ -19,8 +17,8 @@ export interface UpdateRolePayload {
  * 2. Validate the partial payload. `code` is immutable and is never read.
  * 3. If `permissions` is provided → FULL-SYNC the permission set:
  *    - validate every code exists in the global catalog (no escalation),
- *    - for an OWNER role, force `role.manage` to remain present.
- * 4. Apply name/description update and permission sync.
+ *    - reject system-administration permissions (ROLE.PERMISSION_RESERVED).
+ * 4. Apply name/description update and permission sync in one transaction.
  */
 export class UpdateRoleUseCase {
   constructor(
@@ -35,20 +33,21 @@ export class UpdateRoleUseCase {
   ): Promise<Role & { permissions: string[] }> {
     // Existence + tenant check (throws ROLE.NOT_FOUND). Also gives us the code
     // for the OWNER guardrail — the client never controls `code` on update.
-    const existing = await this.roleRepository.getRoleByIdAndCompany(id, companyId);
+    // Existence + tenant check (throws ROLE.NOT_FOUND).
+    await this.roleRepository.getRoleByIdAndCompany(id, companyId);
 
     const { name, description, permissions } = this._validatePayload(payload);
 
-    // Apply editable attributes only when at least one is present.
-    if (name !== undefined || description !== undefined) {
-      await this.roleRepository.updateRole(id, companyId, { name, description });
-    }
-
     if (permissions !== undefined) {
       await this._verifyPermissionsExist(permissions);
-      const effective = this._enforceOwnerGuardrail(existing.code, permissions);
-      await this.roleRepository.setRolePermissions(id, effective);
+      this._rejectReserved(permissions);
     }
+
+    const data: { name?: string; description?: string | null } = {};
+    if (name !== undefined) data.name = name;
+    if (description !== undefined) data.description = description;
+
+    await this.roleRepository.updateRoleWithPermissions(id, companyId, data, permissions);
 
     const role = await this.roleRepository.getRoleByIdAndCompany(id, companyId);
     const assigned = await this.roleRepository.getRolePermissions(id);
@@ -110,10 +109,9 @@ export class UpdateRoleUseCase {
     }
   }
 
-  private _enforceOwnerGuardrail(code: string, permissions: string[]): string[] {
-    if (code === OWNER_ROLE_CODE && !permissions.includes(ROLE_MANAGE_PERMISSION)) {
-      return [...permissions, ROLE_MANAGE_PERMISSION];
+  private _rejectReserved(permissionCodes: string[]): void {
+    if (findReservedPermissions(permissionCodes).length > 0) {
+      throw new Error('ROLE.PERMISSION_RESERVED');
     }
-    return permissions;
   }
 }

@@ -8,7 +8,12 @@
 
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { authService, type Company, type LoginPayload } from '@/services/auth.service'
+import {
+  authService,
+  type AuthTokens,
+  type LoginPayload,
+} from '@/services/auth.service'
+import { companyService, type CompanyProfile } from '@/services/company.service'
 import { decodeJwt, isJwtExpired, type JwtPayload } from '@/lib/jwt'
 import {
   clearTokens,
@@ -40,7 +45,7 @@ function toUser(payload: JwtPayload): AuthUser {
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<AuthUser | null>(null)
-  const company = ref<Company | null>(null)
+  const company = ref<CompanyProfile | null>(null)
 
   const isAuthenticated = computed<boolean>(() => user.value !== null)
   const permissions = computed<string[]>(() => user.value?.permissions ?? [])
@@ -77,8 +82,26 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function login(payload: LoginPayload): Promise<void> {
-    const tokens = await authService.login(payload)
+  async function login(payload: LoginPayload): Promise<{
+    mfaRequired: boolean
+    mfaToken?: string
+  }> {
+    const result = await authService.login(payload)
+    if (result.mfaRequired) {
+      // Do NOT persist a session yet — the second factor has not passed.
+      return { mfaRequired: true, mfaToken: result.mfaToken }
+    }
+    await applyTokens(result)
+    return { mfaRequired: false }
+  }
+
+  /** Second login step: MFA token + code → real session. */
+  async function verifyMfa(mfaToken: string, code: string): Promise<void> {
+    const tokens = await authService.verifyMfa({ mfaToken, code })
+    await applyTokens(tokens)
+  }
+
+  async function applyTokens(tokens: AuthTokens): Promise<void> {
     setTokens(tokens.accessToken, tokens.refreshToken)
     if (!applyAccessToken(tokens.accessToken)) {
       clearTokens()
@@ -89,7 +112,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function loadCompany(): Promise<void> {
     try {
-      company.value = await authService.getCurrentCompany()
+      company.value = await companyService.getMyCompany()
     } catch {
       // Company profile is non-critical for session validity; ignore failures.
       company.value = null
@@ -123,6 +146,7 @@ export const useAuthStore = defineStore('auth', () => {
     userEmail,
     hydrateFromStorage,
     login,
+    verifyMfa,
     loadCompany,
     logout,
     reset,
