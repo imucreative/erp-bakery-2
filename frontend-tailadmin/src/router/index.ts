@@ -564,6 +564,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/platform/roles',
+      name: 'PlatformRoles',
+      component: () => import('../views/Platform/RoleList.vue'),
+      meta: {
+        title: 'Platform Roles',
+        platform: true,
+      },
+    },
+    {
       path: '/signin',
       name: 'Signin',
       component: () => import('../views/Auth/Signin.vue'),

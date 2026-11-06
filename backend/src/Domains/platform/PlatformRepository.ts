@@ -41,7 +41,10 @@ export interface PlatformRoleItem {
   companyId: string;
   code: string;
   name: string;
+  description: string | null;
   isActive: boolean;
+  /** Active (non-deleted) users currently assigned to this role. */
+  userCount: number;
 }
 
 export interface PlatformUserUpdateFields {
@@ -76,5 +79,6 @@ export abstract class PlatformRepository {
     companyId: string | null,
     oldValue?: unknown,
     newValue?: unknown,
+    module?: string,
   ): Promise<void>;
 }

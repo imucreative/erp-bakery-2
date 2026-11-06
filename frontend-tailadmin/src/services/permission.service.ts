@@ -29,6 +29,27 @@ export interface Permission {
   sortOrder: number | null
 }
 
+/**
+ * System-administration permissions are platform-only (doc 16). The backend
+ * rejects them for company roles; the picker disables them as well.
+ */
+export const RESERVED_PERMISSION_CODES = [
+  'user.read',
+  'user.manage',
+  'role.read',
+  'role.manage',
+  'permission.read',
+  'permission.manage',
+  'audit.read',
+  'auth.manage',
+] as const
+
+const RESERVED_SET = new Set<string>(RESERVED_PERMISSION_CODES)
+
+export function isReservedPermission(code: string): boolean {
+  return RESERVED_SET.has(code)
+}
+
 export const permissionService = {
   /** Global permission catalog (not paginated), ordered by sortOrder ASC. */
   async list(): Promise<Permission[]> {

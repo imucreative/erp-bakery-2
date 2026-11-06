@@ -176,6 +176,11 @@ export const platformMenuGroups: NavGroup[] = [
         name: 'Users',
         path: '/platform/users',
       },
+      {
+        icon: ShieldCheck,
+        name: 'Roles',
+        path: '/platform/roles',
+      },
     ],
   },
 ]

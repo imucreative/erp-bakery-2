@@ -440,6 +440,9 @@ const DomainErrorTranslator = {
     'ROLE.PERMISSION_UNKNOWN': new InvariantError(
       'Gagal menyimpan role: terdapat permission yang tidak dikenal',
     ),
+    'ROLE.PERMISSION_RESERVED': new InvariantError(
+      'Gagal menyimpan role: permission system administration hanya untuk Super Admin',
+    ),
     'ROLE.OWNER_CANNOT_BE_DELETED': new ConflictError(
       'Role Owner tidak dapat dihapus',
     ),

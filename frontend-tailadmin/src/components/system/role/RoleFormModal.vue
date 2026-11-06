@@ -6,8 +6,8 @@
  * the picker from the loaded RoleDetail. Permissions are FULL-replaced on
  * submit. Self-contained form state; emits `submit`, parent runs the mutation.
  * Backdrop, Esc-close, and panel chrome come from BaseModal (wide body for the
- * picker). OWNER guardrail is delegated to RolePermissionPicker (role.manage
- * forced checked+disabled).
+ * picker). An optional `catalog` prop lets the platform console supply its own
+ * permission endpoint instead of the tenant `/permissions` one.
  */
 import { computed, ref, watch } from 'vue'
 import {
@@ -21,6 +21,7 @@ import {
 import { Save, X } from 'lucide-vue-next'
 import RolePermissionPicker from './RolePermissionPicker.vue'
 import { usePermissions } from '@/composables/usePermissions'
+import type { Permission } from '@/services/permission.service'
 import type { Role, RoleDetail } from '@/services/role.service'
 
 const props = withDefaults(
@@ -34,6 +35,12 @@ const props = withDefaults(
     detailLoading?: boolean
     submitting?: boolean
     errorMessage?: string | null
+    /** Optional externally loaded permission catalog (platform console). */
+    catalog?: Permission[] | null
+    /** External catalog loading state (ignored when `catalog` is null). */
+    catalogLoading?: boolean
+    /** External catalog error state (ignored when `catalog` is null). */
+    catalogError?: string | null
   }>(),
   {
     role: null,
@@ -41,6 +48,9 @@ const props = withDefaults(
     detailLoading: false,
     submitting: false,
     errorMessage: null,
+    catalog: null,
+    catalogLoading: undefined,
+    catalogError: undefined,
   },
 )
 
@@ -53,11 +63,21 @@ const emit = defineEmits<{
 }>()
 
 const {
-  permissions,
-  loading: catalogLoading,
-  errorMessage: catalogError,
+  permissions: internalCatalog,
+  loading: internalCatalogLoading,
+  errorMessage: internalCatalogError,
   fetchCatalog,
 } = usePermissions()
+
+const catalog = computed<Permission[]>(() => props.catalog ?? internalCatalog.value)
+const catalogLoading = computed<boolean>(() => {
+  if (props.catalogLoading !== undefined) return props.catalogLoading
+  return props.catalog ? false : internalCatalogLoading.value
+})
+const catalogError = computed<string | null>(() => {
+  if (props.catalogError !== undefined) return props.catalogError
+  return props.catalog ? null : internalCatalogError.value
+})
 
 const code = ref<string>('')
 const name = ref<string>('')
@@ -65,7 +85,6 @@ const description = ref<string>('')
 const selectedPermissions = ref<string[]>([])
 const localError = ref<string | null>(null)
 
-const isOwner = computed<boolean>(() => (props.role?.code ?? props.detail?.code) === 'OWNER')
 const isEdit = computed<boolean>(() => props.mode === 'edit')
 
 function resetForm(): void {
@@ -94,7 +113,9 @@ watch(
   (open) => {
     if (open) {
       resetForm()
-      void fetchCatalog()
+      if (!props.catalog) {
+        void fetchCatalog()
+      }
       if (isEdit.value && props.detail) {
         selectedPermissions.value = [...props.detail.permissions]
       }
@@ -146,9 +167,7 @@ function onSubmit(): void {
             placeholder="mis. GUDANG"
             class="uppercase"
           />
-          <p v-if="isEdit" class="mt-1 text-muted-xs">
-            Kode tidak dapat diubah.
-          </p>
+          <p v-if="isEdit" class="mt-1 text-muted-xs">Kode tidak dapat diubah.</p>
         </BaseFormField>
         <BaseFormField label="Nama" field-id="role-name" required>
           <BaseInput id="role-name" v-model="name" placeholder="mis. Staf Gudang" />
@@ -170,8 +189,7 @@ function onSubmit(): void {
       <RolePermissionPicker
         v-else
         v-model="selectedPermissions"
-        :catalog="permissions"
-        :is-owner="isOwner"
+        :catalog="catalog"
         :loading="catalogLoading"
         :error-message="catalogError"
       />
@@ -187,6 +205,7 @@ function onSubmit(): void {
           type="submit"
           variant="success"
           :loading="submitting"
+          :disabled="catalogLoading || (isEdit && detailLoading)"
           loading-text="Menyimpan..."
         >
           <template #start-icon><Save class="h-4 w-4" aria-hidden="true" /></template>

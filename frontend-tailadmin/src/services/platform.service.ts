@@ -1,12 +1,20 @@
 /**
- * Platform service — cross-tenant reads for the platform console.
+ * Platform service — cross-tenant identity and access management for the
+ * platform console.
  * Verified against backend platform.controller.ts:
- *  - GET /platform/users → { success, data: PlatformUserItem[], meta }  (SUPER_ADMIN only)
- *
- * User mutations are limited to identity/access management on the platform.
+ *  - GET    /platform/users                                   → { success, data, meta }
+ *  - GET    /platform/companies/:companyId/roles              → { success, data }
+ *  - GET    /platform/companies/:companyId/roles/:roleId      → { success, data }
+ *  - POST   /platform/companies/:companyId/roles              → 201
+ *  - PUT    /platform/companies/:companyId/roles/:roleId      → 200
+ *  - DELETE /platform/companies/:companyId/roles/:roleId      → 200
+ *  - GET    /platform/permissions                             → { success, data }
+ * All routes are SUPER_ADMIN only (with 2FA).
  */
 
 import { httpClient } from './http'
+import type { CreateRolePayload, Role, RoleDetail, UpdateRolePayload } from './role.service'
+import type { Permission } from './permission.service'
 
 interface ListMeta {
   page: number
@@ -54,12 +62,9 @@ export interface PlatformUserListResult {
   meta: ListMeta
 }
 
-export interface PlatformRoleItem {
-  id: string
-  companyId: string
-  code: string
-  name: string
-  isActive: boolean
+export interface PlatformRoleItem extends Role {
+  /** Active (non-deleted) users currently assigned to this role. */
+  userCount: number
 }
 
 export interface PlatformCreateUserPayload {
@@ -104,6 +109,43 @@ export const platformService = {
       `/platform/companies/${companyId}/roles`,
     )
     return response.data.data
+  },
+
+  async getRole(companyId: string, roleId: string): Promise<RoleDetail> {
+    const response = await httpClient.get<ApiSuccess<RoleDetail>>(
+      `/platform/companies/${companyId}/roles/${roleId}`,
+    )
+    return response.data.data
+  },
+
+  /** Global permission catalog for the platform role picker. */
+  async listPermissions(): Promise<Permission[]> {
+    const response = await httpClient.get<ApiSuccess<Permission[]>>('/platform/permissions')
+    return response.data.data
+  },
+
+  async createRole(companyId: string, payload: CreateRolePayload): Promise<RoleDetail> {
+    const response = await httpClient.post<ApiSuccess<RoleDetail>>(
+      `/platform/companies/${companyId}/roles`,
+      payload,
+    )
+    return response.data.data
+  },
+
+  async updateRole(
+    companyId: string,
+    roleId: string,
+    payload: UpdateRolePayload,
+  ): Promise<RoleDetail> {
+    const response = await httpClient.put<ApiSuccess<RoleDetail>>(
+      `/platform/companies/${companyId}/roles/${roleId}`,
+      payload,
+    )
+    return response.data.data
+  },
+
+  async deleteRole(companyId: string, roleId: string): Promise<void> {
+    await httpClient.delete<ApiSuccess<null>>(`/platform/companies/${companyId}/roles/${roleId}`)
   },
 
   async createUser(payload: PlatformCreateUserPayload): Promise<PlatformUserItem> {

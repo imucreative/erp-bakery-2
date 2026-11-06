@@ -107,12 +107,17 @@ export class PlatformRepositoryPostgres extends PlatformRepository {
       company_id: string;
       code: string;
       name: string;
+      description: string | null;
       is_active: boolean;
+      user_count: number;
     }>(
-      `SELECT id, company_id, code, name, is_active
-       FROM roles
-       WHERE company_id = $1
-       ORDER BY is_active DESC, name ASC`,
+      `SELECT r.id, r.company_id, r.code, r.name, r.description, r.is_active,
+              COUNT(u.id)::int AS user_count
+       FROM roles r
+       LEFT JOIN users u ON u.role_id = r.id AND u.deleted_at IS NULL
+       WHERE r.company_id = $1
+       GROUP BY r.id
+       ORDER BY r.is_active DESC, r.name ASC`,
       [companyId],
     );
 
@@ -121,7 +126,9 @@ export class PlatformRepositoryPostgres extends PlatformRepository {
       companyId: row.company_id,
       code: row.code,
       name: row.name,
+      description: row.description,
       isActive: row.is_active,
+      userCount: row.user_count,
     }));
   }
 
@@ -204,12 +211,13 @@ export class PlatformRepositoryPostgres extends PlatformRepository {
     companyId: string | null,
     oldValue?: unknown,
     newValue?: unknown,
+    module = 'platform_users',
   ): Promise<void> {
     await this.pool.query(
       `INSERT INTO audit_logs
        (company_id, user_id, module, action, entity_id, old_value, new_value)
-       VALUES ($1, $2, 'platform_users', $3, $4, $5, $6)`,
-      [companyId, actorId, action, entityId, oldValue ?? null, newValue ?? null],
+       VALUES ($1, $2, $7, $3, $4, $5, $6)`,
+      [companyId, actorId, action, entityId, oldValue ?? null, newValue ?? null, module],
     );
   }
 
