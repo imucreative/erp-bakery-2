@@ -179,7 +179,9 @@ onMounted(() => {
           <BaseInput id="user-search" v-model="search" placeholder="Cari user (nama / email)..." />
         </div>
         <BaseButton v-if="canManage" size="sm" variant="primary" @click="openCreate">
-          <template #start-icon><Plus class="h-4 w-4" aria-hidden="true" /></template>
+          <template #start-icon>
+            <Plus class="h-4 w-4" aria-hidden="true" />
+          </template>
           Tambah User
         </BaseButton>
       </div>

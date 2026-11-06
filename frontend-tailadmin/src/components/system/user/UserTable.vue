@@ -44,7 +44,9 @@ defineEmits<{
       <BaseTableRow v-for="user in items" :key="user.id">
         <BaseTableCell emphasis="medium">{{ user.name }}</BaseTableCell>
         <BaseTableCell>{{ user.email }}</BaseTableCell>
-        <BaseTableCell>{{ user.roleId ? roleNameById[user.roleId] || '—' : '—' }}</BaseTableCell>
+        <BaseTableCell>
+          {{ user.roleId ? roleNameById[user.roleId] || '—' : '—' }}
+        </BaseTableCell>
         <BaseTableCell>
           <Badge :color="user.isActive ? 'success' : 'error'">
             {{ user.isActive ? 'Aktif' : 'Nonaktif' }}

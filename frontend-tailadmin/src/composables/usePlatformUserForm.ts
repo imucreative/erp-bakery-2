@@ -30,10 +30,10 @@ interface PlatformUserFormProps {
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const MAX_NAME_LENGTH = 100
-const MAX_EMAIL_LENGTH = 100
-const MAX_PHONE_LENGTH = 30
-const MAX_PASSWORD_LENGTH = 100
+const MAX_NAME_LENGTH = 50
+const MAX_EMAIL_LENGTH = 30
+const MAX_PHONE_LENGTH = 20
+const MAX_PASSWORD_LENGTH = 10
 
 export function usePlatformUserForm(
   props: PlatformUserFormProps,

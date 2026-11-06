@@ -43,13 +43,19 @@ export class RegisterCompanyDto {
   ownerEmail!: string;
 
   @ApiProperty({
-    example: 'Secret1234',
-    description: 'Owner password (min 8 characters)',
+    example: 'Secret#1234',
+    description:
+      'Owner password (8-10 characters, must contain at least one number and symbol)',
     minLength: 8,
+    maxLength: 10,
   })
   @IsString()
   @IsNotEmpty()
   @MinLength(8)
+  @MaxLength(10)
+  @Matches(/^(?=.*\d)(?=.*[^A-Za-z0-9\s])/, {
+    message: 'Owner password must contain at least one number and symbol',
+  })
   ownerPassword!: string;
 
   @ApiProperty({

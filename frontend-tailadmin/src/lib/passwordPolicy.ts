@@ -1,11 +1,12 @@
 /**
  * Kebijakan password untuk password yang dibuat sendiri oleh pengguna
- * (Ganti Password & Reset Password).
+ * (Signup, ganti password, reset password, dan user platform).
  *
  * Backend menegakkan aturan yang sama lewat `@Matches` pada DTO, jadi fungsi di sini
  * hanya untuk memberi umpan balik lebih awal di UI — bukan pengganti validasi server.
  */
 export const PASSWORD_MIN_LENGTH = 8
+export const PASSWORD_MAX_LENGTH = 10
 
 /** Teks bantuan yang ditampilkan di bawah field password. */
 export const PASSWORD_POLICY_HINT =
@@ -19,6 +20,9 @@ export const PASSWORD_POLICY_HINT =
 export function passwordPolicyError(value: string): string | null {
   if (!value) {
     return null
+  }
+  if (value.length > PASSWORD_MAX_LENGTH) {
+    return `Maksimal ${PASSWORD_MAX_LENGTH} karakter`
   }
   if (value.length < PASSWORD_MIN_LENGTH) {
     return `Minimal ${PASSWORD_MIN_LENGTH} karakter`

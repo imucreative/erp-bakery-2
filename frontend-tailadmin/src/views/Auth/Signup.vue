@@ -78,12 +78,19 @@
               />
             </BaseFormField>
 
-            <BaseFormField label="Password Owner" field-id="ownerPassword" required>
+            <BaseFormField
+              label="Password Owner"
+              field-id="ownerPassword"
+              required
+              :hint="PASSWORD_POLICY_HINT"
+              :error="passwordError"
+            >
               <PasswordInput
                 id="ownerPassword"
                 v-model="ownerPassword"
                 placeholder="Minimal 8 karakter"
                 autocomplete="new-password"
+                :error="passwordError"
               />
             </BaseFormField>
           </div>
@@ -105,9 +112,7 @@
       <div class="mt-5">
         <p class="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
           Sudah punya akun?
-          <router-link
-            to="/signin"
-            class="text-brand-500 hover:text-brand-600 dark:text-brand-400"
+          <router-link to="/signin" class="text-brand-500 hover:text-brand-600 dark:text-brand-400"
             >Sign In</router-link
           >
         </p>
@@ -117,13 +122,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft } from 'lucide-vue-next'
 import AuthLayout from '@/components/layout/AuthLayout.vue'
 import { BaseAlert, BaseButton, BaseFormField, BaseInput, PasswordInput } from '@/components/ui'
 import { authService } from '@/services/auth.service'
 import { ApiClientError } from '@/services/http'
+import { PASSWORD_POLICY_HINT, isPasswordValid, passwordPolicyError } from '@/lib/passwordPolicy'
 
 const router = useRouter()
 
@@ -160,6 +166,13 @@ const onSlugInput = () => {
   slugEditedManually.value = true
 }
 
+const passwordError = computed(() => {
+  if (!ownerPassword.value) {
+    return null
+  }
+  return passwordPolicyError(ownerPassword.value)
+})
+
 const validate = (): string | null => {
   if (!name.value.trim()) return 'Nama perusahaan wajib diisi.'
   if (!slug.value.trim()) return 'Slug wajib diisi.'
@@ -168,7 +181,10 @@ const validate = (): string | null => {
   if (!ownerName.value.trim()) return 'Nama owner wajib diisi.'
   if (!ownerEmail.value.trim()) return 'Email owner wajib diisi.'
   if (!EMAIL_PATTERN.test(ownerEmail.value)) return 'Format email owner tidak valid.'
-  if (ownerPassword.value.length < 8) return 'Password owner minimal 8 karakter.'
+  if (!ownerPassword.value) return 'Password owner wajib diisi.'
+  if (!isPasswordValid(ownerPassword.value)) {
+    return passwordPolicyError(ownerPassword.value) ?? 'Password owner tidak memenuhi kebijakan.'
+  }
   return null
 }
 
