@@ -233,7 +233,7 @@ building a module. Summary:
 - **Reka UI is the base UI primitives layer.** Every interactive `Base*` component
   that has a Reka UI equivalent must use `reka-ui` internally (`BaseCheckbox`,
   `BaseModal`, `BaseSelect`, `BasePinInput`, `BaseToggle`/`ToggleSwitch`,
-  `BaseFormField`).
+  `BaseFormField`, `EntityCombobox`).
   Feature components compose these wrappers and must not import `reka-ui`
   directly. See `knowledge-base/57.ui-kit-reka-ui.md`.
 - **Row action buttons**: icon-only (`lucide-vue-next`), `h-9 w-9`, with `aria-label` + `title`.
