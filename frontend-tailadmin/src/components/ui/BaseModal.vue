@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * BaseModal — kerangka modal standar: backdrop transparan dengan blur sesuai
- * standar UI, panel rounded-3xl, dan tutup lewat klik backdrop atau tombol Esc.
+ * BaseModal — Reka UI Dialog: backdrop transparan dengan blur sesuai standar UI,
+ * panel rounded-3xl, focus trap, scroll lock, dan tutup lewat klik backdrop / Esc.
  * Isi panel sepenuhnya milik pemakai lewat slot default; atribut tambahan
  * (misalnya class) diteruskan ke panel, bukan ke wrapper.
  *
@@ -9,7 +9,8 @@
  * layar (panel penuh tinggi, `border-s`); `scrollable` hanya berlaku pada
  * placement tengah karena panel drawer selalu bisa di-scroll.
  */
-import { computed, onBeforeUnmount, useAttrs, watch } from 'vue'
+import { computed, useAttrs } from 'vue'
+import { DialogContent, DialogOverlay, DialogPortal, DialogRoot } from 'reka-ui'
 
 defineOptions({ inheritAttrs: false })
 
@@ -51,32 +52,33 @@ const panelClass = computed(() => {
   return `${baseClass} ${sizeClass[props.size]}${scrollableClass}`
 })
 
-function onKeydown(event: KeyboardEvent): void {
-  if (event.key === 'Escape') emit('close')
+function onOpenChange(open: boolean): void {
+  if (!open && props.dismissible) emit('close')
 }
 
-watch(
-  () => props.open && props.dismissible,
-  (listening) => {
-    if (listening) document.addEventListener('keydown', onKeydown)
-    else document.removeEventListener('keydown', onKeydown)
-  },
-  { immediate: true },
-)
+function onEscapeKeyDown(event: KeyboardEvent): void {
+  if (!props.dismissible) event.preventDefault()
+}
 
-onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
+function onInteractOutside(event: Event): void {
+  if (!props.dismissible) event.preventDefault()
+}
 </script>
 
 <template>
-  <div v-if="props.open" :class="wrapperClass">
-    <div
-      class="modal-backdrop"
-      aria-hidden="true"
-      @click="props.dismissible && emit('close')"
-    ></div>
-
-    <div v-bind="attrs" :class="panelClass" role="dialog" aria-modal="true">
-      <slot />
-    </div>
-  </div>
+  <DialogRoot :open="props.open" @update:open="onOpenChange">
+    <DialogPortal>
+      <DialogOverlay class="modal-backdrop" />
+      <div v-if="props.open" :class="wrapperClass">
+        <DialogContent
+          v-bind="attrs"
+          :class="panelClass"
+          @escape-key-down="onEscapeKeyDown"
+          @interact-outside="onInteractOutside"
+        >
+          <slot />
+        </DialogContent>
+      </div>
+    </DialogPortal>
+  </DialogRoot>
 </template>

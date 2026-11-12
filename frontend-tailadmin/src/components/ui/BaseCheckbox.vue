@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useAttrs } from 'vue'
+import { CheckboxIndicator, CheckboxRoot } from 'reka-ui'
+import { Check } from 'lucide-vue-next'
 
 defineOptions({ inheritAttrs: false })
 
@@ -18,18 +20,21 @@ const emit = defineEmits<{
 
 const attrs = useAttrs()
 
-function onChange(event: Event): void {
-  emit('update:modelValue', (event.target as HTMLInputElement).checked)
+function onUpdate(value: boolean | 'indeterminate'): void {
+  emit('update:modelValue', value === true)
 }
 </script>
 
 <template>
-  <input
+  <CheckboxRoot
     v-bind="attrs"
-    type="checkbox"
-    :checked="props.modelValue"
+    :model-value="props.modelValue"
     :disabled="props.disabled"
     class="checkbox"
-    @change="onChange"
-  />
+    @update:model-value="onUpdate"
+  >
+    <CheckboxIndicator class="flex items-center justify-center">
+      <Check class="h-3 w-3" stroke-width="3" aria-hidden="true" />
+    </CheckboxIndicator>
+  </CheckboxRoot>
 </template>

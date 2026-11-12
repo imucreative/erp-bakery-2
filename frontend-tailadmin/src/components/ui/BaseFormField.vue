@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Label } from 'reka-ui'
+
 interface BaseFormFieldProps {
   label: string
   fieldId: string
@@ -16,9 +18,9 @@ const props = withDefaults(defineProps<BaseFormFieldProps>(), {
 
 <template>
   <div>
-    <label :for="props.fieldId" class="form-label">
+    <Label :for="props.fieldId" class="form-label">
       {{ props.label }}<span v-if="props.required" class="text-error-500">*</span>
-    </label>
+    </Label>
     <slot />
     <p v-if="props.error" :id="`${props.fieldId}-error`" class="form-error">
       {{ props.error }}

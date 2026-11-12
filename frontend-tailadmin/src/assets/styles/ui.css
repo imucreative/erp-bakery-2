@@ -227,10 +227,16 @@
   @apply bg-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200;
 }
 
-/* Checkbox — style dasar untuk input checkbox. Size (`h-4 w-4`) dan disabled state
-   sudah termasuk karena selalu sama untuk semua checkbox. */
+/* Checkbox — Reka UI CheckboxRoot (button) with a check indicator. Size
+   (`h-4 w-4`) and disabled state are included because every checkbox shares
+   them. Checked/indeterminate states come from Reka's `data-state` attribute. */
 @utility checkbox {
-  @apply h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500/20 disabled:cursor-not-allowed dark:border-gray-600 dark:bg-gray-800;
+  @apply inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border border-gray-300 bg-white text-white transition-colors
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30
+    disabled:cursor-not-allowed disabled:opacity-60
+    data-[state=checked]:border-brand-500 data-[state=checked]:bg-brand-500
+    data-[state=indeterminate]:border-brand-500 data-[state=indeterminate]:bg-brand-500
+    dark:border-gray-600 dark:bg-gray-800;
 }
 
 /* Modal — wrapper, backdrop, dan panel. Size class (max-w-*) dipasang terpisah

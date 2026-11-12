@@ -1,36 +1,6 @@
-<template>
-  <label
-    :class="[
-      'toggle-wrapper',
-      disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
-    ]"
-  >
-    <button
-      type="button"
-      role="switch"
-      :aria-checked="modelValue"
-      :disabled="disabled"
-      @click="toggle"
-      :class="[
-        'toggle-track',
-        modelValue ? 'bg-brand-500' : 'bg-gray-200 dark:bg-gray-700',
-        disabled ? 'cursor-not-allowed' : 'cursor-pointer',
-      ]"
-    >
-      <span
-        :class="[
-          'toggle-thumb',
-          modelValue
-            ? 'ltr:translate-x-5 rtl:-translate-x-5'
-            : 'ltr:translate-x-0.5 rtl:-translate-x-0.5',
-        ]"
-      />
-    </button>
-    <span v-if="label" class="text-sm text-gray-700 dark:text-gray-400">{{ label }}</span>
-  </label>
-</template>
-
 <script setup lang="ts">
+import { SwitchRoot, SwitchThumb } from 'reka-ui'
+
 interface ToggleSwitchProps {
   modelValue: boolean
   label?: string
@@ -45,9 +15,36 @@ const props = withDefaults(defineProps<ToggleSwitchProps>(), {
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
 }>()
-
-const toggle = () => {
-  if (props.disabled) return
-  emit('update:modelValue', !props.modelValue)
-}
 </script>
+
+<template>
+  <label
+    :class="[
+      'toggle-wrapper',
+      props.disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+    ]"
+  >
+    <SwitchRoot
+      :model-value="props.modelValue"
+      :disabled="props.disabled"
+      :class="[
+        'toggle-track',
+        props.modelValue ? 'bg-brand-500' : 'bg-gray-200 dark:bg-gray-700',
+        props.disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+      ]"
+      @update:model-value="emit('update:modelValue', $event)"
+    >
+      <SwitchThumb
+        :class="[
+          'toggle-thumb',
+          props.modelValue
+            ? 'ltr:translate-x-5 rtl:-translate-x-5'
+            : 'ltr:translate-x-0.5 rtl:-translate-x-0.5',
+        ]"
+      />
+    </SwitchRoot>
+    <span v-if="props.label" class="text-sm text-gray-700 dark:text-gray-400">
+      {{ props.label }}
+    </span>
+  </label>
+</template>
