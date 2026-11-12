@@ -23,10 +23,11 @@ export class PlatformCreateUserDto {
   @MaxLength(100)
   email!: string;
 
-  @ApiProperty({ example: 'Tepung#2026', minLength: 8 })
+  @ApiProperty({ example: 'Tepung#2026', minLength: 8, maxLength: 20 })
   @IsString()
   @IsNotEmpty()
   @MinLength(8)
+  @MaxLength(20)
   @Matches(/^(?=.*\d)(?=.*[^A-Za-z0-9\s])/, {
     message: 'Password minimal 8 karakter serta mengandung angka dan simbol',
   })

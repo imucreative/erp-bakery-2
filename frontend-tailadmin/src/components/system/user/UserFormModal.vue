@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * UserFormModal — create/edit user.
- *   CREATE: name + email + password(min 8) + phone? + role (required) + outlets.
+ *   CREATE: name + email + password(8-20) + phone? + role (required) + outlets.
  *   EDIT: email read-only, no password; editable name/phone/role/active + outlets
  *     (full-sync). Outlet assignment via a toggle-switch list.
  * Backdrop, Esc-close, and panel chrome come from BaseModal.
@@ -20,6 +20,7 @@ import { Save, X } from 'lucide-vue-next'
 import type { UserDetail } from '@/services/user.service'
 import type { Role } from '@/services/role.service'
 import type { Outlet } from '@/services/outlet.service'
+import { PASSWORD_MAX_LENGTH } from '@/lib/passwordPolicy'
 
 const props = withDefaults(
   defineProps<{
@@ -127,6 +128,10 @@ function onSubmit(): void {
   }
   if (password.value.length < 8) {
     localError.value = 'Password minimal 8 karakter.'
+    return
+  }
+  if (password.value.length > PASSWORD_MAX_LENGTH) {
+    localError.value = `Password maksimal ${PASSWORD_MAX_LENGTH} karakter.`
     return
   }
   localError.value = null

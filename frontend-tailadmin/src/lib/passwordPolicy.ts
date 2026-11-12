@@ -6,11 +6,10 @@
  * hanya untuk memberi umpan balik lebih awal di UI — bukan pengganti validasi server.
  */
 export const PASSWORD_MIN_LENGTH = 8
-export const PASSWORD_MAX_LENGTH = 10
+export const PASSWORD_MAX_LENGTH = 20
 
 /** Teks bantuan yang ditampilkan di bawah field password. */
-export const PASSWORD_POLICY_HINT =
-  'Minimal 8 karakter, mengandung angka dan simbol (contoh: Tepung#2026).'
+export const PASSWORD_POLICY_HINT = `${PASSWORD_MIN_LENGTH}–${PASSWORD_MAX_LENGTH} karakter, mengandung angka dan simbol (contoh: Tepung#2026).`
 
 /**
  * Pesan kesalahan pertama yang melanggar kebijakan, atau `null` bila password

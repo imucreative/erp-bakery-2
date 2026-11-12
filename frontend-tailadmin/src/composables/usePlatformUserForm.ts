@@ -1,6 +1,11 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { platformService, type PlatformUserItem } from '@/services/platform.service'
-import { PASSWORD_POLICY_HINT, isPasswordValid, passwordPolicyError } from '@/lib/passwordPolicy'
+import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_POLICY_HINT,
+  isPasswordValid,
+  passwordPolicyError,
+} from '@/lib/passwordPolicy'
 import { toMessage } from '@/lib/errors'
 
 export interface PlatformUserFormPayload {
@@ -33,7 +38,6 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MAX_NAME_LENGTH = 50
 const MAX_EMAIL_LENGTH = 30
 const MAX_PHONE_LENGTH = 20
-const MAX_PASSWORD_LENGTH = 10
 
 export function usePlatformUserForm(
   props: PlatformUserFormProps,
@@ -73,8 +77,8 @@ export function usePlatformUserForm(
       props.mode === 'create' && (submitted.value || form.password.length > 0)
         ? !form.password
           ? 'Password wajib diisi'
-          : form.password.length > MAX_PASSWORD_LENGTH
-            ? `Maksimal ${MAX_PASSWORD_LENGTH} karakter`
+          : form.password.length > PASSWORD_MAX_LENGTH
+            ? `Maksimal ${PASSWORD_MAX_LENGTH} karakter`
             : passwordPolicyError(form.password)
         : null,
     companyId: submitted.value && !form.companyId ? 'Company wajib dipilih' : null,
@@ -92,7 +96,7 @@ export function usePlatformUserForm(
       Boolean(form.companyId) &&
       Boolean(form.roleId) &&
       (props.mode === 'edit' ||
-        (form.password.length <= MAX_PASSWORD_LENGTH && isPasswordValid(form.password))),
+        (form.password.length <= PASSWORD_MAX_LENGTH && isPasswordValid(form.password))),
   )
 
   async function loadRoles(): Promise<void> {
