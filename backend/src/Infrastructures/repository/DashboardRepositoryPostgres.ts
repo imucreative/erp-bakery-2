@@ -67,14 +67,11 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
     // Calculate Jakarta date (UTC+7) for "today"
     const jakartaNow = new Date(businessDate.getTime() + 7 * 60 * 60 * 1000);
     const bizDate = jakartaNow.toISOString().slice(0, 10);
-    const soonBoundary = new Date(jakartaNow);
-    soonBoundary.setUTCDate(soonBoundary.getUTCDate() + INVENTORY_EXPIRY_SOON_DAYS);
-    const soonDate = soonBoundary.toISOString().slice(0, 10);
 
     // Parallel queries
     const [salesMetrics, inventoryMetrics, outletInfo] = await Promise.all([
       this.getOutletSalesMetrics(companyId, outletId, bizDate),
-      this.getOutletInventoryMetrics(companyId, outletId, bizDate, soonDate),
+      this.getOutletInventoryMetrics(companyId, outletId),
       this.getOutletName(outletId),
     ]);
 
@@ -309,8 +306,6 @@ export class DashboardRepositoryPostgres extends DashboardRepository {
   private async getOutletInventoryMetrics(
     companyId: string,
     outletId: string,
-    bizDate: string,
-    soonDate: string,
   ): Promise<{ lowStockCount: number }> {
     // Low stock for this outlet
     const lowStock = await this.pool.query<{ count: string }>(

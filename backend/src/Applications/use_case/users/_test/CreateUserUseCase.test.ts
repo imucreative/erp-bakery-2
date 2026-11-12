@@ -128,7 +128,7 @@ describe('CreateUserUseCase', () => {
   });
 
   it('should throw CREATE_USER.ROLE_REQUIRED when roleId is missing', async () => {
-    const { roleId: _omit, ...noRole } = validPayload;
+    const noRole = { ...validPayload, roleId: undefined };
 
     await expect(useCase.execute(noRole, companyId)).rejects.toThrow(
       'CREATE_USER.ROLE_REQUIRED',

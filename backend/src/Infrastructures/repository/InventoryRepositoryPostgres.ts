@@ -21,7 +21,6 @@ import { NotFoundError } from '../../Commons/exceptions/NotFoundError';
 import { InvariantError } from '../../Commons/exceptions/InvariantError';
 import {
   applyBalanceAndAppendMovement,
-  resolveOrCreateBatch,
   translateDuplicateSourceKey,
 } from './helpers/inventoryPosting';
 import { toJakartaBusinessDate } from '../../Commons/helpers/businessDate';

@@ -20,6 +20,17 @@
 
 const BASE_URL = process.env.SMOKE_BASE_URL ?? 'http://localhost:3000/api/v1';
 
+interface SmokeJson {
+  success?: boolean;
+  data?: {
+    company?: { code?: string };
+    owner?: { email?: string };
+    accessToken?: string;
+    refreshToken?: string;
+    slug?: string;
+  };
+}
+
 // Slug unik per run agar bisa dijalankan berulang tanpa konflik
 const unique = Date.now().toString(36);
 const company = {
@@ -48,7 +59,7 @@ async function req(
   path: string,
   body?: unknown,
   token?: string,
-): Promise<{ status: number; json: any }> {
+): Promise<{ status: number; json: SmokeJson | null }> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -58,7 +69,7 @@ async function req(
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  let json: any = null;
+  let json: SmokeJson | null = null;
   try {
     json = await res.json();
   } catch {

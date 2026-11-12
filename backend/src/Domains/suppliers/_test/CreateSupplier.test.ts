@@ -1,8 +1,6 @@
 import { CreateSupplier } from '../entities/CreateSupplier';
 
 describe('CreateSupplier', () => {
-  const valid = { name: 'PT Tepung', address: 'Jl. A', phone: '021', picName: 'Budi' };
-
   it('should create entity with trimmed values', () => {
     const entity = new CreateSupplier({ name: '  PT Tepung  ', picName: '  Budi  ' });
     expect(entity.name).toBe('PT Tepung');

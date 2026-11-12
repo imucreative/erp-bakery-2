@@ -203,7 +203,6 @@ export class AuthController {
   async changePassword(
     @Body() dto: ChangePasswordDto,
     @GetUser() user: JwtAccessPayload,
-    @Req() request: FastifyRequest,
   ) {
     // Password lama bisa ditebak: 5 percobaan / 5 menit per user.
     this.rateLimiter.consumeOrThrow(`auth:change-password:${user.sub}`, 5, 5 * 60_000);

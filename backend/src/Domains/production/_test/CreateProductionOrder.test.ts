@@ -81,7 +81,7 @@ describe('CreateProductionOrder (instant-complete)', () => {
   });
 
   it('should reject missing actualQty', () => {
-    const { actualQty: _omit, ...noActual } = base;
+    const noActual = { ...base, actualQty: undefined };
     expect(() => new CreateProductionOrder(noActual)).toThrow(
       'CREATE_PRODUCTION_ORDER.ACTUAL_QTY_NOT_MEET_DATA_TYPE_SPECIFICATION',
     );
@@ -100,7 +100,7 @@ describe('CreateProductionOrder (instant-complete)', () => {
   });
 
   it('should require result expiry when actualQty > 0', () => {
-    const { resultExpiredDate: _omit, ...noExpiry } = base;
+    const noExpiry = { ...base, resultExpiredDate: undefined };
     expect(() => new CreateProductionOrder(noExpiry)).toThrow(
       'CREATE_PRODUCTION_ORDER.RESULT_EXPIRY_REQUIRED',
     );
