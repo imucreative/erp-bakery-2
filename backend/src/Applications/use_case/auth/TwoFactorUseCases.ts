@@ -7,6 +7,7 @@ import { TokenManager } from '../../security/TokenManager';
 import { Totp } from '../../security/Totp';
 import { NewAuthentication } from '../../../Domains/authentications/entities/NewAuthentication';
 import { AuthenticationError } from '../../../Commons/exceptions/AuthenticationError';
+import { refreshTokenTtlFor } from './sessionTtl';
 
 const ISSUER = process.env.TWO_FACTOR_ISSUER ?? 'Bakery ERP';
 const RECOVERY_CODE_COUNT = 10;
@@ -137,7 +138,11 @@ export class VerifyTwoFactorLoginUseCase {
     private readonly tokenManager: TokenManager,
   ) {}
 
-  async execute(payload: { mfaToken: string; code: string }): Promise<NewAuthentication> {
+  async execute(payload: {
+    mfaToken: string;
+    code: string;
+    rememberMe?: boolean;
+  }): Promise<NewAuthentication> {
     const { sub } = await this.tokenManager.verifyMfaToken(payload.mfaToken);
     const state = await this.userRepository.getTwoFactorStateById(sub);
     if (!state.enabled || !state.secretCipher) {
@@ -161,8 +166,12 @@ export class VerifyTwoFactorLoginUseCase {
       roleCode: user.roleCode,
     });
 
-    const refreshToken = await this.tokenManager.createRefreshToken({ sub: user.id });
-    const expiredAt = this.tokenManager.getRefreshTokenExpiry();
+    const refreshTtl = refreshTokenTtlFor(payload.rememberMe === true);
+    const refreshToken = await this.tokenManager.createRefreshToken(
+      { sub: user.id },
+      refreshTtl,
+    );
+    const expiredAt = this.tokenManager.getRefreshTokenExpiry(refreshTtl);
     await this.authenticationRepository.addToken(user.id, refreshToken, expiredAt);
 
     return new NewAuthentication({ accessToken, refreshToken });

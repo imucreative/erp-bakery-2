@@ -91,7 +91,7 @@ httpClient.interceptors.request.use((config) => {
 
 let refreshPromise: Promise<string> | null = null
 
-async function refreshAccessToken(): Promise<string> {
+export async function refreshAccessToken(): Promise<string> {
   const refreshToken = getRefreshToken()
   if (!refreshToken) {
     throw new ApiClientError('Session expired', 401)

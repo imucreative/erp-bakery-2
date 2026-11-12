@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class VerifyMfaDto {
   @ApiProperty({ description: 'Short-lived token returned by POST /auth/login' })
@@ -11,4 +11,14 @@ export class VerifyMfaDto {
   @IsString()
   @IsNotEmpty()
   code!: string;
+
+  @ApiProperty({
+    required: false,
+    default: false,
+    description:
+      'Keep the session after the browser closes — issues a longer-lived refresh token',
+  })
+  @IsOptional()
+  @IsBoolean()
+  rememberMe?: boolean;
 }

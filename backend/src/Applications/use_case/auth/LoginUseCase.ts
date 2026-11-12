@@ -3,6 +3,7 @@ import { UserRepository } from '../../../Domains/users/UserRepository';
 import { AuthenticationRepository } from '../../../Domains/authentications/AuthenticationRepository';
 import { PasswordHash } from '../../security/PasswordHash';
 import { TokenManager } from '../../security/TokenManager';
+import { refreshTokenTtlFor } from './sessionTtl';
 
 /**
  * Result of the first login step.
@@ -36,6 +37,7 @@ export class LoginUseCase {
   async execute(payload: unknown): Promise<LoginResult> {
     // Step 1 — validate
     const { email, password } = new UserLogin(payload);
+    const rememberMe = (payload as { rememberMe?: unknown }).rememberMe === true;
 
     // Step 2 — get hashed password
     const hashedPassword = await this.userRepository.getPasswordByEmail(email);
@@ -63,12 +65,14 @@ export class LoginUseCase {
       roleCode: user.roleCode,
     });
 
-    const refreshToken = await this.tokenManager.createRefreshToken({
-      sub: user.id,
-    });
+    const refreshTtl = refreshTokenTtlFor(rememberMe);
+    const refreshToken = await this.tokenManager.createRefreshToken(
+      { sub: user.id },
+      refreshTtl,
+    );
 
     // Step 7 — persist refresh token
-    const expiredAt = this.tokenManager.getRefreshTokenExpiry();
+    const expiredAt = this.tokenManager.getRefreshTokenExpiry(refreshTtl);
     await this.authenticationRepository.addToken(user.id, refreshToken, expiredAt);
 
     // Step 8 — record the successful login (best-effort, never blocks login)

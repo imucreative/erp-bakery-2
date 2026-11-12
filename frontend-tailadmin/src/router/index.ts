@@ -47,6 +47,13 @@ router.beforeEach(async (to, from, next) => {
   }
 
   const auth = useAuthStore()
+
+  // "Keep me logged in": silently exchange a stored refresh token before the
+  // guard decides whether this session is authenticated.
+  if (!auth.isAuthenticated) {
+    await auth.restoreSession()
+  }
+
   const isPublic = to.meta.public === true
   const isPlatform = to.meta.platform === true
   // Profile hosts the 2FA enrollment card, so a super admin must be able to

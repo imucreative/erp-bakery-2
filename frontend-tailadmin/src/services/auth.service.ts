@@ -48,6 +48,8 @@ export interface Company {
 export interface LoginPayload {
   email: string
   password: string
+  /** Keep the session after the browser closes (localStorage + longer refresh TTL). */
+  rememberMe?: boolean
 }
 
 export interface RegisterCompanyPayload {
@@ -110,7 +112,11 @@ export const authService = {
   },
 
   /** Second login step: exchange the MFA challenge + code for real tokens. */
-  async verifyMfa(payload: { mfaToken: string; code: string }): Promise<AuthTokens> {
+  async verifyMfa(payload: {
+    mfaToken: string
+    code: string
+    rememberMe?: boolean
+  }): Promise<AuthTokens> {
     const response = await httpClient.post<ApiSuccess<AuthTokens>>('/auth/mfa/verify', payload)
     return response.data.data
   },

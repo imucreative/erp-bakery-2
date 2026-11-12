@@ -14,6 +14,7 @@ import {
   type LoginPayload,
 } from '@/services/auth.service'
 import { companyService, type CompanyProfile } from '@/services/company.service'
+import { refreshAccessToken } from '@/services/http'
 import { decodeJwt, isJwtExpired, type JwtPayload } from '@/lib/jwt'
 import {
   clearTokens,
@@ -72,14 +73,55 @@ export const useAuthStore = defineStore('auth', () => {
       return
     }
     const payload = decodeJwt(token)
-    if (!payload || isJwtExpired(payload)) {
+    if (!payload) {
       clearTokens()
+      return
+    }
+    if (isJwtExpired(payload)) {
+      // Keep the refresh token — restoreSession() will exchange it silently.
       return
     }
     user.value = toUser(payload)
     if (payload.companyId) {
       setCompanyId(payload.companyId)
     }
+  }
+
+  /**
+   * Restores a persisted session after a reload: when the access token is gone
+   * or expired but a refresh token exists, exchange it for a new access token.
+   * This is what makes "Keep me logged in" survive closing the browser.
+   */
+  let restorePromise: Promise<boolean> | null = null
+
+  async function doRestoreSession(): Promise<boolean> {
+    if (user.value) {
+      return true
+    }
+    if (!getRefreshToken()) {
+      return false
+    }
+    try {
+      const accessToken = await refreshAccessToken()
+      if (!applyAccessToken(accessToken)) {
+        reset()
+        return false
+      }
+      await loadCompany()
+      return true
+    } catch {
+      reset()
+      return false
+    }
+  }
+
+  function restoreSession(): Promise<boolean> {
+    if (!restorePromise) {
+      restorePromise = doRestoreSession().finally(() => {
+        restorePromise = null
+      })
+    }
+    return restorePromise
   }
 
   async function login(payload: LoginPayload): Promise<{
@@ -91,18 +133,22 @@ export const useAuthStore = defineStore('auth', () => {
       // Do NOT persist a session yet — the second factor has not passed.
       return { mfaRequired: true, mfaToken: result.mfaToken }
     }
-    await applyTokens(result)
+    await applyTokens(result, payload.rememberMe === true)
     return { mfaRequired: false }
   }
 
   /** Second login step: MFA token + code → real session. */
-  async function verifyMfa(mfaToken: string, code: string): Promise<void> {
-    const tokens = await authService.verifyMfa({ mfaToken, code })
-    await applyTokens(tokens)
+  async function verifyMfa(
+    mfaToken: string,
+    code: string,
+    rememberMe = false,
+  ): Promise<void> {
+    const tokens = await authService.verifyMfa({ mfaToken, code, rememberMe })
+    await applyTokens(tokens, rememberMe)
   }
 
-  async function applyTokens(tokens: AuthTokens): Promise<void> {
-    setTokens(tokens.accessToken, tokens.refreshToken)
+  async function applyTokens(tokens: AuthTokens, rememberMe = false): Promise<void> {
+    setTokens(tokens.accessToken, tokens.refreshToken, rememberMe)
     if (!applyAccessToken(tokens.accessToken)) {
       clearTokens()
       throw new Error('Invalid session token received from server')
@@ -145,6 +191,7 @@ export const useAuthStore = defineStore('auth', () => {
     companyName,
     userEmail,
     hydrateFromStorage,
+    restoreSession,
     login,
     verifyMfa,
     loadCompany,

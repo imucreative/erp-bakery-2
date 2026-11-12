@@ -170,6 +170,31 @@ describe('LoginUseCase', () => {
     );
   });
 
+  it('should issue a longer refresh token when rememberMe is true', async () => {
+    process.env.REFRESH_TOKEN_REMEMBER_EXPIRES_IN = '30d';
+
+    await useCase.execute({
+      email: 'budi@example.com',
+      password: 'Secret123',
+      rememberMe: true,
+    });
+
+    expect(mockTokenManager.createRefreshToken).toHaveBeenCalledWith(
+      { sub: 'user-uuid' },
+      '30d',
+    );
+    expect(mockTokenManager.getRefreshTokenExpiry).toHaveBeenCalledWith('30d');
+  });
+
+  it('should use the default refresh TTL (no override) when rememberMe is absent', async () => {
+    await useCase.execute({ email: 'budi@example.com', password: 'Secret123' });
+
+    expect(mockTokenManager.createRefreshToken).toHaveBeenCalledWith(
+      { sub: 'user-uuid' },
+      undefined,
+    );
+  });
+
   it('should throw when email is missing', async () => {
     await expect(useCase.execute({ email: '', password: 'pass' })).rejects.toThrow(
       'USER_LOGIN.NOT_CONTAIN_NEEDED_PROPERTY',

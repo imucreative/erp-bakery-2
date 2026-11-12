@@ -123,7 +123,11 @@ export class AuthController {
     // 6-digit codes are guessable: 5 attempts per minute per IP, reset on success.
     const key = `auth:mfa-verify:${request.ip}`;
     this.rateLimiter.consumeOrThrow(key, 5, 60_000);
-    const result = await this.verifyTwoFactorLoginUseCase.execute(dto);
+    const result = await this.verifyTwoFactorLoginUseCase.execute({
+      mfaToken: dto.mfaToken,
+      code: dto.code,
+      rememberMe: dto.rememberMe,
+    });
     this.rateLimiter.reset(key);
     return successResponse({
       accessToken: result.accessToken,

@@ -20,10 +20,10 @@ export class JwtTokenManager extends TokenManager {
     });
   }
 
-  async createRefreshToken(payload: JwtRefreshPayload): Promise<string> {
+  async createRefreshToken(payload: JwtRefreshPayload, expiresIn?: string): Promise<string> {
     return this.jwtService.signAsync(payload, {
       secret: process.env.REFRESH_TOKEN_SECRET,
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN ?? '7d',
+      expiresIn: expiresIn ?? process.env.REFRESH_TOKEN_EXPIRES_IN ?? '7d',
     });
   }
 
@@ -74,11 +74,11 @@ export class JwtTokenManager extends TokenManager {
   }
 
   /**
-   * Calculates expiry Date from REFRESH_TOKEN_EXPIRES_IN env var.
+   * Calculates expiry Date from a refresh-token TTL.
    * Supports formats: Xd (days), Xh (hours), Xm (minutes), Xs (seconds).
    */
-  getRefreshTokenExpiry(): Date {
-    const raw = process.env.REFRESH_TOKEN_EXPIRES_IN ?? '7d';
+  getRefreshTokenExpiry(expiresIn?: string): Date {
+    const raw = expiresIn ?? process.env.REFRESH_TOKEN_EXPIRES_IN ?? '7d';
     const now = new Date();
     const match = raw.match(/^(\d+)(d|h|m|s)$/);
 

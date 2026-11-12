@@ -39,7 +39,14 @@
               />
             </BaseFormField>
 
-            <div class="flex items-center justify-end">
+            <div class="flex items-center justify-between gap-4">
+              <label
+                for="remember-me"
+                class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-400"
+              >
+                <BaseCheckbox id="remember-me" v-model="rememberMe" />
+                Keep me logged in
+              </label>
               <router-link
                 to="/forgot-password"
                 class="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
@@ -111,7 +118,14 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AuthLayout from '@/components/layout/AuthLayout.vue'
-import { BaseAlert, BaseButton, BaseFormField, BaseInput, PasswordInput } from '@/components/ui'
+import {
+  BaseAlert,
+  BaseButton,
+  BaseCheckbox,
+  BaseFormField,
+  BaseInput,
+  PasswordInput,
+} from '@/components/ui'
 import { useAuthStore } from '@/stores/auth'
 import { toMessage } from '@/lib/errors'
 
@@ -123,6 +137,7 @@ const registeredNotice = computed(() => route.query.registered === '1')
 
 const email = ref('')
 const password = ref('')
+const rememberMe = ref(false)
 const submitting = ref(false)
 const errorMessage = ref<string | null>(null)
 
@@ -143,7 +158,11 @@ async function handleSubmit(): Promise<void> {
   submitting.value = true
   errorMessage.value = null
   try {
-    const outcome = await auth.login({ email: email.value, password: password.value })
+    const outcome = await auth.login({
+      email: email.value,
+      password: password.value,
+      rememberMe: rememberMe.value,
+    })
     if (outcome.mfaRequired) {
       mfaToken.value = outcome.mfaToken ?? ''
       code.value = ''
@@ -162,7 +181,7 @@ async function handleVerifyMfa(): Promise<void> {
   submitting.value = true
   errorMessage.value = null
   try {
-    await auth.verifyMfa(mfaToken.value, code.value)
+    await auth.verifyMfa(mfaToken.value, code.value, rememberMe.value)
     await redirectAfterLogin()
   } catch (error) {
     errorMessage.value = toMessage(error)

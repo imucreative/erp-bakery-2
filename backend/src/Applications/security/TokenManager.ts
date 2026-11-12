@@ -28,8 +28,10 @@ export abstract class TokenManager {
 
   /**
    * Create a signed refresh token (long-lived).
+   * `expiresIn` overrides the default REFRESH_TOKEN_EXPIRES_IN (used by
+   * "keep me logged in" sessions).
    */
-  abstract createRefreshToken(payload: JwtRefreshPayload): Promise<string>;
+  abstract createRefreshToken(payload: JwtRefreshPayload, expiresIn?: string): Promise<string>;
 
   /**
    * Verify and decode an access token.
@@ -49,9 +51,10 @@ export abstract class TokenManager {
   abstract decodeRefreshToken(token: string): Promise<JwtRefreshPayload>;
 
   /**
-   * Calculate expiry Date from refresh token expiry env var.
+   * Calculate expiry Date from a refresh-token TTL (defaults to
+   * REFRESH_TOKEN_EXPIRES_IN).
    */
-  abstract getRefreshTokenExpiry(): Date;
+  abstract getRefreshTokenExpiry(expiresIn?: string): Date;
 
   /**
    * Create a short-lived token that only authorizes the second login step
