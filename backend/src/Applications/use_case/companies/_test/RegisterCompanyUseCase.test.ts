@@ -126,17 +126,23 @@ describe('RegisterCompanyUseCase', () => {
     expect(mockRoleRepository.addRole).toHaveBeenCalledTimes(5);
   });
 
-  it('should call assignAllPermissionsToRole for OWNER role', async () => {
+  it('should not assign all permissions to OWNER (system-admin stays reserved)', async () => {
     await useCase.execute(validPayload);
 
-    expect(mockRoleRepository.assignAllPermissionsToRole).toHaveBeenCalledTimes(1);
+    // ISSUE-01: OWNER gets an explicit operational permission list, never the
+    // full catalog (system-administration permissions belong to SUPER_ADMIN).
+    expect(mockRoleRepository.assignAllPermissionsToRole).not.toHaveBeenCalled();
+    expect(mockRoleRepository.assignPermissionsToRole).toHaveBeenCalledTimes(5);
+    const [, ownerPermissions] = mockRoleRepository.assignPermissionsToRole.mock.calls[0];
+    expect(ownerPermissions).toContain('company.manage');
+    expect(ownerPermissions).not.toContain('user.manage');
   });
 
-  it('should call assignPermissionsToRole for non-OWNER roles', async () => {
+  it('should assign permissions to every default role', async () => {
     await useCase.execute(validPayload);
 
-    // 4 non-OWNER roles
-    expect(mockRoleRepository.assignPermissionsToRole).toHaveBeenCalledTimes(4);
+    // 5 default roles, each seeded with an explicit permission list
+    expect(mockRoleRepository.assignPermissionsToRole).toHaveBeenCalledTimes(5);
   });
 
   it('should hash the owner password before persisting', async () => {

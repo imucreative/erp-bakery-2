@@ -14,6 +14,12 @@ describe('AuthenticationRepository (abstract contract)', () => {
     async deleteExpiredTokens(): Promise<void> {
       throw new Error('NOT_IMPLEMENTED');
     }
+    async deleteTokensByUserId(_userId: string): Promise<void> {
+      throw new Error('NOT_IMPLEMENTED');
+    }
+    async deleteTokensByUserIdExcept(_userId: string, _keepRefreshToken: string): Promise<void> {
+      throw new Error('NOT_IMPLEMENTED');
+    }
   }
 
   const repo = new TestAuthRepo();

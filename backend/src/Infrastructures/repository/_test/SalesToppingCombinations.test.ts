@@ -52,6 +52,28 @@ const variant = (toppingNames: string[], qtySold: number, revenue: number) => ({
   revenue,
 });
 
+/**
+ * Sales-report rows also carry UOM columns (added after this suite was written).
+ * These tests assert snapshot/topping grouping only, so compare those fields.
+ */
+function snapshotRows<
+  T extends {
+    productId: string;
+    productName: string;
+    toppingNames: string[];
+    qtySold: number;
+    revenue: number;
+  },
+>(rows: T[]) {
+  return rows.map((row) => ({
+    productId: row.productId,
+    productName: row.productName,
+    toppingNames: row.toppingNames,
+    qtySold: row.qtySold,
+    revenue: row.revenue,
+  }));
+}
+
 // SQL DATE may be local midnight; UTC conversion would shift its calendar day.
 function calendarDate(value: string | Date): string {
   if (value instanceof Date) {
@@ -130,6 +152,17 @@ describe('sales topping combinations (real PostgreSQL, TEMP tables only)', () =>
       ) ON COMMIT DROP;
       CREATE TEMP TABLE outlets (
         id uuid PRIMARY KEY,
+        name varchar NOT NULL
+      ) ON COMMIT DROP;
+      CREATE TEMP TABLE products (
+        id uuid PRIMARY KEY,
+        company_id uuid NOT NULL,
+        uom_id uuid
+      ) ON COMMIT DROP;
+      CREATE TEMP TABLE uoms (
+        id uuid PRIMARY KEY,
+        company_id uuid NOT NULL,
+        code varchar NOT NULL,
         name varchar NOT NULL
       ) ON COMMIT DROP;
     `);
@@ -220,20 +253,23 @@ describe('sales topping combinations (real PostgreSQL, TEMP tables only)', () =>
     scope: { companyId?: string; outletId?: string } = {},
   ) {
     const scopedCompany = scope.companyId ?? companyId;
-    if (kind === 'dashboard') {
-      return (
-        await dashboard.getOwnerSummary(
-          scopedCompany,
-          { outletId: scope.outletId },
-          businessDate,
-        )
-      ).topProducts;
-    }
-    return (await reports.getSalesReport(scopedCompany, {
-      dateFrom,
-      dateTo,
-      outletId: scope.outletId,
-    })).topProducts;
+    const rows =
+      kind === 'dashboard'
+        ? (
+            await dashboard.getOwnerSummary(
+              scopedCompany,
+              { outletId: scope.outletId },
+              businessDate,
+            )
+          ).topProducts
+        : (
+            await reports.getSalesReport(scopedCompany, {
+              dateFrom,
+              dateTo,
+              outletId: scope.outletId,
+            })
+          ).topProducts;
+    return snapshotRows(rows);
   }
 
   it('resolves all fixture tables exclusively to this session TEMP schema', async () => {
@@ -348,12 +384,12 @@ describe('sales topping combinations (real PostgreSQL, TEMP tables only)', () =>
       expect(await readVariants(kind)).toEqual([variant([], 5, 500)]);
     });
 
-    it('uses sold snapshots without any accessible current product or topping master tables', async () => {
+    it('uses sold snapshots even when current product/topping master tables are empty', async () => {
       const masters = await db().query(`
         SELECT to_regclass('products')::text AS products,
                to_regclass('toppings')::text AS toppings
       `);
-      expect(masters.rows).toEqual([{ products: null, toppings: null }]);
+      expect(masters.rows).toEqual([{ products: 'products', toppings: null }]);
       await addOrder({ items: [waffle(2, 200, [cocoa, berry])] });
       expect(await readVariants(kind)).toEqual([variant([berry, cocoa], 2, 200)]);
     });
@@ -398,7 +434,7 @@ describe('sales topping combinations (real PostgreSQL, TEMP tables only)', () =>
               topProductsLimit: 5,
             })
           ).topProducts;
-      expect(limited).toEqual(expected.slice(0, 5));
+      expect(snapshotRows(limited)).toEqual(expected.slice(0, 5));
       if (kind === 'sales report') {
         const report = await reports.getSalesReport(companyId, { dateFrom, dateTo });
         expect(report.summary).toEqual({
@@ -427,7 +463,7 @@ describe('sales topping combinations (real PostgreSQL, TEMP tables only)', () =>
         date: dateTo, outletId, outletName: 'Synthetic Outlet One',
         orderCount: 3, revenue: 660, itemsSold: 9,
       }]);
-      expect(report.topProducts).toEqual([variant([cocoa], 9, 600)]);
+      expect(snapshotRows(report.topProducts)).toEqual([variant([cocoa], 9, 600)]);
       const owner = await dashboard.getOwnerSummary(
         companyId,
         { outletId },
@@ -458,7 +494,7 @@ describe('sales topping combinations (real PostgreSQL, TEMP tables only)', () =>
         date: dateTo, outletId, outletName: 'Synthetic Outlet One',
         orderCount: 1, revenue: 25, itemsSold: 2,
       }]);
-      expect(report.topProducts).toEqual([variant([berry, cocoa], 2, 20)]);
+      expect(snapshotRows(report.topProducts)).toEqual([variant([berry, cocoa], 2, 20)]);
     });
 
     it('groups and orders daily rows by Jakarta day and outlet over a multi-day range', async () => {
@@ -476,7 +512,7 @@ describe('sales topping combinations (real PostgreSQL, TEMP tables only)', () =>
         { date: '2026-10-24', outletId, outletName: 'Synthetic Outlet One', orderCount: 2, revenue: 330, itemsSold: 3 },
         { date: dateTo, outletId: otherOutletId, outletName: 'Synthetic Outlet Two', orderCount: 1, revenue: 330, itemsSold: 3 },
       ]);
-      expect(report.topProducts).toEqual([variant([], 6, 600)]);
+      expect(snapshotRows(report.topProducts)).toEqual([variant([], 6, 600)]);
     });
 
     it('returns zero summary aggregates and empty daily/top rows when filters exclude all sales', async () => {

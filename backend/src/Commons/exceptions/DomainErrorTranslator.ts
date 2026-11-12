@@ -537,6 +537,15 @@ const DomainErrorTranslator = {
       'Aktifkan 2FA terlebih dahulu sebelum mengakses konsol platform',
     ),
 
+    // ── Platform console (super admin) ───────────────────────────
+    'PLATFORM.SUPER_ADMIN_IMMUTABLE': new ConflictError(
+      'Akun Super Admin tidak dapat diubah atau dihapus dari konsol platform',
+    ),
+    'PLATFORM.COMPANY_REQUIRED': new InvariantError(
+      'Company wajib dipilih untuk user platform',
+    ),
+    'PLATFORM.ROLE_REQUIRED': new InvariantError('Role wajib dipilih untuk user platform'),
+
     // ── User not found ───────────────────────────────────────────
     'USER.NOT_FOUND': new NotFoundError('User tidak ditemukan'),
     // Dipakai halaman "Lupa Password": memberi tahu bahwa email belum terdaftar.
