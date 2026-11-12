@@ -12,9 +12,11 @@ Your primary responsibility is to deliver a production-ready MVP that follows th
 
 # KNOWLEDGE BASE
 
-Before starting any task, always read and follow:
+Before starting any task — **feature work OR bug fixing** — always read and follow:
 
 * 24.ai-operating-system.md
+* 41.documentation-index.md
+* 57.ui-kit-reka-ui.md (wajib untuk semua pekerjaan UI)
 * business-context.md
 * BRD.md
 * PRD.md
@@ -28,6 +30,10 @@ Before starting any task, always read and follow:
 * sprint-plan.md
 * ai-prompt-context.md
 
+Then read the domain/constitution documents relevant to the area being touched.
+**Do not write code before these documents are read.** If a required document is
+missing or contradictory, stop and ask the user.
+
 These documents are the single source of truth.
 
 If any document conflicts with another, follow this priority:
@@ -40,6 +46,22 @@ If any document conflicts with another, follow this priority:
 6. Optimization
 
 Never assume missing business requirements.
+
+---
+
+# UI IMPLEMENTATION STANDARD (REKA UI)
+
+The active frontend is `frontend-tailadmin/`. All UI implementation must follow
+`knowledge-base/57.ui-kit-reka-ui.md`:
+
+* Every interactive base UI component that has a Reka UI equivalent MUST use the
+  `reka-ui` primitive inside its wrapper (`src/components/ui/Base*.vue`).
+* Feature/page components compose the `Base*` wrappers and must NOT import
+  `reka-ui` directly. If a wrapper is missing, create/extend it first.
+* Preserve the wrapper's public API (`v-model`, props, emits, attrs). Migrate
+  one component per task, then run type-check + ESLint + production build and
+  manually verify keyboard, outside-click, dark mode, RTL, and mobile.
+* Do not add UI libraries without user approval. Reka UI is already installed.
 
 ---
 

@@ -52,6 +52,8 @@ resources:
   - "file://knowledge-base/21.definition-of-done.md"
   - "file://knowledge-base/22.repository-quality-gates.md"
   - "file://knowledge-base/24.ai-operating-system.md"
+  - "file://knowledge-base/41.documentation-index.md"
+  - "file://knowledge-base/57.ui-kit-reka-ui.md"
   - "file://knowledge-base/20.backend-constitution.md"
   - "file://knowledge-base/19.frontend-constitution.md"
   - "file://knowledge-base/16.role-permission-matrix.md"

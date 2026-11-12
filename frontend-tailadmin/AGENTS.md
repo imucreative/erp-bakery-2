@@ -221,19 +221,30 @@ src/
 
 ## Bakery ERP — Mandatory UI Standards (knowledge-base doc 48 §2)
 
+> **Sebelum pekerjaan UI apa pun**, baca juga
+> `knowledge-base/57.ui-kit-reka-ui.md` (standar UI Kit Reka UI) dan
+> `knowledge-base/41.documentation-index.md`. Aturan baca ini berlaku untuk
+> fitur baru maupun bug fixing.
+
 These project standards are MANDATORY for every Bakery ERP module built in this app.
 Full detail lives in `knowledge-base/48.tailadmin-frontend-backlog.md` §2 — read it before
 building a module. Summary:
 
+- **Reka UI is the base UI primitives layer.** Every interactive `Base*` component
+  that has a Reka UI equivalent must use `reka-ui` internally (`BaseCheckbox`,
+  `BaseModal`, `BaseSelect`, `BaseToggle`/`ToggleSwitch`, `BaseFormField`).
+  Feature components compose these wrappers and must not import `reka-ui`
+  directly. See `knowledge-base/57.ui-kit-reka-ui.md`.
 - **Row action buttons**: icon-only (`lucide-vue-next`), `h-9 w-9`, with `aria-label` + `title`.
 - **Every button MUST have a relevant icon**; text is optional. Icon-only for row actions and
   the back button; icon + text for primary/descriptive buttons (Save/Cancel/Add/Submit).
-- **Native `<select>`**: `appearance-none` + a `ChevronDownIcon` overlay (relative container,
-  absolute `end-3`, `pointer-events-none`, select `pe-10`). Never a bare select.
-- **Boolean inputs**: use `components/ui/ToggleSwitch.vue`, never `<input type="checkbox">`
-  (exception: an explicit multi-select permission matrix, when the user asks for checkboxes).
-- **Modals**: transparent backdrop (`bg-gray-900/20 backdrop-blur-[2px]`, dark `bg-black/30`),
-  `rounded-3xl` panel.
+- **Selects**: use `BaseSelect` (Reka UI Select, portalled). Never create a bare
+  native `<select>` in a feature component.
+- **Boolean inputs**: use `components/ui/BaseToggle.vue` / `ToggleSwitch.vue`
+  (Reka UI Switch), never `<input type="checkbox">` (exception: an explicit
+  multi-select permission matrix, when the user asks for checkboxes).
+- **Modals**: `BaseModal` (Reka UI Dialog) — sudah menangani focus trap, scroll
+  lock, backdrop, dan Esc; jangan membuat wrapper `fixed inset-0` sendiri.
 - **Document pages (Detail & Form)**: page header is `flex justify-between` — START = icon-only
   Back button (`ChevronLeft`, `rtl:rotate-180`) beside the page title; END = the lifecycle
   action bar. Split each UI section into its own stateless component (Summary, ItemsTable,

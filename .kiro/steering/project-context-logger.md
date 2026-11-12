@@ -16,6 +16,22 @@ project ini, AI HARUS mencatat apa yang dilakukan ke dalam file log konteks
 project. Catatan bersifat **append-only** dan berbentuk **narasi kronologis**,
 seolah menceritakan perjalanan pengembangan hari demi hari.
 
+## Wajib Baca Knowledge Base Sebelum Kerja
+
+Berlaku untuk **fitur baru maupun bug fixing**. Sebelum menganalisa atau menulis
+kode, AI WAJIB membaca:
+
+1. `knowledge-base/24.ai-operating-system.md` — aturan operasi AI (prioritas tertinggi).
+2. `knowledge-base/41.documentation-index.md` — peta dokumen + reading gate.
+3. `knowledge-base/57.ui-kit-reka-ui.md` — wajib untuk semua pekerjaan UI.
+4. Dokumen domain/konstitusi yang relevan dengan area yang disentuh.
+5. `project-context/AGENTS.md` dan log `project-context` hari ini/terakhir.
+
+**Jangan menulis kode sebelum dokumen tersebut dibaca.** Jika dokumen yang
+dibutuhkan tidak ada atau bertentangan, berhenti dan tanyakan ke user.
+
+---
+
 ## Lokasi & Penamaan File
 
 - Folder: `knowledge-base/project-context/`

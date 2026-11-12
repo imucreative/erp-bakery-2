@@ -42,6 +42,7 @@ permissions:
       effect: ask
 resources:
   - "file://knowledge-base/24.ai-operating-system.md"
+  - "file://knowledge-base/41.documentation-index.md"
   - "file://knowledge-base/20.backend-constitution.md"
   - "file://knowledge-base/7.coding-standard.md"
   - "file://knowledge-base/8.api-contract.md"

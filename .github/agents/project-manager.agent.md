@@ -68,6 +68,7 @@ resources:
   - "file://knowledge-base/24.ai-operating-system.md"
   - "file://knowledge-base/20.backend-constitution.md"
   - "file://knowledge-base/19.frontend-constitution.md"
+  - "file://knowledge-base/57.ui-kit-reka-ui.md"
   - "file://knowledge-base/7.coding-standard.md"
   - "file://knowledge-base/8.api-contract.md"
   - "file://knowledge-base/16.role-permission-matrix.md"

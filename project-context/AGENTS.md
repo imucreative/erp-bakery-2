@@ -1,7 +1,13 @@
 # BAKERY ERP — AI AGENT PROJECT CONTEXT
 
-> **Last Updated**: 2026-11-06 | **Project**: ERP Bakery
+> **Last Updated**: 2026-11-12 | **Project**: ERP Bakery
 > Read this FIRST before doing any work.
+
+> **WAJIB — KNOWLEDGE-BASE READING GATE**: Sebelum mengerjakan **fitur baru maupun
+> bug fixing**, baca dulu `knowledge-base/24.ai-operating-system.md`,
+> `knowledge-base/41.documentation-index.md`, dan — untuk semua pekerjaan UI —
+> `knowledge-base/57.ui-kit-reka-ui.md`, ditambah dokumen domain/konstitusi yang
+> relevan. Jangan menulis kode sebelum dokumen tersebut dibaca.
 
 ---
 
@@ -28,7 +34,9 @@
 **Backend aktif**: NestJS, Fastify, TypeScript, PostgreSQL melalui raw SQL `pg` Pool,
 `node-pg-migrate`, JWT, Swagger, Jest. Bukan Prisma/ORM.
 **Frontend aktif**: Vue 3 Composition API, TypeScript, Vite, Vue Router, Pinia/composables,
-TailAdmin + Tailwind CSS v4, di `frontend-tailadmin/`; bukan Next.js.
+TailAdmin + Tailwind CSS v4, dan **Reka UI** untuk primitive UI interaktif, di
+`frontend-tailadmin/`; bukan Next.js. Standar UI Kit ada di
+`knowledge-base/57.ui-kit-reka-ui.md`.
 
 **Catatan kompatibilitas dokumen:** rincian stack legacy Prisma/Next.js/React di
 bagian 5–8 dan referensi historis telah digantikan fakta stack/direktori aktif ini.
@@ -91,30 +99,35 @@ Acuan audit statis: `feature/administrator`, HEAD `2f58401`, 2026-11-06.
 
 ---
 
-## 5. MANDATORY READING (Before Any Work)
+## 5. MANDATORY READING (Before Any Work — Feature & Bug Fixing)
+
+> Berlaku untuk **fitur baru dan bug fixing**. Jangan menulis kode sebelum membaca.
 
 ### Highest Priority
 1. `knowledge-base/24.ai-operating-system.md` — AI behavior rules (**HIGHEST**)
-2. `.agents/rules/default-rules-bakery-erp.md` — Global AI rules
-3. `.agents/workflows/default-workflow-bakery-erp.md` — Development workflow
+2. `knowledge-base/41.documentation-index.md` — master index + reading gate
+3. `knowledge-base/57.ui-kit-reka-ui.md` — **wajib untuk semua pekerjaan UI**
+4. `.agents/rules/default-rules-bakery-erp.md` — Global AI rules
+5. `.agents/workflows/default-workflow-bakery-erp.md` — Development workflow
 
 ### Module-Specific (Read Before Implementing)
-4. `knowledge-base/19.frontend-constitution.md` — Frontend standards
-5. `knowledge-base/20.backend-constitution.md` — Backend standards
-6. `knowledge-base/36.application-blueprint.md` — Folder structure & naming
-7. `knowledge-base/16.role-permission-matrix.md` — RBAC standards
-8. Domain docs: `26.procurement-domain.md`, `27.inventory-domain.md`, `28.production-domain.md`, `29.sales-domain.md`, `30.finance-domain.md`
+6. `knowledge-base/19.frontend-constitution.md` — Frontend standards
+7. `knowledge-base/20.backend-constitution.md` — Backend standards
+8. `knowledge-base/36.application-blueprint.md` — Folder structure & naming
+9. `knowledge-base/16.role-permission-matrix.md` — RBAC standards
+10. Domain docs: `26.procurement-domain.md`, `27.inventory-domain.md`, `28.production-domain.md`, `29.sales-domain.md`, `30.finance-domain.md`
 
 ### Reference
-9. `knowledge-base/2.BRD.md` — Business requirements
-10. `knowledge-base/3.PRD.md` — Product requirements
-11. `knowledge-base/21.definition-of-done.md` — DoD
-12. `knowledge-base/22.repository-quality-gates.md` — Quality gates
-13. `knowledge-base/31.erp-module-blueprint.md` — Module structure
-14. `knowledge-base/32.module-development-workflow.md` — 10-step lifecycle
-15. `knowledge-base/35.global-erp-standards.md` — Global standards
-16. `knowledge-base/43.document-authorization-standard.md` — Document authorization
-17. `knowledge-base/44.master-data-dependency-standard.md` — Master data protection
+11. `knowledge-base/2.BRD.md` — Business requirements
+12. `knowledge-base/3.PRD.md` — Product requirements
+13. `knowledge-base/21.definition-of-done.md` — DoD
+14. `knowledge-base/22.repository-quality-gates.md` — Quality gates
+15. `knowledge-base/31.erp-module-blueprint.md` — Module structure
+16. `knowledge-base/32.module-development-workflow.md` — 10-step lifecycle
+17. `knowledge-base/35.global-erp-standards.md` — Global standards
+18. `knowledge-base/43.document-authorization-standard.md` — Document authorization
+19. `knowledge-base/44.master-data-dependency-standard.md` — Master data protection
+20. `knowledge-base/48.tailadmin-frontend-backlog.md` — TailAdmin UI standards
 
 ---
 
@@ -122,7 +135,8 @@ Acuan audit statis: `feature/administrator`, HEAD `2f58401`, 2026-11-06.
 
 ```
 1. Read AI Operating System (24.ai-operating-system.md)
-2. Read Knowledge Base docs (relevant to task)
+2. Read knowledge-base index (41) + UI kit doc (57, untuk UI) + dokumen area terkait
+   (berlaku juga untuk bug fixing — jangan menulis kode sebelum membaca)
 3. Generate Implementation Plan (short, structured)
    - Objective
    - Proposed Changes (files to create/modify/delete)
@@ -153,10 +167,11 @@ Every feature must have:
 **NEVER**: placeholder code, pseudo code, TODO comments
 
 ### Frontend (from constitution + blueprint)
-- Feature structure: `src/app/(dashboard)/<feature>/` with components/, hooks/, services/, schemas/, types/, constants/
-- Reuse `src/components/erp/` foundation components
+- Feature structure: use the active `frontend-tailadmin/` layout (views/, components/<feature>/, composables/, services/, stores/).
+- Reuse foundation components from `frontend-tailadmin/src/components/ui/` (`Base*`).
+- **UI interaktif memakai Reka UI** melalui wrapper `Base*.vue`; jangan impor `reka-ui` langsung di feature/page. Detail: `knowledge-base/57.ui-kit-reka-ui.md`.
 - NO direct Shadcn imports in page files
-- Use absolute aliases: `@/components/erp/...`
+- Use absolute aliases: `@/components/ui/...` for the active app
 - TanStack Query for server state, Zustand for client state
 
 ---

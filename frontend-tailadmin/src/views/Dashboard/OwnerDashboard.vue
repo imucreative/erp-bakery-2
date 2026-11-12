@@ -14,7 +14,7 @@
       <OwnerDashboardKpiGrid
         :summary="summary"
         @open-low-stock="goToInventory"
-        @open-expired="goToInventory"
+        @open-expired="goToProdukKadaluarsa"
       />
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -68,7 +68,11 @@ const selectedPeriodDays = ref<OwnerDashboardPeriodDays>(7)
 const selectedTopProductsLimit = ref<OwnerDashboardTopProductsLimit>(10)
 
 function goToInventory(): void {
-  void router.push('/inventory')
+  void router.push('/inventory/stock-on-hand')
+}
+
+function goToProdukKadaluarsa(): void {
+  void router.push('/inventory/batches')
 }
 
 function reloadDashboard(): void {

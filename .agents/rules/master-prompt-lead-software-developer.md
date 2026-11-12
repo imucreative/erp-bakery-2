@@ -10,6 +10,26 @@ Before making any code changes, follow these rules.
 
 ---
 
+## MANDATORY: Read Knowledge Base Before Any Work (Feature & Bug Fixing)
+
+Before writing or changing code, read:
+
+1. `knowledge-base/24.ai-operating-system.md` (highest priority)
+2. `knowledge-base/41.documentation-index.md` (index + reading gate)
+3. `knowledge-base/57.ui-kit-reka-ui.md` for **all UI work**
+4. The relevant domain/constitution documents for the area being touched
+5. `project-context/AGENTS.md` and the latest `knowledge-base/project-context/` log
+
+Do not write code before these documents are read. If a required document is
+missing or contradictory, stop and ask the user.
+
+**Active stack note:** the active frontend is `frontend-tailadmin/` (Vue 3 +
+Tailwind v4 + Reka UI), not React. Interactive base components must use Reka UI
+through the `src/components/ui/Base*.vue` wrappers; feature components must not
+import `reka-ui` directly.
+
+---
+
 ## Project Principles
 
 This project follows Clean Architecture, SOLID principles, Domain-Driven Design, and reusable component architecture.

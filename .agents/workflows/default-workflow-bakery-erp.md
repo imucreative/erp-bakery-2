@@ -24,12 +24,18 @@ graph TD
 ---
 
 ## 2. Step 1: AI Operating System
-Always read and adhere to [27.ai-operating-system.md](file:///d:/antigravity/erp-bakery/knowledge-base/27.ai-operating-system.md) as the highest-level behavior specification. Do not perform exploratory scans or propose new patterns.
+Always read and adhere to [24.ai-operating-system.md](file:///d:/antigravity/erp-bakery-2/knowledge-base/24.ai-operating-system.md) as the highest-level behavior specification. Do not perform exploratory scans or propose new patterns.
 
 ---
 
-## 3. Step 2: Read Knowledge Base
-Before writing any code or plans, read the related documentation from `/knowledge-base`.
+## 3. Step 2: Read Knowledge Base (feature AND bug fixing)
+Before writing any code or plans, read the related documentation from `/knowledge-base`:
+- `41.documentation-index.md` (master index + reading gate)
+- `57.ui-kit-reka-ui.md` for any UI work
+- the relevant domain/constitution documents for the area being touched
+
+This reading gate applies to bug fixing as well as new features. Do not write code
+before these documents are read.
 
 ---
 
