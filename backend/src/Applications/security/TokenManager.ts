@@ -3,7 +3,7 @@
  * Concrete implementation: JwtTokenManager (Infrastructures/security/)
  */
 export interface JwtAccessPayload {
-  sub: string;          // user id
+  sub: string; // user id
   email: string;
   companyId: string | null;
   isSuperAdmin: boolean;

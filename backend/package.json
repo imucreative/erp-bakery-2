@@ -10,6 +10,8 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "lint": "eslint \"{src,test}/**/*.ts\" --fix",
+    "format": "prettier --write \"{src,api,scripts,migrations}/**/*.{ts,js}\"",
+    "format:check": "prettier --check \"{src,api,scripts,migrations}/**/*.{ts,js}\"",
     "test": "node node_modules/jest-cli/bin/jest.js --runInBand --forceExit",
     "test:watch": "node node_modules/jest-cli/bin/jest.js --watch --runInBand",
     "test:cov": "node node_modules/jest-cli/bin/jest.js --coverage --runInBand --forceExit",

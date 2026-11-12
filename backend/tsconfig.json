@@ -9,13 +9,12 @@
     "target": "ES2021",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
     "paths": {
-      "@commons/*": ["src/Commons/*"],
-      "@domains/*": ["src/Domains/*"],
-      "@applications/*": ["src/Applications/*"],
-      "@infrastructures/*": ["src/Infrastructures/*"],
-      "@interfaces/*": ["src/Interfaces/*"]
+      "@commons/*": ["./src/Commons/*"],
+      "@domains/*": ["./src/Domains/*"],
+      "@applications/*": ["./src/Applications/*"],
+      "@infrastructures/*": ["./src/Infrastructures/*"],
+      "@interfaces/*": ["./src/Interfaces/*"]
     },
     "incremental": true,
     "skipLibCheck": true,
@@ -25,8 +24,9 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "strict": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "types": ["node", "jest"]
   },
-  "include": ["src/**/*", "api/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts"]
+  "include": ["src/**/*", "api/**/*", "scripts/**/*.ts", "jest.config.ts"],
+  "exclude": ["node_modules", "dist"]
 }

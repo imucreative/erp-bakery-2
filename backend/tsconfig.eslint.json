@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": [
+    "src/**/*.ts",
+    "api/**/*.ts",
+    "scripts/**/*.ts",
+    "test/**/*.ts",
+    "migrations/**/*.js",
+    "jest.config.ts",
+    "rename-migrations.js"
+  ],
+  "exclude": ["node_modules", "dist"]
+}
