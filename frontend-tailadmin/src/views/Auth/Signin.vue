@@ -68,29 +68,78 @@
           </div>
         </form>
 
-        <!-- Langkah 2: kode 2FA -->
+        <!-- Langkah 2: verifikasi dua langkah -->
         <form v-else @submit.prevent="handleVerifyMfa">
           <div class="space-y-5">
-            <p class="text-muted">
-              Masukkan kode 6 digit dari aplikasi authenticator, atau salah satu kode recovery.
-            </p>
-            <BaseFormField label="Kode 2FA" field-id="mfa-code" required>
-              <BaseInput
+            <div>
+              <h2 class="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90">
+                Two Step Verification
+              </h2>
+              <p class="text-muted">
+                Masukkan 6 digit kode dari aplikasi authenticator Anda untuk melanjutkan.
+              </p>
+            </div>
+
+            <div v-if="mfaMode === 'totp'">
+              <p id="mfa-code-label" class="form-label">Type your 6 digits security code</p>
+              <BasePinInput
                 id="mfa-code"
                 v-model="code"
-                placeholder="123456 atau ABCDE-FGHIJ"
+                :length="6"
+                :disabled="submitting"
+                aria-labelledby="mfa-code-label"
+                @complete="handlePinComplete"
+              />
+            </div>
+
+            <BaseFormField
+              v-else
+              label="Recovery code"
+              field-id="mfa-recovery"
+              required
+              hint="Gunakan salah satu kode recovery yang Anda simpan saat mengaktifkan 2FA."
+            >
+              <BaseInput
+                id="mfa-recovery"
+                v-model="code"
+                placeholder="ABCDE-FGHIJ"
                 autocomplete="one-time-code"
               />
             </BaseFormField>
+
             <BaseButton
               type="submit"
               full-width
               :loading="submitting"
               loading-text="Memverifikasi..."
-              :disabled="submitting"
+              :disabled="submitting || !isCodeReady"
             >
-              Verifikasi
+              Verify My Account
             </BaseButton>
+
+            <p class="text-sm text-gray-700 dark:text-gray-400">
+              <template v-if="mfaMode === 'totp'">
+                Tidak menerima kode?
+                <button
+                  type="button"
+                  class="text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                  @click="toggleMfaMode"
+                >
+                  Gunakan kode recovery
+                </button>
+              </template>
+              <template v-else>
+                Punya kode authenticator?
+                <button
+                  type="button"
+                  class="text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                  @click="toggleMfaMode"
+                >
+                  Kembali ke 6 digit
+                </button>
+              </template>
+            </p>
+
             <BaseButton variant="outline" full-width type="button" @click="backToCredentials">
               Kembali ke halaman login
             </BaseButton>
@@ -124,9 +173,11 @@ import {
   BaseCheckbox,
   BaseFormField,
   BaseInput,
+  BasePinInput,
   PasswordInput,
 } from '@/components/ui'
 import { useAuthStore } from '@/stores/auth'
+import { ApiClientError } from '@/services/http'
 import { toMessage } from '@/lib/errors'
 
 const router = useRouter()
@@ -142,8 +193,13 @@ const submitting = ref(false)
 const errorMessage = ref<string | null>(null)
 
 const step = ref<'credentials' | 'mfa'>('credentials')
+const mfaMode = ref<'totp' | 'recovery'>('totp')
 const mfaToken = ref('')
 const code = ref('')
+
+const isCodeReady = computed(() =>
+  mfaMode.value === 'totp' ? /^\d{6}$/.test(code.value) : code.value.trim().length > 0,
+)
 
 async function redirectAfterLogin(): Promise<void> {
   if (auth.isSuperAdmin) {
@@ -165,6 +221,7 @@ async function handleSubmit(): Promise<void> {
     })
     if (outcome.mfaRequired) {
       mfaToken.value = outcome.mfaToken ?? ''
+      mfaMode.value = 'totp'
       code.value = ''
       step.value = 'mfa'
       return
@@ -178,6 +235,9 @@ async function handleSubmit(): Promise<void> {
 }
 
 async function handleVerifyMfa(): Promise<void> {
+  if (submitting.value || !isCodeReady.value) {
+    return
+  }
   submitting.value = true
   errorMessage.value = null
   try {
@@ -185,13 +245,32 @@ async function handleVerifyMfa(): Promise<void> {
     await redirectAfterLogin()
   } catch (error) {
     errorMessage.value = toMessage(error)
+    // Wrong/expired code: clear the boxes so the user can retype immediately.
+    // Keep them for network errors (the digits are still valid).
+    const rejectedCode =
+      error instanceof ApiClientError && (error.status === 400 || error.status === 401)
+    if (mfaMode.value === 'totp' && rejectedCode) {
+      code.value = ''
+    }
   } finally {
     submitting.value = false
   }
 }
 
+function handlePinComplete(value: string): void {
+  code.value = value
+  void handleVerifyMfa()
+}
+
+function toggleMfaMode(): void {
+  mfaMode.value = mfaMode.value === 'totp' ? 'recovery' : 'totp'
+  code.value = ''
+  errorMessage.value = null
+}
+
 function backToCredentials(): void {
   step.value = 'credentials'
+  mfaMode.value = 'totp'
   mfaToken.value = ''
   code.value = ''
   errorMessage.value = null
