@@ -1,3 +1,5 @@
+import type { UomDimension } from '../../uoms/uomDimension';
+
 /**
  * Raw item input accepted by the Create/Update Goods Receipt payload. Only the
  * client-controlled fields appear here; ordered_quantity is resolved by the use
@@ -235,47 +237,57 @@ export interface ResolvedGoodsReceiptItem {
 }
 
 /**
- * The minimal per-product conversion context the use case supplies to resolve a
- * GR line's snapshot factor (UOM Conversion T2, doc 50 §4/§8):
- *   - baseUomId: the product's base/stock-keeping unit (products.uom_id).
- *   - activeFactorsByUom: active alternate-unit factors (product_uom_conversions
- *     rows with is_active = true), keyed by the alternate uom_id. The value is
- *     `factor_to_base` (1 <alt uom> = factor_to_base <base>). INACTIVE rows must
- *     be excluded by the caller.
+ * Global UOM conversion metadata (doc 52 B2). A UOM's canonical factor is
+ * `1 <uom> = factorToCanonical <canonical unit of its dimension>`.
  */
-export interface ProductConversionContext {
-  baseUomId: string;
-  activeFactorsByUom: Map<string, number>;
+export interface UomConversionUnit {
+  id: string;
+  dimension: UomDimension | null;
+  factorToCanonical: number | null;
 }
 
 /**
- * Resolve a GR line's snapshot conversion factor (UOM Conversion T2, Keputusan
- * #2b SNAPSHOT), given the line's input `uomId` and the product's conversion
- * context:
+ * Resolve a GR line's snapshot factor from the GLOBAL UOM master (doc 52):
  *
- *   1. uomId === base unit            -> factor 1 (implicit, no conversion row).
- *   2. an ACTIVE conversion exists     -> factor_to_base from that row.
- *   3. uomId is NOT the base unit AND  -> HARD ERROR
- *      no active conversion exists        GOODS_RECEIPT.MISSING_UOM_CONVERSION.
+ *   factor = line.factorToCanonical / base.factorToCanonical
  *
- * Case 3 must NEVER silently fall back to 1: a non-base unit without a factor
- * would post the wrong (unconverted) quantity into stock. Failing loudly keeps
- * the inventory ledger correct. The default-1 compatibility guarantee only
- * applies to case 1 (base unit) — exactly the pre-T2 behaviour.
+ * where the base unit is `products.uom_id`.
+ *
+ *   1. line === base                                  -> 1
+ *   2. either unit missing / dimension or factor null -> MISSING_UOM_CONVERSION
+ *   3. dimensions differ                              -> INCOMPATIBLE_UOM_DIMENSION
+ *   4. derived factor must be finite and > 0          -> INVALID_UOM_CONVERSION_FACTOR
+ *
+ * A same-unit line never needs metadata (compatibility with legacy base-only
+ * flows). A different-unit line must NEVER silently fall back to 1.
  */
 export function resolveConversionFactor(
-  uomId: string,
-  context: ProductConversionContext,
+  lineUomId: string,
+  baseUomId: string,
+  uomById: Map<string, UomConversionUnit>,
 ): number {
-  if (uomId === context.baseUomId) {
+  if (lineUomId === baseUomId) {
     return 1;
   }
-  const factor = context.activeFactorsByUom.get(uomId);
-  if (factor === undefined) {
+
+  const line = uomById.get(lineUomId);
+  const base = uomById.get(baseUomId);
+  if (
+    !line ||
+    !base ||
+    !line.dimension ||
+    !base.dimension ||
+    line.factorToCanonical === null ||
+    base.factorToCanonical === null
+  ) {
     throw new Error('GOODS_RECEIPT.MISSING_UOM_CONVERSION');
   }
-  if (!(factor > 0)) {
-    // Defensive: the master CHECK (> 0) should already guarantee this.
+  if (line.dimension !== base.dimension) {
+    throw new Error('GOODS_RECEIPT.INCOMPATIBLE_UOM_DIMENSION');
+  }
+
+  const factor = line.factorToCanonical / base.factorToCanonical;
+  if (!Number.isFinite(factor) || factor <= 0) {
     throw new Error('GOODS_RECEIPT.INVALID_UOM_CONVERSION_FACTOR');
   }
   return factor;

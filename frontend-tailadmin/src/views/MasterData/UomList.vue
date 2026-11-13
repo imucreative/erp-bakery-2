@@ -6,20 +6,32 @@
  */
 import { computed, ref } from 'vue'
 import { Plus } from 'lucide-vue-next'
+import { RouterLink } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import { BaseButton, BaseInput, BaseTablePagination } from '@/components/ui'
+import { BaseAlert, BaseButton, BaseInput, BaseTablePagination } from '@/components/ui'
 import UomTable from '@/components/masterdata/uom/UomTable.vue'
 import UomFormModal from '@/components/masterdata/uom/UomFormModal.vue'
 import UomDeleteModal from '@/components/masterdata/uom/UomDeleteModal.vue'
 import { usePermission } from '@/composables/usePermission'
 import { useUoms } from '@/composables/useUoms'
 import type { Uom } from '@/services/uom.service'
+import { uomDimensionService, type UomDimensionDefinition } from '@/services/uom-dimension.service'
 
 const pageTitle = 'Units of Measure'
 const { can } = usePermission()
 const canManage = computed<boolean>(() => can('uom.manage'))
+
+const dimensions = ref<UomDimensionDefinition[]>([])
+
+async function fetchDimensions(): Promise<void> {
+  try {
+    dimensions.value = await uomDimensionService.list()
+  } catch {
+    dimensions.value = []
+  }
+}
 
 const {
   items,
@@ -61,14 +73,28 @@ function openEdit(uom: Uom): void {
   formOpen.value = true
 }
 
-async function onSubmitForm(payload: { name: string; isActive: boolean }): Promise<void> {
+async function onSubmitForm(payload: {
+  name: string
+  dimension: string
+  factorToCanonical: number
+  isActive: boolean
+}): Promise<void> {
   submitting.value = true
   formError.value = null
   try {
     if (formMode.value === 'edit' && editing.value) {
-      await updateUom(editing.value.id, payload.name, payload.isActive)
+      await updateUom(editing.value.id, {
+        name: payload.name,
+        dimension: payload.dimension,
+        factorToCanonical: payload.factorToCanonical,
+        isActive: payload.isActive,
+      })
     } else {
-      await createUom(payload.name)
+      await createUom({
+        name: payload.name,
+        dimension: payload.dimension,
+        factorToCanonical: payload.factorToCanonical,
+      })
     }
     formOpen.value = false
   } catch (error) {
@@ -108,6 +134,7 @@ async function onConfirmDelete(): Promise<void> {
 }
 
 void fetchList()
+void fetchDimensions()
 </script>
 
 <template>
@@ -128,8 +155,17 @@ void fetchList()
         </BaseButton>
       </div>
 
+      <BaseAlert v-if="dimensions.length === 0" variant="warning" size="sm" class="mb-3">
+        Belum ada dimensi UOM. Tentukan dimensi dan satuan terkecilnya di
+        <RouterLink class="font-medium underline" to="/master/uom-dimensions">
+          Dimensi UOM
+        </RouterLink>
+        sebelum menambah satuan.
+      </BaseAlert>
+
       <UomTable
         :items="items"
+        :dimensions="dimensions"
         :loading="loading"
         :error-message="errorMessage"
         :can-manage="canManage"
@@ -155,6 +191,7 @@ void fetchList()
       :open="formOpen"
       :mode="formMode"
       :uom="editing"
+      :dimensions="dimensions"
       :submitting="submitting"
       :error-message="formError"
       @close="formOpen = false"

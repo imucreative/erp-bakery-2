@@ -6,14 +6,13 @@ import {
   validateBatchRequirements,
   resolveConversionFactor,
   SourcePoItem,
+  UomConversionUnit,
 } from '../../../Domains/goods-receipts/entities/CreateGoodsReceipt';
 import { GoodsReceipt } from '../../../Domains/goods-receipts/entities/GoodsReceipt';
 import { GoodsReceiptRepository } from '../../../Domains/goods-receipts/GoodsReceiptRepository';
 import { PurchaseOrderRepository } from '../../../Domains/purchase-orders/PurchaseOrderRepository';
 import { ProductRepository } from '../../../Domains/products/ProductRepository';
-import { ProductUomConversionRepository } from '../../../Domains/product-uom-conversions/ProductUomConversionRepository';
 import { UomRepository } from '../../../Domains/uoms/UomRepository';
-import { buildConversionContexts } from './CreateGoodsReceiptUseCase';
 
 /**
  * UseCase: UpdateGoodsReceiptUseCase — edit an editable GR (DRAFT only).
@@ -34,7 +33,6 @@ export class UpdateGoodsReceiptUseCase {
     private readonly purchaseOrderRepository: PurchaseOrderRepository,
     private readonly productRepository: ProductRepository,
     private readonly uomRepository: UomRepository,
-    private readonly conversionRepository: ProductUomConversionRepository,
   ) {}
 
   async execute(
@@ -107,11 +105,18 @@ export class UpdateGoodsReceiptUseCase {
     validateItemsAgainstOutstanding(items, outstanding);
 
     const productIds = [...new Set(items.map((i) => i.productId))];
-    const uomIds = [...new Set(items.map((i) => i.uomId))];
     const products = await Promise.all(
       productIds.map((pid) => this.productRepository.getProductById(pid, companyId)),
     );
-    await Promise.all(uomIds.map((uid) => this.uomRepository.getUomById(uid, companyId)));
+    const uomIds = [
+      ...new Set([
+        ...items.map((i) => i.uomId),
+        ...products.map((product) => product.uomId),
+      ]),
+    ];
+    const uoms = await Promise.all(
+      uomIds.map((uid) => this.uomRepository.getUomById(uid, companyId)),
+    );
 
     const batchTrackedByProduct = new Map<string, boolean>();
     for (const product of products) {
@@ -119,22 +124,23 @@ export class UpdateGoodsReceiptUseCase {
     }
     validateBatchRequirements(items, batchTrackedByProduct);
 
-    // UOM Conversion T2 (doc 50 §4/§8, Keputusan #2b SNAPSHOT): re-resolve &
-    // re-snapshot each line's factor from the CURRENT master state on every
-    // draft update (the snapshot tracks the factor at edit time; posting later
-    // uses whatever was last snapshotted). Mirrors CreateGoodsReceiptUseCase.
-    const conversionsByProduct = new Map(
-      await Promise.all(
-        productIds.map(
-          async (pid) =>
-            [pid, await this.conversionRepository.listByProduct(pid, companyId)] as const,
-        ),
-      ),
+    // UOM conversion (doc 52 B2): re-resolve & re-snapshot from the GLOBAL UOM
+    // master on every draft update. Posting later uses this snapshot, never a
+    // re-resolved factor.
+    const uomById = new Map<string, UomConversionUnit>(
+      uoms.map((uom) => [
+        uom.id,
+        {
+          id: uom.id,
+          dimension: uom.dimension,
+          factorToCanonical: uom.factorToCanonical,
+        },
+      ]),
     );
-    const conversionContexts = buildConversionContexts(products, conversionsByProduct);
+    const productById = new Map(products.map((product) => [product.id, product]));
     for (const item of items) {
-      const context = conversionContexts.get(item.productId);
-      item.conversionFactor = resolveConversionFactor(item.uomId, context!);
+      const product = productById.get(item.productId);
+      item.conversionFactor = resolveConversionFactor(item.uomId, product!.uomId, uomById);
     }
 
     return this.goodsReceiptRepository.updateDraft(id, companyId, userId, {

@@ -66,6 +66,7 @@ const uomMap = computed<Map<string, Uom>>(() => new Map(props.uoms.map((u) => [u
 const validUoms = useProductValidUoms({
   baseUomId: (productId) => productMap.value.get(productId)?.uomId ?? '',
   baseUomLabel: (uomId) => uomMap.value.get(uomId)?.name ?? 'UOM dasar',
+  uoms: () => props.uoms,
 })
 
 /**

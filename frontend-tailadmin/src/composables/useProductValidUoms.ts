@@ -1,33 +1,16 @@
 /**
- * useProductValidUoms — resolves, per product, the set of VALID units of measure
- * that a transactional line item (Purchase Request / Purchase Order) may use.
+ * useProductValidUoms — resolves, per product, the VALID units of measure a
+ * transactional line item (Purchase Request / Purchase Order) may use.
  *
- * Business rule (frontend mirror of the backend contract):
- *   valid UOMs for product X = { X's base unit (products.uomId) }
- *                            ∪ { ACTIVE product_uom_conversions registered for X }
+ * Global model (doc 52 B2):
+ *   valid UOMs for product X = { X's base unit }
+ *                            ∪ { active UOMs in the SAME dimension as the base }
  *
- * A product with NO active conversions therefore yields exactly one valid UOM:
- * its base unit (so a line is still orderable without any conversion setup).
- *
- * Data strategy (Opsi A — per-row, on-demand, cached):
- *   - When a row's product is chosen/changed, call `ensureLoaded(productId)` to
- *     fetch `GET /products/:productId/uom-conversions` ONCE and cache the result
- *     keyed by productId. Multiple rows holding the same product share the one
- *     fetch; re-renders never refetch.
- *   - `validUoms(productId)` returns the resolved option list (base + active
- *     conversions) for rendering. Before conversions load it returns just the
- *     base unit (always available), so the select is usable immediately.
- *
- * The caller supplies how to resolve a product's base unit, because each editor
- * already holds the product/uom maps it needs — this composable stays free of
- * props plumbing and avoids duplicating the lookup in both editors.
+ * The list is derived from the UOM master already loaded by the editor, so no
+ * per-product API call is needed. If the base UOM has no dimension/factor
+ * metadata yet, only the base unit is offered (safe fallback).
  */
-
-import { reactive, ref } from 'vue'
-import {
-  productUomConversionService,
-  type ProductUomConversion,
-} from '@/services/product-uom-conversion.service'
+import type { Uom } from '@/services/uom.service'
 
 /** A single selectable UOM option for a transactional line item. */
 export interface ValidUomOption {
@@ -35,78 +18,53 @@ export interface ValidUomOption {
   label: string
 }
 
-/** How the caller resolves a product's base unit (id + display name). */
+/** How the caller resolves a product's base unit and the loaded UOM master. */
 export interface BaseUomResolver {
   /** The product's base UOM id (`products.uomId`), or '' when unresolved. */
   baseUomId: (productId: string) => string
   /** Human label for a UOM id (falls back gracefully when missing). */
   baseUomLabel: (uomId: string) => string
+  /** All UOMs loaded by the editor (active/inactive included; filter here). */
+  uoms: () => Uom[]
 }
 
 export function useProductValidUoms(resolver: BaseUomResolver) {
-  /** productId → active conversions (cached once loaded). */
-  const conversionsByProduct = reactive(new Map<string, ProductUomConversion[]>())
-  /** productId currently being fetched (prevents duplicate in-flight requests). */
-  const loadingProducts = ref<Set<string>>(new Set())
-
-  function isLoading(productId: string): boolean {
-    return loadingProducts.value.has(productId)
-  }
-
   /**
-   * Fetch and cache a product's conversions once. No-op when already cached or
-   * in flight, or when productId is empty. Failures leave the product uncached
-   * so the UI simply falls back to the base unit (and a later retry may load).
-   */
-  async function ensureLoaded(productId: string): Promise<void> {
-    if (!productId || conversionsByProduct.has(productId) || loadingProducts.value.has(productId)) {
-      return
-    }
-    const next = new Set(loadingProducts.value)
-    next.add(productId)
-    loadingProducts.value = next
-    try {
-      const all = await productUomConversionService.list(productId)
-      conversionsByProduct.set(
-        productId,
-        all.filter((conversion) => conversion.isActive),
-      )
-    } catch {
-      // Leave uncached → valid list stays at the base unit; a later select of
-      // the same product retries the fetch.
-    } finally {
-      const done = new Set(loadingProducts.value)
-      done.delete(productId)
-      loadingProducts.value = done
-    }
-  }
-
-  /**
-   * The valid UOM options for a product: its base unit first, then each active
-   * conversion's unit (de-duplicated). Returns [] when the product is unknown.
+   * The valid UOM options for a product: its base unit first, then active UOMs
+   * in the same physical dimension. Returns [] when the product is unknown.
    */
   function validUoms(productId: string): ValidUomOption[] {
     if (!productId) {
       return []
     }
-    const options: ValidUomOption[] = []
-    const seen = new Set<string>()
-
     const baseId = resolver.baseUomId(productId)
-    if (baseId) {
-      options.push({ id: baseId, label: resolver.baseUomLabel(baseId) })
-      seen.add(baseId)
+    if (!baseId) {
+      return []
     }
 
-    const conversions = conversionsByProduct.get(productId) ?? []
-    for (const conversion of conversions) {
-      if (seen.has(conversion.uomId)) {
+    const all = resolver.uoms()
+    const base = all.find((uom) => uom.id === baseId)
+    const options: ValidUomOption[] = [
+      { id: baseId, label: base?.name ?? resolver.baseUomLabel(baseId) },
+    ]
+
+    // Without metadata we cannot safely offer other units.
+    if (!base?.dimension || base.factorToCanonical === null) {
+      return options
+    }
+
+    for (const uom of all) {
+      if (
+        uom.id === baseId ||
+        !uom.isActive ||
+        !uom.dimension ||
+        uom.factorToCanonical === null ||
+        uom.dimension !== base.dimension
+      ) {
         continue
       }
-      seen.add(conversion.uomId)
-      options.push({ id: conversion.uomId, label: conversion.uomName })
+      options.push({ id: uom.id, label: uom.name })
     }
-
     return options
   }
 
@@ -118,8 +76,18 @@ export function useProductValidUoms(resolver: BaseUomResolver) {
     return validUoms(productId).some((option) => option.id === uomId)
   }
 
+  // Kept for callers that still wire the old async lifecycle; global data is
+  // already loaded, so there is nothing to fetch.
+  function ensureLoaded(_productId: string): void {
+    void _productId;
+  }
+
+  function isLoading(_productId: string): boolean {
+    void _productId;
+    return false
+  }
+
   return {
-    conversionsByProduct,
     ensureLoaded,
     validUoms,
     isValidUom,

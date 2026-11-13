@@ -12,6 +12,14 @@ export class CreateUomUseCase {
   async execute(payload: unknown, companyId: string): Promise<Uom> {
     const createUom = new CreateUom(payload);
     const code = await this.uomRepository.generateUomCode(companyId);
-    return this.uomRepository.addUom({ code, name: createUom.name }, companyId);
+    return this.uomRepository.addUom(
+      {
+        code,
+        name: createUom.name,
+        dimension: createUom.dimension,
+        factorToCanonical: createUom.factorToCanonical,
+      },
+      companyId,
+    );
   }
 }

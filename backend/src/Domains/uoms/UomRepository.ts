@@ -1,5 +1,6 @@
 import { Uom } from './entities/Uom';
 import { UpdateUomFields } from './entities/UpdateUom';
+import type { UomDimension } from './uomDimension';
 
 export interface UomListFilter {
   limit: number;
@@ -16,6 +17,8 @@ export interface UomListResult {
 export interface NewUomData {
   code: string;
   name: string;
+  dimension: UomDimension;
+  factorToCanonical: number;
 }
 
 /**

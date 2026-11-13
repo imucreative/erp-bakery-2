@@ -130,6 +130,7 @@ const addableItems = computed<SourcePrItem[]>(() => {
 const validUoms = useProductValidUoms({
   baseUomId: (productId) => productMap.value.get(productId)?.uomId ?? '',
   baseUomLabel: (uomId) => uomMap.value.get(uomId)?.name ?? 'UOM dasar',
+  uoms: () => props.uoms,
 })
 
 /**

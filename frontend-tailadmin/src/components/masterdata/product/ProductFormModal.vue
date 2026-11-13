@@ -289,6 +289,10 @@ function onSubmit(): void {
           <p v-else class="text-sm text-gray-600 dark:text-gray-300">
             {{ relationName(uoms, uomId) }}
           </p>
+          <p class="text-meta mt-1">
+            Pilih satuan terkecil (g / ml / pcs). Satuan besar seperti kg/liter memakai
+            konversi UOM global.
+          </p>
         </BaseFormField>
         <BaseFormField label="Supplier" field-id="product-supplier" required>
           <BaseSelect

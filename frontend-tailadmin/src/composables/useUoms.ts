@@ -6,6 +6,7 @@
 
 import { computed, ref, watch } from 'vue'
 import { uomService, type Uom, type UomListParams } from '@/services/uom.service'
+import type { CreateUomPayload, UpdateUomPayload } from '@/services/uom.service'
 
 const DEFAULT_LIMIT = 10
 const SEARCH_DEBOUNCE_MS = 350
@@ -79,13 +80,13 @@ export function useUoms() {
     }
   }
 
-  async function createUom(name: string): Promise<void> {
-    await uomService.create({ name })
+  async function createUom(payload: CreateUomPayload): Promise<void> {
+    await uomService.create(payload)
     await fetchList()
   }
 
-  async function updateUom(id: string, name: string, isActive: boolean): Promise<void> {
-    await uomService.update(id, { name, isActive })
+  async function updateUom(id: string, payload: UpdateUomPayload): Promise<void> {
+    await uomService.update(id, payload)
     await fetchList()
   }
 

@@ -4,7 +4,7 @@ import {
   validateItemsAgainstOutstanding,
   validateBatchRequirements,
   resolveConversionFactor,
-  ProductConversionContext,
+  UomConversionUnit,
   ResolvedGoodsReceiptItem,
   SourcePoItem,
   OutstandingPoItem,
@@ -260,34 +260,43 @@ describe('validateBatchRequirements', () => {
   });
 });
 
-describe('resolveConversionFactor (UOM Conversion T2)', () => {
-  function context(over: Partial<ProductConversionContext> = {}): ProductConversionContext {
-    return {
-      baseUomId: 'uom-base',
-      activeFactorsByUom: new Map<string, number>(),
-      ...over,
-    };
-  }
+describe('resolveConversionFactor (global UOM B2)', () => {
+  const units = new Map<string, UomConversionUnit>([
+    ['uom-g', { id: 'uom-g', dimension: 'WEIGHT', factorToCanonical: 1 }],
+    ['uom-kg', { id: 'uom-kg', dimension: 'WEIGHT', factorToCanonical: 1000 }],
+    ['uom-karung', { id: 'uom-karung', dimension: 'WEIGHT', factorToCanonical: 25000 }],
+    ['uom-pcs', { id: 'uom-pcs', dimension: 'COUNT', factorToCanonical: 1 }],
+  ]);
 
-  it('returns 1 when the line uom IS the product base unit (no row needed)', () => {
-    expect(resolveConversionFactor('uom-base', context())).toBe(1);
+  it('returns 1 when the line uom IS the product base unit (no metadata needed)', () => {
+    expect(resolveConversionFactor('uom-g', 'uom-g', units)).toBe(1);
   });
 
-  it('returns factor_to_base for an active alternate unit', () => {
-    const ctx = context({
-      activeFactorsByUom: new Map([['uom-karung', 25000]]),
-    });
-    expect(resolveConversionFactor('uom-karung', ctx)).toBe(25000);
+  it('derives a factor > 1 when the line unit is larger than the base unit', () => {
+    expect(resolveConversionFactor('uom-kg', 'uom-g', units)).toBe(1000);
+    expect(resolveConversionFactor('uom-karung', 'uom-g', units)).toBe(25000);
   });
 
-  it('throws MISSING_UOM_CONVERSION for a non-base unit with no active factor', () => {
-    expect(() => resolveConversionFactor('uom-karung', context())).toThrow(
+  it('derives a factor < 1 when the base unit is larger than the line unit', () => {
+    expect(resolveConversionFactor('uom-g', 'uom-kg', units)).toBe(0.001);
+  });
+
+  it('throws MISSING_UOM_CONVERSION when either UOM has no dimension/factor metadata', () => {
+    const noMeta = new Map(units);
+    noMeta.set('uom-karung', { id: 'uom-karung', dimension: null, factorToCanonical: null });
+    expect(() => resolveConversionFactor('uom-karung', 'uom-g', noMeta)).toThrow(
       'GOODS_RECEIPT.MISSING_UOM_CONVERSION',
     );
   });
 
-  it('preserves the pre-T2 identity: factor 1 ⇒ baseQty == inputQty', () => {
-    const factor = resolveConversionFactor('uom-base', context());
+  it('throws INCOMPATIBLE_UOM_DIMENSION for cross-dimension units', () => {
+    expect(() => resolveConversionFactor('uom-pcs', 'uom-g', units)).toThrow(
+      'GOODS_RECEIPT.INCOMPATIBLE_UOM_DIMENSION',
+    );
+  });
+
+  it('preserves the identity: factor 1 ⇒ baseQty == inputQty', () => {
+    const factor = resolveConversionFactor('uom-g', 'uom-g', units);
     const inputQty = 7.5;
     expect(inputQty * factor).toBe(inputQty);
   });

@@ -30,9 +30,12 @@ describe('UomRepository (abstract contract)', () => {
   const repo = new TestUomRepository();
 
   it('addUom should throw when not implemented', async () => {
-    await expect(repo.addUom({ code: 'UOM-001', name: 'PCS' }, 'c')).rejects.toThrow(
-      'NOT_IMPLEMENTED',
-    );
+    await expect(
+      repo.addUom(
+        { code: 'UOM-001', name: 'PCS', dimension: 'COUNT', factorToCanonical: 1 },
+        'c',
+      ),
+    ).rejects.toThrow('NOT_IMPLEMENTED');
   });
 
   it('generateUomCode should throw when not implemented', async () => {

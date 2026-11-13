@@ -10,6 +10,7 @@ import { PermissionModule } from './Interfaces/http/api/permissions/permission.m
 import { UserModule } from './Interfaces/http/api/users/user.module';
 import { ProductGroupModule } from './Interfaces/http/api/product-groups/product-group.module';
 import { UomModule } from './Interfaces/http/api/uoms/uom.module';
+import { UomDimensionModule } from './Interfaces/http/api/uom-dimensions/uom-dimension.module';
 import { SupplierModule } from './Interfaces/http/api/suppliers/supplier.module';
 import { PaymentTermModule } from './Interfaces/http/api/payment-terms/payment-term.module';
 import { CategoryModule } from './Interfaces/http/api/categories/category.module';
@@ -58,6 +59,7 @@ import { PermissionsGuard } from './Interfaces/http/guards/permissions.guard';
     UserModule,
     ProductGroupModule,
     UomModule,
+    UomDimensionModule,
     SupplierModule,
     PaymentTermModule,
     CategoryModule,

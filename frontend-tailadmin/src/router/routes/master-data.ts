@@ -20,6 +20,24 @@ export const masterDataRoutes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/master/uom-conversions',
+    name: 'UomConversions',
+    component: () => import('@/views/MasterData/UomConversionList.vue'),
+    meta: {
+      title: 'Konversi UOM',
+      permission: 'uom.read',
+    },
+  },
+  {
+    path: '/master/uom-dimensions',
+    name: 'UomDimensions',
+    component: () => import('@/views/MasterData/UomDimensionList.vue'),
+    meta: {
+      title: 'Dimensi UOM',
+      permission: 'uom.read',
+    },
+  },
+  {
     path: '/master/suppliers',
     name: 'Suppliers',
     component: () => import('@/views/MasterData/SupplierList.vue'),

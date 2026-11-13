@@ -66,9 +66,7 @@ const DomainErrorTranslator = {
     ),
 
     // ── Outlet ───────────────────────────────────────────────────
-    'OUTLET.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
-      'Data outlet tidak lengkap',
-    ),
+    'OUTLET.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError('Data outlet tidak lengkap'),
     'OUTLET.CODE_DUPLICATE': new ConflictError(
       'Kode outlet sudah digunakan. Pilih kode lain, atau kosongkan untuk membuat kode otomatis.',
     ),
@@ -116,6 +114,18 @@ const DomainErrorTranslator = {
     'CREATE_UOM.NAME_LIMIT_CHAR': new InvariantError(
       'Gagal membuat UOM: nama harus 1-100 karakter',
     ),
+    'CREATE_UOM.DIMENSION_INVALID': new InvariantError(
+      'Gagal membuat UOM: dimensi tidak dikenal. Tambahkan dimensi tersebut di menu Dimensi UOM terlebih dahulu',
+    ),
+    'UOM.DIMENSION_INVALID': new InvariantError(
+      'Dimensi UOM tidak terdaftar. Tambahkan dimensi tersebut di halaman Dimensi UOM terlebih dahulu',
+    ),
+    'CREATE_UOM.FACTOR_INVALID': new InvariantError(
+      'Gagal membuat UOM: faktor ke satuan kanonik harus angka lebih dari 0',
+    ),
+    'CREATE_UOM.FACTOR_BELOW_CANONICAL': new InvariantError(
+      'Gagal membuat UOM: faktor minimal 1 karena satuan kanonik adalah satuan terkecil dimensi tersebut',
+    ),
 
     // ── UpdateUom ────────────────────────────────────────────────
     'UPDATE_UOM.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
@@ -126,6 +136,49 @@ const DomainErrorTranslator = {
     ),
     'UPDATE_UOM.NAME_LIMIT_CHAR': new InvariantError(
       'Gagal memperbarui UOM: nama harus 1-100 karakter',
+    ),
+    'UPDATE_UOM.DIMENSION_INVALID': new InvariantError(
+      'Gagal memperbarui UOM: dimensi tidak dikenal. Tambahkan dimensi tersebut di menu Dimensi UOM terlebih dahulu',
+    ),
+    'UPDATE_UOM.FACTOR_INVALID': new InvariantError(
+      'Gagal memperbarui UOM: faktor ke satuan kanonik harus angka lebih dari 0',
+    ),
+    'UPDATE_UOM.FACTOR_BELOW_CANONICAL': new InvariantError(
+      'Gagal memperbarui UOM: faktor minimal 1 karena satuan kanonik adalah satuan terkecil dimensi tersebut',
+    ),
+
+    // ── UomDimension ─────────────────────────────────────────────
+    'UOM_DIMENSION.NOT_FOUND': new NotFoundError('Dimensi UOM tidak ditemukan'),
+    'UOM_DIMENSION.CODE_ALREADY_USED': new ConflictError('Kode dimensi UOM sudah digunakan'),
+    'UOM_DIMENSION.IN_USE': new ConflictError(
+      'Dimensi UOM masih dipakai oleh satuan (UOM). Nonaktifkan saja jika tidak ingin dipakai lagi',
+    ),
+    'CREATE_UOM_DIMENSION.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal membuat dimensi UOM: properti yang dibutuhkan tidak ada',
+    ),
+    'CREATE_UOM_DIMENSION.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal membuat dimensi UOM: tipe data tidak sesuai',
+    ),
+    'CREATE_UOM_DIMENSION.CODE_INVALID': new InvariantError(
+      'Gagal membuat dimensi UOM: kode harus diawali huruf dan hanya berisi huruf kapital, angka, atau underscore (maks. 20)',
+    ),
+    'CREATE_UOM_DIMENSION.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat dimensi UOM: nama harus 1-100 karakter',
+    ),
+    'CREATE_UOM_DIMENSION.CANONICAL_UNIT_NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat dimensi UOM: nama satuan terkecil harus 1-100 karakter',
+    ),
+    'CREATE_UOM_DIMENSION.CANONICAL_UNIT_SYMBOL_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat dimensi UOM: simbol satuan terkecil harus 1-20 karakter',
+    ),
+    'UPDATE_UOM_DIMENSION.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal memperbarui dimensi UOM: tidak ada field yang dikirimkan',
+    ),
+    'UPDATE_UOM_DIMENSION.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal memperbarui dimensi UOM: tipe data tidak sesuai',
+    ),
+    'UPDATE_UOM_DIMENSION.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal memperbarui dimensi UOM: nama harus 1-100 karakter',
     ),
 
     // ── Uom ──────────────────────────────────────────────────────
@@ -348,50 +401,9 @@ const DomainErrorTranslator = {
       'Gagal memperbarui tipe produk: urutan harus bilangan bulat tidak negatif',
     ),
     'PRODUCT_TYPE.NOT_FOUND': new NotFoundError('Tipe produk tidak ditemukan'),
-    'PRODUCT_TYPE.CODE_ALREADY_USED': new ConflictError(
-      'Kode tipe produk sudah digunakan',
-    ),
+    'PRODUCT_TYPE.CODE_ALREADY_USED': new ConflictError('Kode tipe produk sudah digunakan'),
     'PRODUCT_TYPE.IN_USE': new ConflictError(
       'Tipe produk tidak dapat dihapus karena masih digunakan oleh produk. Nonaktifkan saja jika tidak ingin dipakai lagi',
-    ),
-
-    // ── ProductUomConversion (UOM Conversion T1) ─────────────────
-    'CREATE_PRODUCT_UOM_CONVERSION.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
-      'Gagal membuat konversi UOM: properti yang dibutuhkan tidak ada',
-    ),
-    'CREATE_PRODUCT_UOM_CONVERSION.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
-      'Gagal membuat konversi UOM: tipe data tidak sesuai',
-    ),
-    'CREATE_PRODUCT_UOM_CONVERSION.FACTOR_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
-      'Gagal membuat konversi UOM: faktor harus berupa angka',
-    ),
-    'CREATE_PRODUCT_UOM_CONVERSION.FACTOR_MUST_BE_POSITIVE': new InvariantError(
-      'Gagal membuat konversi UOM: faktor konversi harus lebih dari nol',
-    ),
-    'CREATE_PRODUCT_UOM_CONVERSION.UOM_INACTIVE': new InvariantError(
-      'Gagal membuat konversi UOM: satuan (UOM) tidak aktif',
-    ),
-    'CREATE_PRODUCT_UOM_CONVERSION.UOM_IS_BASE_UNIT': new InvariantError(
-      'Gagal membuat konversi UOM: satuan alternatif tidak boleh sama dengan satuan dasar produk',
-    ),
-    'UPDATE_PRODUCT_UOM_CONVERSION.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
-      'Gagal memperbarui konversi UOM: tidak ada field yang dikirimkan',
-    ),
-    'UPDATE_PRODUCT_UOM_CONVERSION.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
-      'Gagal memperbarui konversi UOM: tipe data tidak sesuai',
-    ),
-    'UPDATE_PRODUCT_UOM_CONVERSION.FACTOR_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
-      'Gagal memperbarui konversi UOM: faktor harus berupa angka',
-    ),
-    'UPDATE_PRODUCT_UOM_CONVERSION.FACTOR_MUST_BE_POSITIVE': new InvariantError(
-      'Gagal memperbarui konversi UOM: faktor konversi harus lebih dari nol',
-    ),
-    'PRODUCT_UOM_CONVERSION.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
-      'Data konversi UOM tidak lengkap',
-    ),
-    'PRODUCT_UOM_CONVERSION.NOT_FOUND': new NotFoundError('Konversi UOM tidak ditemukan'),
-    'PRODUCT_UOM_CONVERSION.DUPLICATE': new ConflictError(
-      'Konversi UOM untuk satuan ini sudah terdaftar pada produk tersebut',
     ),
 
     // ── Topping (POS Fase 6a — GLOBAL topping catalog, doc 51 §5.0) ──
@@ -431,24 +443,16 @@ const DomainErrorTranslator = {
     'UPDATE_TOPPING.EXTRA_PRICE_MUST_BE_NON_NEGATIVE': new InvariantError(
       'Gagal memperbarui topping: harga tambahan tidak boleh negatif',
     ),
-    'TOPPING.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
-      'Data topping tidak lengkap',
-    ),
+    'TOPPING.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError('Data topping tidak lengkap'),
     'TOPPING.NOT_FOUND': new NotFoundError('Topping tidak ditemukan'),
-    'TOPPING.DUPLICATE': new ConflictError(
-      'Produk topping ini sudah terdaftar di katalog topping',
-    ),
+    'TOPPING.DUPLICATE': new ConflictError('Produk topping ini sudah terdaftar di katalog topping'),
     'TOPPING.INVALID_PRODUCT_TYPE': new InvariantError(
       'Produk topping harus bertipe bahan baku (RAW_MATERIAL) atau setengah jadi (SEMI_FINISHED)',
     ),
 
     // ── CreateUser / UpdateUser ──────────────────────────────────
-    'CREATE_USER.ROLE_REQUIRED': new InvariantError(
-      'Gagal membuat user: role wajib dipilih',
-    ),
-    'UPDATE_USER.ROLE_INVALID': new InvariantError(
-      'Gagal memperbarui user: role tidak valid',
-    ),
+    'CREATE_USER.ROLE_REQUIRED': new InvariantError('Gagal membuat user: role wajib dipilih'),
+    'UPDATE_USER.ROLE_INVALID': new InvariantError('Gagal memperbarui user: role tidak valid'),
     'UPDATE_USER.OUTLETS_INVALID': new InvariantError(
       'Gagal memperbarui user: daftar outlet tidak valid',
     ),
@@ -485,15 +489,11 @@ const DomainErrorTranslator = {
     'ROLE.PERMISSION_RESERVED': new InvariantError(
       'Gagal menyimpan role: permission system administration hanya untuk Super Admin',
     ),
-    'ROLE.OWNER_CANNOT_BE_DELETED': new ConflictError(
-      'Role Owner tidak dapat dihapus',
-    ),
+    'ROLE.OWNER_CANNOT_BE_DELETED': new ConflictError('Role Owner tidak dapat dihapus'),
     'ROLE.IN_USE': new ConflictError(
       'Role tidak dapat dihapus karena masih digunakan oleh user aktif',
     ),
-    'ROLE.CODE_ALREADY_USED': new ConflictError(
-      'Kode role sudah digunakan pada perusahaan ini',
-    ),
+    'ROLE.CODE_ALREADY_USED': new ConflictError('Kode role sudah digunakan pada perusahaan ini'),
 
     // ── RegisterUser ─────────────────────────────────────────────
     'REGISTER_USER.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
@@ -516,9 +516,7 @@ const DomainErrorTranslator = {
     ),
 
     // ── UserLogin ────────────────────────────────────────────────
-    'USER_LOGIN.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
-      'Email dan password harus diisi',
-    ),
+    'USER_LOGIN.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError('Email dan password harus diisi'),
     'USER_LOGIN.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
       'Email dan password harus berupa string',
     ),
@@ -556,9 +554,7 @@ const DomainErrorTranslator = {
     // frontend akan menganggap sesi kedaluwarsa - mencoba refresh, mengulang
     // request, lalu memaksa logout dan menimpa pesan aslinya dengan
     // "Session expired" (dan pengguna ikut ter-logout).
-    'AUTHENTICATION.CURRENT_PASSWORD_INVALID': new InvariantError(
-      'Password saat ini salah',
-    ),
+    'AUTHENTICATION.CURRENT_PASSWORD_INVALID': new InvariantError('Password saat ini salah'),
     'AUTHENTICATION.RESET_TOKEN_INVALID': new InvariantError(
       'Tautan reset tidak valid atau sudah kedaluwarsa. Silakan minta tautan baru.',
     ),
@@ -583,9 +579,7 @@ const DomainErrorTranslator = {
     'PLATFORM.SUPER_ADMIN_IMMUTABLE': new ConflictError(
       'Akun Super Admin tidak dapat diubah atau dihapus dari konsol platform',
     ),
-    'PLATFORM.COMPANY_REQUIRED': new InvariantError(
-      'Company wajib dipilih untuk user platform',
-    ),
+    'PLATFORM.COMPANY_REQUIRED': new InvariantError('Company wajib dipilih untuk user platform'),
     'PLATFORM.ROLE_REQUIRED': new InvariantError('Role wajib dipilih untuk user platform'),
 
     // ── User not found ───────────────────────────────────────────
@@ -716,9 +710,7 @@ const DomainErrorTranslator = {
     'CREATE_STOCK_OPNAME.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
       'Data stock opname tidak lengkap',
     ),
-    'RECORD_COUNT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
-      'Data hitungan tidak lengkap',
-    ),
+    'RECORD_COUNT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError('Data hitungan tidak lengkap'),
     'RECORD_COUNT.QTY_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
       'Jumlah hitungan harus berupa angka',
     ),
@@ -739,18 +731,12 @@ const DomainErrorTranslator = {
     // ── Recipe (BOM) ─────────────────────────────────────────────
     'RECIPE.NOT_FOUND': new NotFoundError('Recipe tidak ditemukan'),
     'RECIPE.NO_ACTIVE_RECIPE': new NotFoundError('Tidak ada recipe aktif untuk produk ini'),
-    'CREATE_RECIPE.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
-      'Data recipe tidak lengkap',
-    ),
+    'CREATE_RECIPE.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError('Data recipe tidak lengkap'),
     'CREATE_RECIPE.YIELD_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
       'Yield recipe harus berupa angka',
     ),
-    'CREATE_RECIPE.YIELD_MUST_BE_POSITIVE': new InvariantError(
-      'Yield recipe harus lebih dari nol',
-    ),
-    'CREATE_RECIPE.ITEMS_REQUIRED': new InvariantError(
-      'Recipe harus memiliki minimal satu bahan',
-    ),
+    'CREATE_RECIPE.YIELD_MUST_BE_POSITIVE': new InvariantError('Yield recipe harus lebih dari nol'),
+    'CREATE_RECIPE.ITEMS_REQUIRED': new InvariantError('Recipe harus memiliki minimal satu bahan'),
     'CREATE_RECIPE.ITEM_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
       'Format bahan recipe tidak valid',
     ),
@@ -824,9 +810,7 @@ const DomainErrorTranslator = {
     'RECORD_YIELD.QTY_MUST_BE_POSITIVE': new InvariantError(
       'Jumlah hasil produksi harus lebih dari nol',
     ),
-    'RECORD_YIELD.WASTE_INVALID': new InvariantError(
-      'Jumlah waste tidak valid',
-    ),
+    'RECORD_YIELD.WASTE_INVALID': new InvariantError('Jumlah waste tidak valid'),
     'RECORD_YIELD.RESULT_EXPIRY_REQUIRED': new InvariantError(
       'Tanggal kedaluwarsa hasil produksi wajib diisi',
     ),
@@ -885,9 +869,7 @@ const DomainErrorTranslator = {
     'CREATE_PURCHASE_REQUEST.ITEM_PRICE_MUST_BE_NON_NEGATIVE': new InvariantError(
       'Harga estimasi item purchase request tidak boleh negatif',
     ),
-    'REJECT_PURCHASE_REQUEST.NOTE_REQUIRED': new InvariantError(
-      'Alasan penolakan wajib diisi',
-    ),
+    'REJECT_PURCHASE_REQUEST.NOTE_REQUIRED': new InvariantError('Alasan penolakan wajib diisi'),
     'PURCHASE_REQUEST.ONLY_EDITABLE_STATUS': new InvariantError(
       'Hanya purchase request berstatus DRAFT atau REJECTED yang dapat diubah',
     ),
@@ -1024,9 +1006,7 @@ const DomainErrorTranslator = {
     'ADD_PURCHASE_ORDER_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
       'Data komentar purchase order tidak lengkap',
     ),
-    'ADD_PURCHASE_ORDER_COMMENT.BODY_REQUIRED': new InvariantError(
-      'Isi komentar wajib diisi',
-    ),
+    'ADD_PURCHASE_ORDER_COMMENT.BODY_REQUIRED': new InvariantError('Isi komentar wajib diisi'),
     'ADD_PURCHASE_ORDER_COMMENT.INVALID_CATEGORY': new InvariantError(
       'Kategori komentar tidak valid',
     ),
@@ -1038,9 +1018,7 @@ const DomainErrorTranslator = {
     'ADD_GOODS_RECEIPT_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
       'Data komentar goods receipt tidak lengkap',
     ),
-    'ADD_GOODS_RECEIPT_COMMENT.BODY_REQUIRED': new InvariantError(
-      'Isi komentar wajib diisi',
-    ),
+    'ADD_GOODS_RECEIPT_COMMENT.BODY_REQUIRED': new InvariantError('Isi komentar wajib diisi'),
     'ADD_GOODS_RECEIPT_COMMENT.INVALID_CATEGORY': new InvariantError(
       'Kategori komentar tidak valid',
     ),
@@ -1052,9 +1030,7 @@ const DomainErrorTranslator = {
     'ADD_PURCHASE_REQUEST_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
       'Data komentar purchase request tidak lengkap',
     ),
-    'ADD_PURCHASE_REQUEST_COMMENT.BODY_REQUIRED': new InvariantError(
-      'Isi komentar wajib diisi',
-    ),
+    'ADD_PURCHASE_REQUEST_COMMENT.BODY_REQUIRED': new InvariantError('Isi komentar wajib diisi'),
     'ADD_PURCHASE_REQUEST_COMMENT.INVALID_CATEGORY': new InvariantError(
       'Kategori komentar tidak valid',
     ),
@@ -1066,9 +1042,7 @@ const DomainErrorTranslator = {
     'ADD_PURCHASE_RETURN_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
       'Data komentar purchase return tidak lengkap',
     ),
-    'ADD_PURCHASE_RETURN_COMMENT.BODY_REQUIRED': new InvariantError(
-      'Isi komentar wajib diisi',
-    ),
+    'ADD_PURCHASE_RETURN_COMMENT.BODY_REQUIRED': new InvariantError('Isi komentar wajib diisi'),
     'ADD_PURCHASE_RETURN_COMMENT.INVALID_CATEGORY': new InvariantError(
       'Kategori komentar tidak valid',
     ),
@@ -1112,9 +1086,7 @@ const DomainErrorTranslator = {
     'CREATE_PURCHASE_RETURN.ITEM_QTY_MUST_BE_POSITIVE': new InvariantError(
       'Jumlah retur harus lebih dari nol',
     ),
-    'CREATE_PURCHASE_RETURN.ITEM_REASON_INVALID': new InvariantError(
-      'Alasan retur tidak valid',
-    ),
+    'CREATE_PURCHASE_RETURN.ITEM_REASON_INVALID': new InvariantError('Alasan retur tidak valid'),
     'CREATE_PURCHASE_RETURN.ITEM_REASON_DESCRIPTION_REQUIRED': new InvariantError(
       'Alasan retur yang dipilih mewajibkan keterangan tambahan',
     ),
@@ -1143,11 +1115,14 @@ const DomainErrorTranslator = {
       'Tanggal terima goods receipt tidak valid',
     ),
     'GOODS_RECEIPT.MISSING_UOM_CONVERSION': new InvariantError(
-      'Satuan yang dipilih belum punya konversi aktif ke satuan dasar produk. ' +
-        'Tambahkan konversi UOM pada master produk terlebih dahulu',
+      'Satuan yang dipilih belum punya konversi ke satuan dasar produk. ' +
+        'Lengkapi dimensi/faktor UOM di master Konversi UOM terlebih dahulu',
     ),
     'GOODS_RECEIPT.INVALID_UOM_CONVERSION_FACTOR': new InvariantError(
-      'Faktor konversi satuan produk tidak valid; perbaiki konversi UOM pada master produk',
+      'Faktor konversi satuan produk tidak valid; perbaiki data dimensi/faktor UOM',
+    ),
+    'GOODS_RECEIPT.INCOMPATIBLE_UOM_DIMENSION': new InvariantError(
+      'Satuan yang dipilih memiliki dimensi berbeda dari satuan dasar produk',
     ),
     'CREATE_GOODS_RECEIPT.ITEMS_REQUIRED': new InvariantError(
       'Goods receipt harus memiliki minimal satu item',
@@ -1213,18 +1188,14 @@ const DomainErrorTranslator = {
 
     // ── Shift (POS / Sales Fase 1, doc 51 §4.2/§6.2) ─────────────
     'SHIFT.NOT_FOUND': new NotFoundError('Shift tidak ditemukan'),
-    'OPEN_SHIFT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
-      'Data buka shift tidak lengkap',
-    ),
+    'OPEN_SHIFT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError('Data buka shift tidak lengkap'),
     'OPEN_SHIFT.CASH_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
       'Kas awal (opening cash) harus berupa angka',
     ),
     'OPEN_SHIFT.CASH_MUST_BE_NON_NEGATIVE': new InvariantError(
       'Kas awal (opening cash) tidak boleh negatif',
     ),
-    'CLOSE_SHIFT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
-      'Data tutup shift tidak lengkap',
-    ),
+    'CLOSE_SHIFT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError('Data tutup shift tidak lengkap'),
     'CLOSE_SHIFT.CASH_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
       'Kas aktual (actual cash) harus berupa angka',
     ),
@@ -1284,9 +1255,7 @@ const DomainErrorTranslator = {
     'PAY_SALES_ORDER.PAYMENT_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
       'Format pembayaran tidak valid',
     ),
-    'PAY_SALES_ORDER.INVALID_PAYMENT_METHOD': new InvariantError(
-      'Metode pembayaran tidak valid',
-    ),
+    'PAY_SALES_ORDER.INVALID_PAYMENT_METHOD': new InvariantError('Metode pembayaran tidak valid'),
     'PAY_SALES_ORDER.AMOUNT_NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
       'Nominal pembayaran harus berupa angka',
     ),
@@ -1312,12 +1281,8 @@ const DomainErrorTranslator = {
     ),
 
     // ── Conflict ─────────────────────────────────────────────────
-    'USER.EMAIL_ALREADY_USED': new ConflictError(
-      'Email sudah digunakan oleh akun lain',
-    ),
-    'COMPANY.SLUG_ALREADY_USED': new ConflictError(
-      'Slug company sudah digunakan',
-    ),
+    'USER.EMAIL_ALREADY_USED': new ConflictError('Email sudah digunakan oleh akun lain'),
+    'COMPANY.SLUG_ALREADY_USED': new ConflictError('Slug company sudah digunakan'),
     'PRODUCT_GROUP.IN_USE': new ConflictError(
       'Product group tidak dapat dihapus atau dinonaktifkan karena masih digunakan oleh kategori atau produk aktif',
     ),
@@ -1327,9 +1292,7 @@ const DomainErrorTranslator = {
     'SUPPLIER.IN_USE': new ConflictError(
       'Supplier tidak dapat dihapus atau dinonaktifkan karena masih digunakan oleh produk aktif',
     ),
-    'PAYMENT_TERM.CODE_ALREADY_USED': new ConflictError(
-      'Kode payment term sudah digunakan',
-    ),
+    'PAYMENT_TERM.CODE_ALREADY_USED': new ConflictError('Kode payment term sudah digunakan'),
     'PAYMENT_TERM.IN_USE': new ConflictError(
       'Payment term tidak dapat dihapus atau dinonaktifkan karena masih digunakan oleh dokumen aktif',
     ),
@@ -1337,9 +1300,7 @@ const DomainErrorTranslator = {
       'Kategori tidak dapat dihapus atau dinonaktifkan karena masih digunakan oleh produk aktif',
     ),
     'PRODUCT.SKU_ALREADY_USED': new ConflictError('SKU sudah digunakan oleh produk lain'),
-    'PRODUCT.BARCODE_ALREADY_USED': new ConflictError(
-      'Barcode sudah digunakan oleh produk lain',
-    ),
+    'PRODUCT.BARCODE_ALREADY_USED': new ConflictError('Barcode sudah digunakan oleh produk lain'),
     'PURCHASE_REQUEST.NUMBER_ALREADY_USED': new ConflictError(
       'Nomor purchase request sudah digunakan; coba lagi',
     ),
@@ -1349,9 +1310,7 @@ const DomainErrorTranslator = {
     'GOODS_RECEIPT.NUMBER_ALREADY_USED': new ConflictError(
       'Nomor goods receipt sudah digunakan; coba lagi',
     ),
-    'SALES_ORDER.NUMBER_CONFLICT': new InvariantError(
-      'Nomor invoice sudah digunakan; coba lagi',
-    ),
+    'SALES_ORDER.NUMBER_CONFLICT': new InvariantError('Nomor invoice sudah digunakan; coba lagi'),
   } as ErrorMap,
 };
 

@@ -4,9 +4,14 @@
  *
  *  - GET    /uoms      → { success, data: Uom[], meta } (paginated)
  *  - GET    /uoms/:id  → { success, data: Uom }
- *  - POST   /uoms      → { name }                → { success, data: Uom }
- *  - PUT    /uoms/:id  → { name?, isActive? }    → { success, data: Uom }
+ *  - POST   /uoms      → { name, dimension, factorToCanonical } → { success, data: Uom }
+ *  - PUT    /uoms/:id  → { name?, dimension?, factorToCanonical?, isActive? } → { success, data: Uom }
  *  - DELETE /uoms/:id  → soft-delete (409 when in use)
+ *
+ * Global conversion (doc 52): `dimension` is a code from the global
+ * `uom_dimensions` reference table (see uom-dimension.service.ts) and
+ * `1 UOM = factorToCanonical <canonical unit>` of that dimension. The canonical
+ * unit is the smallest unit, so factor is always >= 1.
  */
 
 import { httpClient } from './http'
@@ -33,8 +38,11 @@ interface ApiListResponse<T> {
 export interface Uom {
   id: string
   companyId: string | null
+  code: string
   name: string
   isActive: boolean
+  dimension: string | null
+  factorToCanonical: number | null
   createdAt?: string
   updatedAt?: string
 }
@@ -53,11 +61,15 @@ export interface UomListResult {
 
 export interface CreateUomPayload {
   name: string
+  dimension: string
+  factorToCanonical: number
 }
 
 export interface UpdateUomPayload {
   name?: string
   isActive?: boolean
+  dimension?: string
+  factorToCanonical?: number
 }
 
 function toQuery(params: UomListParams): Record<string, string | number> {

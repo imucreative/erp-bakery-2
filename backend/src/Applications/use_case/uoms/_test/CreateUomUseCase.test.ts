@@ -34,10 +34,16 @@ describe('CreateUomUseCase', () => {
     mockRepo.addUom.mockResolvedValue(created);
   });
 
-  it('should generate a code and persist the UOM', async () => {
-    const result = await useCase.execute({ name: 'PCS' }, companyId);
+  it('should generate a code and persist the UOM with conversion metadata', async () => {
+    const result = await useCase.execute(
+      { name: 'PCS', dimension: 'COUNT', factorToCanonical: 1 },
+      companyId,
+    );
     expect(mockRepo.generateUomCode).toHaveBeenCalledWith(companyId);
-    expect(mockRepo.addUom).toHaveBeenCalledWith({ code: 'UOM-001', name: 'PCS' }, companyId);
+    expect(mockRepo.addUom).toHaveBeenCalledWith(
+      { code: 'UOM-001', name: 'PCS', dimension: 'COUNT', factorToCanonical: 1 },
+      companyId,
+    );
     expect(result.code).toBe('UOM-001');
   });
 

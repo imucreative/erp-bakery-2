@@ -11,6 +11,8 @@ const uomRow = {
   code: 'UOM-001',
   name: 'PCS',
   is_active: true,
+  dimension: 'COUNT',
+  factor_to_canonical: '1',
   created_at: new Date(),
   updated_at: new Date(),
 };
@@ -26,9 +28,19 @@ describe('UomRepositoryPostgres', () => {
   describe('addUom', () => {
     it('should return a Uom on success', async () => {
       (mockPool.query as jest.Mock).mockResolvedValue({ rows: [uomRow], rowCount: 1 });
-      const result = await repo.addUom({ code: 'UOM-001', name: 'PCS' }, 'company-uuid');
+      const result = await repo.addUom(
+        {
+          code: 'UOM-001',
+          name: 'PCS',
+          dimension: 'COUNT',
+          factorToCanonical: 1,
+        },
+        'company-uuid',
+      );
       expect(result).toBeInstanceOf(Uom);
       expect(result.code).toBe('UOM-001');
+      expect(result.dimension).toBe('COUNT');
+      expect(result.factorToCanonical).toBe(1);
     });
   });
 

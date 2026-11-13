@@ -8,6 +8,7 @@
     "src/**/*.ts",
     "api/**/*.ts",
     "scripts/**/*.ts",
+    "scripts/**/*.js",
     "test/**/*.ts",
     "migrations/**/*.js",
     "jest.config.ts",

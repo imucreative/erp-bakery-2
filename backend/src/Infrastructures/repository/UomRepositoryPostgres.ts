@@ -7,7 +7,9 @@ import {
 } from '../../Domains/uoms/UomRepository';
 import { Uom } from '../../Domains/uoms/entities/Uom';
 import { UpdateUomFields } from '../../Domains/uoms/entities/UpdateUom';
+import type { UomDimension } from '../../Domains/uoms/uomDimension';
 import { NotFoundError } from '../../Commons/exceptions/NotFoundError';
+import { InvariantError } from '../../Commons/exceptions/InvariantError';
 
 interface UomRow {
   id: string;
@@ -15,11 +17,13 @@ interface UomRow {
   code: string;
   name: string;
   is_active: boolean;
+  dimension: string | null;
+  factor_to_canonical: string | null;
   created_at: Date;
   updated_at: Date;
 }
 
-const SELECT_COLUMNS = `id, company_id, code, name, is_active, created_at, updated_at`;
+const SELECT_COLUMNS = `id, company_id, code, name, is_active, dimension, factor_to_canonical, created_at, updated_at`;
 
 /**
  * Concrete PostgreSQL implementation of UomRepository.
@@ -37,20 +41,37 @@ export class UomRepositoryPostgres extends UomRepository {
       code: row.code,
       name: row.name,
       isActive: row.is_active,
+      dimension: row.dimension as UomDimension | null,
+      factorToCanonical: row.factor_to_canonical,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     });
   }
 
   async addUom(data: NewUomData, companyId: string): Promise<Uom> {
-    const result = await this.pool.query<UomRow>(
-      `INSERT INTO uoms (company_id, code, name)
-       VALUES ($1, $2, $3)
-       RETURNING ${SELECT_COLUMNS}`,
-      [companyId, data.code, data.name],
-    );
+    try {
+      const result = await this.pool.query<UomRow>(
+        `INSERT INTO uoms (company_id, code, name, dimension, factor_to_canonical)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING ${SELECT_COLUMNS}`,
+        [companyId, data.code, data.name, data.dimension, data.factorToCanonical],
+      );
 
-    return this._toUom(result.rows[0]);
+      return this._toUom(result.rows[0]);
+    } catch (error) {
+      this._throwIfDimensionUnknown(error);
+      throw error;
+    }
+  }
+
+  private _throwIfDimensionUnknown(error: unknown): void {
+    if (!error || typeof error !== 'object') {
+      return;
+    }
+    const pgError = error as { code?: string; constraint?: string };
+    if (pgError.code === '23503' && pgError.constraint === 'uoms_dimension_fk') {
+      throw new InvariantError('UOM.DIMENSION_INVALID');
+    }
   }
 
   async generateUomCode(companyId: string): Promise<string> {
@@ -126,6 +147,14 @@ export class UomRepositoryPostgres extends UomRepository {
       params.push(fields.isActive);
       setClauses.push(`is_active = $${params.length}`);
     }
+    if (fields.dimension !== undefined) {
+      params.push(fields.dimension);
+      setClauses.push(`dimension = $${params.length}`);
+    }
+    if (fields.factorToCanonical !== undefined) {
+      params.push(fields.factorToCanonical);
+      setClauses.push(`factor_to_canonical = $${params.length}`);
+    }
 
     if (setClauses.length === 0) {
       return existing;
@@ -134,15 +163,27 @@ export class UomRepositoryPostgres extends UomRepository {
     setClauses.push('updated_at = NOW()');
     params.push(id, companyId);
 
-    const result = await this.pool.query<UomRow>(
-      `UPDATE uoms
-       SET ${setClauses.join(', ')}
-       WHERE id = $${params.length - 1} AND company_id = $${params.length} AND deleted_at IS NULL
-       RETURNING ${SELECT_COLUMNS}`,
-      params,
-    );
+    const result = await this._executeUpdate(setClauses, params);
 
     return this._toUom(result.rows[0]);
+  }
+
+  private async _executeUpdate(
+    setClauses: string[],
+    params: unknown[],
+  ): Promise<{ rows: UomRow[] }> {
+    try {
+      return await this.pool.query<UomRow>(
+        `UPDATE uoms
+         SET ${setClauses.join(', ')}
+         WHERE id = $${params.length - 1} AND company_id = $${params.length} AND deleted_at IS NULL
+         RETURNING ${SELECT_COLUMNS}`,
+        params,
+      );
+    } catch (error) {
+      this._throwIfDimensionUnknown(error);
+      throw error;
+    }
   }
 
   async softDeleteUom(id: string, companyId: string): Promise<void> {

@@ -4,7 +4,7 @@
  * via `uomNameById` and formats price/type. Compact icon-only row actions per
  * the master-module UI standard. Emits edit/delete; loading/error/empty states.
  */
-import { Pencil, Trash2, Ruler } from 'lucide-vue-next'
+import { Pencil, Trash2 } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
 import { BaseButton, BaseTable, BaseTableCell, BaseTableHead, BaseTableRow } from '@/components/ui'
 import type { Product } from '@/services/product.service'
@@ -20,7 +20,6 @@ defineProps<{
 defineEmits<{
   (event: 'edit', product: Product): void
   (event: 'delete', product: Product): void
-  (event: 'conversions', product: Product): void
 }>()
 
 function formatIdr(value: number): string {
@@ -67,17 +66,6 @@ function formatIdr(value: number): string {
         </BaseTableCell>
         <BaseTableCell align="end">
           <div class="flex items-center justify-end gap-2">
-            <BaseButton
-              size="sm"
-              variant="info"
-              icon-only
-              type="button"
-              aria-label="Satuan & Konversi"
-              title="Satuan & Konversi"
-              @click="$emit('conversions', product)"
-            >
-              <Ruler class="h-4 w-4" aria-hidden="true" />
-            </BaseButton>
             <BaseButton
               v-if="canManage"
               size="sm"
