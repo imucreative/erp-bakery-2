@@ -16,6 +16,7 @@ import { productGroupService, type ProductGroup } from '@/services/product-group
 import { categoryService, type Category } from '@/services/category.service'
 import { uomService, type Uom } from '@/services/uom.service'
 import { supplierService, type Supplier } from '@/services/supplier.service'
+import { productTypeService, type ProductTypeOption } from '@/services/product-type.service'
 
 const DEFAULT_LIMIT = 10
 const SEARCH_DEBOUNCE_MS = 350
@@ -54,6 +55,7 @@ export function useProducts() {
   const categories = ref<Category[]>([])
   const uoms = ref<Uom[]>([])
   const suppliers = ref<Supplier[]>([])
+  const productTypes = ref<ProductTypeOption[]>([])
   const optionsLoaded = ref<boolean>(false)
 
   const groupNameById = computed(() => nameMap(groups.value))
@@ -90,19 +92,21 @@ export function useProducts() {
     if (optionsLoaded.value) {
       return
     }
-    const [g, c, u, s] = await Promise.all([
+    const [g, c, u, s, pt] = await Promise.all([
       productGroupService
         .list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' })
         .catch(() => null),
       categoryService.list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' }).catch(() => null),
       uomService.list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' }).catch(() => null),
       supplierService.list({ page: 1, limit: OPTION_LIMIT, isActive: 'true' }).catch(() => null),
+      productTypeService.list().catch(() => null),
     ])
     if (g) groups.value = g.items
     if (c) categories.value = c.items
     if (u) uoms.value = u.items
     if (s) suppliers.value = s.items
-    optionsLoaded.value = Boolean(g && c && u && s)
+    if (pt) productTypes.value = pt
+    optionsLoaded.value = Boolean(g && c && u && s && pt)
   }
 
   /** Categories filtered by the selected product group (for cascading dropdown). */
@@ -170,6 +174,7 @@ export function useProducts() {
     categories,
     uoms,
     suppliers,
+    productTypes,
     groupNameById,
     categoryNameById,
     uomNameById,

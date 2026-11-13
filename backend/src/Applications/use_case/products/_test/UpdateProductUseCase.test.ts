@@ -1,6 +1,7 @@
 import { UpdateProductUseCase } from '../UpdateProductUseCase';
 import { ProductRepository } from '../../../../Domains/products/ProductRepository';
 import { Product } from '../../../../Domains/products/entities/Product';
+import { ProductTypeRepository } from '../../../../Domains/product-types/ProductTypeRepository';
 
 const mockRepo = {
   addProduct: jest.fn(),
@@ -11,6 +12,11 @@ const mockRepo = {
   verifyAvailableSku: jest.fn(),
   verifyAvailableBarcode: jest.fn(),
 } as unknown as jest.Mocked<ProductRepository>;
+
+const mockProductTypeRepo = {
+  listActive: jest.fn(),
+  isActive: jest.fn(),
+} as unknown as jest.Mocked<ProductTypeRepository>;
 
 const companyId = 'company-uuid';
 const now = new Date();
@@ -41,9 +47,10 @@ describe('UpdateProductUseCase', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    useCase = new UpdateProductUseCase(mockRepo);
+    useCase = new UpdateProductUseCase(mockRepo, mockProductTypeRepo);
     mockRepo.updateProduct.mockResolvedValue(updated);
     mockRepo.verifyAvailableBarcode.mockResolvedValue(undefined);
+    mockProductTypeRepo.isActive.mockResolvedValue(true);
   });
 
   it('should apply the update when fields are valid', async () => {
@@ -79,5 +86,13 @@ describe('UpdateProductUseCase', () => {
     await expect(useCase.execute('prod-uuid', {}, companyId)).rejects.toThrow(
       'UPDATE_PRODUCT.NOT_CONTAIN_NEEDED_PROPERTY',
     );
+  });
+
+  it('should throw when the product type is unknown or inactive', async () => {
+    mockProductTypeRepo.isActive.mockResolvedValue(false);
+    await expect(
+      useCase.execute('prod-uuid', { productType: 'UNKNOWN' }, companyId),
+    ).rejects.toThrow('UPDATE_PRODUCT.INVALID_PRODUCT_TYPE');
+    expect(mockRepo.updateProduct).not.toHaveBeenCalled();
   });
 });

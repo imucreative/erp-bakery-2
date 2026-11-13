@@ -15,6 +15,7 @@ export class Product {
   public readonly uomName: string | null;
   public readonly supplierId: string;
   public readonly productType: string;
+  public readonly productTypeName: string | null;
   public readonly purchasePrice: number;
   public readonly sellingPrice: number;
   public readonly minimumStock: number;
@@ -37,6 +38,7 @@ export class Product {
     uomName?: string | null;
     supplierId: string;
     productType: string;
+    productTypeName?: string | null;
     purchasePrice: number | string;
     sellingPrice: number | string;
     minimumStock: number | string;
@@ -59,6 +61,7 @@ export class Product {
       uomName,
       supplierId,
       productType,
+      productTypeName,
       purchasePrice,
       sellingPrice,
       minimumStock,
@@ -85,6 +88,7 @@ export class Product {
     this.uomName = uomName ?? null;
     this.supplierId = supplierId;
     this.productType = productType;
+    this.productTypeName = productTypeName ?? null;
     this.purchasePrice = Number(purchasePrice);
     this.sellingPrice = Number(sellingPrice);
     this.minimumStock = Number(minimumStock);

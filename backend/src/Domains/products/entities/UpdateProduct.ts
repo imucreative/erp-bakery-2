@@ -1,5 +1,3 @@
-import { PRODUCT_TYPES } from '../productTypes';
-
 /**
  * Domain Entity: UpdateProduct
  *
@@ -89,7 +87,7 @@ export class UpdateProduct {
     if (p.barcode && (p.barcode as string).trim().length > 50) {
       throw new Error('UPDATE_PRODUCT.BARCODE_LIMIT_CHAR');
     }
-    if (p.productType !== undefined && !PRODUCT_TYPES.includes(p.productType as never)) {
+    if (p.productType !== undefined && (p.productType as string).trim().length === 0) {
       throw new Error('UPDATE_PRODUCT.INVALID_PRODUCT_TYPE');
     }
 

@@ -1,5 +1,3 @@
-import { PRODUCT_TYPES } from '../productTypes';
-
 /**
  * Domain Entity: CreateProduct
  *
@@ -97,10 +95,6 @@ export class CreateProduct {
     const name = (p.name as string).trim();
     if (name.length === 0 || name.length > 150) {
       throw new Error('CREATE_PRODUCT.NAME_LIMIT_CHAR');
-    }
-
-    if (!PRODUCT_TYPES.includes((p.productType as string).trim() as never)) {
-      throw new Error('CREATE_PRODUCT.INVALID_PRODUCT_TYPE');
     }
 
     for (const key of ['purchasePrice', 'sellingPrice', 'minimumStock']) {

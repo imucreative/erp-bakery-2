@@ -7,7 +7,7 @@
 import { Pencil, Trash2, Ruler } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
 import { BaseButton, BaseTable, BaseTableCell, BaseTableHead, BaseTableRow } from '@/components/ui'
-import { PRODUCT_TYPE_LABELS, type Product } from '@/services/product.service'
+import type { Product } from '@/services/product.service'
 
 defineProps<{
   items: Product[]
@@ -55,9 +55,7 @@ function formatIdr(value: number): string {
       <BaseTableRow v-for="product in items" :key="product.id">
         <BaseTableCell emphasis="mono">{{ product.sku }}</BaseTableCell>
         <BaseTableCell emphasis="medium">{{ product.name }}</BaseTableCell>
-        <BaseTableCell>{{
-          PRODUCT_TYPE_LABELS[product.productType] ?? product.productType
-        }}</BaseTableCell>
+        <BaseTableCell>{{ product.productTypeName ?? product.productType }}</BaseTableCell>
         <BaseTableCell>{{ uomNameById[product.uomId] || '—' }}</BaseTableCell>
         <BaseTableCell align="end" emphasis="medium">{{
           formatIdr(product.sellingPrice)

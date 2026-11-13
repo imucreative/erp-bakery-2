@@ -2,7 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
-  IsIn,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -12,7 +11,6 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { PRODUCT_TYPES } from '../../../../../Domains/products/productTypes';
 
 export class CreateProductDto {
   @ApiProperty({ example: 'SKU-ROTI-001', description: 'Stock keeping unit (unique per company, max 50)' })
@@ -49,8 +47,14 @@ export class CreateProductDto {
   @IsUUID('4')
   supplierId!: string;
 
-  @ApiProperty({ example: 'FINISHED_GOODS', enum: PRODUCT_TYPES })
-  @IsIn(PRODUCT_TYPES as unknown as string[])
+  @ApiProperty({
+    example: 'FINISHED_GOODS',
+    description: 'Product type code (source of truth: GET /product-types)',
+    maxLength: 50,
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
   productType!: string;
 
   @ApiProperty({ example: 5000, required: false, default: 0, minimum: 0 })

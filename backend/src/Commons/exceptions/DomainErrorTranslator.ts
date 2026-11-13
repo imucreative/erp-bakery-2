@@ -313,6 +313,48 @@ const DomainErrorTranslator = {
     // ── Product ──────────────────────────────────────────────────
     'PRODUCT.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError('Data produk tidak lengkap'),
 
+    // ── Product Type (master data) ───────────────────────────────
+    'CREATE_PRODUCT_TYPE.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal membuat tipe produk: properti yang dibutuhkan tidak ada',
+    ),
+    'CREATE_PRODUCT_TYPE.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal membuat tipe produk: tipe data tidak sesuai',
+    ),
+    'CREATE_PRODUCT_TYPE.CODE_INVALID': new InvariantError(
+      'Gagal membuat tipe produk: kode harus diawali huruf dan hanya berisi huruf kapital, angka, atau underscore (maks. 50)',
+    ),
+    'CREATE_PRODUCT_TYPE.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat tipe produk: nama harus 1-100 karakter',
+    ),
+    'CREATE_PRODUCT_TYPE.DESCRIPTION_LIMIT_CHAR': new InvariantError(
+      'Gagal membuat tipe produk: deskripsi maksimal 500 karakter',
+    ),
+    'CREATE_PRODUCT_TYPE.SORT_ORDER_INVALID': new InvariantError(
+      'Gagal membuat tipe produk: urutan harus bilangan bulat tidak negatif',
+    ),
+    'UPDATE_PRODUCT_TYPE.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
+      'Gagal memperbarui tipe produk: tidak ada field yang dikirimkan',
+    ),
+    'UPDATE_PRODUCT_TYPE.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
+      'Gagal memperbarui tipe produk: tipe data tidak sesuai',
+    ),
+    'UPDATE_PRODUCT_TYPE.NAME_LIMIT_CHAR': new InvariantError(
+      'Gagal memperbarui tipe produk: nama harus 1-100 karakter',
+    ),
+    'UPDATE_PRODUCT_TYPE.DESCRIPTION_LIMIT_CHAR': new InvariantError(
+      'Gagal memperbarui tipe produk: deskripsi maksimal 500 karakter',
+    ),
+    'UPDATE_PRODUCT_TYPE.SORT_ORDER_INVALID': new InvariantError(
+      'Gagal memperbarui tipe produk: urutan harus bilangan bulat tidak negatif',
+    ),
+    'PRODUCT_TYPE.NOT_FOUND': new NotFoundError('Tipe produk tidak ditemukan'),
+    'PRODUCT_TYPE.CODE_ALREADY_USED': new ConflictError(
+      'Kode tipe produk sudah digunakan',
+    ),
+    'PRODUCT_TYPE.IN_USE': new ConflictError(
+      'Tipe produk tidak dapat dihapus karena masih digunakan oleh produk. Nonaktifkan saja jika tidak ingin dipakai lagi',
+    ),
+
     // ── ProductUomConversion (UOM Conversion T1) ─────────────────
     'CREATE_PRODUCT_UOM_CONVERSION.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
       'Gagal membuat konversi UOM: properti yang dibutuhkan tidak ada',

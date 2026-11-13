@@ -74,10 +74,9 @@ describe('CreateProduct', () => {
     );
   });
 
-  it('should throw INVALID_PRODUCT_TYPE for an unknown type', () => {
-    expect(() => new CreateProduct({ ...valid, productType: 'UNKNOWN' })).toThrow(
-      'CREATE_PRODUCT.INVALID_PRODUCT_TYPE',
-    );
+  it('should keep an arbitrary product type code (validated by use case/DB)', () => {
+    const entity = new CreateProduct({ ...valid, productType: 'UNKNOWN' });
+    expect(entity.productType).toBe('UNKNOWN');
   });
 
   it('should throw INVALID_PRICE when a price is negative', () => {

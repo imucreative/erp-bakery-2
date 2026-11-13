@@ -1,6 +1,7 @@
 import { CreateProduct } from '../../../Domains/products/entities/CreateProduct';
 import { Product } from '../../../Domains/products/entities/Product';
 import { ProductRepository } from '../../../Domains/products/ProductRepository';
+import { ProductTypeRepository } from '../../../Domains/product-types/ProductTypeRepository';
 import { ProductGroupRepository } from '../../../Domains/product-groups/ProductGroupRepository';
 import { CategoryRepository } from '../../../Domains/categories/CategoryRepository';
 import { UomRepository } from '../../../Domains/uoms/UomRepository';
@@ -24,6 +25,7 @@ export class CreateProductUseCase {
     private readonly categoryRepository: CategoryRepository,
     private readonly uomRepository: UomRepository,
     private readonly supplierRepository: SupplierRepository,
+    private readonly productTypeRepository: ProductTypeRepository,
   ) {}
 
   async execute(payload: unknown, companyId: string): Promise<Product> {
@@ -59,6 +61,10 @@ export class CreateProductUseCase {
     );
     if (!supplier.isActive) {
       throw new Error('CREATE_PRODUCT.SUPPLIER_INACTIVE');
+    }
+
+    if (!(await this.productTypeRepository.isActive(createProduct.productType))) {
+      throw new Error('CREATE_PRODUCT.INVALID_PRODUCT_TYPE');
     }
 
     await this.productRepository.verifyAvailableSku(createProduct.sku, companyId);

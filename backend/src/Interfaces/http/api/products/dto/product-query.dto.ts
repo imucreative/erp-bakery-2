@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
-import { PRODUCT_TYPES } from '../../../../../Domains/products/productTypes';
+import { IsIn, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
 
 export class ProductQueryDto {
   @ApiProperty({ required: false, example: 1, default: 1 })
@@ -21,9 +20,15 @@ export class ProductQueryDto {
   @IsString()
   search?: string;
 
-  @ApiProperty({ required: false, enum: PRODUCT_TYPES, description: 'Filter by product type' })
+  @ApiProperty({
+    required: false,
+    example: 'FINISHED_GOODS',
+    description: 'Filter by product type code',
+    maxLength: 50,
+  })
   @IsOptional()
-  @IsIn(PRODUCT_TYPES as unknown as string[])
+  @IsString()
+  @MaxLength(50)
   productType?: string;
 
   @ApiProperty({ required: false, description: 'Filter by product group UUID' })

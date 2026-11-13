@@ -101,6 +101,11 @@ export const menuGroups: NavGroup[] = [
         name: 'Master Data',
         subItems: [
           { name: 'Products', path: '/master/products', permission: 'product.read' },
+          {
+            name: 'Product Types',
+            path: '/master/product-types',
+            permission: 'product.read',
+          },
           { name: 'Toppings', path: '/master/toppings', permission: 'product.read' },
           {
             name: 'Product Groups',

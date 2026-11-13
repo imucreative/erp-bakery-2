@@ -22,6 +22,7 @@ interface ProductRow {
   uom_name?: string | null;
   supplier_id: string;
   product_type: string;
+  product_type_name?: string | null;
   purchase_price: string;
   selling_price: string;
   minimum_stock: string;
@@ -34,6 +35,15 @@ interface ProductRow {
 }
 
 const SELECT_COLUMNS = `id, company_id, sku, barcode, name, product_group_id, category_id, uom_id, supplier_id, product_type, purchase_price, selling_price, minimum_stock, shelf_life_days, is_batch_tracked, has_toppings, is_active, created_at, updated_at`;
+
+/** The FK lives on products.product_type; map a race/late validation failure friendly. */
+function isProductTypeForeignKeyError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const pgError = error as { code?: string; constraint?: string };
+  return pgError.code === '23503' && pgError.constraint === 'products_product_type_fk';
+}
 
 /**
  * Concrete PostgreSQL implementation of ProductRepository.
@@ -57,6 +67,7 @@ export class ProductRepositoryPostgres extends ProductRepository {
       uomName: row.uom_name,
       supplierId: row.supplier_id,
       productType: row.product_type,
+      productTypeName: row.product_type_name ?? null,
       purchasePrice: row.purchase_price,
       sellingPrice: row.selling_price,
       minimumStock: row.minimum_stock,
@@ -70,34 +81,41 @@ export class ProductRepositoryPostgres extends ProductRepository {
   }
 
   async addProduct(data: NewProductData, companyId: string): Promise<Product> {
-    const result = await this.pool.query<ProductRow>(
-      `INSERT INTO products (
-         company_id, sku, barcode, name, product_group_id, category_id, uom_id, supplier_id,
-         product_type, purchase_price, selling_price, minimum_stock, shelf_life_days, is_batch_tracked,
-         has_toppings
-       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-       RETURNING ${SELECT_COLUMNS}`,
-      [
-        companyId,
-        data.sku,
-        data.barcode,
-        data.name,
-        data.productGroupId,
-        data.categoryId,
-        data.uomId,
-        data.supplierId,
-        data.productType,
-        data.purchasePrice,
-        data.sellingPrice,
-        data.minimumStock,
-        data.shelfLifeDays,
-        data.isBatchTracked,
-        data.hasToppings,
-      ],
-    );
+    try {
+      const result = await this.pool.query<ProductRow>(
+        `INSERT INTO products (
+           company_id, sku, barcode, name, product_group_id, category_id, uom_id, supplier_id,
+           product_type, purchase_price, selling_price, minimum_stock, shelf_life_days, is_batch_tracked,
+           has_toppings
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+         RETURNING ${SELECT_COLUMNS}`,
+        [
+          companyId,
+          data.sku,
+          data.barcode,
+          data.name,
+          data.productGroupId,
+          data.categoryId,
+          data.uomId,
+          data.supplierId,
+          data.productType,
+          data.purchasePrice,
+          data.sellingPrice,
+          data.minimumStock,
+          data.shelfLifeDays,
+          data.isBatchTracked,
+          data.hasToppings,
+        ],
+      );
 
-    return this._toProduct(result.rows[0]);
+      return this._toProduct(result.rows[0]);
+    } catch (error) {
+      if (isProductTypeForeignKeyError(error)) {
+        throw new Error('CREATE_PRODUCT.INVALID_PRODUCT_TYPE');
+      }
+      throw error;
+    }
   }
 
   async getProductsByCompany(
@@ -147,6 +165,8 @@ export class ProductRepositoryPostgres extends ProductRepository {
       `SELECT ${SELECT_COLUMNS}
        , (SELECT u.name FROM uoms u
           WHERE u.id = products.uom_id AND u.company_id = products.company_id) AS uom_name
+       , (SELECT pt.name FROM product_types pt
+          WHERE pt.code = products.product_type) AS product_type_name
        FROM products
        WHERE ${whereClause}
        ORDER BY created_at DESC
@@ -161,7 +181,9 @@ export class ProductRepositoryPostgres extends ProductRepository {
     const result = await this.pool.query<ProductRow>(
       `SELECT ${SELECT_COLUMNS},
               (SELECT u.name FROM uoms u
-               WHERE u.id = products.uom_id AND u.company_id = products.company_id) AS uom_name
+               WHERE u.id = products.uom_id AND u.company_id = products.company_id) AS uom_name,
+              (SELECT pt.name FROM product_types pt
+               WHERE pt.code = products.product_type) AS product_type_name
        FROM products
        WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL`,
       [id, companyId],
@@ -211,15 +233,22 @@ export class ProductRepositoryPostgres extends ProductRepository {
     setClauses.push('updated_at = NOW()');
     params.push(id, companyId);
 
-    const result = await this.pool.query<ProductRow>(
-      `UPDATE products
-       SET ${setClauses.join(', ')}
-       WHERE id = $${params.length - 1} AND company_id = $${params.length} AND deleted_at IS NULL
-       RETURNING ${SELECT_COLUMNS}`,
-      params,
-    );
+    try {
+      const result = await this.pool.query<ProductRow>(
+        `UPDATE products
+         SET ${setClauses.join(', ')}
+         WHERE id = $${params.length - 1} AND company_id = $${params.length} AND deleted_at IS NULL
+         RETURNING ${SELECT_COLUMNS}`,
+        params,
+      );
 
-    return this._toProduct(result.rows[0]);
+      return this._toProduct(result.rows[0]);
+    } catch (error) {
+      if (isProductTypeForeignKeyError(error)) {
+        throw new Error('UPDATE_PRODUCT.INVALID_PRODUCT_TYPE');
+      }
+      throw error;
+    }
   }
 
   async softDeleteProduct(id: string, companyId: string): Promise<void> {

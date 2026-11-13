@@ -18,6 +18,7 @@ import 'dotenv/config';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
 import { PERMISSIONS } from './permissions.seed';
+import { PRODUCT_TYPE_SEEDS } from './productTypes.seed';
 
 const pool = new Pool({
   host: process.env.PGHOST,
@@ -48,9 +49,29 @@ async function seedPermissions(client: { query: (text: string, values?: unknown[
   console.log(`✅ ${PERMISSIONS.length} permissions seeded`);
 }
 
+async function seedProductTypes(client: { query: (text: string, values?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> }): Promise<void> {
+  console.log('⏳ Seeding product types...');
+
+  for (const type of PRODUCT_TYPE_SEEDS) {
+    await client.query(
+      `INSERT INTO product_types (code, name, description, sort_order, is_active)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (code) DO UPDATE SET
+         name = EXCLUDED.name,
+         description = EXCLUDED.description,
+         sort_order = EXCLUDED.sort_order,
+         is_active = EXCLUDED.is_active,
+         updated_at = NOW()`,
+      [type.code, type.name, type.description, type.sortOrder, type.isActive],
+    );
+  }
+
+  console.log(`✅ ${PRODUCT_TYPE_SEEDS.length} product types seeded`);
+}
+
 async function seedSuperAdmin(client: { query: (text: string, values?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> }): Promise<void> {
-  const email = process.env.SUPER_ADMIN_EMAIL ?? 'admin@erp.local';
-  const password = process.env.SUPER_ADMIN_PASSWORD ?? '12345678';
+  const email = process.env.SUPER_ADMIN_EMAIL ?? 'dyanzzz@gmail.com';
+  const password = process.env.SUPER_ADMIN_PASSWORD ?? 'Adminqwert1!';
   const name = process.env.SUPER_ADMIN_NAME ?? 'Super Admin';
 
   console.log(`⏳ Seeding SUPER_ADMIN (${email})...`);
@@ -83,6 +104,7 @@ async function main(): Promise<void> {
     await client.query('BEGIN');
 
     await seedPermissions(client);
+    await seedProductTypes(client);
     await seedSuperAdmin(client);
 
     await client.query('COMMIT');

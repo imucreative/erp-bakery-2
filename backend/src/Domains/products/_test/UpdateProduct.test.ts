@@ -37,10 +37,8 @@ describe('UpdateProduct', () => {
     expect(() => new UpdateProduct({ name: '  ' })).toThrow('UPDATE_PRODUCT.NAME_LIMIT_CHAR');
   });
 
-  it('should throw INVALID_PRODUCT_TYPE for an unknown type', () => {
-    expect(() => new UpdateProduct({ productType: 'BAD' })).toThrow(
-      'UPDATE_PRODUCT.INVALID_PRODUCT_TYPE',
-    );
+  it('should keep an arbitrary product type code (validated by use case/DB)', () => {
+    expect(new UpdateProduct({ productType: 'BAD' }).fields.productType).toBe('BAD');
   });
 
   it('should throw INVALID_PRICE when a price is negative', () => {

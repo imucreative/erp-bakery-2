@@ -22,12 +22,8 @@ import {
   BaseSelect,
   BaseToggle,
 } from '@/components/ui'
-import {
-  PRODUCT_TYPES,
-  PRODUCT_TYPE_LABELS,
-  type Product,
-  type ProductType,
-} from '@/services/product.service'
+import { type Product, type ProductType } from '@/services/product.service'
+import type { ProductTypeOption } from '@/services/product-type.service'
 import type { ProductGroup } from '@/services/product-group.service'
 import type { Category } from '@/services/category.service'
 import type { Uom } from '@/services/uom.service'
@@ -42,6 +38,7 @@ const props = withDefaults(
     categories: Category[]
     uoms: Uom[]
     suppliers: Supplier[]
+    productTypes: ProductTypeOption[]
     submitting?: boolean
     errorMessage?: string | null
   }>(),
@@ -92,7 +89,7 @@ const productGroupId = ref<string>('')
 const categoryId = ref<string>('')
 const uomId = ref<string>('')
 const supplierId = ref<string>('')
-const productType = ref<ProductType>('FINISHED_GOODS')
+const productType = ref<ProductType>('')
 const purchasePrice = ref<number>(0)
 const sellingPrice = ref<number>(0)
 const minimumStock = ref<number>(0)
@@ -131,7 +128,11 @@ watch(
       categoryId.value = p?.categoryId ?? ''
       uomId.value = p?.uomId ?? ''
       supplierId.value = p?.supplierId ?? ''
-      productType.value = p?.productType ?? 'FINISHED_GOODS'
+      productType.value =
+        p?.productType ??
+        props.productTypes.find((type) => type.code === 'FINISHED_GOODS' && type.isActive)?.code ??
+        props.productTypes.find((type) => type.isActive)?.code ??
+        'FINISHED_GOODS'
       purchasePrice.value = p?.purchasePrice ?? 0
       sellingPrice.value = p?.sellingPrice ?? 0
       minimumStock.value = p?.minimumStock ?? 0
@@ -155,12 +156,23 @@ const uomOptions = computed(() => props.uoms.map((uom) => ({ label: uom.name, va
 const supplierOptions = computed(() =>
   props.suppliers.map((supplier) => ({ label: supplier.name, value: supplier.id })),
 )
-const productTypeOptions = PRODUCT_TYPES.map((type) => ({
-  label: PRODUCT_TYPE_LABELS[type],
-  value: type,
-}))
+const productTypeOptions = computed(() => {
+  const options = props.productTypes.map((type) => ({ label: type.name, value: type.code }))
+  if (productType.value && !options.some((option) => option.value === productType.value)) {
+    options.unshift({
+      label: props.product?.productTypeName ?? productType.value,
+      value: productType.value,
+    })
+  }
+  return options
+})
 
 function onSubmit(): void {
+  if (!productType.value) {
+    localError.value = 'Tipe produk wajib dipilih.'
+    return
+  }
+
   if (isEdit.value) {
     if (name.value.trim().length === 0) {
       localError.value = 'Nama wajib diisi.'

@@ -2,7 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
-  IsIn,
   IsInt,
   IsNumber,
   IsOptional,
@@ -10,7 +9,6 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { PRODUCT_TYPES } from '../../../../../Domains/products/productTypes';
 
 export class UpdateProductDto {
   @ApiProperty({ example: 'Roti Tawar Gandum', required: false, maxLength: 150 })
@@ -25,9 +23,15 @@ export class UpdateProductDto {
   @MaxLength(50)
   barcode?: string;
 
-  @ApiProperty({ example: 'FINISHED_GOODS', required: false, enum: PRODUCT_TYPES })
-  @IsIn(PRODUCT_TYPES as unknown as string[])
+  @ApiProperty({
+    example: 'FINISHED_GOODS',
+    required: false,
+    description: 'Product type code (source of truth: GET /product-types)',
+    maxLength: 50,
+  })
+  @IsString()
   @IsOptional()
+  @MaxLength(50)
   productType?: string;
 
   @ApiProperty({ example: 5000, required: false, minimum: 0 })

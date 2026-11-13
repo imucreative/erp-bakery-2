@@ -9,6 +9,7 @@ import { UomRepository } from '../../../../Domains/uoms/UomRepository';
 import { Uom } from '../../../../Domains/uoms/entities/Uom';
 import { SupplierRepository } from '../../../../Domains/suppliers/SupplierRepository';
 import { Supplier } from '../../../../Domains/suppliers/entities/Supplier';
+import { ProductTypeRepository } from '../../../../Domains/product-types/ProductTypeRepository';
 
 const mockProductRepo = {
   addProduct: jest.fn(),
@@ -35,6 +36,11 @@ const mockUomRepo = {
 const mockSupplierRepo = {
   getSupplierById: jest.fn(),
 } as unknown as jest.Mocked<SupplierRepository>;
+
+const mockProductTypeRepo = {
+  listActive: jest.fn(),
+  isActive: jest.fn(),
+} as unknown as jest.Mocked<ProductTypeRepository>;
 
 const companyId = 'company-uuid';
 const now = new Date();
@@ -124,11 +130,13 @@ describe('CreateProductUseCase', () => {
       mockCategoryRepo,
       mockUomRepo,
       mockSupplierRepo,
+      mockProductTypeRepo,
     );
     mockGroupRepo.getProductGroupById.mockResolvedValue(group);
     mockCategoryRepo.getCategoryById.mockResolvedValue(category);
     mockUomRepo.getUomById.mockResolvedValue(uom);
     mockSupplierRepo.getSupplierById.mockResolvedValue(supplier);
+    mockProductTypeRepo.isActive.mockResolvedValue(true);
     mockProductRepo.verifyAvailableSku.mockResolvedValue(undefined);
     mockProductRepo.verifyAvailableBarcode.mockResolvedValue(undefined);
     mockProductRepo.addProduct.mockResolvedValue(created);
@@ -193,6 +201,14 @@ describe('CreateProductUseCase', () => {
     await expect(useCase.execute(validPayload, companyId)).rejects.toThrow(
       'CREATE_PRODUCT.SUPPLIER_INACTIVE',
     );
+  });
+
+  it('should throw when the product type is unknown or inactive', async () => {
+    mockProductTypeRepo.isActive.mockResolvedValue(false);
+    await expect(useCase.execute(validPayload, companyId)).rejects.toThrow(
+      'CREATE_PRODUCT.INVALID_PRODUCT_TYPE',
+    );
+    expect(mockProductRepo.addProduct).not.toHaveBeenCalled();
   });
 
   it('should propagate SKU conflict', async () => {

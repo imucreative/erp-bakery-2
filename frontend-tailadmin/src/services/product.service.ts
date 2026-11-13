@@ -14,25 +14,10 @@
  *  - DELETE /products/:id  → soft-delete (409 when in use)
  */
 
-import { PRODUCT_TYPES } from '@/lib/constants'
 import { httpClient } from './http'
 
-export { PRODUCT_TYPES } from '@/lib/constants'
-
-export type ProductType = (typeof PRODUCT_TYPES)[number]
-
-export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
-  RAW_MATERIAL: 'Bahan Baku',
-  FINISHED_GOODS: 'Barang Jadi',
-  SEMI_FINISHED: 'Setengah Jadi',
-  PACKAGING: 'Kemasan',
-  BEVERAGE: 'Minuman',
-  OFFICE_SUPPLIES: 'Alat Tulis Kantor',
-  SPARE_PART: 'Suku Cadang',
-  OPERATING_SUPPLIES: 'Bahan Habis Pakai',
-  MERCHANDISE: 'Merchandise',
-  ELECTRONIC: 'Elektronik',
-}
+/** Product type code; the allowed values live in the backend `product_types` table. */
+export type ProductType = string
 
 interface ApiSuccess<T> {
   success: true
@@ -65,6 +50,7 @@ export interface Product {
   uomName?: string | null
   supplierId: string
   productType: ProductType
+  productTypeName: string | null
   purchasePrice: number
   sellingPrice: number
   minimumStock: number

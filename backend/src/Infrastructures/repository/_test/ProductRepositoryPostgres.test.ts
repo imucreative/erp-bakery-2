@@ -18,6 +18,7 @@ const productRow = {
   uom_name: 'Kilogram',
   supplier_id: 'sup-uuid',
   product_type: 'FINISHED_GOODS',
+  product_type_name: 'Barang Jadi',
   purchase_price: '5000',
   selling_price: '12000',
   minimum_stock: '10',
@@ -61,6 +62,7 @@ describe('ProductRepositoryPostgres', () => {
       expect(result).toBeInstanceOf(Product);
       expect(result.sku).toBe('SKU-001');
       expect(result.purchasePrice).toBe(5000);
+      expect(result.productTypeName).toBe('Barang Jadi');
     });
   });
 
@@ -76,6 +78,8 @@ describe('ProductRepositoryPostgres', () => {
       expect(result.rows[0].uomName).toBe('Kilogram');
       const selectSql = (mockPool.query as jest.Mock).mock.calls[1][0] as string;
       expect(selectSql).toContain('AS uom_name');
+      expect(selectSql).toContain('AS product_type_name');
+      expect(selectSql).toContain('FROM product_types');
     });
 
     it('should apply search, isActive, productType, and FK filters', async () => {

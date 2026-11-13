@@ -40,6 +40,7 @@ const {
   categories,
   uoms,
   suppliers,
+  productTypes,
   uomNameById,
   ensureOptions,
   fetchList,
@@ -256,6 +257,7 @@ onMounted(() => {
       :categories="categories"
       :uoms="uoms"
       :suppliers="suppliers"
+      :product-types="productTypes"
       :submitting="submitting"
       :error-message="formError"
       @close="formOpen = false"

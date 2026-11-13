@@ -65,6 +65,15 @@ export const masterDataRoutes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/master/product-types',
+    name: 'ProductTypes',
+    component: () => import('@/views/MasterData/ProductTypeList.vue'),
+    meta: {
+      title: 'Product Types',
+      permission: 'product.read',
+    },
+  },
+  {
     path: '/master/toppings',
     name: 'Toppings',
     component: () => import('@/views/MasterData/ToppingList.vue'),
