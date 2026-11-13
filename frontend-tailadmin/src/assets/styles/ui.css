@@ -108,6 +108,18 @@
   @apply bg-blue-light-50 text-blue-light-500 dark:bg-blue-light-500/15 dark:text-blue-light-500;
 }
 
+@utility tone-orange {
+  @apply bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-400;
+}
+
+@utility tone-purple {
+  @apply bg-purple-50 text-purple-600 dark:bg-purple-500/15 dark:text-purple-300;
+}
+
+@utility tone-pink {
+  @apply bg-pink-50 text-pink-700 dark:bg-pink-500/15 dark:text-pink-300;
+}
+
 @utility tone-muted {
   @apply bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-300;
 }
@@ -132,6 +144,18 @@
 
 @utility solid-info {
   @apply bg-blue-light-500 text-white dark:text-white;
+}
+
+@utility solid-orange {
+  @apply bg-orange-500 text-white dark:text-white;
+}
+
+@utility solid-purple {
+  @apply bg-purple-500 text-white dark:text-white;
+}
+
+@utility solid-pink {
+  @apply bg-pink-600 text-white dark:text-white;
 }
 
 @utility solid-light {
@@ -276,8 +300,9 @@
 }
 
 @utility td-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
-    'Courier New', monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
   @apply text-gray-600 dark:text-gray-300;
 }
 

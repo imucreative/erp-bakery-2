@@ -1,4 +1,5 @@
 import { UOM_DIMENSION_CODE_PATTERN, type UomDimension } from '../uomDimension';
+import { UOM_CODE_PATTERN } from '../uomCode';
 
 /**
  * Domain Entity: UpdateUom
@@ -7,6 +8,7 @@ import { UOM_DIMENSION_CODE_PATTERN, type UomDimension } from '../uomDimension';
  * present. Dimension/factor are optional so legacy UOMs can be completed later.
  */
 export interface UpdateUomFields {
+  code?: string;
   name?: string;
   isActive?: boolean;
   dimension?: UomDimension;
@@ -14,6 +16,7 @@ export interface UpdateUomFields {
 }
 
 const UPDATABLE_KEYS: (keyof UpdateUomFields)[] = [
+  'code',
   'name',
   'isActive',
   'dimension',
@@ -26,12 +29,14 @@ export class UpdateUom {
   constructor(payload: unknown) {
     this._verifyPayload(payload);
 
-    const { name, isActive, dimension, factorToCanonical } = payload as Record<
+    const { code, name, isActive, dimension, factorToCanonical } = payload as Record<
       string,
       unknown
     >;
     const fields: UpdateUomFields = {};
 
+    const rawCode = typeof code === 'string' ? code.trim() : '';
+    if (rawCode.length > 0) fields.code = rawCode.toUpperCase();
     if (name !== undefined) fields.name = (name as string).trim();
     if (isActive !== undefined) fields.isActive = Boolean(isActive);
     if (dimension !== undefined) {
@@ -49,17 +54,31 @@ export class UpdateUom {
       throw new Error('UPDATE_UOM.NOT_CONTAIN_NEEDED_PROPERTY');
     }
 
-    const { name, isActive, dimension, factorToCanonical } = payload as Record<
+    const { code, name, isActive, dimension, factorToCanonical } = payload as Record<
       string,
       unknown
     >;
 
-    if (UPDATABLE_KEYS.every((key) => (payload as Record<string, unknown>)[key] === undefined)) {
+    if (code !== undefined && typeof code !== 'string') {
+      throw new Error('UPDATE_UOM.NOT_MEET_DATA_TYPE_SPECIFICATION');
+    }
+
+    const hasCode = typeof code === 'string' && code.trim().length > 0;
+
+    if (
+      UPDATABLE_KEYS.every((key) =>
+        key === 'code' ? !hasCode : (payload as Record<string, unknown>)[key] === undefined,
+      )
+    ) {
       throw new Error('UPDATE_UOM.NOT_CONTAIN_NEEDED_PROPERTY');
     }
 
     if (name !== undefined && typeof name !== 'string') {
       throw new Error('UPDATE_UOM.NOT_MEET_DATA_TYPE_SPECIFICATION');
+    }
+
+    if (hasCode && !UOM_CODE_PATTERN.test(code.trim().toUpperCase())) {
+      throw new Error('UPDATE_UOM.CODE_INVALID');
     }
     if (isActive !== undefined && typeof isActive !== 'boolean') {
       throw new Error('UPDATE_UOM.NOT_MEET_DATA_TYPE_SPECIFICATION');

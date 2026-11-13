@@ -11,6 +11,19 @@ import {
 } from 'class-validator';
 
 export class UpdateUomDto {
+  @ApiProperty({
+    required: false,
+    example: 'KG',
+    description: 'New code (unique among active UOMs of the company)',
+  })
+  @IsString()
+  @IsOptional()
+  @Matches(/^$|^[A-Za-z][A-Za-z0-9_-]{0,19}$/, {
+    message:
+      'kode harus diawali huruf dan hanya berisi huruf, angka, garis bawah, atau tanda hubung (maks. 20)',
+  })
+  code?: string;
+
   @ApiProperty({ example: 'PCS', required: false, maxLength: 100 })
   @IsString()
   @IsOptional()
@@ -28,7 +41,8 @@ export class UpdateUomDto {
     description: 'Dimension code from /uom-dimensions',
   })
   @Matches(/^[A-Za-z][A-Za-z0-9_]{0,19}$/, {
-    message: 'dimension harus diawali huruf dan hanya berisi huruf, angka, atau underscore (maks. 20)',
+    message:
+      'dimension harus diawali huruf dan hanya berisi huruf, angka, atau underscore (maks. 20)',
   })
   @IsOptional()
   dimension?: string;

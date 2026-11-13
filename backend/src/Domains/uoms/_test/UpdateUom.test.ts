@@ -16,6 +16,27 @@ describe('UpdateUom', () => {
     });
   });
 
+  it('should uppercase and trim a supplied code', () => {
+    expect(new UpdateUom({ code: '  kg ' }).fields).toEqual({ code: 'KG' });
+  });
+
+  it('should throw CODE_INVALID for a malformed code', () => {
+    for (const code of ['1KG', 'KG!']) {
+      expect(() => new UpdateUom({ code })).toThrow('UPDATE_UOM.CODE_INVALID');
+    }
+  });
+
+  it('should treat a blank code as not provided (keep the current code)', () => {
+    expect(() => new UpdateUom({ code: '   ' })).toThrow('UPDATE_UOM.NOT_CONTAIN_NEEDED_PROPERTY');
+    expect(new UpdateUom({ code: '   ', name: 'KG' }).fields).toEqual({ name: 'KG' });
+  });
+
+  it('should throw NOT_MEET_DATA_TYPE_SPECIFICATION when code is not a string', () => {
+    expect(() => new UpdateUom({ code: 123 })).toThrow(
+      'UPDATE_UOM.NOT_MEET_DATA_TYPE_SPECIFICATION',
+    );
+  });
+
   it('should throw NOT_CONTAIN_NEEDED_PROPERTY when no updatable field is present', () => {
     expect(() => new UpdateUom({})).toThrow('UPDATE_UOM.NOT_CONTAIN_NEEDED_PROPERTY');
   });

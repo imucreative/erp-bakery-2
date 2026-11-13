@@ -108,6 +108,9 @@ const DomainErrorTranslator = {
     'CREATE_UOM.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
       'Gagal membuat UOM: properti yang dibutuhkan tidak ada',
     ),
+    'CREATE_UOM.CODE_INVALID': new InvariantError(
+      'Gagal membuat UOM: kode harus diawali huruf dan hanya berisi huruf, angka, garis bawah, atau tanda hubung (maks. 20 karakter)',
+    ),
     'CREATE_UOM.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
       'Gagal membuat UOM: tipe data tidak sesuai',
     ),
@@ -115,10 +118,10 @@ const DomainErrorTranslator = {
       'Gagal membuat UOM: nama harus 1-100 karakter',
     ),
     'CREATE_UOM.DIMENSION_INVALID': new InvariantError(
-      'Gagal membuat UOM: dimensi tidak dikenal. Tambahkan dimensi tersebut di menu Dimensi UOM terlebih dahulu',
+      'Gagal membuat UOM: dimensi tidak dikenal. Tambahkan dimensi tersebut lewat Kelola Dimensi di halaman Units of Measure terlebih dahulu',
     ),
     'UOM.DIMENSION_INVALID': new InvariantError(
-      'Dimensi UOM tidak terdaftar. Tambahkan dimensi tersebut di halaman Dimensi UOM terlebih dahulu',
+      'Dimensi UOM tidak terdaftar. Tambahkan dimensi tersebut lewat Kelola Dimensi di halaman Units of Measure terlebih dahulu',
     ),
     'CREATE_UOM.FACTOR_INVALID': new InvariantError(
       'Gagal membuat UOM: faktor ke satuan kanonik harus angka lebih dari 0',
@@ -131,6 +134,9 @@ const DomainErrorTranslator = {
     'UPDATE_UOM.NOT_CONTAIN_NEEDED_PROPERTY': new InvariantError(
       'Gagal memperbarui UOM: tidak ada field yang dikirimkan',
     ),
+    'UPDATE_UOM.CODE_INVALID': new InvariantError(
+      'Gagal memperbarui UOM: kode harus diawali huruf dan hanya berisi huruf, angka, garis bawah, atau tanda hubung (maks. 20 karakter)',
+    ),
     'UPDATE_UOM.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError(
       'Gagal memperbarui UOM: tipe data tidak sesuai',
     ),
@@ -138,7 +144,7 @@ const DomainErrorTranslator = {
       'Gagal memperbarui UOM: nama harus 1-100 karakter',
     ),
     'UPDATE_UOM.DIMENSION_INVALID': new InvariantError(
-      'Gagal memperbarui UOM: dimensi tidak dikenal. Tambahkan dimensi tersebut di menu Dimensi UOM terlebih dahulu',
+      'Gagal memperbarui UOM: dimensi tidak dikenal. Tambahkan dimensi tersebut lewat Kelola Dimensi di halaman Units of Measure terlebih dahulu',
     ),
     'UPDATE_UOM.FACTOR_INVALID': new InvariantError(
       'Gagal memperbarui UOM: faktor ke satuan kanonik harus angka lebih dari 0',
@@ -1116,7 +1122,7 @@ const DomainErrorTranslator = {
     ),
     'GOODS_RECEIPT.MISSING_UOM_CONVERSION': new InvariantError(
       'Satuan yang dipilih belum punya konversi ke satuan dasar produk. ' +
-        'Lengkapi dimensi/faktor UOM di master Konversi UOM terlebih dahulu',
+        'Lengkapi dimensi/faktor UOM di halaman Units of Measure terlebih dahulu',
     ),
     'GOODS_RECEIPT.INVALID_UOM_CONVERSION_FACTOR': new InvariantError(
       'Faktor konversi satuan produk tidak valid; perbaiki data dimensi/faktor UOM',
@@ -1288,6 +1294,9 @@ const DomainErrorTranslator = {
     ),
     'UOM.IN_USE': new ConflictError(
       'UOM tidak dapat dihapus atau dinonaktifkan karena masih digunakan oleh produk aktif',
+    ),
+    'UOM.CODE_ALREADY_USED': new ConflictError(
+      'Kode UOM sudah digunakan oleh UOM lain yang masih aktif. Pilih kode lain.',
     ),
     'SUPPLIER.IN_USE': new ConflictError(
       'Supplier tidak dapat dihapus atau dinonaktifkan karena masih digunakan oleh produk aktif',

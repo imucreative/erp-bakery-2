@@ -3,8 +3,10 @@
  *
  * Seeds:
  * 1. All permissions (idempotent via ON CONFLICT DO NOTHING)
- * 2. SUPER_ADMIN user (from .env — no API endpoint for this)
- * 3. Platform roles (SUPER_ADMIN role with NULL company_id)
+ * 2. UOM dimensions (global reference data, upserted by code)
+ * 3. Product types (global reference data, upserted by code)
+ * 4. SUPER_ADMIN user (from .env — no API endpoint for this)
+ * 5. Platform roles (SUPER_ADMIN role with NULL company_id)
  *
  * At register-company time, company-scoped roles are seeded dynamically
  * using DEFAULT_ROLES from permissions.seed.ts.
@@ -19,6 +21,7 @@ import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
 import { PERMISSIONS } from './permissions.seed';
 import { PRODUCT_TYPE_SEEDS } from './productTypes.seed';
+import { UOM_DIMENSION_SEEDS } from './uomDimensions.seed';
 
 const pool = new Pool({
   host: process.env.PGHOST,
@@ -28,7 +31,9 @@ const pool = new Pool({
   database: process.env.PGDATABASE,
 });
 
-async function seedPermissions(client: { query: (text: string, values?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> }): Promise<void> {
+async function seedPermissions(client: {
+  query: (text: string, values?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }>;
+}): Promise<void> {
   console.log('⏳ Seeding permissions...');
 
   for (const p of PERMISSIONS) {
@@ -49,7 +54,38 @@ async function seedPermissions(client: { query: (text: string, values?: unknown[
   console.log(`✅ ${PERMISSIONS.length} permissions seeded`);
 }
 
-async function seedProductTypes(client: { query: (text: string, values?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> }): Promise<void> {
+async function seedUomDimensions(client: {
+  query: (text: string, values?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }>;
+}): Promise<void> {
+  console.log('⏳ Seeding UOM dimensions...');
+
+  for (const dimension of UOM_DIMENSION_SEEDS) {
+    await client.query(
+      `INSERT INTO uom_dimensions
+         (code, name, canonical_unit_name, canonical_unit_symbol, is_active)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (code) DO UPDATE SET
+         name = EXCLUDED.name,
+         canonical_unit_name = EXCLUDED.canonical_unit_name,
+         canonical_unit_symbol = EXCLUDED.canonical_unit_symbol,
+         is_active = EXCLUDED.is_active,
+         updated_at = NOW()`,
+      [
+        dimension.code,
+        dimension.name,
+        dimension.canonicalUnitName,
+        dimension.canonicalUnitSymbol,
+        dimension.isActive,
+      ],
+    );
+  }
+
+  console.log(`✅ ${UOM_DIMENSION_SEEDS.length} UOM dimensions seeded`);
+}
+
+async function seedProductTypes(client: {
+  query: (text: string, values?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }>;
+}): Promise<void> {
   console.log('⏳ Seeding product types...');
 
   for (const type of PRODUCT_TYPE_SEEDS) {
@@ -69,7 +105,9 @@ async function seedProductTypes(client: { query: (text: string, values?: unknown
   console.log(`✅ ${PRODUCT_TYPE_SEEDS.length} product types seeded`);
 }
 
-async function seedSuperAdmin(client: { query: (text: string, values?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> }): Promise<void> {
+async function seedSuperAdmin(client: {
+  query: (text: string, values?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }>;
+}): Promise<void> {
   const email = process.env.SUPER_ADMIN_EMAIL ?? 'dyanzzz@gmail.com';
   const password = process.env.SUPER_ADMIN_PASSWORD ?? 'Adminqwert1!';
   const name = process.env.SUPER_ADMIN_NAME ?? 'Super Admin';
@@ -104,6 +142,7 @@ async function main(): Promise<void> {
     await client.query('BEGIN');
 
     await seedPermissions(client);
+    await seedUomDimensions(client);
     await seedProductTypes(client);
     await seedSuperAdmin(client);
 

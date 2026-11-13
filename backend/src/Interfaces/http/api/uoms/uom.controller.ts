@@ -37,7 +37,7 @@ import { UomQueryDto } from './dto/uom-query.dto';
  * Tenant-scoped CRUD for units of measure. Requires uom.read / uom.manage.
  *
  * POST   /api/v1/uoms       → create
- * GET    /api/v1/uoms       → list (paginated, search, isActive)
+ * GET    /api/v1/uoms       → list (paginated, search, isActive, dimension)
  * GET    /api/v1/uoms/:id   → detail
  * PUT    /api/v1/uoms/:id   → update
  * DELETE /api/v1/uoms/:id   → soft-delete (blocked when in use → 409)
@@ -87,6 +87,7 @@ export class UomController {
       offset,
       search: query.search,
       isActive: query.isActive === undefined ? undefined : query.isActive === 'true',
+      dimension: query.dimension?.trim().toUpperCase() || undefined,
     });
 
     return listResponse(rows, total, page, limit);

@@ -7,6 +7,7 @@ export interface UomListFilter {
   offset: number;
   search?: string;
   isActive?: boolean;
+  dimension?: string;
 }
 
 export interface UomListResult {

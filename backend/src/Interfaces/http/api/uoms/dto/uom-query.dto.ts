@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 export class UomQueryDto {
   @ApiProperty({ required: false, example: 1, default: 1 })
@@ -25,4 +25,14 @@ export class UomQueryDto {
   @IsOptional()
   @IsIn(['true', 'false'])
   isActive?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Filter by dimension code (from /uom-dimensions)',
+    example: 'WEIGHT',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  dimension?: string;
 }

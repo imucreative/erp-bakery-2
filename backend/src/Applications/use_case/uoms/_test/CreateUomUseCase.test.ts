@@ -47,6 +47,18 @@ describe('CreateUomUseCase', () => {
     expect(result.code).toBe('UOM-001');
   });
 
+  it('should use a client-supplied code instead of generating one', async () => {
+    await useCase.execute(
+      { code: ' kg ', name: 'Kilogram', dimension: 'WEIGHT', factorToCanonical: 1000 },
+      companyId,
+    );
+    expect(mockRepo.generateUomCode).not.toHaveBeenCalled();
+    expect(mockRepo.addUom).toHaveBeenCalledWith(
+      { code: 'KG', name: 'Kilogram', dimension: 'WEIGHT', factorToCanonical: 1000 },
+      companyId,
+    );
+  });
+
   it('should throw when payload is invalid', async () => {
     await expect(useCase.execute({ name: '' }, companyId)).rejects.toThrow(
       'CREATE_UOM.NOT_CONTAIN_NEEDED_PROPERTY',

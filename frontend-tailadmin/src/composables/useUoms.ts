@@ -28,6 +28,7 @@ export function useUoms() {
 
   const search = ref<string>('')
   const debouncedSearch = ref<string>('')
+  const dimension = ref<string>('')
   const page = ref<number>(1)
   let searchTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -43,6 +44,7 @@ export function useUoms() {
         page: page.value,
         limit: DEFAULT_LIMIT,
         search: debouncedSearch.value || undefined,
+        dimension: dimension.value || undefined,
       }
       const result = await uomService.list(params)
       items.value = result.items
@@ -64,6 +66,11 @@ export function useUoms() {
       page.value = 1
       void fetchList()
     }, SEARCH_DEBOUNCE_MS)
+  })
+
+  watch(dimension, () => {
+    page.value = 1
+    void fetchList()
   })
 
   function prevPage(): void {
@@ -105,6 +112,7 @@ export function useUoms() {
     loading,
     errorMessage,
     search,
+    dimension,
     page,
     totalPages,
     canPrev,

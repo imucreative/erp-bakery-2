@@ -48,9 +48,12 @@ export function useUomDimensions() {
     }
   }
 
-  async function createDimension(payload: CreateUomDimensionPayload): Promise<void> {
-    await uomDimensionService.create(payload)
+  async function createDimension(
+    payload: CreateUomDimensionPayload,
+  ): Promise<UomDimensionDefinition> {
+    const created = await uomDimensionService.create(payload)
     await fetchList()
+    return created
   }
 
   async function updateDimension(code: string, payload: UpdateUomDimensionPayload): Promise<void> {

@@ -10,6 +10,7 @@ import { UpdateUomFields } from '../../Domains/uoms/entities/UpdateUom';
 import type { UomDimension } from '../../Domains/uoms/uomDimension';
 import { NotFoundError } from '../../Commons/exceptions/NotFoundError';
 import { InvariantError } from '../../Commons/exceptions/InvariantError';
+import { ConflictError } from '../../Commons/exceptions/ConflictError';
 
 interface UomRow {
   id: string;
@@ -59,18 +60,26 @@ export class UomRepositoryPostgres extends UomRepository {
 
       return this._toUom(result.rows[0]);
     } catch (error) {
-      this._throwIfDimensionUnknown(error);
+      this._mapConstraintError(error);
       throw error;
     }
   }
 
-  private _throwIfDimensionUnknown(error: unknown): void {
+  /**
+   * `uoms_code_company_unique` is a PARTIAL unique index over active rows
+   * (migration 080), so codes of soft-deleted UOMs stay reusable while active
+   * duplicates are still rejected — matching the pre-check-free repository.
+   */
+  private _mapConstraintError(error: unknown): void {
     if (!error || typeof error !== 'object') {
       return;
     }
     const pgError = error as { code?: string; constraint?: string };
     if (pgError.code === '23503' && pgError.constraint === 'uoms_dimension_fk') {
       throw new InvariantError('UOM.DIMENSION_INVALID');
+    }
+    if (pgError.code === '23505' && pgError.constraint === 'uoms_code_company_unique') {
+      throw new ConflictError('UOM.CODE_ALREADY_USED');
     }
   }
 
@@ -95,6 +104,11 @@ export class UomRepositoryPostgres extends UomRepository {
     if (filter.isActive !== undefined) {
       params.push(filter.isActive);
       conditions.push(`is_active = $${params.length}`);
+    }
+
+    if (filter.dimension) {
+      params.push(filter.dimension);
+      conditions.push(`dimension = $${params.length}`);
     }
 
     const whereClause = conditions.join(' AND ');
@@ -139,6 +153,10 @@ export class UomRepositoryPostgres extends UomRepository {
     const setClauses: string[] = [];
     const params: unknown[] = [];
 
+    if (fields.code !== undefined) {
+      params.push(fields.code);
+      setClauses.push(`code = $${params.length}`);
+    }
     if (fields.name !== undefined) {
       params.push(fields.name);
       setClauses.push(`name = $${params.length}`);
@@ -181,7 +199,7 @@ export class UomRepositoryPostgres extends UomRepository {
         params,
       );
     } catch (error) {
-      this._throwIfDimensionUnknown(error);
+      this._mapConstraintError(error);
       throw error;
     }
   }

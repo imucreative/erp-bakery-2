@@ -4,8 +4,12 @@
  *
  *  - GET    /uoms      → { success, data: Uom[], meta } (paginated)
  *  - GET    /uoms/:id  → { success, data: Uom }
- *  - POST   /uoms      → { name, dimension, factorToCanonical } → { success, data: Uom }
- *  - PUT    /uoms/:id  → { name?, dimension?, factorToCanonical?, isActive? } → { success, data: Uom }
+ *  - POST   /uoms      → { code?, name, dimension, factorToCanonical } → { success, data: Uom }
+ *  - PUT    /uoms/:id  → { code?, name?, dimension?, factorToCanonical?, isActive? } → { success, data: Uom }
+ *
+ * `code` is optional: blank → generated UOM-###; supplied → uppercased and
+ * unique among active UOMs (409 UOM.CODE_ALREADY_USED). Codes of deleted UOMs
+ * may be reused.
  *  - DELETE /uoms/:id  → soft-delete (409 when in use)
  *
  * Global conversion (doc 52): `dimension` is a code from the global
@@ -52,6 +56,7 @@ export interface UomListParams {
   limit: number
   search?: string
   isActive?: 'true' | 'false'
+  dimension?: string
 }
 
 export interface UomListResult {
@@ -60,12 +65,15 @@ export interface UomListResult {
 }
 
 export interface CreateUomPayload {
+  /** Optional initials; blank/omitted → backend generates UOM-###. */
+  code?: string
   name: string
   dimension: string
   factorToCanonical: number
 }
 
 export interface UpdateUomPayload {
+  code?: string
   name?: string
   isActive?: boolean
   dimension?: string
@@ -82,6 +90,9 @@ function toQuery(params: UomListParams): Record<string, string | number> {
   }
   if (params.isActive !== undefined) {
     query.isActive = params.isActive
+  }
+  if (params.dimension) {
+    query.dimension = params.dimension
   }
   return query
 }

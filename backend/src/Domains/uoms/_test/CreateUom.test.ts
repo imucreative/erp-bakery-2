@@ -14,6 +14,24 @@ describe('CreateUom', () => {
     expect(entity.factorToCanonical).toBe(1);
   });
 
+  it('should uppercase a supplied code and keep a blank code as null', () => {
+    expect(new CreateUom({ ...valid, code: ' kg ' }).code).toBe('KG');
+    expect(new CreateUom({ ...valid, code: '   ' }).code).toBeNull();
+    expect(new CreateUom(valid).code).toBeNull();
+  });
+
+  it('should throw NOT_MEET_DATA_TYPE_SPECIFICATION when code is not a string', () => {
+    expect(() => new CreateUom({ ...valid, code: 123 })).toThrow(
+      'CREATE_UOM.NOT_MEET_DATA_TYPE_SPECIFICATION',
+    );
+  });
+
+  it('should throw CODE_INVALID for a malformed code', () => {
+    for (const code of ['1KG', 'KG!', 'KODE YANG TERLALU PANJANG SEKALI']) {
+      expect(() => new CreateUom({ ...valid, code })).toThrow('CREATE_UOM.CODE_INVALID');
+    }
+  });
+
   it('should throw NOT_CONTAIN_NEEDED_PROPERTY when name is missing', () => {
     expect(() => new CreateUom({ ...valid, name: '' })).toThrow(
       'CREATE_UOM.NOT_CONTAIN_NEEDED_PROPERTY',
@@ -25,9 +43,7 @@ describe('CreateUom', () => {
   });
 
   it('should throw NOT_CONTAIN_NEEDED_PROPERTY when dimension/factor is missing', () => {
-    expect(() => new CreateUom({ name: 'PCS' })).toThrow(
-      'CREATE_UOM.NOT_CONTAIN_NEEDED_PROPERTY',
-    );
+    expect(() => new CreateUom({ name: 'PCS' })).toThrow('CREATE_UOM.NOT_CONTAIN_NEEDED_PROPERTY');
     expect(() => new CreateUom({ name: 'PCS', dimension: 'COUNT' })).toThrow(
       'CREATE_UOM.NOT_CONTAIN_NEEDED_PROPERTY',
     );
@@ -52,9 +68,7 @@ describe('CreateUom', () => {
 
   it('should throw DIMENSION_INVALID for a malformed dimension code', () => {
     for (const dimension of ['length-dash', '1LENGTH']) {
-      expect(() => new CreateUom({ ...valid, dimension })).toThrow(
-        'CREATE_UOM.DIMENSION_INVALID',
-      );
+      expect(() => new CreateUom({ ...valid, dimension })).toThrow('CREATE_UOM.DIMENSION_INVALID');
     }
   });
 

@@ -42,6 +42,20 @@ describe('UomRepositoryPostgres', () => {
       expect(result.dimension).toBe('COUNT');
       expect(result.factorToCanonical).toBe(1);
     });
+
+    it('should map a duplicate active code to UOM.CODE_ALREADY_USED', async () => {
+      (mockPool.query as jest.Mock).mockRejectedValue({
+        code: '23505',
+        constraint: 'uoms_code_company_unique',
+      });
+
+      await expect(
+        repo.addUom(
+          { code: 'KG', name: 'Kilogram', dimension: 'WEIGHT', factorToCanonical: 1000 },
+          'company-uuid',
+        ),
+      ).rejects.toThrow('UOM.CODE_ALREADY_USED');
+    });
   });
 
   describe('generateUomCode', () => {
@@ -83,6 +97,23 @@ describe('UomRepositoryPostgres', () => {
       expect(countSql).toContain('ILIKE');
       expect(countSql).toContain('is_active');
     });
+
+    it('should apply dimension filter', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+        .mockResolvedValueOnce({ rows: [uomRow], rowCount: 1 });
+
+      await repo.getUomsByCompany('company-uuid', {
+        limit: 10,
+        offset: 0,
+        dimension: 'WEIGHT',
+      });
+
+      const countSql = (mockPool.query as jest.Mock).mock.calls[0][0] as string;
+      const countParams = (mockPool.query as jest.Mock).mock.calls[0][1] as unknown[];
+      expect(countSql).toContain('dimension = $2');
+      expect(countParams).toContain('WEIGHT');
+    });
   });
 
   describe('getUomById', () => {
@@ -106,6 +137,32 @@ describe('UomRepositoryPostgres', () => {
 
       const result = await repo.updateUom('uom-uuid', 'company-uuid', { name: 'KG' });
       expect(result.name).toBe('KG');
+    });
+
+    it('should include code in the update statement', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [uomRow], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [{ ...uomRow, code: 'KG' }], rowCount: 1 });
+
+      await repo.updateUom('uom-uuid', 'company-uuid', { code: 'KG' });
+
+      const updateSql = (mockPool.query as jest.Mock).mock.calls[1][0] as string;
+      expect(updateSql).toContain('code = $1');
+      expect((mockPool.query as jest.Mock).mock.calls[1][1]).toEqual([
+        'KG',
+        'uom-uuid',
+        'company-uuid',
+      ]);
+    });
+
+    it('should map a duplicate active code to UOM.CODE_ALREADY_USED', async () => {
+      (mockPool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [uomRow], rowCount: 1 })
+        .mockRejectedValueOnce({ code: '23505', constraint: 'uoms_code_company_unique' });
+
+      await expect(repo.updateUom('uom-uuid', 'company-uuid', { code: 'KG' })).rejects.toThrow(
+        'UOM.CODE_ALREADY_USED',
+      );
     });
 
     it('should return current state when no fields are provided', async () => {

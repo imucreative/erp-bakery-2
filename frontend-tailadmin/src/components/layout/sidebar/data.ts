@@ -114,16 +114,6 @@ export const menuGroups: NavGroup[] = [
           },
           { name: 'Categories', path: '/master/categories', permission: 'category.read' },
           { name: 'Units of Measure', path: '/master/uoms', permission: 'uom.read' },
-          {
-            name: 'Konversi UOM',
-            path: '/master/uom-conversions',
-            permission: 'uom.read',
-          },
-          {
-            name: 'Dimensi UOM',
-            path: '/master/uom-dimensions',
-            permission: 'uom.read',
-          },
           { name: 'Suppliers', path: '/master/suppliers', permission: 'supplier.read' },
           {
             name: 'Payment Terms',

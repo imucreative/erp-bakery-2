@@ -9,6 +9,7 @@ import { computed } from 'vue'
 import { Pencil, Trash2 } from 'lucide-vue-next'
 import Badge from '@/components/ui/Badge.vue'
 import { BaseButton, BaseTable, BaseTableCell, BaseTableHead, BaseTableRow } from '@/components/ui'
+import { dimensionBadgeColor } from '@/lib/dimensionBadge'
 import type { Uom } from '@/services/uom.service'
 import type { UomDimensionDefinition } from '@/services/uom-dimension.service'
 
@@ -19,8 +20,9 @@ const props = withDefaults(
     loading: boolean
     errorMessage: string | null
     canManage: boolean
+    emptyMessage?: string
   }>(),
-  { dimensions: () => [] },
+  { dimensions: () => [], emptyMessage: 'Belum ada satuan ukur.' },
 )
 
 defineEmits<{
@@ -63,12 +65,13 @@ function equivalent(uom: Uom): string {
     :loading="loading"
     :error-message="errorMessage"
     :is-empty="items.length === 0"
-    empty-message="Belum ada satuan ukur."
+    :empty-message="emptyMessage"
     aria-label="Daftar satuan ukur"
   >
     <template #header>
       <BaseTableRow variant="header">
         <BaseTableHead>Nama</BaseTableHead>
+        <BaseTableHead>Kode</BaseTableHead>
         <BaseTableHead>Dimensi</BaseTableHead>
         <BaseTableHead align="end">Faktor</BaseTableHead>
         <BaseTableHead>Ekuivalen</BaseTableHead>
@@ -79,9 +82,15 @@ function equivalent(uom: Uom): string {
     <template #body>
       <BaseTableRow v-for="uom in items" :key="uom.id">
         <BaseTableCell emphasis="medium">{{ uom.name }}</BaseTableCell>
+        <BaseTableCell emphasis="mono">{{ uom.code }}</BaseTableCell>
         <BaseTableCell>
-          <span v-if="uom.dimension">{{ dimensionLabel(uom.dimension) }}</span>
-          <span v-else class="text-muted">Belum diset</span>
+          <div v-if="uom.dimension" class="flex items-center gap-2">
+            <Badge :color="dimensionBadgeColor(uom.dimension)" size="sm">
+              {{ uom.dimension }}
+            </Badge>
+            <span class="text-meta">{{ dimensionLabel(uom.dimension) }}</span>
+          </div>
+          <Badge v-else color="error" size="sm">Belum diset</Badge>
         </BaseTableCell>
         <BaseTableCell align="end">{{ formatFactor(uom.factorToCanonical) }}</BaseTableCell>
         <BaseTableCell>
