@@ -18,7 +18,7 @@
  *   npx ts-node scripts/smoke-test.ts
  */
 
-const BASE_URL = process.env.SMOKE_BASE_URL ?? 'http://localhost:3000/api/v1';
+const BASE_URL = process.env.SMOKE_BASE_URL ?? 'http://localhost:5000/api/v1';
 
 interface SmokeJson {
   success?: boolean;
