@@ -3,8 +3,8 @@
  * ToppingFormModal — create/edit modal for a GLOBAL topping.
  *
  * CREATE: pilih produk topping (RAW_MATERIAL / SEMI_FINISHED, hanya yang belum
- *   jadi topping) + takaran per item (defaultQtyPerItem > 0) + harga tambahan
- *   (extraPrice >= 0) + toggle aktif.
+ *   jadi topping) lewat autocomplete lokal + takaran per item
+ *   (defaultQtyPerItem > 0) + harga tambahan (extraPrice >= 0) + toggle aktif.
  * EDIT: produk topping read-only (tidak diubah backend); editable: takaran,
  *   harga tambahan, dan status aktif.
  *
@@ -19,9 +19,9 @@ import {
   BaseFormField,
   BaseInput,
   BaseModal,
-  BaseSelect,
   BaseToggle,
 } from '@/components/ui'
+import EntityCombobox from '@/components/ui/EntityCombobox.vue'
 import { Save, X } from 'lucide-vue-next'
 import type { Topping } from '@/services/topping.service'
 import type { Product } from '@/services/product.service'
@@ -92,12 +92,18 @@ watch(
   { immediate: true },
 )
 
-const productSelectOptions = computed(() =>
-  props.productOptions.map((product) => ({
-    label: `${product.name} (${product.sku})`,
-    value: product.id,
-  })),
-)
+const selectedProductLabel = computed<string>(() => {
+  if (!toppingProductId.value) {
+    return ''
+  }
+  const selectedProduct = props.productOptions.find(
+    (product) => product.id === toppingProductId.value,
+  )
+  if (selectedProduct) {
+    return `${selectedProduct.name} (${selectedProduct.sku})`
+  }
+  return props.topping?.toppingName ?? toppingProductId.value
+})
 
 function productLabel(id: string): string {
   const match = props.productOptions.find((p) => p.id === id)
@@ -152,12 +158,17 @@ function onSubmit(): void {
     <form class="space-y-4" @submit.prevent="onSubmit">
       <!-- Product -->
       <BaseFormField label="Produk Topping" field-id="topping-product" :required="!isEdit">
-        <BaseSelect
+        <EntityCombobox
           v-if="!isEdit"
-          id="topping-product"
           v-model="toppingProductId"
-          :options="productSelectOptions"
-          placeholder="Pilih produk (bahan baku / setengah jadi)"
+          mode="client"
+          :selected-label="selectedProductLabel"
+          :items="productOptions"
+          :item-id="(product) => product.id"
+          :item-label="(product) => `${product.name} (${product.sku})`"
+          empty-text="Produk tidak ditemukan."
+          placeholder="Ketik untuk mencari produk bahan baku / setengah jadi..."
+          aria-label="Produk topping"
         />
         <p v-else class="form-readonly">{{ productLabel(toppingProductId) }}</p>
         <p v-if="!isEdit && productOptions.length === 0" class="mt-1.5 text-muted-xs">

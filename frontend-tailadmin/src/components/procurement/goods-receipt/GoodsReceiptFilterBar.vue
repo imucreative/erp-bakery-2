@@ -1,16 +1,20 @@
 <script setup lang="ts">
 /**
  * GoodsReceiptFilterBar — search (grNumber) + status filter + source-PO filter
- * toolbar for the GR list. Native selects wrapped with a ChevronDownIcon per
- * the UI standard. Two-way binds `search`, `status`, and `purchaseOrder` via
+ * toolbar for the GR list. Status uses a native select wrapped with a
+ * ChevronDownIcon per the UI standard; source PO is a client-side autocomplete
+ * (`EntityCombobox`) over the locally loaded PO list, where an empty selection
+ * means "Semua PO". Two-way binds `search`, `status`, and `purchaseOrder` via
  * v-model:search / v-model:status / v-model:purchaseOrder.
  */
+import { computed } from 'vue'
 import { BaseInput, BaseSelect } from '@/components/ui'
+import EntityCombobox from '@/components/ui/EntityCombobox.vue'
 import { GOODS_RECEIPT_STATUS_LABELS } from '@/services/goods-receipt.service'
 import type { StatusFilter } from '@/composables/useGoodsReceipts'
 import type { PurchaseOrder } from '@/services/purchase-order.service'
 
-defineProps<{
+const props = defineProps<{
   search: string
   status: StatusFilter
   purchaseOrder: string
@@ -30,6 +34,11 @@ const statusOptions = [
     label,
   })),
 ]
+
+const selectedPurchaseOrderLabel = computed<string>(() => {
+  const match = props.purchaseOrders.find((po) => po.id === props.purchaseOrder)
+  return match?.poNumber ?? ''
+})
 </script>
 
 <template>
@@ -50,14 +59,18 @@ const statusOptions = [
         @update:model-value="emit('update:status', $event as StatusFilter)"
       />
     </div>
-    <div class="relative w-full sm:w-56">
-      <BaseSelect
-        id="goods-receipt-purchase-order"
+    <div class="relative w-full sm:w-72">
+      <EntityCombobox
         :model-value="purchaseOrder"
-        :options="[
-          { value: '', label: 'Semua PO' },
-          ...purchaseOrders.map((po) => ({ value: po.id, label: po.poNumber })),
-        ]"
+        mode="client"
+        list-width="content"
+        :selected-label="selectedPurchaseOrderLabel"
+        :items="purchaseOrders"
+        :item-id="(po: PurchaseOrder) => po.id"
+        :item-label="(po: PurchaseOrder) => po.poNumber"
+        empty-text="PO tidak ditemukan."
+        placeholder="Semua PO"
+        aria-label="Filter PO sumber"
         @update:model-value="emit('update:purchaseOrder', $event)"
       />
     </div>

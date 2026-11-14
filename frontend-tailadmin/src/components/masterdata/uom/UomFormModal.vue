@@ -5,10 +5,11 @@
  * `submitting` + `errorMessage`). Backdrop, Esc-close, and panel chrome come
  * from BaseModal.
  *
- * The code is optional and editable in both modes: blank on create → backend
- * generates UOM-###; blank on edit → keeps the current code. Codes are
- * uppercased and must be unique among active UOMs (the backend rejects
- * duplicates with UOM.CODE_ALREADY_USED; codes of deleted UOMs are reusable).
+ * The code is optional and editable on create; blank → backend generates
+ * UOM-###. On edit the code is read-only (kept from the created UOM) and is not
+ * sent in the update payload. Codes are uppercased and must be unique among
+ * active UOMs (the backend rejects duplicates with UOM.CODE_ALREADY_USED; codes
+ * of deleted UOMs are reusable).
  *
  * Global conversion metadata (doc 52): dimension (from the global dimension
  * catalog) + factor to that dimension's canonical unit are required so GR
@@ -126,7 +127,8 @@ watch(
 )
 
 function onSubmit(): void {
-  const trimmedCode = code.value.trim()
+  const isEdit = props.mode === 'edit'
+  const trimmedCode = isEdit ? '' : code.value.trim()
   if (trimmedCode.length > 0 && !CODE_PATTERN.test(trimmedCode)) {
     localError.value =
       'Kode harus diawali huruf dan hanya berisi huruf, angka, garis bawah, atau tanda hubung (maks. 20 karakter).'
@@ -183,16 +185,18 @@ function onSubmit(): void {
           field-id="uom-code"
           :hint="
             mode === 'edit'
-              ? 'Unik per perusahaan. Kosongkan untuk mempertahankan kode saat ini.'
-              : 'Opsional — kosongkan untuk kode otomatis (UOM-001). Disimpan dalam huruf kapital.'
+              ? 'Kode unik — tidak dapat diubah.'
+              : 'Opsional — kosongkan untuk kode otomatis (UOM-001).'
           "
         >
           <BaseInput
             id="uom-code"
             v-model="code"
             class="uppercase"
+            :class="{ 'form-readonly': mode === 'edit' }"
             maxlength="20"
             placeholder="mis. KG"
+            :readonly="mode === 'edit'"
           />
         </BaseFormField>
 

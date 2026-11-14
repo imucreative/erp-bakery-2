@@ -115,6 +115,7 @@ const {
       :empty-text="emptyText"
       :max-height="listMaxHeight"
       :teleport="useTeleport"
+      :content-width="props.listWidth === 'content'"
     >
       <template v-if="$slots.item" #item="slotProps">
         <slot name="item" v-bind="slotProps" />

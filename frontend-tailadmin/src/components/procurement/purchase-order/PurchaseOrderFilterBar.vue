@@ -1,11 +1,15 @@
 <script setup lang="ts">
 /**
  * PurchaseOrderFilterBar — search (poNumber) + status filter + supplier filter
- * toolbar for the PO list. Native selects wrapped with a ChevronDownIcon per
- * the UI standard. Two-way binds `search`, `status`, and `supplier` via
- * v-model:search / v-model:status / v-model:supplier.
+ * toolbar for the PO list. Status uses a native select wrapped with a
+ * ChevronDownIcon per the UI standard; supplier is a client-side autocomplete
+ * (`EntityCombobox`) over the locally loaded supplier list, where an empty
+ * selection means "Semua Vendor". Two-way binds `search`, `status`, and
+ * `supplier` via v-model:search / v-model:status / v-model:supplier.
  */
+import { computed } from 'vue'
 import { BaseInput, BaseSelect } from '@/components/ui'
+import EntityCombobox from '@/components/ui/EntityCombobox.vue'
 import {
   PURCHASE_ORDER_STATUSES,
   PURCHASE_ORDER_STATUS_LABELS,
@@ -13,7 +17,7 @@ import {
 import type { StatusFilter } from '@/composables/usePurchaseOrders'
 import type { Supplier } from '@/services/supplier.service'
 
-defineProps<{
+const props = defineProps<{
   search: string
   status: StatusFilter
   supplier: string
@@ -33,6 +37,11 @@ const statusOptions = [
     label: PURCHASE_ORDER_STATUS_LABELS[status],
   })),
 ]
+
+const selectedSupplierLabel = computed<string>(() => {
+  const match = props.suppliers.find((supplier) => supplier.id === props.supplier)
+  return match?.name ?? ''
+})
 </script>
 
 <template>
@@ -53,14 +62,18 @@ const statusOptions = [
         @update:model-value="emit('update:status', $event as StatusFilter)"
       />
     </div>
-    <div class="relative w-full sm:w-56">
-      <BaseSelect
-        id="purchase-order-supplier"
+    <div class="relative w-full sm:w-72">
+      <EntityCombobox
         :model-value="supplier"
-        :options="[
-          { value: '', label: 'Semua Vendor' },
-          ...suppliers.map((s) => ({ value: s.id, label: s.name })),
-        ]"
+        mode="client"
+        list-width="content"
+        :selected-label="selectedSupplierLabel"
+        :items="suppliers"
+        :item-id="(vendor: Supplier) => vendor.id"
+        :item-label="(vendor: Supplier) => vendor.name"
+        empty-text="Vendor tidak ditemukan."
+        placeholder="Semua Vendor"
+        aria-label="Filter vendor"
         @update:model-value="emit('update:supplier', $event)"
       />
     </div>

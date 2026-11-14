@@ -24,6 +24,12 @@ export interface EntityComboboxProps<T> {
   /** Client-mode cap on rendered suggestions. */
   maxSuggestions?: number
   /**
+   * Dropdown width. `'anchor'` (default) matches the field width; `'content'`
+   * grows with the longest suggestion (single-line rows, ellipsis past the cap)
+   * so long labels are not wrapped into stacked lines.
+   */
+  listWidth?: 'anchor' | 'content'
+  /**
    * Rows shown before the list itself scrolls. Caps the dropdown height so it
    * never grows taller than this many entries — the list becomes its own scroll
    * container instead of pushing the page/grid around.

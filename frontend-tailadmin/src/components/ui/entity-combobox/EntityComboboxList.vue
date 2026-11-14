@@ -20,10 +20,13 @@ interface EntityComboboxListProps<T> {
   emptyText: string
   maxHeight: string
   teleport: boolean
+  /** Grow with the longest label instead of matching the field width. */
+  contentWidth?: boolean
 }
 
 const props = withDefaults(defineProps<EntityComboboxListProps<T>>(), {
   highlightedId: undefined,
+  contentWidth: false,
 })
 
 defineSlots<{
@@ -38,7 +41,12 @@ defineSlots<{
       align="start"
       :side-offset="4"
       :body-lock="false"
-      class="z-[100000] w-[var(--reka-combobox-trigger-width)] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-theme-lg dark:border-gray-700 dark:bg-gray-900"
+      class="z-[100000] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-theme-lg dark:border-gray-700 dark:bg-gray-900"
+      :class="
+        props.contentWidth
+          ? 'w-max min-w-[var(--reka-combobox-trigger-width)] max-w-[min(90vw,24rem)]'
+          : 'w-[var(--reka-combobox-trigger-width)]'
+      "
     >
       <ComboboxViewport
         class="overflow-y-auto overscroll-contain p-1"
@@ -65,7 +73,12 @@ defineSlots<{
               :disabled="props.disabledOf(item)"
               :label="props.labelOf(item)"
             >
-              <span :class="props.disabledOf(item) ? 'line-through' : ''">
+              <span
+                :class="[
+                  props.contentWidth ? 'truncate' : '',
+                  props.disabledOf(item) ? 'line-through' : '',
+                ]"
+              >
                 {{ props.labelOf(item) }}
               </span>
               <span
